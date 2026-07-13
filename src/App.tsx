@@ -14,6 +14,7 @@ import {
   usePopoverKeyboard,
   usePopoverCard,
   PopoverPortal,
+  usePopoverTrigger,
   type PopoverResolver,
   type TrailEntry,
 } from './lib/popover'
@@ -210,13 +211,12 @@ function PopoverCanvas() {
 // 4. Main App layout
 function MainContent() {
   usePopoverKeyboard()
-  const { openRootWithResolver, clear } = usePopoverActions<DummyData>()
+  const { clear } = usePopoverActions<DummyData>()
   const trail = usePopoverTrail()
   const floating = usePopoverFloating()
 
-  const handleTrigger = (key: string, e: React.MouseEvent<HTMLButtonElement>) => {
-    void openRootWithResolver(key, e)
-  }
+  const teleportTriggerProps = usePopoverTrigger('skill-teleport')
+  const swordTriggerProps = usePopoverTrigger('item-sword')
 
   const totalActive = trail.length + floating.length
 
@@ -233,14 +233,14 @@ function MainContent() {
         <button
           type="button"
           className="btn-trigger"
-          onClick={(e) => handleTrigger('skill-teleport', e)}
+          {...teleportTriggerProps}
         >
           🪄 Скилл: Телепортация
         </button>
         <button
           type="button"
           className="btn-trigger"
-          onClick={(e) => handleTrigger('item-sword', e)}
+          {...swordTriggerProps}
         >
           ⚔️ Предмет: Меч бесконечности
         </button>

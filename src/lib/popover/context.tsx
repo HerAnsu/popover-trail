@@ -166,6 +166,19 @@ export function usePopoverActions<TData = any, TContext = any>() {
 }
 
 /**
+ * Hook to simplify binding a button or element trigger to open a root popover on click.
+ */
+export function usePopoverTrigger(key: string, ownerIdOverride?: string) {
+  const actions = usePopoverActions()
+  return {
+    onClick: (e: React.MouseEvent<HTMLElement>) => {
+      void actions.openRootWithResolver(key, e, ownerIdOverride)
+    }
+  }
+}
+
+
+/**
  * Portal wrapper component to safely mount children popovers to document.body,
  * bypassing any parent overflow: hidden clipping issues.
  */
