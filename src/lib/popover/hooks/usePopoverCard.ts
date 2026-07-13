@@ -17,6 +17,9 @@ interface UsePopoverCardOptions {
   isPinned: boolean
   placement?: PopoverPlacement
   enableDrag?: boolean
+  enableTilt?: boolean
+  maxTiltAngle?: number
+  tiltSensitivity?: number
 }
 
 /**
@@ -30,6 +33,9 @@ export function usePopoverCard({
   isPinned,
   placement = 'bottom',
   enableDrag = true,
+  enableTilt = true,
+  maxTiltAngle = 5,
+  tiltSensitivity = 8,
 }: UsePopoverCardOptions) {
   const ref = useRef<HTMLDivElement | null>(null)
 
@@ -43,6 +49,9 @@ export function usePopoverCard({
   const { rotation, dragX, dragY } = usePopoverDragAndDrop({
     isDragging: enableDrag ? isDragging : false,
     transform: enableDrag ? transform : null,
+    enableTilt,
+    maxTiltAngle,
+    tiltSensitivity,
   })
 
   // 3. Geometry positioning setup
