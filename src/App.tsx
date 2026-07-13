@@ -116,7 +116,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
   const offset = usePopoverOffset(entry.key)
   const zIndex = usePopoverZIndex(entry.key)
   const isTop = useIsPopoverTopMost(entry.key)
-  const { togglePin, closeFrom, openNestedWithResolver } = usePopoverActions<DummyData>()
+  const { togglePin, closeFrom, openNestedWithResolver, bringToFront } = usePopoverActions<DummyData>()
 
   const handlePinToggle = () => {
     if (ref.current) {
@@ -144,6 +144,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
       ref={setCombinedRef}
       style={style}
       className={`popover-card ${isTop ? 'topmost' : ''}`}
+      onMouseDown={() => bringToFront(entry.key)}
     >
       <FocusLock disabled={!isTop} returnFocus>
         <div className="popover-header" {...attributes} {...listeners}>
