@@ -306,4 +306,30 @@ describe("createPopoverStore", () => {
     expect(restoredEntry?.parentKey).toBe("root-item"); // Restored!
     expect(restoredEntry?.rect?.top).toBe(40); // Restored!
   });
+
+  it("should recursively close pinned descendants when parent is closed", () => {
+    const store = createPopoverStore(dummyResolver);
+    const rootEntry: TrailEntry = { key: "root-item", isLoading: false };
+    const childEntry: TrailEntry = { key: "child-item", parentKey: "root-item", isLoading: false };
+    const grandchildEntry: TrailEntry = { key: "grandchild-item", parentKey: "child-item", isLoading: false };
+
+    store.getState().openRoot("owner-1", rootEntry);
+    store.getState().pushNested(0, childEntry);
+    store.getState().pushNested(1, grandchildEntry);
+
+    // Pin grandchild
+    store.getState().togglePin("grandchild-item", new DOMRect(500, 600, 150, 250));
+
+    let state = store.getState();
+    expect(state.trail).toHaveLength(2); // root, child
+    expect(state.floating).toHaveLength(1); // grandchild
+
+    // Close child-item (at index 2 overall since floating has grandchild-item, root-item is at index 1, and child-item is at index 2)
+    store.getState().closeFrom(2);
+
+    state = store.getState();
+    expect(state.trail).toHaveLength(1); // only root remains
+    expect(state.trail[0].key).toBe("root-item");
+    expect(state.floating).toHaveLength(0); // grandchild is recursively closed!
+  });
 });

@@ -22,6 +22,7 @@ export interface PopoverProviderProps<TData = any, TContext = any> {
   resolveData: PopoverResolver<TData, TContext>;
   initialContext?: TContext;
   clickOutside?: ClickOutsideConfig;
+  enableKeyboardClose?: boolean;
 }
 
 /**
@@ -32,6 +33,7 @@ export function PopoverProvider<TData = any, TContext = any>({
   resolveData,
   initialContext,
   clickOutside,
+  enableKeyboardClose = true,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() => createPopoverStore<TData, TContext>(resolveData, initialContext));
@@ -47,6 +49,24 @@ export function PopoverProvider<TData = any, TContext = any>({
       store.getState().destroy();
     };
   }, [store]);
+
+  // Handle Escape key closing globally (WAI-ARIA Accessibility compliance & single listener consolidation)
+  useEffect(() => {
+    if (!enableKeyboardClose) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        const state = store.getState();
+        const hasActive = state.trail.length > 0 || state.floating.length > 0;
+        if (hasActive) {
+          state.closeTopmost();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [enableKeyboardClose, store]);
 
   // Setup click outside logic if enabled
   const enabled = clickOutside?.enabled;

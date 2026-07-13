@@ -126,6 +126,54 @@ function getDescendants(
 }
 
 /**
+ * Recursively retrieves all descendant keys (both trailing and floating) spawned by a parent popover.
+ * It tracks parent-child linkages via both current parentKey and originalParentKey.
+ */
+function getAllDescendants(
+  parentKeys: string[],
+  floating: readonly TrailEntry[],
+  trail: readonly TrailEntry[],
+): Set<string> {
+  const descendants = new Set<string>();
+  const queue = [...parentKeys];
+  const visited = new Set<string>(parentKeys);
+
+  // Build children adjacency list in linear time O(N)
+  const childrenMap = new Map<string, TrailEntry[]>();
+  const mapEntry = (entry: TrailEntry) => {
+    const pKey = entry.parentKey ?? entry.originalParentKey;
+    if (pKey) {
+      let list = childrenMap.get(pKey);
+      if (!list) {
+        list = [];
+        childrenMap.set(pKey, list);
+      }
+      list.push(entry);
+    }
+  };
+  floating.forEach(mapEntry);
+  trail.forEach(mapEntry);
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (current === undefined) break;
+
+    const children = childrenMap.get(current);
+    if (children) {
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (!visited.has(child.key)) {
+          visited.add(child.key);
+          descendants.add(child.key);
+          queue.push(child.key);
+        }
+      }
+    }
+  }
+  return descendants;
+}
+
+/**
  * Focuses a popover and drags its children trail to the top of z-index.
  */
 function bringToFrontPatch<TData, TContext>(
@@ -198,29 +246,7 @@ function getCleanupStatePatch<TData, TContext>(
   return patch;
 }
 
-/**
- * Builds a state patch to completely clear the trailing popover stack
- * while keeping floating popovers intact.
- */
-function getClearTrailPatch<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-): Partial<PopoverStateData<TData, TContext>> {
-  const floatingKeys = new Set(state.floating.map((e) => e.key));
-  const nextNestedCounters = filterRecord(state.nestedHydrationRequestCounters, floatingKeys);
-  const patch: Partial<PopoverStateData<TData, TContext>> = {
-    trail: [],
-    offsets: filterRecord(state.offsets, floatingKeys),
-    zIndexOrder: state.zIndexOrder.filter((k) => floatingKeys.has(k)),
-    anchorElement: null,
-    anchorRect: null,
-    nestedHydrationRequestCounters: nextNestedCounters,
-  };
-  if (state.floating.length === 0) {
-    patch.zIndexOrder = [];
-    patch.ownerId = null;
-  }
-  return patch;
-}
+
 
 /**
  * Pure state updater for spawning/opening a new root popover.
@@ -373,20 +399,27 @@ function closeFromState<TData, TContext>(
   if (index < 0 || index >= totalCount) return {};
 
   const isFloating = index < state.floating.length;
-  const nextFloating = [...state.floating];
-  let nextTrail = [...state.trail];
   const nextPinnedStates = { ...state.pinnedStates };
 
+  let directClosedKeys: string[];
   if (isFloating) {
     const entry = state.floating[index];
-    nextFloating.splice(index, 1);
-    nextPinnedStates[entry.key] = false;
-    if (state.trail.length > 0 && state.trail[0].parentKey === entry.key) {
-      nextTrail = [];
-    }
+    directClosedKeys = [entry.key];
   } else {
     const trailIndex = index - state.floating.length;
-    nextTrail = state.trail.slice(0, trailIndex);
+    directClosedKeys = state.trail.slice(trailIndex).map((e) => e.key);
+  }
+
+  // Find all descendants recursively (both pinned and unpinned)
+  const descendants = getAllDescendants(directClosedKeys, state.floating, state.trail);
+  const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
+
+  // Clean arrays by filtering out removed keys
+  const nextFloating = state.floating.filter((e) => !removedKeys.has(e.key));
+  const nextTrail = state.trail.filter((e) => !removedKeys.has(e.key));
+
+  for (const key of removedKeys) {
+    nextPinnedStates[key] = false;
   }
 
   const cleanupPatch = getCleanupStatePatch<TData, TContext>(
@@ -448,6 +481,28 @@ export function createPopoverStore<TData = any, TContext = any>(
       },
 
       closeFrom: (index) => {
+        const { floating, trail } = get();
+        const totalCount = floating.length + trail.length;
+        if (index >= 0 && index < totalCount) {
+          const isFloating = index < floating.length;
+          let directClosedKeys: string[];
+          if (isFloating) {
+            directClosedKeys = [floating[index].key];
+          } else {
+            const trailIndex = index - floating.length;
+            directClosedKeys = trail.slice(trailIndex).map((e) => e.key);
+          }
+          const descendants = getAllDescendants(directClosedKeys, floating, trail);
+          const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
+
+          for (const key of removedKeys) {
+            const controller = activeControllers.get(key);
+            if (controller) {
+              controller.abort();
+              activeControllers.delete(key);
+            }
+          }
+        }
         set((state) => closeFromState(state, index));
       },
 
@@ -488,16 +543,39 @@ export function createPopoverStore<TData = any, TContext = any>(
           rootController.abort();
           activeControllers.delete("__root__");
         }
-        const { trail } = get();
-        for (const entry of trail) {
-          const controller = activeControllers.get(entry.key);
+        const { trail, floating, pinnedStates, offsets, zIndexOrder, nestedHydrationRequestCounters } = get();
+        const trailKeys = trail.map((e) => e.key);
+        const descendants = getAllDescendants(trailKeys, floating, trail);
+        const removedKeys = new Set<string>([...trailKeys, ...descendants]);
+
+        for (const key of removedKeys) {
+          const controller = activeControllers.get(key);
           if (controller) {
             controller.abort();
-            activeControllers.delete(entry.key);
+            activeControllers.delete(key);
           }
         }
 
-        set((state) => getClearTrailPatch(state));
+        const nextFloating = floating.filter((e) => !removedKeys.has(e.key));
+        const nextPinnedStates = { ...pinnedStates };
+        for (const key of removedKeys) {
+          nextPinnedStates[key] = false;
+        }
+
+        const cleanupPatch = getCleanupStatePatch<TData, TContext>(
+          nextFloating,
+          [],
+          offsets,
+          zIndexOrder,
+          nextPinnedStates,
+          nestedHydrationRequestCounters,
+        );
+
+        set({
+          trail: [],
+          floating: nextFloating,
+          ...cleanupPatch,
+        });
       },
 
       closeTopmost: () => {

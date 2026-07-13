@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { usePopoverGeometry } from "./useGeometry";
 import { usePopoverDragAndDrop } from "./useDragAndDrop";
@@ -38,6 +38,29 @@ export function usePopoverCard({
   tiltSensitivity = 8,
 }: UsePopoverCardOptions) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  // Capture active element on mount and restore focus on unmount (WAI-ARIA compliance)
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
+    }
+
+    return () => {
+      const elementToFocus = previouslyFocusedElementRef.current;
+      if (
+        elementToFocus &&
+        typeof elementToFocus.focus === "function" &&
+        document.body.contains(elementToFocus)
+      ) {
+        const activeEl = document.activeElement;
+        const isFocusInside = ref.current?.contains(activeEl) || activeEl === document.body || !activeEl;
+        if (isFocusInside) {
+          elementToFocus.focus();
+        }
+      }
+    };
+  }, []);
 
   // 1. Set up dnd-kit dragging (disabled if enableDrag is false or popover is not pinned)
   const { setNodeRef, transform, isDragging, attributes, listeners } = useDraggable({
