@@ -7,7 +7,6 @@ import {
   usePopoverFloating,
   usePopoverOffsets,
   usePopoverActions,
-  usePopoverKeyboard,
   usePopoverCard,
   PopoverPortal,
   usePopoverTrigger,
@@ -313,7 +312,6 @@ function PopoverCanvas() {
 }
 
 function MainContent() {
-  usePopoverKeyboard();
   const { clear } = usePopoverActions<MathData>();
   const trail = usePopoverTrail();
   const floating = usePopoverFloating();
