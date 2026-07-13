@@ -107,7 +107,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
   const { finalLayoutPos } = usePopoverGeometry({
     id: entry.key,
     anchorRect: entry.rect,
-    direction: 'down',
+    placement: 'bottom',
     zIndex: index,
     ref,
     isDragging,
@@ -336,7 +336,11 @@ function MainContent() {
 
 export default function App() {
   return (
-    <PopoverProvider resolveData={dummyResolver} initialContext="game-client">
+    <PopoverProvider
+      resolveData={dummyResolver}
+      initialContext="game-client"
+      clickOutside={{ enabled: true, ignoreClass: 'btn-trigger' }}
+    >
       <MainContent />
     </PopoverProvider>
   )

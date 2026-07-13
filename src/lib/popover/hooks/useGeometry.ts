@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo, type RefObject } from 'react'
 import { useFloating, offset, flip, shift } from '@floating-ui/react'
-import type { TrailEntry } from '../types'
+import type { TrailEntry, PopoverPlacement } from '../types'
 
 interface UsePopoverGeometryOptions {
   id: string
   anchorRect?: DOMRect
-  direction: 'up' | 'down'
+  placement?: PopoverPlacement
   zIndex: number
   onPosition?: () => void
   ref: RefObject<HTMLDivElement | null>
@@ -17,7 +17,7 @@ interface UsePopoverGeometryOptions {
 export function usePopoverGeometry({
   id,
   anchorRect,
-  direction,
+  placement,
   zIndex,
   onPosition,
   ref,
@@ -37,10 +37,10 @@ export function usePopoverGeometry({
 
   // 2. Configure useFloating positioning middleware
   const { refs, x, y, update } = useFloating({
-    placement: direction === 'down' ? 'bottom' : 'top',
+    placement: placement ?? 'bottom',
     middleware: [
       offset(8), // Gap distance from trigger
-      flip({ fallbackPlacements: direction === 'down' ? ['top'] : ['bottom'] }), // Collision fallback
+      flip(), // Collision fallback (automatically flips opposite)
       shift({ padding: 12 }), // Keep within viewport margins
     ],
   })
@@ -82,7 +82,7 @@ export function usePopoverGeometry({
   // 5. Force updates when specific inputs change
   useEffect(() => {
     void update()
-  }, [id, anchorRect, direction, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update])
+  }, [id, anchorRect, placement, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update])
 
   // 6. Calculate the final coordinates
   const finalLayoutPos = useMemo(() => {

@@ -98,3 +98,22 @@ export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, 
       'setContext' | 'setOwnerId' | 'openRoot' | 'pushNested'
     >
   }
+
+export type PopoverPlacement =
+  | 'top'
+  | 'bottom'
+  | 'left'
+  | 'right'
+  | 'top-start'
+  | 'top-end'
+  | 'bottom-start'
+  | 'bottom-end'
+  | 'right-start'
+  | 'right-end'
+  | 'left-start'
+  | 'left-end'
+
+export interface ClickOutsideConfig {
+  enabled?: boolean
+  ignoreClass?: string
+}

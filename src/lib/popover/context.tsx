@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, useMemo, type ReactNode } from 'react'
+/* eslint-disable react/only-export-components */
+import { createContext, useContext, useState, useMemo, useEffect, type ReactNode } from 'react'
 import { useStore } from 'zustand'
 import type { StoreApi } from 'zustand/vanilla'
 import { createPopoverStore } from './store'
-import type { PopoverStore, PopoverResolver } from './types'
+import type { PopoverStore, PopoverResolver, ClickOutsideConfig } from './types'
 
 // Instantiate context with any-typed store as fallback
 export const PopoverStoreContext = createContext<StoreApi<PopoverStore<any, any>> | null>(null)
@@ -11,6 +12,7 @@ export interface PopoverProviderProps<TData = any, TContext = any> {
   children: ReactNode
   resolveData: PopoverResolver<TData, TContext>
   initialContext?: TContext
+  clickOutside?: ClickOutsideConfig
 }
 
 /**
@@ -20,9 +22,43 @@ export function PopoverProvider<TData = any, TContext = any>({
   children,
   resolveData,
   initialContext,
+  clickOutside,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() => createPopoverStore<TData, TContext>(resolveData, initialContext))
+
+  // Setup click outside logic if enabled
+  useEffect(() => {
+    if (!clickOutside?.enabled) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const state = store.getState()
+      
+      if (state.trail.length === 0) return
+
+      // If click target is inside any active popover card, ignore
+      if (target.closest('.popover-card')) {
+        return
+      }
+
+      // If click target has the ignoreClass, ignore
+      if (clickOutside.ignoreClass && target.closest(`.${clickOutside.ignoreClass}`)) {
+        return
+      }
+
+      // If click target is the anchor element itself, ignore
+      if (state.anchorElement && state.anchorElement.contains(target)) {
+        return
+      }
+
+      // Click is outside, clear the active trail!
+      state.clearTrail()
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [clickOutside, store])
 
   return (
     <PopoverStoreContext.Provider value={store as any}>

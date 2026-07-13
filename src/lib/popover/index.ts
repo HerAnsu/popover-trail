@@ -4,6 +4,8 @@ export type {
   PopoverStateData,
   PopoverActions,
   PopoverStore,
+  PopoverPlacement,
+  ClickOutsideConfig,
 } from './types'
 
 export { createPopoverStore } from './store'
