@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import FocusLock from 'react-focus-lock'
+import clsx from 'clsx'
 import {
   DndContext,
   type DragEndEvent,
@@ -18,6 +19,7 @@ import {
   usePopoverGeometry,
   usePopoverDragAndDrop,
   usePopoverKeyboard,
+  getPopoverStyles,
   type PopoverResolver,
   type TrailEntry,
 } from './lib/popover'
@@ -125,14 +127,15 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
     }
   }
 
-  // Calculate rendering transform style
-  const style = {
-    position: 'absolute' as const,
-    top: finalLayoutPos.top,
-    left: finalLayoutPos.left,
-    transform: `translate(${dragX + offset.x}px, ${dragY + offset.y}px) rotate(${rotation}deg)`,
+  // Compile positioning styles using the library utility
+  const style = getPopoverStyles({
+    finalLayoutPos,
+    offset,
+    dragX,
+    dragY,
+    rotation,
     zIndex: zIndex + 1000,
-  }
+  })
 
   const setCombinedRef = (node: HTMLDivElement | null) => {
     setNodeRef(node)
@@ -143,7 +146,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
     <div
       ref={setCombinedRef}
       style={style}
-      className={`popover-card ${isTop ? 'topmost' : ''}`}
+      className={clsx('popover-card', isTop && 'topmost', isPinned && 'pinned')}
       onMouseDown={() => bringToFront(entry.key)}
     >
       <FocusLock disabled={!isTop} returnFocus>
