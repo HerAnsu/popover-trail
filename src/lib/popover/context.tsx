@@ -29,8 +29,11 @@ export function PopoverProvider<TData = any, TContext = any>({
   const [store] = useState(() => createPopoverStore<TData, TContext>(resolveData, initialContext))
 
   // Setup click outside logic if enabled
+  const enabled = clickOutside?.enabled
+  const ignoreClass = clickOutside?.ignoreClass
+
   useEffect(() => {
-    if (!clickOutside?.enabled) return
+    if (!enabled) return
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement
@@ -44,7 +47,7 @@ export function PopoverProvider<TData = any, TContext = any>({
       }
 
       // If click target has the ignoreClass, ignore
-      if (clickOutside.ignoreClass && target.closest(`.${clickOutside.ignoreClass}`)) {
+      if (ignoreClass && target.closest(`.${ignoreClass}`)) {
         return
       }
 
@@ -59,7 +62,7 @@ export function PopoverProvider<TData = any, TContext = any>({
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [clickOutside, store])
+  }, [enabled, ignoreClass, store])
 
   return (
     <PopoverStoreContext.Provider value={store as any}>

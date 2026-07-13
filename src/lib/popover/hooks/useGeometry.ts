@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, type RefObject } from 'react'
-import { useFloating, offset, flip, shift } from '@floating-ui/react'
+import { useEffect, useMemo, type RefObject } from 'react'
+import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react'
 import type { TrailEntry, PopoverPlacement } from '../types'
 
 interface UsePopoverGeometryOptions {
@@ -7,26 +7,26 @@ interface UsePopoverGeometryOptions {
   anchorRect?: DOMRect
   placement?: PopoverPlacement
   zIndex: number
-  onPosition?: () => void
   ref: RefObject<HTMLDivElement | null>
   isDragging: boolean
   isPinned: boolean
   entry?: TrailEntry
 }
 
+/**
+ * Hook to compute coordinates positioning relative to anchor rect.
+ * Integrates with Floating UI autoUpdate for dynamic scrolls/resizes.
+ */
 export function usePopoverGeometry({
   id,
   anchorRect,
   placement,
   zIndex,
-  onPosition,
   ref,
   isDragging,
   isPinned,
   entry,
 }: UsePopoverGeometryOptions) {
-  const [resizeVersion, setResizeVersion] = useState(0)
-
   // 1. Setup a virtual element for Floating UI positioning using the anchor DOMRect
   const virtualElement = useMemo(() => {
     if (!anchorRect) return null
@@ -35,9 +35,10 @@ export function usePopoverGeometry({
     }
   }, [anchorRect])
 
-  // 2. Configure useFloating positioning middleware
+  // 2. Configure useFloating positioning middleware with autoUpdate
   const { refs, x, y, update } = useFloating({
     placement: placement ?? 'bottom',
+    whileElementsMounted: autoUpdate, // Native tracking of resize, scroll, and layout shifts
     middleware: [
       offset(8), // Gap distance from trigger
       flip(), // Collision fallback (automatically flips opposite)
@@ -58,33 +59,12 @@ export function usePopoverGeometry({
     }
   }, [ref, refs])
 
-  // 4. Update positioning on size/resize changes using standard ResizeObserver
-  useEffect(() => {
-    if (!ref.current) return
-    const currentRef = ref.current
-
-    const observer = new ResizeObserver(() => {
-      setResizeVersion((v) => v + 1)
-      void update()
-      if (onPosition) onPosition()
-    })
-
-    observer.observe(currentRef)
-    window.addEventListener('resize', update)
-
-    return () => {
-      observer.unobserve(currentRef)
-      observer.disconnect()
-      window.removeEventListener('resize', update)
-    }
-  }, [ref, update, onPosition])
-
-  // 5. Force updates when specific inputs change
+  // 4. Force updates when specific inputs change
   useEffect(() => {
     void update()
   }, [id, anchorRect, placement, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update])
 
-  // 6. Calculate the final coordinates
+  // 5. Calculate the final coordinates
   const finalLayoutPos = useMemo(() => {
     if (isPinned && entry?.pinnedLayoutPos) {
       return entry.pinnedLayoutPos
@@ -100,6 +80,5 @@ export function usePopoverGeometry({
   return {
     dimensions: { width: ref.current?.offsetWidth ?? 0, height: ref.current?.offsetHeight ?? 0 },
     finalLayoutPos,
-    resizeVersion,
   }
 }
