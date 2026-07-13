@@ -16,6 +16,10 @@ export interface TrailEntry<TData = any> {
   isLoading?: boolean;
   /** Error information if resolution fails. */
   error?: Error | null;
+  /** Original parent key stored to restore hierarchy after unpinning. */
+  originalParentKey?: string;
+  /** Original anchor bounding box stored to restore geometry after unpinning. */
+  originalRect?: DOMRect;
 }
 
 /**

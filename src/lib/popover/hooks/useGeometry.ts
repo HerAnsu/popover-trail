@@ -38,7 +38,7 @@ export function usePopoverGeometry({
   // 2. Configure useFloating positioning middleware with autoUpdate
   const { refs, x, y, update } = useFloating({
     placement: placement ?? "bottom",
-    whileElementsMounted: autoUpdate, // Native tracking of resize, scroll, and layout shifts
+    whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
     middleware: [
       offset(8), // Gap distance from trigger
       flip(), // Collision fallback (automatically flips opposite)
@@ -78,7 +78,6 @@ export function usePopoverGeometry({
   }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex]);
 
   return {
-    dimensions: { width: ref.current?.offsetWidth ?? 0, height: ref.current?.offsetHeight ?? 0 },
     finalLayoutPos,
   };
 }

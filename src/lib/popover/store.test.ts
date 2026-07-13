@@ -271,4 +271,39 @@ describe("createPopoverStore", () => {
     expect(signals[0].aborted).toBe(true);
     expect(signals[1].aborted).toBe(false);
   });
+
+  it("should preserve and restore originalParentKey and originalRect when pinning and unpinning", () => {
+    const store = createPopoverStore(dummyResolver);
+    const rootEntry: TrailEntry = { key: "root-item", rect: new DOMRect(10, 20, 100, 200), isLoading: false };
+    const childEntry: TrailEntry = { key: "child-item", parentKey: "root-item", rect: new DOMRect(30, 40, 100, 200), isLoading: false };
+
+    store.getState().openRoot("owner-1", rootEntry);
+    store.getState().pushNested(0, childEntry);
+
+    // Verify parentKey and rect are present
+    let state = store.getState();
+    expect(state.trail[1].key).toBe("child-item");
+    expect(state.trail[1].parentKey).toBe("root-item");
+    expect(state.trail[1].rect?.top).toBe(40);
+
+    // Pin the child popover
+    store.getState().togglePin("child-item", new DOMRect(500, 600, 150, 250));
+
+    state = store.getState();
+    const pinnedEntry = state.floating.find((e) => e.key === "child-item");
+    expect(pinnedEntry).toBeDefined();
+    expect(pinnedEntry?.parentKey).toBeUndefined(); // Detached while pinned
+    expect(pinnedEntry?.rect?.top).toBe(600); // Updated to card rect
+    expect(pinnedEntry?.originalParentKey).toBe("root-item"); // Preserved
+    expect(pinnedEntry?.originalRect?.top).toBe(40); // Preserved
+
+    // Unpin the child popover
+    store.getState().togglePin("child-item");
+
+    state = store.getState();
+    const restoredEntry = state.trail.find((e) => e.key === "child-item");
+    expect(restoredEntry).toBeDefined();
+    expect(restoredEntry?.parentKey).toBe("root-item"); // Restored!
+    expect(restoredEntry?.rect?.top).toBe(40); // Restored!
+  });
 });

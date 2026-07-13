@@ -234,8 +234,12 @@ function openRootState<TData, TContext>(
   if (hasFloating) {
     return bringToFrontPatch(state, entry.key);
   }
+  const nextEntry = {
+    ...entry,
+    originalRect: entry.originalRect ?? entry.rect,
+  };
   const isSameOwner = state.ownerId === ownerId;
-  const nextTrail = isSameOwner ? [...state.trail, entry] : [entry];
+  const nextTrail = isSameOwner ? [...state.trail, nextEntry] : [nextEntry];
 
   const activeKeys = new Set<string>();
   state.floating.forEach((e) => activeKeys.add(e.key));
@@ -264,15 +268,20 @@ function pushNestedState<TData, TContext>(
 
   const isFloating = index < state.floating.length;
   let nextTrail: TrailEntry<TData>[];
+  const finalEntry = {
+    ...entry,
+    originalParentKey: entry.originalParentKey ?? entry.parentKey,
+    originalRect: entry.originalRect ?? entry.rect,
+  };
+
   if (isFloating) {
     const floatingEntry = state.floating[index];
     if (floatingEntry.key === entry.key) return {};
-    nextTrail = [entry];
+    nextTrail = [finalEntry];
   } else {
     const trailIndex = index - state.floating.length;
     const parentEntry = state.trail[trailIndex];
     if (parentEntry.key === entry.key) return {};
-    const finalEntry = { ...entry };
     if (finalEntry.parentKey === finalEntry.key) {
       finalEntry.parentKey = undefined;
     }
@@ -330,6 +339,8 @@ function togglePinState<TData, TContext>(
     if (entry) {
       nextTrail.push({
         ...entry,
+        rect: entry.originalRect ?? entry.rect,
+        parentKey: entry.originalParentKey ?? entry.parentKey,
         pinnedLayoutPos: undefined,
       });
     }
