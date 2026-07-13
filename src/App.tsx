@@ -15,73 +15,147 @@ import {
   type TrailEntry,
 } from "./lib/popover";
 
-// Define the shape of our resolved data
-interface DummyData {
+// Math Expression tree data shape
+interface MathData {
   title: string;
-  description: string;
-  nextItems: string[];
+  expression: string;
+  value: number;
+  operator: string | null; // e.g. "+", "-", "*", "/", "^", or null for leaf numbers
+  leftExpr?: string;
+  rightExpr?: string;
 }
 
-// 1. Simulating asynchronous network resolution of popover data
-const dummyResolver: PopoverResolver<DummyData, string> = async (keyOrName) => {
-  await new Promise((resolve) => setTimeout(resolve, 800)); // delay for realistic loading spinner
+// Helper parser to recursively dissect math expressions
+function parseExpression(expr: string): MathData {
+  expr = expr.trim();
 
-  const database: Record<string, DummyData> = {
-    "skill-teleport": {
-      title: "Телепортация",
-      description:
-        "Мгновенно перемещает персонажа в указанную точку в пределах прямой видимости. Расходует 15 маны.",
-      nextItems: ["modifier-range", "modifier-speed"],
-    },
-    "modifier-range": {
-      title: "Увеличение дальности",
-      description:
-        "Увеличивает максимальную дистанцию телепортации на 25%. Требует 2-й уровень магии.",
-      nextItems: ["synergy-blink"],
-    },
-    "modifier-speed": {
-      title: "Быстрый каст",
-      description:
-        "Сокращает время подготовки телепортации на 0.2 секунды. Позволяет уклоняться от летящих снарядов.",
-      nextItems: [],
-    },
-    "synergy-blink": {
-      title: "Синергия: Блинк",
-      description:
-        "После телепортации оставляет на старом месте иллюзию, отвлекающую врагов на 1.5 секунды.",
-      nextItems: [],
-    },
-    "item-sword": {
-      title: "Меч бесконечности",
-      description:
-        "Легендарное оружие, выкованное в пламени древней звезды. Увеличивает физический урон на 80.",
-      nextItems: ["stat-crit", "stat-lifesteal"],
-    },
-    "stat-crit": {
-      title: "Шанс крита +15%",
-      description:
-        "Критические удары наносят 200% урона и накладывают кратковременное кровотечение.",
-      nextItems: [],
-    },
-    "stat-lifesteal": {
-      title: "Вампиризм +8%",
-      description: "Восстанавливает здоровье в размере процента от нанесенного урона.",
-      nextItems: [],
-    },
-  };
-
-  return (
-    database[keyOrName] || {
-      title: `Элемент: ${keyOrName}`,
-      description: "Сведения об этом объекте отсутствуют в базе данных.",
-      nextItems: [],
+  // Strip wrapping parentheses if they wrap the entire expression (e.g. "(3 + 5)" -> "3 + 5")
+  let cleaned = expr;
+  while (cleaned.startsWith("(") && cleaned.endsWith(")")) {
+    let depth = 0;
+    let balanceMatch = true;
+    for (let i = 0; i < cleaned.length - 1; i++) {
+      if (cleaned[i] === "(") depth++;
+      if (cleaned[i] === ")") depth--;
+      if (depth === 0) {
+        balanceMatch = false;
+        break;
+      }
     }
-  );
+    if (balanceMatch) {
+      cleaned = cleaned.slice(1, -1).trim();
+    } else {
+      break;
+    }
+  }
+
+  // Find lowest precedence operator (+ and - first, then * and /, then ^) outside of parens
+  let opIndex = -1;
+  let opType: string | null = null;
+  let depth = 0;
+
+  // Scan backwards for + and -
+  for (let i = cleaned.length - 1; i >= 0; i--) {
+    const char = cleaned[i];
+    if (char === ")") depth++;
+    if (char === "(") depth--;
+    if (depth === 0) {
+      if (char === "+" || char === "-") {
+        opIndex = i;
+        opType = char;
+        break;
+      }
+    }
+  }
+
+  // Scan backwards for * and /
+  if (opIndex === -1) {
+    depth = 0;
+    for (let i = cleaned.length - 1; i >= 0; i--) {
+      const char = cleaned[i];
+      if (char === ")") depth++;
+      if (char === "(") depth--;
+      if (depth === 0) {
+        if (char === "*" || char === "/") {
+          opIndex = i;
+          opType = char;
+          break;
+        }
+      }
+    }
+  }
+
+  // Scan backwards for ^
+  if (opIndex === -1) {
+    depth = 0;
+    for (let i = cleaned.length - 1; i >= 0; i--) {
+      const char = cleaned[i];
+      if (char === ")") depth++;
+      if (char === "(") depth--;
+      if (depth === 0) {
+        if (char === "^") {
+          opIndex = i;
+          opType = char;
+          break;
+        }
+      }
+    }
+  }
+
+  if (opIndex !== -1 && opType) {
+    const leftStr = cleaned.slice(0, opIndex).trim();
+    const rightStr = cleaned.slice(opIndex + 1).trim();
+
+    const leftParsed = parseExpression(leftStr);
+    const rightParsed = parseExpression(rightStr);
+
+    let value = 0;
+    let opName = "";
+    if (opType === "+") {
+      value = leftParsed.value + rightParsed.value;
+      opName = "Addition (+)";
+    } else if (opType === "-") {
+      value = leftParsed.value - rightParsed.value;
+      opName = "Subtraction (-)";
+    } else if (opType === "*") {
+      value = leftParsed.value * rightParsed.value;
+      opName = "Multiplication (*)";
+    } else if (opType === "/") {
+      value = rightParsed.value !== 0 ? leftParsed.value / rightParsed.value : 0;
+      opName = "Division (/)";
+    } else if (opType === "^") {
+      value = leftParsed.value ** rightParsed.value;
+      opName = "Exponentiation (^)";
+    }
+
+    return {
+      title: opName,
+      expression: expr,
+      value,
+      operator: opType,
+      leftExpr: leftStr,
+      rightExpr: rightStr,
+    };
+  }
+
+  // Leaf node
+  const num = parseFloat(cleaned) || 0;
+  return {
+    title: `Value: ${num}`,
+    expression: expr,
+    value: num,
+    operator: null,
+  };
+}
+
+// Simulating network loading delay for expression resolution
+const mathResolver: PopoverResolver<MathData, string> = async (keyOrName) => {
+  await new Promise((resolve) => setTimeout(resolve, 600)); // 600ms latency simulation
+  return parseExpression(keyOrName);
 };
 
-// 2. Individual Popover component wrapping geometry and DND hooks
 interface PopoverCardProps {
-  entry: TrailEntry<DummyData>;
+  entry: TrailEntry<MathData>;
   index: number;
   isPinned: boolean;
 }
@@ -105,7 +179,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
       <FocusLock disabled={!isTop} returnFocus>
         <div className="popover-header" {...dragHandleProps}>
           <span className="popover-title">
-            {entry.isLoading ? "Загрузка..." : entry.data?.title}
+            {entry.isLoading ? "Evaluating..." : entry.data?.title}
           </span>
           <div className="popover-actions">
             <button
@@ -114,7 +188,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               className="btn-action"
-              title={isPinned ? "Открепить поповер" : "Приколоть поповер"}
+              title={isPinned ? "Unpin popover" : "Pin popover"}
             >
               {isPinned ? "📌" : "📍"}
             </button>
@@ -124,7 +198,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               className="btn-action"
-              title="Закрыть"
+              title="Close"
             >
               ✕
             </button>
@@ -135,37 +209,60 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
           {entry.isLoading ? (
             <div className="spinner-container">
               <div className="spinner" />
-              <span>Получение данных...</span>
+              <span>Parsing expression...</span>
             </div>
           ) : entry.error ? (
             <div style={{ color: "#ef4444" }}>
-              <strong>Ошибка:</strong> {entry.error.message}
+              <strong>Error:</strong> {entry.error.message}
             </div>
           ) : (
             <div>
-              <p>{entry.data?.description}</p>
-              {entry.data?.nextItems && entry.data.nextItems.length > 0 && (
-                <div className="popover-links">
+              <div className="math-expression-display" style={{ marginBottom: "0.8rem" }}>
+                <span className="math-label">Expression:</span>
+                <code className="math-code">{entry.data?.expression}</code>
+                <div className="math-result" style={{ marginTop: "0.4rem", fontWeight: 700 }}>
+                  Result = <span className="math-value">{entry.data?.value}</span>
+                </div>
+              </div>
+
+              {entry.data?.operator && (
+                <div
+                  className="popover-links"
+                  style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
+                >
                   <span
                     style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-primary)" }}
                   >
-                    Вложенные связи:
+                    Drill down operands:
                   </span>
-                  {entry.data.nextItems.map((nextKey) => (
+                  {entry.data.leftExpr && (
                     <button
-                      key={nextKey}
                       type="button"
                       className="btn-link"
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        void actions.openNestedWithResolver(nextKey, entry.key, {
+                        void actions.openNestedWithResolver(entry.data!.leftExpr!, entry.key, {
                           triggerRect: rect,
                         });
                       }}
                     >
-                      🔗 {nextKey.replace("modifier-", "").replace("stat-", "")}
+                      👈 Left: {entry.data.leftExpr}
                     </button>
-                  ))}
+                  )}
+                  {entry.data.rightExpr && (
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        void actions.openNestedWithResolver(entry.data!.rightExpr!, entry.key, {
+                          triggerRect: rect,
+                        });
+                      }}
+                    >
+                      👉 Right: {entry.data.rightExpr}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -176,12 +273,11 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
   );
 }
 
-// 3. Canvas rendering portals for active popovers (floating + trail)
 function PopoverCanvas() {
-  const trail = usePopoverTrail<DummyData>();
-  const floating = usePopoverFloating<DummyData>();
+  const trail = usePopoverTrail<MathData>();
+  const floating = usePopoverFloating<MathData>();
   const offsets = usePopoverOffsets();
-  const { updateOffset, bringToFront } = usePopoverActions<DummyData>();
+  const { updateOffset, bringToFront } = usePopoverActions<MathData>();
 
   const handleDragStart = (event: DragStartEvent) => {
     bringToFront(event.active.id as string);
@@ -194,10 +290,9 @@ function PopoverCanvas() {
     updateOffset(key, currentOffset.x + delta.x, currentOffset.y + delta.y);
   };
 
-  // Combine floating and trail lists for the canvas mapping
   const activeEntries = [
-    ...floating.map((entry: TrailEntry<DummyData>) => ({ entry, isPinned: true })),
-    ...trail.map((entry: TrailEntry<DummyData>) => ({ entry, isPinned: false })),
+    ...floating.map((entry: TrailEntry<MathData>) => ({ entry, isPinned: true })),
+    ...trail.map((entry: TrailEntry<MathData>) => ({ entry, isPinned: false })),
   ];
 
   return (
@@ -217,34 +312,46 @@ function PopoverCanvas() {
   );
 }
 
-// 4. Main App layout
 function MainContent() {
   usePopoverKeyboard();
-  const { clear } = usePopoverActions<DummyData>();
+  const { clear } = usePopoverActions<MathData>();
   const trail = usePopoverTrail();
   const floating = usePopoverFloating();
 
-  const teleportTriggerProps = usePopoverTrigger("skill-teleport");
-  const swordTriggerProps = usePopoverTrigger("item-sword");
+  const trig1 = usePopoverTrigger("2 * (3 + (15 / 5))");
+  const trig2 = usePopoverTrigger("(4 ^ 2) - (2 * (5 + 1))");
+  const trig3 = usePopoverTrigger("100 / (2 * (3 + (4 - 2)))");
 
   const totalActive = trail.length + floating.length;
 
   return (
     <div className="playground-container">
       <div className="header">
-        <h1>Popover Trail</h1>
+        <h1>Popover Math Trail</h1>
         <p>
-          Универсальная headless-библиотека поповеров. Поддерживает бесконечную вложенность, ленивую
-          подгрузку связей, прикрепление и свободное перетаскивание с физикой наклона.
+          Headless React Popover Trail engine. Inspect nested mathematical operations. Drill down
+          into left/right operands recursively, pin nodes, and drag them around.
         </p>
       </div>
 
-      <div className="trigger-zone">
-        <button type="button" className="btn-trigger" {...teleportTriggerProps}>
-          🪄 Скилл: Телепортация
+      <div
+        className="trigger-zone"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.8rem",
+          width: "100%",
+          maxWidth: "480px",
+        }}
+      >
+        <button type="button" className="btn-trigger" {...trig1} style={{ textAlign: "left" }}>
+          🧮 Compute: 2 * (3 + (15 / 5))
         </button>
-        <button type="button" className="btn-trigger" {...swordTriggerProps}>
-          ⚔️ Предмет: Меч бесконечности
+        <button type="button" className="btn-trigger" {...trig2} style={{ textAlign: "left" }}>
+          🧮 Compute: (4 ^ 2) - (2 * (5 + 1))
+        </button>
+        <button type="button" className="btn-trigger" {...trig3} style={{ textAlign: "left" }}>
+          🧮 Compute: 100 / (2 * (3 + (4 - 2)))
         </button>
       </div>
 
@@ -261,6 +368,7 @@ function MainContent() {
             cursor: "pointer",
             fontWeight: 600,
             transition: "all 0.2s",
+            marginTop: "1rem",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "#ef4444";
@@ -271,11 +379,10 @@ function MainContent() {
             e.currentTarget.style.color = "#ef4444";
           }}
         >
-          Сбросить все окна
+          Reset All Popovers
         </button>
       )}
 
-      {/* Render popovers canvas inside body portal */}
       <PopoverPortal>
         <PopoverCanvas />
       </PopoverPortal>
@@ -286,8 +393,8 @@ function MainContent() {
 export default function App() {
   return (
     <PopoverProvider
-      resolveData={dummyResolver}
-      initialContext="game-client"
+      resolveData={mathResolver}
+      initialContext="math-client"
       clickOutside={{ enabled: true, ignoreClass: "btn-trigger" }}
     >
       <MainContent />
