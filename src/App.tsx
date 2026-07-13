@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import FocusLock from 'react-focus-lock'
 import {
   DndContext,
   type DragEndEvent,
@@ -143,64 +144,66 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
       style={style}
       className={`popover-card ${isTop ? 'topmost' : ''}`}
     >
-      <div className="popover-header" {...attributes} {...listeners}>
-        <span className="popover-title">{entry.isLoading ? 'Загрузка...' : entry.data?.title}</span>
-        <div className="popover-actions">
-          <button
-            type="button"
-            onClick={handlePinToggle}
-            className="btn-action"
-            title={isPinned ? 'Открепить поповер' : 'Приколоть поповер'}
-          >
-            {isPinned ? '📌' : '📍'}
-          </button>
-          <button
-            type="button"
-            onClick={() => closeFrom(index)}
-            className="btn-action"
-            title="Закрыть"
-          >
-            ✕
-          </button>
+      <FocusLock disabled={!isTop} returnFocus>
+        <div className="popover-header" {...attributes} {...listeners}>
+          <span className="popover-title">{entry.isLoading ? 'Загрузка...' : entry.data?.title}</span>
+          <div className="popover-actions">
+            <button
+              type="button"
+              onClick={handlePinToggle}
+              className="btn-action"
+              title={isPinned ? 'Открепить поповер' : 'Приколоть поповер'}
+            >
+              {isPinned ? '📌' : '📍'}
+            </button>
+            <button
+              type="button"
+              onClick={() => closeFrom(index)}
+              className="btn-action"
+              title="Закрыть"
+            >
+              ✕
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="popover-body">
-        {entry.isLoading ? (
-          <div className="spinner-container">
-            <div className="spinner"></div>
-            <span>Получение данных...</span>
-          </div>
-        ) : entry.error ? (
-          <div style={{ color: '#ef4444' }}>
-            <strong>Ошибка:</strong> {entry.error.message}
-          </div>
-        ) : (
-          <div>
-            <p>{entry.data?.description}</p>
-            {entry.data?.nextItems && entry.data.nextItems.length > 0 && (
-              <div className="popover-links">
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  Вложенные связи:
-                </span>
-                {entry.data.nextItems.map((nextKey) => (
-                  <button
-                    key={nextKey}
-                    type="button"
-                    className="btn-link"
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect()
-                      void openNestedWithResolver(nextKey, entry.key, rect)
-                    }}
-                  >
-                    🔗 {nextKey.replace('modifier-', '').replace('stat-', '')}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        <div className="popover-body">
+          {entry.isLoading ? (
+            <div className="spinner-container">
+              <div className="spinner"></div>
+              <span>Получение данных...</span>
+            </div>
+          ) : entry.error ? (
+            <div style={{ color: '#ef4444' }}>
+              <strong>Ошибка:</strong> {entry.error.message}
+            </div>
+          ) : (
+            <div>
+              <p>{entry.data?.description}</p>
+              {entry.data?.nextItems && entry.data.nextItems.length > 0 && (
+                <div className="popover-links">
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Вложенные связи:
+                  </span>
+                  {entry.data.nextItems.map((nextKey) => (
+                    <button
+                      key={nextKey}
+                      type="button"
+                      className="btn-link"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        void openNestedWithResolver(nextKey, entry.key, rect)
+                      }}
+                    >
+                      🔗 {nextKey.replace('modifier-', '').replace('stat-', '')}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </FocusLock>
     </div>
   )
 }

@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useState, type RefObject } from 'react'
-import { calculateBasePosition } from '../utils/layout'
+import { useEffect, useState, useMemo, type RefObject } from 'react'
+import { useFloating, offset, flip, shift } from '@floating-ui/react'
 import type { TrailEntry } from '../types'
 
 interface UsePopoverGeometryOptions {
@@ -25,106 +25,80 @@ export function usePopoverGeometry({
   isPinned,
   entry,
 }: UsePopoverGeometryOptions) {
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
   const [resizeVersion, setResizeVersion] = useState(0)
-  const [layoutPos, setLayoutPos] = useState({ top: 0, left: -9999 })
+
+  // 1. Setup a virtual element for Floating UI positioning using the anchor DOMRect
+  const virtualElement = useMemo(() => {
+    if (!anchorRect) return null
+    return {
+      getBoundingClientRect: () => anchorRect,
+    }
+  }, [anchorRect])
+
+  // 2. Configure useFloating positioning middleware
+  const { refs, x, y, update } = useFloating({
+    placement: direction === 'down' ? 'bottom' : 'top',
+    middleware: [
+      offset(8), // Gap distance from trigger
+      flip({ fallbackPlacements: direction === 'down' ? ['top'] : ['bottom'] }), // Collision fallback
+      shift({ padding: 12 }), // Keep within viewport margins
+    ],
+  })
+
+  // 3. Keep references synced
+  useEffect(() => {
+    if (virtualElement) {
+      refs.setReference(virtualElement)
+    }
+  }, [virtualElement, refs])
 
   useEffect(() => {
-    const handleResize = () => {
-      setResizeVersion((v) => v + 1)
+    if (ref.current) {
+      refs.setFloating(ref.current)
     }
-    window.addEventListener('resize', handleResize)
+  }, [ref, refs])
 
-    let observer: ResizeObserver | undefined
+  // 4. Update positioning on size/resize changes using standard ResizeObserver
+  useEffect(() => {
+    if (!ref.current) return
     const currentRef = ref.current
 
-    if (typeof ResizeObserver !== 'undefined' && currentRef) {
-      observer = new ResizeObserver((entries) => {
-        for (const resizeEntry of entries) {
-          const { width, height } = resizeEntry.contentRect
-          setDimensions((prev) => {
-            if (prev.width === width && prev.height === height) {
-              return prev
-            }
-            setResizeVersion((v) => v + 1)
-            return { width, height }
-          })
-        }
-      })
-      observer.observe(currentRef)
-    }
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      if (observer && currentRef) {
-        observer.unobserve(currentRef)
-      }
-      observer?.disconnect()
-    }
-  }, [ref])
-
-  const finalLayoutPos = isPinned && entry?.pinnedLayoutPos ? entry.pinnedLayoutPos : layoutPos
-
-  useLayoutEffect(() => {
-    if (isDragging) return
-    if (!ref.current) return
-
-    const el = ref.current
-    const rect = el.getBoundingClientRect()
-    const popoverWidth = dimensions.width || rect.width
-    const popoverHeight = dimensions.height || rect.height
-
-    let baseTop = 0
-    let baseLeft = 0
-
-    if (isPinned && entry?.pinnedLayoutPos) {
-      baseTop = entry.pinnedLayoutPos.top
-      baseLeft = entry.pinnedLayoutPos.left
-    } else if (anchorRect) {
-      const basePos = calculateBasePosition({
-        anchorRect,
-        popoverWidth,
-        popoverHeight,
-        direction,
-        zIndex,
-        viewport: { width: window.innerWidth, height: window.innerHeight },
-        gap: 8,
-        margin: 12,
-      })
-      baseTop = basePos.top
-      baseLeft = basePos.left
-    } else {
-      // Fallback centering if no anchor is set
-      baseTop = (window.innerHeight - popoverHeight) / 2
-      baseLeft = (window.innerWidth - popoverWidth) / 2
-    }
-
-    setLayoutPos((prev) => {
-      if (prev.top === baseTop && prev.left === baseLeft) {
-        return prev
-      }
-      return { top: baseTop, left: baseLeft }
+    const observer = new ResizeObserver(() => {
+      setResizeVersion((v) => v + 1)
+      void update()
+      if (onPosition) onPosition()
     })
 
-    if (onPosition) {
-      onPosition()
+    observer.observe(currentRef)
+    window.addEventListener('resize', update)
+
+    return () => {
+      observer.unobserve(currentRef)
+      observer.disconnect()
+      window.removeEventListener('resize', update)
     }
-  }, [
-    id,
-    anchorRect,
-    direction,
-    zIndex,
-    isDragging,
-    isPinned,
-    entry?.pinnedLayoutPos,
-    dimensions.width,
-    dimensions.height,
-    resizeVersion,
-    ref,
-  ])
+  }, [ref, update, onPosition])
+
+  // 5. Force updates when specific inputs change
+  useEffect(() => {
+    void update()
+  }, [id, anchorRect, direction, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update])
+
+  // 6. Calculate the final coordinates
+  const finalLayoutPos = useMemo(() => {
+    if (isPinned && entry?.pinnedLayoutPos) {
+      return entry.pinnedLayoutPos
+    }
+    // Add slight horizontal cascade offset based on zIndex/nesting level to improve overlap aesthetics
+    const cascadeOffset = zIndex * 8
+    return {
+      top: y ?? 0,
+      left: (x ?? 0) + cascadeOffset,
+    }
+  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex])
 
   return {
-    dimensions,
+    dimensions: { width: ref.current?.offsetWidth ?? 0, height: ref.current?.offsetHeight ?? 0 },
     finalLayoutPos,
     resizeVersion,
   }

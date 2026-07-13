@@ -1,12 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 import type { PopoverStore, PopoverResolver, TrailEntry, PopoverStateData, PopoverActions } from './types'
-
-/**
- * Checks if a value is a plain object.
- */
-function isRecord(val: unknown): val is Record<string, unknown> {
-  return typeof val === 'object' && val !== null && !Array.isArray(val)
-}
+import equal from 'fast-deep-equal'
 
 /**
  * Filter a record object, retaining only the keys present in the allowed set.
@@ -64,31 +58,6 @@ function hasEntryWithKey(
   key: string
 ): boolean {
   return floating.some((e) => e.key === key) || trail.some((e) => e.key === key)
-}
-
-/**
- * Deep equality helper to verify changes in state values.
- */
-const isDeepEqual = (a: unknown, b: unknown): boolean => {
-  if (a === b) return true
-  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
-    return false
-  }
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false
-    return a.every((val, index) => isDeepEqual(val, b[index]))
-  }
-  if (Array.isArray(a) || Array.isArray(b)) return false
-  if (a instanceof DOMRect && b instanceof DOMRect) {
-    return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height
-  }
-  if (isRecord(a) && isRecord(b)) {
-    const keysA = Object.keys(a)
-    const keysB = Object.keys(b)
-    if (keysA.length !== keysB.length) return false
-    return keysA.every((k) => isDeepEqual(a[k], b[k]))
-  }
-  return false
 }
 
 /**
@@ -401,7 +370,7 @@ export function createPopoverStore<TData = any, TContext = any>(
   return createStore<PopoverStore<TData, TContext>>((set, get) => {
     const actions: PopoverActions<TData, TContext> = {
       setContext: (context) => {
-        if (!isDeepEqual(get().context, context)) {
+        if (!equal(get().context, context)) {
           set({ context })
         }
       },
