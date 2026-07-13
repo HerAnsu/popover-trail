@@ -467,8 +467,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       openRootWithResolver: async (keyOrName, anchorEvent, ownerIdOverride) => {
         anchorEvent.stopPropagation()
         const { ownerId, context, rootHydrationRequestCounter } = get()
-        const finalOwnerId = ownerIdOverride ?? ownerId
-        if (!finalOwnerId) return
+        const finalOwnerId = ownerIdOverride ?? ownerId ?? 'default'
 
         const anchorElement = anchorEvent.currentTarget
         const anchorRect = anchorElement.getBoundingClientRect()
