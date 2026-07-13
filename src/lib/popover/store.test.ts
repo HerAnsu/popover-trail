@@ -136,4 +136,68 @@ describe('createPopoverStore', () => {
     expect(state.ownerId).toBeNull()
     expect(state.zIndexOrder).toEqual([])
   })
+
+  it('should ignore stale root hydration responses (prevent race conditions)', async () => {
+    let resolveCallCount = 0
+    const delayResolver = async (_key: string) => {
+      resolveCallCount++
+      const currentCall = resolveCallCount
+      const delayTime = currentCall === 1 ? 50 : 10
+      await new Promise((r) => setTimeout(r, delayTime))
+      return { title: `Resolved Call ${currentCall}` }
+    }
+
+    const store = createPopoverStore(delayResolver)
+    const mockButton1 = {
+      currentTarget: {
+        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200)
+      } as any,
+      stopPropagation: () => {}
+    }
+    const mockButton2 = {
+      currentTarget: {
+        getBoundingClientRect: () => new DOMRect(30, 40, 100, 200)
+      } as any,
+      stopPropagation: () => {}
+    }
+
+    // Trigger first slow request
+    const p1 = store.getState().openRootWithResolver('item-a', mockButton1, 'owner-1')
+    // Trigger second fast request
+    const p2 = store.getState().openRootWithResolver('item-b', mockButton2, 'owner-2')
+
+    await Promise.all([p1, p2])
+
+    const state = store.getState()
+    expect(state.trail).toHaveLength(1)
+    expect(state.trail[0].key).toBe('item-b')
+    expect(state.trail[0].data?.title).toBe('Resolved Call 2')
+  })
+
+  it('should ignore stale nested hydration responses', async () => {
+    let resolveCallCount = 0
+    const delayResolver = async (_key: string) => {
+      resolveCallCount++
+      const currentCall = resolveCallCount
+      const delayTime = currentCall === 1 ? 50 : 10
+      await new Promise((r) => setTimeout(r, delayTime))
+      return { title: `Nested Call ${currentCall}` }
+    }
+
+    const store = createPopoverStore(delayResolver)
+    const rootEntry: TrailEntry = { key: 'root-item', isLoading: false }
+    store.getState().openRoot('owner-1', rootEntry)
+
+    // Trigger nested slow call (parentKey: 'root-item')
+    const p1 = store.getState().openNestedWithResolver('child-a', 'root-item')
+    // Trigger nested fast call
+    const p2 = store.getState().openNestedWithResolver('child-b', 'root-item')
+
+    await Promise.all([p1, p2])
+
+    const state = store.getState()
+    expect(state.trail).toHaveLength(2)
+    expect(state.trail[1].key).toBe('child-b')
+    expect(state.trail[1].data?.title).toBe('Nested Call 2')
+  })
 })
