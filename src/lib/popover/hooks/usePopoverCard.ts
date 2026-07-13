@@ -78,12 +78,11 @@ export function usePopoverCard({
   });
 
   // 3. Geometry positioning setup
-  const { finalLayoutPos } = usePopoverGeometry({
+  const { finalLayoutPos, setFloating } = usePopoverGeometry({
     id: entry.key,
     anchorRect: entry.rect,
     placement,
     zIndex: index,
-    ref,
     isDragging: enableDrag ? isDragging : false,
     isPinned,
     entry,
@@ -110,9 +109,10 @@ export function usePopoverCard({
       if (enableDrag) {
         setNodeRef(node);
       }
+      setFloating(node);
       ref.current = node;
     },
-    [enableDrag, setNodeRef],
+    [enableDrag, setNodeRef, setFloating],
   );
 
   const handlePinToggle = useCallback(() => {

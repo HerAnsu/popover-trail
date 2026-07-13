@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type RefObject } from "react";
+import { useEffect, useMemo } from "react";
 import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react";
 import type { TrailEntry, PopoverPlacement } from "../types";
 
@@ -7,7 +7,6 @@ interface UsePopoverGeometryOptions {
   anchorRect?: DOMRect;
   placement?: PopoverPlacement;
   zIndex: number;
-  ref: RefObject<HTMLDivElement | null>;
   isDragging: boolean;
   isPinned: boolean;
   entry?: TrailEntry;
@@ -22,7 +21,6 @@ export function usePopoverGeometry({
   anchorRect,
   placement,
   zIndex,
-  ref,
   isDragging,
   isPinned,
   entry,
@@ -46,18 +44,10 @@ export function usePopoverGeometry({
     ],
   });
 
-  // 3. Keep references synced
+  // 3. Keep references synced (accepts null safely if virtualElement unmounts)
   useEffect(() => {
-    if (virtualElement) {
-      refs.setReference(virtualElement);
-    }
+    refs.setReference(virtualElement);
   }, [virtualElement, refs]);
-
-  useEffect(() => {
-    if (ref.current) {
-      refs.setFloating(ref.current);
-    }
-  }, [ref, refs]);
 
   // 4. Force updates when specific inputs change
   useEffect(() => {
@@ -79,5 +69,6 @@ export function usePopoverGeometry({
 
   return {
     finalLayoutPos,
+    setFloating: refs.setFloating,
   };
 }
