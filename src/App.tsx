@@ -96,6 +96,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
     <div
       ref={ref}
       style={style}
+      role="dialog"
       className={clsx('popover-card', isTop && 'topmost', isPinned && 'pinned')}
       onMouseDown={() => actions.bringToFront(entry.key)}
     >

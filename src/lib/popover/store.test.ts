@@ -36,7 +36,7 @@ if (typeof globalThis.DOMRect === 'undefined') {
 }
 
 describe('createPopoverStore', () => {
-  const dummyResolver = vi.fn().mockImplementation((key) => {
+  const dummyResolver = vi.fn<(key: string) => any>().mockImplementation((key) => {
     return { title: `Resolved ${key}`, value: 42 }
   })
 
