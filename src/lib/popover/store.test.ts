@@ -307,29 +307,46 @@ describe("createPopoverStore", () => {
     expect(restoredEntry?.rect?.top).toBe(40); // Restored!
   });
 
-  it("should recursively close pinned descendants when parent is closed", () => {
-    const store = createPopoverStore(dummyResolver);
+  it("should NOT close pinned descendants by default when parent is closed, but should do so if configured", () => {
+    // Case 1: Default behavior (do not close pinned descendants)
+    const storeDefault = createPopoverStore(dummyResolver);
     const rootEntry: TrailEntry = { key: "root-item", isLoading: false };
     const childEntry: TrailEntry = { key: "child-item", parentKey: "root-item", isLoading: false };
     const grandchildEntry: TrailEntry = { key: "grandchild-item", parentKey: "child-item", isLoading: false };
 
-    store.getState().openRoot("owner-1", rootEntry);
-    store.getState().pushNested(0, childEntry);
-    store.getState().pushNested(1, grandchildEntry);
+    storeDefault.getState().openRoot("owner-1", rootEntry);
+    storeDefault.getState().pushNested(0, childEntry);
+    storeDefault.getState().pushNested(1, grandchildEntry);
 
     // Pin grandchild
-    store.getState().togglePin("grandchild-item", new DOMRect(500, 600, 150, 250));
+    storeDefault.getState().togglePin("grandchild-item", new DOMRect(500, 600, 150, 250));
 
-    let state = store.getState();
+    let state = storeDefault.getState();
     expect(state.trail).toHaveLength(2); // root, child
     expect(state.floating).toHaveLength(1); // grandchild
 
-    // Close child-item (at index 2 overall since floating has grandchild-item, root-item is at index 1, and child-item is at index 2)
-    store.getState().closeFrom(2);
+    // Close child-item
+    storeDefault.getState().closeFrom(2);
 
-    state = store.getState();
-    expect(state.trail).toHaveLength(1); // only root remains
-    expect(state.trail[0].key).toBe("root-item");
+    state = storeDefault.getState();
+    expect(state.trail).toHaveLength(1); // root remains
+    expect(state.floating).toHaveLength(1); // grandchild remains open because it's pinned!
+
+    // Case 2: Configured behavior (close pinned descendants)
+    const storeClose = createPopoverStore(dummyResolver);
+    storeClose.getState().setClosePinnedDescendants(true);
+    storeClose.getState().openRoot("owner-1", rootEntry);
+    storeClose.getState().pushNested(0, childEntry);
+    storeClose.getState().pushNested(1, grandchildEntry);
+
+    // Pin grandchild
+    storeClose.getState().togglePin("grandchild-item", new DOMRect(500, 600, 150, 250));
+
+    // Close child-item
+    storeClose.getState().closeFrom(2);
+
+    state = storeClose.getState();
+    expect(state.trail).toHaveLength(1); // root remains
     expect(state.floating).toHaveLength(0); // grandchild is recursively closed!
   });
 });

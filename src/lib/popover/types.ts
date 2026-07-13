@@ -55,6 +55,8 @@ export interface PopoverStateData<TData = any, TContext = any> {
   anchorRect: DOMRect | null;
   /** Current external global context values. */
   context: TContext | null;
+  /** Whether to recursively close pinned descendants when parent closes. */
+  closePinnedDescendants: boolean;
 }
 
 export interface PopoverActions<TData = any, TContext = any> {
@@ -98,13 +100,15 @@ export interface PopoverActions<TData = any, TContext = any> {
   retryPopover: (key: string) => Promise<void>;
   /** Lifecycle cleanup: aborts all in-flight requests and resets state. */
   destroy: () => void;
+  /** Set closePinnedDescendants configuration dynamically. */
+  setClosePinnedDescendants: (close: boolean) => void;
 }
 
 export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, TContext> &
   PopoverActions<TData, TContext> & {
     actions: Omit<
       PopoverActions<TData, TContext>,
-      "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy"
+      "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy" | "setClosePinnedDescendants"
     >;
   };
 

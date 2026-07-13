@@ -411,7 +411,11 @@ function closeFromState<TData, TContext>(
   }
 
   // Find all descendants recursively (both pinned and unpinned)
-  const descendants = getAllDescendants(directClosedKeys, state.floating, state.trail);
+  let descendants = getAllDescendants(directClosedKeys, state.floating, state.trail);
+  if (!state.closePinnedDescendants) {
+    const floatingKeys = new Set(state.floating.map((e) => e.key));
+    descendants = new Set([...descendants].filter((key) => !floatingKeys.has(key)));
+  }
   const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
 
   // Clean arrays by filtering out removed keys
@@ -481,7 +485,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       },
 
       closeFrom: (index) => {
-        const { floating, trail } = get();
+        const { floating, trail, closePinnedDescendants } = get();
         const totalCount = floating.length + trail.length;
         if (index >= 0 && index < totalCount) {
           const isFloating = index < floating.length;
@@ -492,7 +496,11 @@ export function createPopoverStore<TData = any, TContext = any>(
             const trailIndex = index - floating.length;
             directClosedKeys = trail.slice(trailIndex).map((e) => e.key);
           }
-          const descendants = getAllDescendants(directClosedKeys, floating, trail);
+          let descendants = getAllDescendants(directClosedKeys, floating, trail);
+          if (!closePinnedDescendants) {
+            const floatingKeys = new Set(floating.map((e) => e.key));
+            descendants = new Set([...descendants].filter((key) => !floatingKeys.has(key)));
+          }
           const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
 
           for (const key of removedKeys) {
@@ -543,9 +551,13 @@ export function createPopoverStore<TData = any, TContext = any>(
           rootController.abort();
           activeControllers.delete("__root__");
         }
-        const { trail, floating, pinnedStates, offsets, zIndexOrder, nestedHydrationRequestCounters } = get();
+        const { trail, floating, pinnedStates, offsets, zIndexOrder, nestedHydrationRequestCounters, closePinnedDescendants } = get();
         const trailKeys = trail.map((e) => e.key);
-        const descendants = getAllDescendants(trailKeys, floating, trail);
+        let descendants = getAllDescendants(trailKeys, floating, trail);
+        if (!closePinnedDescendants) {
+          const floatingKeys = new Set(floating.map((e) => e.key));
+          descendants = new Set([...descendants].filter((key) => !floatingKeys.has(key)));
+        }
         const removedKeys = new Set<string>([...trailKeys, ...descendants]);
 
         for (const key of removedKeys) {
@@ -799,7 +811,6 @@ export function createPopoverStore<TData = any, TContext = any>(
           }
         }
       },
-      // Lifecycle cleanup action for Provider unmount
       destroy: () => {
         for (const controller of activeControllers.values()) {
           controller.abort();
@@ -819,6 +830,9 @@ export function createPopoverStore<TData = any, TContext = any>(
           anchorRect: null,
         });
       },
+      setClosePinnedDescendants: (closePinnedDescendants) => {
+        set({ closePinnedDescendants });
+      },
     };
 
     const {
@@ -827,6 +841,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       openRoot: ___,
       pushNested: ____,
       destroy: _____,
+      setClosePinnedDescendants: ______,
       ...remainingActions
     } = actions;
 
@@ -842,6 +857,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       anchorElement: null,
       anchorRect: null,
       context: initialContext ?? null,
+      closePinnedDescendants: false,
 
       ...actions,
       actions: remainingActions,

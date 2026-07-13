@@ -23,6 +23,7 @@ export interface PopoverProviderProps<TData = any, TContext = any> {
   initialContext?: TContext;
   clickOutside?: ClickOutsideConfig;
   enableKeyboardClose?: boolean;
+  closePinnedDescendants?: boolean;
 }
 
 /**
@@ -34,6 +35,7 @@ export function PopoverProvider<TData = any, TContext = any>({
   initialContext,
   clickOutside,
   enableKeyboardClose = true,
+  closePinnedDescendants = false,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() => createPopoverStore<TData, TContext>(resolveData, initialContext));
@@ -42,6 +44,11 @@ export function PopoverProvider<TData = any, TContext = any>({
   useEffect(() => {
     store.getState().setContext(initialContext as any);
   }, [initialContext, store]);
+
+  // Synchronize closePinnedDescendants reactively when the prop changes
+  useEffect(() => {
+    store.getState().setClosePinnedDescendants(Boolean(closePinnedDescendants));
+  }, [closePinnedDescendants, store]);
 
   // Cleanup on Provider unmount: abort all in-flight requests and reset state
   useEffect(() => {
@@ -214,7 +221,7 @@ export function usePopoverActions<TData = any, TContext = any>() {
     () =>
       store.getState().actions as Omit<
         PopoverStore<TData, TContext>["actions"],
-        "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy"
+        "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy" | "setClosePinnedDescendants"
       >,
     [store],
   );
