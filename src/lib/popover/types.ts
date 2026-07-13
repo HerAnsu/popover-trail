@@ -89,6 +89,8 @@ export interface PopoverActions<TData = any, TContext = any> {
     sourceKey: string,
     triggerRect?: DOMRect
   ) => Promise<void>
+  /** Retries resolving data for an active popover that previously failed to load. */
+  retryPopover: (key: string) => Promise<void>
 }
 
 export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, TContext> &

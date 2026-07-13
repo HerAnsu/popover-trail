@@ -1,5 +1,6 @@
 /* eslint-disable react/only-export-components */
 import { createContext, useContext, useState, useMemo, useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore } from 'zustand'
 import type { StoreApi } from 'zustand/vanilla'
 import { createPopoverStore } from './store'
@@ -162,4 +163,19 @@ export function usePopoverActions<TData = any, TContext = any>() {
     PopoverStore<TData, TContext>['actions'],
     'setContext' | 'setOwnerId' | 'openRoot' | 'pushNested'
   >, [store])
+}
+
+/**
+ * Portal wrapper component to safely mount children popovers to document.body,
+ * bypassing any parent overflow: hidden clipping issues.
+ */
+export function PopoverPortal({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
+
+  if (!mounted) return null
+  return createPortal(children, document.body)
 }

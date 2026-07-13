@@ -200,4 +200,39 @@ describe('createPopoverStore', () => {
     expect(state.trail[1].key).toBe('child-b')
     expect(state.trail[1].data?.title).toBe('Nested Call 2')
   })
+
+  it('should support retrying failed popover data resolution', async () => {
+    let callCount = 0
+    const flakyResolver = async (_key: string) => {
+      callCount++
+      if (callCount === 1) {
+        throw new Error('Network failure')
+      }
+      return { title: 'Success resolved data' }
+    }
+
+    const store = createPopoverStore(flakyResolver)
+    const mockButton = {
+      currentTarget: {
+        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200)
+      } as any,
+      stopPropagation: () => {}
+    }
+
+    // First attempt fails
+    await store.getState().openRootWithResolver('item-a', mockButton)
+    
+    let state = store.getState()
+    expect(state.trail[0].error).toBeDefined()
+    expect(state.trail[0].error?.message).toBe('Network failure')
+    expect(state.trail[0].data).toBeUndefined()
+
+    // Retry resolves successfully
+    await store.getState().retryPopover('item-a')
+
+    state = store.getState()
+    expect(state.trail[0].error).toBeNull()
+    expect(state.trail[0].data?.title).toBe('Success resolved data')
+    expect(state.trail[0].isLoading).toBe(false)
+  })
 })

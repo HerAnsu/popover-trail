@@ -568,6 +568,57 @@ export function createPopoverStore<TData = any, TContext = any>(
           })
         }
       },
+
+      retryPopover: async (key) => {
+        const { floating, trail, context } = get()
+        const index = findEntryIndex(floating, trail, key)
+        if (index === -1) return
+
+        const entry = getEntryAtIndex(floating, trail, index)
+        if (!entry) return
+
+        set((state) => {
+          const nextTrail = state.trail.map((e) =>
+            e.key === key ? { ...e, isLoading: true, error: null } : e
+          )
+          const nextFloating = state.floating.map((e) =>
+            e.key === key ? { ...e, isLoading: true, error: null } : e
+          )
+          return { trail: nextTrail, floating: nextFloating }
+        })
+
+        let parentData: any = undefined
+        if (entry.parentKey) {
+          const pIndex = findEntryIndex(floating, trail, entry.parentKey)
+          if (pIndex !== -1) {
+            parentData = getEntryAtIndex(floating, trail, pIndex)?.data
+          }
+        }
+
+        try {
+          const resolved = await resolveData(key, parentData, context ?? undefined)
+          set((state) => {
+            const nextTrail = state.trail.map((e) =>
+              e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e
+            )
+            const nextFloating = state.floating.map((e) =>
+              e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e
+            )
+            return { trail: nextTrail, floating: nextFloating }
+          })
+        } catch (err) {
+          set((state) => {
+            const errorObj = err instanceof Error ? err : new Error(String(err))
+            const nextTrail = state.trail.map((e) =>
+              e.key === key ? { ...e, isLoading: false, error: errorObj } : e
+            )
+            const nextFloating = state.floating.map((e) =>
+              e.key === key ? { ...e, isLoading: false, error: errorObj } : e
+            )
+            return { trail: nextTrail, floating: nextFloating }
+          })
+        }
+      },
     }
 
     const { setContext: _, setOwnerId: __, openRoot: ___, pushNested: ____, ...remainingActions } = actions

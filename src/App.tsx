@@ -13,6 +13,7 @@ import {
   usePopoverActions,
   usePopoverKeyboard,
   usePopoverCard,
+  PopoverPortal,
   type PopoverResolver,
   type TrailEntry,
 } from './lib/popover'
@@ -272,8 +273,10 @@ function MainContent() {
         </button>
       )}
 
-      {/* Render popovers canvas */}
-      <PopoverCanvas />
+      {/* Render popovers canvas inside body portal */}
+      <PopoverPortal>
+        <PopoverCanvas />
+      </PopoverPortal>
     </div>
   )
 }

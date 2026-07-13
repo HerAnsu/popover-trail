@@ -23,6 +23,7 @@ export {
   usePopoverOffset,
   usePopoverContext,
   usePopoverActions,
+  PopoverPortal,
 } from './context'
 
 export { usePopoverGeometry } from './hooks/useGeometry'
