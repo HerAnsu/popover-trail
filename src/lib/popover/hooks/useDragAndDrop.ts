@@ -22,10 +22,12 @@ export function usePopoverDragAndDrop({
   const lastDragX = useRef(0);
   const lastTime = useRef(0);
   const transformXRef = useRef(0);
+  const rotationRef = useRef(0);
   const [rotation, setRotation] = useState(0);
 
   // Update transform reference synchronously in render phase to avoid effect latency
   transformXRef.current = transform?.x ?? 0;
+  rotationRef.current = rotation;
 
   useEffect(() => {
     let rafId: number;
@@ -37,10 +39,11 @@ export function usePopoverDragAndDrop({
         const currentDragX = transformXRef.current;
         const velocity = (currentDragX - lastDragX.current) / dt;
 
-        setRotation((prev) => {
-          const next = prev * 0.95 + velocity * tiltSensitivity * 0.05;
-          return Math.max(-maxTiltAngle, Math.min(maxTiltAngle, next));
-        });
+        const next = rotationRef.current * 0.95 + velocity * tiltSensitivity * 0.05;
+        const bounded = Math.max(-maxTiltAngle, Math.min(maxTiltAngle, next));
+
+        setRotation(bounded);
+        rotationRef.current = bounded;
 
         lastDragX.current = currentDragX;
         lastTime.current = now;
@@ -53,12 +56,16 @@ export function usePopoverDragAndDrop({
     } else {
       // Smoothly return rotation back to 0 (inertia decay) when dragging stops or tilt is disabled
       const returnToZero = () => {
-        setRotation((prev) => {
-          if (prev === 0) return 0;
-          if (Math.abs(prev) < 0.05) return 0;
-          rafId = requestAnimationFrame(returnToZero);
-          return prev * 0.82;
-        });
+        const current = rotationRef.current;
+        const next = current * 0.82;
+        if (Math.abs(next) < 0.05) {
+          setRotation(0);
+          rotationRef.current = 0;
+          return;
+        }
+        setRotation(next);
+        rotationRef.current = next;
+        rafId = requestAnimationFrame(returnToZero);
       };
       rafId = requestAnimationFrame(returnToZero);
     }
