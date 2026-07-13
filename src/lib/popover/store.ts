@@ -254,8 +254,6 @@ function getCleanupStatePatch<TData, TContext>(
   return patch;
 }
 
-
-
 /**
  * Pure state updater for spawning/opening a new root popover.
  */
@@ -560,7 +558,15 @@ export function createPopoverStore<TData = any, TContext = any>(
           rootController.abort();
           activeControllers.delete("__root__");
         }
-        const { trail, floating, pinnedStates, offsets, zIndexOrder, nestedHydrationRequestCounters, closePinnedDescendants } = get();
+        const {
+          trail,
+          floating,
+          pinnedStates,
+          offsets,
+          zIndexOrder,
+          nestedHydrationRequestCounters,
+          closePinnedDescendants,
+        } = get();
         const trailKeys = trail.map((e) => e.key);
         let descendants = getAllDescendants(trailKeys, floating, trail);
         if (!closePinnedDescendants) {
@@ -650,14 +656,10 @@ export function createPopoverStore<TData = any, TContext = any>(
         }
 
         // 2. Fall back to resolver
-        const resultOrPromise = cachedResultOrPromise !== undefined
-          ? cachedResultOrPromise
-          : resolveData(
-              keyOrName,
-              undefined,
-              context ?? undefined,
-              controller.signal,
-            );
+        const resultOrPromise =
+          cachedResultOrPromise !== undefined
+            ? cachedResultOrPromise
+            : resolveData(keyOrName, undefined, context ?? undefined, controller.signal);
 
         if (!isPromise(resultOrPromise)) {
           const resolved = resultOrPromise;
@@ -772,14 +774,10 @@ export function createPopoverStore<TData = any, TContext = any>(
         }
 
         // 2. Fall back to resolver
-        const resultOrPromise = cachedResultOrPromise !== undefined
-          ? cachedResultOrPromise
-          : resolveData(
-              keyOrName,
-              sourceEntry.data,
-              context ?? undefined,
-              controller.signal,
-            );
+        const resultOrPromise =
+          cachedResultOrPromise !== undefined
+            ? cachedResultOrPromise
+            : resolveData(keyOrName, sourceEntry.data, context ?? undefined, controller.signal);
 
         if (!isPromise(resultOrPromise)) {
           const resolved = resultOrPromise;

@@ -247,7 +247,13 @@ export function usePopoverActions<TData = any, TContext = any>() {
     () =>
       store.getState().actions as Omit<
         PopoverStore<TData, TContext>["actions"],
-        "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy" | "setClosePinnedDescendants" | "setCollisionConfig"
+        | "setContext"
+        | "setOwnerId"
+        | "openRoot"
+        | "pushNested"
+        | "destroy"
+        | "setClosePinnedDescendants"
+        | "setCollisionConfig"
       >,
     [store],
   );

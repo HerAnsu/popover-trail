@@ -54,7 +54,8 @@ export function usePopoverCard({
         document.body.contains(elementToFocus)
       ) {
         const activeEl = document.activeElement;
-        const isFocusInside = ref.current?.contains(activeEl) || activeEl === document.body || !activeEl;
+        const isFocusInside =
+          ref.current?.contains(activeEl) || activeEl === document.body || !activeEl;
         if (isFocusInside) {
           elementToFocus.focus();
         }

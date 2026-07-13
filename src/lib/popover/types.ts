@@ -118,7 +118,13 @@ export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, 
   PopoverActions<TData, TContext> & {
     actions: Omit<
       PopoverActions<TData, TContext>,
-      "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy" | "setClosePinnedDescendants" | "setCollisionConfig"
+      | "setContext"
+      | "setOwnerId"
+      | "openRoot"
+      | "pushNested"
+      | "destroy"
+      | "setClosePinnedDescendants"
+      | "setCollisionConfig"
     >;
   };
 
@@ -156,7 +162,11 @@ export interface PopoverCache<TData = any> {
 
 export interface CollisionConfig {
   /** DOM element(s) to constrain the popover within (default: 'clippingAncestors'). */
-  boundary?: "clippingAncestors" | HTMLElement | HTMLElement[] | (() => HTMLElement | HTMLElement[] | null);
+  boundary?:
+    | "clippingAncestors"
+    | HTMLElement
+    | HTMLElement[]
+    | (() => HTMLElement | HTMLElement[] | null);
   /** Safety padding margin around the boundary (default: 12 for shift, 0 for flip). */
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
 }

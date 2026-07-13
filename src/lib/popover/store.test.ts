@@ -274,8 +274,17 @@ describe("createPopoverStore", () => {
 
   it("should preserve and restore originalParentKey and originalRect when pinning and unpinning", () => {
     const store = createPopoverStore(dummyResolver);
-    const rootEntry: TrailEntry = { key: "root-item", rect: new DOMRect(10, 20, 100, 200), isLoading: false };
-    const childEntry: TrailEntry = { key: "child-item", parentKey: "root-item", rect: new DOMRect(30, 40, 100, 200), isLoading: false };
+    const rootEntry: TrailEntry = {
+      key: "root-item",
+      rect: new DOMRect(10, 20, 100, 200),
+      isLoading: false,
+    };
+    const childEntry: TrailEntry = {
+      key: "child-item",
+      parentKey: "root-item",
+      rect: new DOMRect(30, 40, 100, 200),
+      isLoading: false,
+    };
 
     store.getState().openRoot("owner-1", rootEntry);
     store.getState().pushNested(0, childEntry);
@@ -312,7 +321,11 @@ describe("createPopoverStore", () => {
     const storeDefault = createPopoverStore(dummyResolver);
     const rootEntry: TrailEntry = { key: "root-item", isLoading: false };
     const childEntry: TrailEntry = { key: "child-item", parentKey: "root-item", isLoading: false };
-    const grandchildEntry: TrailEntry = { key: "grandchild-item", parentKey: "child-item", isLoading: false };
+    const grandchildEntry: TrailEntry = {
+      key: "grandchild-item",
+      parentKey: "child-item",
+      isLoading: false,
+    };
 
     storeDefault.getState().openRoot("owner-1", rootEntry);
     storeDefault.getState().pushNested(0, childEntry);
@@ -364,7 +377,9 @@ describe("createPopoverStore", () => {
     };
 
     // Open root popover
-    const promise = store.getState().openRootWithResolver("item-sync", mockButton, { ownerId: "owner-1" });
+    const promise = store
+      .getState()
+      .openRootWithResolver("item-sync", mockButton, { ownerId: "owner-1" });
     // Ensure it resolves immediately in the same callstack before awaiting anything
     let state = store.getState();
     expect(state.trail).toHaveLength(1);
@@ -390,9 +405,15 @@ describe("createPopoverStore", () => {
     const cacheMap = new Map<string, any>();
     const syncCache = {
       get: (key: string) => cacheMap.get(key),
-      set: (key: string, val: any) => { cacheMap.set(key, val); },
-      delete: (key: string) => { cacheMap.delete(key); },
-      clear: () => { cacheMap.clear(); },
+      set: (key: string, val: any) => {
+        cacheMap.set(key, val);
+      },
+      delete: (key: string) => {
+        cacheMap.delete(key);
+      },
+      clear: () => {
+        cacheMap.clear();
+      },
     };
 
     cacheMap.set("root-cached", { data: "Pre-resolved cache payload" });
