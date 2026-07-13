@@ -92,13 +92,15 @@ export interface PopoverActions<TData = any, TContext = any> {
   ) => Promise<void>
   /** Retries resolving data for an active popover that previously failed to load. */
   retryPopover: (key: string) => Promise<void>
+  /** Lifecycle cleanup: aborts all in-flight requests and resets state. */
+  destroy: () => void
 }
 
 export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, TContext> &
   PopoverActions<TData, TContext> & {
     actions: Omit<
       PopoverActions<TData, TContext>,
-      'setContext' | 'setOwnerId' | 'openRoot' | 'pushNested'
+      'setContext' | 'setOwnerId' | 'openRoot' | 'pushNested' | 'destroy'
     >
   }
 
@@ -119,4 +121,6 @@ export type PopoverPlacement =
 export interface ClickOutsideConfig {
   enabled?: boolean
   ignoreClass?: string
+  /** CSS selector used to identify popover card elements (default: '.popover-card'). */
+  popoverSelector?: string
 }

@@ -1,5 +1,5 @@
 /* eslint-disable react/only-export-components */
-import { createContext, useContext, useState, useMemo, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useMemo, useCallback, useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from 'zustand'
 import type { StoreApi } from 'zustand/vanilla'
@@ -33,9 +33,17 @@ export function PopoverProvider<TData = any, TContext = any>({
     store.getState().setContext(initialContext as any)
   }, [initialContext, store])
 
+  // Cleanup on Provider unmount: abort all in-flight requests and reset state
+  useEffect(() => {
+    return () => {
+      store.getState().destroy()
+    }
+  }, [store])
+
   // Setup click outside logic if enabled
   const enabled = clickOutside?.enabled
   const ignoreClass = clickOutside?.ignoreClass
+  const popoverSelector = clickOutside?.popoverSelector ?? '.popover-card'
 
   useEffect(() => {
     if (!enabled) return
@@ -47,13 +55,22 @@ export function PopoverProvider<TData = any, TContext = any>({
       if (state.trail.length === 0) return
 
       // If click target is inside any active popover card, ignore
-      if (target.closest('.popover-card')) {
+      if (target.closest(popoverSelector)) {
         return
       }
 
       // If click target has the ignoreClass, ignore
-      if (ignoreClass && target.closest(`.${ignoreClass}`)) {
-        return
+      if (ignoreClass) {
+        try {
+          if (target.closest(`.${CSS.escape(ignoreClass)}`)) {
+            return
+          }
+        } catch {
+          // Fallback: CSS.escape not available in older environments
+          if (target.closest(`.${ignoreClass}`)) {
+            return
+          }
+        }
       }
 
       // If click target is the anchor element itself, ignore
@@ -67,7 +84,7 @@ export function PopoverProvider<TData = any, TContext = any>({
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [enabled, ignoreClass, store])
+  }, [enabled, ignoreClass, popoverSelector, store])
 
   return (
     <PopoverStoreContext.Provider value={store as any}>
@@ -169,7 +186,7 @@ export function usePopoverActions<TData = any, TContext = any>() {
   }
   return useMemo(() => store.getState().actions as Omit<
     PopoverStore<TData, TContext>['actions'],
-    'setContext' | 'setOwnerId' | 'openRoot' | 'pushNested'
+    'setContext' | 'setOwnerId' | 'openRoot' | 'pushNested' | 'destroy'
   >, [store])
 }
 
@@ -178,11 +195,13 @@ export function usePopoverActions<TData = any, TContext = any>() {
  */
 export function usePopoverTrigger(key: string, ownerIdOverride?: string) {
   const actions = usePopoverActions()
-  return {
-    onClick: (e: React.MouseEvent<HTMLElement>) => {
+  const onClick = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
       void actions.openRootWithResolver(key, e, ownerIdOverride)
-    }
-  }
+    },
+    [actions, key, ownerIdOverride]
+  )
+  return useMemo(() => ({ onClick }), [onClick])
 }
 
 
@@ -190,7 +209,7 @@ export function usePopoverTrigger(key: string, ownerIdOverride?: string) {
  * Portal wrapper component to safely mount children popovers to document.body,
  * bypassing any parent overflow: hidden clipping issues.
  */
-export function PopoverPortal({ children }: { children: ReactNode }) {
+export function PopoverPortal({ children, container }: { children: ReactNode; container?: HTMLElement }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
@@ -198,5 +217,5 @@ export function PopoverPortal({ children }: { children: ReactNode }) {
   }, [])
 
   if (!mounted) return null
-  return createPortal(children, document.body)
+  return createPortal(children, container ?? document.body)
 }

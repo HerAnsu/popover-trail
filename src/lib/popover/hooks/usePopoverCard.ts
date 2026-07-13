@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { usePopoverGeometry } from './useGeometry'
 import { usePopoverDragAndDrop } from './useDragAndDrop'
@@ -82,19 +82,19 @@ export function usePopoverCard({
     zIndex: zIndex + 1000,
   })
 
-  const setCombinedRef = (node: HTMLDivElement | null) => {
+  const setCombinedRef = useCallback((node: HTMLDivElement | null) => {
     if (enableDrag) {
       setNodeRef(node)
     }
     ref.current = node
-  }
+  }, [enableDrag, setNodeRef])
 
-  const handlePinToggle = () => {
+  const handlePinToggle = useCallback(() => {
     if (ref.current) {
       const currentRect = ref.current.getBoundingClientRect()
       actions.togglePin(entry.key, currentRect)
     }
-  }
+  }, [actions, entry.key])
 
   return {
     ref: setCombinedRef,

@@ -54,6 +54,7 @@ export function usePopoverDragAndDrop({
       // Smoothly return rotation back to 0 (inertia decay) when dragging stops or tilt is disabled
       const returnToZero = () => {
         setRotation((prev) => {
+          if (prev === 0) return 0
           if (Math.abs(prev) < 0.05) return 0
           rafId = requestAnimationFrame(returnToZero)
           return prev * 0.82

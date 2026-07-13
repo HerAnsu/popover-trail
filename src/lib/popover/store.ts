@@ -138,8 +138,9 @@ function bringToFrontPatch<TData, TContext>(
 
   if (index !== -1) {
     const clickedEntry = state.floating[index]
+    const floatingKeySet = new Set(state.floating.map((f) => f.key))
     const floatingDescendants = descendantEntries.filter((e) =>
-      state.floating.some((f) => f.key === e.key)
+      floatingKeySet.has(e.key)
     )
     const floatingKeysToMove = new Set<string>([key])
     for (const desc of floatingDescendants) {
@@ -445,6 +446,12 @@ export function createPopoverStore<TData = any, TContext = any>(
       },
 
       clear: () => {
+        // Abort all in-flight requests
+        for (const controller of activeControllers.values()) {
+          controller.abort()
+        }
+        activeControllers.clear()
+
         set({
           ownerId: null,
           trail: [],
@@ -460,6 +467,21 @@ export function createPopoverStore<TData = any, TContext = any>(
       },
 
       clearTrail: () => {
+        // Abort the root hydration request and any trail-related nested requests
+        const rootController = activeControllers.get('__root__')
+        if (rootController) {
+          rootController.abort()
+          activeControllers.delete('__root__')
+        }
+        const { trail } = get()
+        for (const entry of trail) {
+          const controller = activeControllers.get(entry.key)
+          if (controller) {
+            controller.abort()
+            activeControllers.delete(entry.key)
+          }
+        }
+
         set((state) => getClearTrailPatch(state))
       },
 
@@ -661,9 +683,29 @@ export function createPopoverStore<TData = any, TContext = any>(
           }
         }
       },
+      // Lifecycle cleanup action for Provider unmount
+      destroy: () => {
+        for (const controller of activeControllers.values()) {
+          controller.abort()
+        }
+        activeControllers.clear()
+
+        set({
+          ownerId: null,
+          trail: [],
+          floating: [],
+          offsets: {},
+          pinnedStates: {},
+          zIndexOrder: [],
+          rootHydrationRequestCounter: 0,
+          nestedHydrationRequestCounters: {},
+          anchorElement: null,
+          anchorRect: null,
+        })
+      },
     }
 
-    const { setContext: _, setOwnerId: __, openRoot: ___, pushNested: ____, ...remainingActions } = actions
+    const { setContext: _, setOwnerId: __, openRoot: ___, pushNested: ____, destroy: _____, ...remainingActions } = actions
 
     return {
       ownerId: null,

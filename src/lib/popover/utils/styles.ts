@@ -29,6 +29,7 @@ export function getPopoverStyles({
     top: finalLayoutPos.top,
     left: finalLayoutPos.left,
     transform: `translate(${translateX}px, ${translateY}px) rotate(${rotation}deg)`,
+    willChange: 'transform',
     zIndex,
   }
 }
