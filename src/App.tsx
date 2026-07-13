@@ -1,25 +1,18 @@
-import { useRef } from 'react'
 import FocusLock from 'react-focus-lock'
 import clsx from 'clsx'
 import {
   DndContext,
   type DragEndEvent,
   type DragStartEvent,
-  useDraggable,
 } from '@dnd-kit/core'
 import {
   PopoverProvider,
   usePopoverTrail,
   usePopoverFloating,
   usePopoverOffsets,
-  usePopoverZIndex,
-  useIsPopoverTopMost,
-  usePopoverOffset,
   usePopoverActions,
-  usePopoverGeometry,
-  usePopoverDragAndDrop,
   usePopoverKeyboard,
-  getPopoverStyles,
+  usePopoverCard,
   type PopoverResolver,
   type TrailEntry,
 } from './lib/popover'
@@ -90,67 +83,22 @@ interface PopoverCardProps {
 }
 
 function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: entry.key,
-    disabled: !isPinned, // Dragging is allowed only when the popover is floating/pinned
-  })
-
-  const ref = useRef<HTMLDivElement | null>(null)
-
-  // Use physics-based DND rotation swing
-  const { rotation, dragX, dragY } = usePopoverDragAndDrop({
-    isDragging,
-    transform,
-  })
-
-  // Hook up boundary containment geometry
-  const { finalLayoutPos } = usePopoverGeometry({
-    id: entry.key,
-    anchorRect: entry.rect,
-    placement: 'bottom',
-    zIndex: index,
-    ref,
-    isDragging,
-    isPinned,
+  const { ref, style, isTop, actions, dragHandleProps, handlePinToggle } = usePopoverCard({
     entry,
+    index,
+    isPinned,
+    placement: 'bottom',
   })
-
-  const offset = usePopoverOffset(entry.key)
-  const zIndex = usePopoverZIndex(entry.key)
-  const isTop = useIsPopoverTopMost(entry.key)
-  const { togglePin, closeFrom, openNestedWithResolver, bringToFront } = usePopoverActions<DummyData>()
-
-  const handlePinToggle = () => {
-    if (ref.current) {
-      const currentRect = ref.current.getBoundingClientRect()
-      togglePin(entry.key, currentRect)
-    }
-  }
-
-  // Compile positioning styles using the library utility
-  const style = getPopoverStyles({
-    finalLayoutPos,
-    offset,
-    dragX,
-    dragY,
-    rotation,
-    zIndex: zIndex + 1000,
-  })
-
-  const setCombinedRef = (node: HTMLDivElement | null) => {
-    setNodeRef(node)
-    ref.current = node
-  }
 
   return (
     <div
-      ref={setCombinedRef}
+      ref={ref}
       style={style}
       className={clsx('popover-card', isTop && 'topmost', isPinned && 'pinned')}
-      onMouseDown={() => bringToFront(entry.key)}
+      onMouseDown={() => actions.bringToFront(entry.key)}
     >
       <FocusLock disabled={!isTop} returnFocus>
-        <div className="popover-header" {...attributes} {...listeners}>
+        <div className="popover-header" {...dragHandleProps}>
           <span className="popover-title">{entry.isLoading ? 'Загрузка...' : entry.data?.title}</span>
           <div className="popover-actions">
             <button
@@ -165,7 +113,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
             </button>
             <button
               type="button"
-              onClick={() => closeFrom(index)}
+              onClick={() => actions.closeFrom(index)}
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               className="btn-action"
@@ -201,7 +149,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
                       className="btn-link"
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect()
-                        void openNestedWithResolver(nextKey, entry.key, rect)
+                        void actions.openNestedWithResolver(nextKey, entry.key, rect)
                       }}
                     >
                       🔗 {nextKey.replace('modifier-', '').replace('stat-', '')}

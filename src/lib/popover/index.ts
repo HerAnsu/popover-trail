@@ -28,4 +28,5 @@ export {
 export { usePopoverGeometry } from './hooks/useGeometry'
 export { usePopoverDragAndDrop } from './hooks/useDragAndDrop'
 export { usePopoverKeyboard } from './hooks/usePopoverKeyboard'
+export { usePopoverCard } from './hooks/usePopoverCard'
 export { getPopoverStyles } from './utils/styles'
