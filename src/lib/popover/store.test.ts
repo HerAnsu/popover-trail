@@ -157,9 +157,9 @@ describe("createPopoverStore", () => {
     };
 
     // Trigger first slow request
-    const p1 = store.getState().openRootWithResolver("item-a", mockButton1, "owner-1");
+    const p1 = store.getState().openRootWithResolver("item-a", mockButton1, { ownerId: "owner-1" });
     // Trigger second fast request
-    const p2 = store.getState().openRootWithResolver("item-b", mockButton2, "owner-2");
+    const p2 = store.getState().openRootWithResolver("item-b", mockButton2, { ownerId: "owner-2" });
 
     await Promise.all([p1, p2]);
 
@@ -364,7 +364,7 @@ describe("createPopoverStore", () => {
     };
 
     // Open root popover
-    const promise = store.getState().openRootWithResolver("item-sync", mockButton, "owner-1");
+    const promise = store.getState().openRootWithResolver("item-sync", mockButton, { ownerId: "owner-1" });
     // Ensure it resolves immediately in the same callstack before awaiting anything
     let state = store.getState();
     expect(state.trail).toHaveLength(1);
@@ -383,5 +383,78 @@ describe("createPopoverStore", () => {
     // Await promises to satisfy linting/async calls
     await promise;
     await nestedPromise;
+  });
+
+  it("should integrate with cache provider and retrieve synchronous/asynchronous values", async () => {
+    // 1. Setup a custom synchronous cache using Map
+    const cacheMap = new Map<string, any>();
+    const syncCache = {
+      get: (key: string) => cacheMap.get(key),
+      set: (key: string, val: any) => { cacheMap.set(key, val); },
+      delete: (key: string) => { cacheMap.delete(key); },
+      clear: () => { cacheMap.clear(); },
+    };
+
+    cacheMap.set("root-cached", { data: "Pre-resolved cache payload" });
+
+    let resolverCalls = 0;
+    const resolver = (key: string) => {
+      resolverCalls++;
+      return { data: `Resolved payload for ${key}` };
+    };
+
+    const store = createPopoverStore(resolver, undefined, syncCache);
+    const mockButton = {
+      currentTarget: {
+        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200),
+      } as any,
+      stopPropagation: () => {},
+    };
+
+    // Open popover using cached data
+    const promise1 = store.getState().openRootWithResolver("root-cached", mockButton);
+    let state = store.getState();
+    expect(state.trail).toHaveLength(1);
+    expect(state.trail[0].isLoading).toBe(false); // Instantly loaded from cache!
+    expect(state.trail[0].data).toEqual({ data: "Pre-resolved cache payload" });
+    expect(resolverCalls).toBe(0); // Resolver was never called!
+
+    // Clear the store to reset trail for next root popover test
+    store.getState().clear();
+
+    // Open popover NOT in cache
+    const promise2 = store.getState().openRootWithResolver("root-uncached", mockButton);
+    state = store.getState();
+    expect(state.trail).toHaveLength(1);
+    expect(state.trail[0].key).toBe("root-uncached");
+    expect(state.trail[0].data).toEqual({ data: "Resolved payload for root-uncached" });
+    expect(resolverCalls).toBe(1); // Resolver called once!
+
+    // Verify cache has been populated with the new resolved value
+    expect(cacheMap.get("root-uncached")).toEqual({ data: "Resolved payload for root-uncached" });
+
+    await promise1;
+    await promise2;
+  });
+
+  it("should preserve collision configurations on TrailEntry and support merging them", () => {
+    const store = createPopoverStore(dummyResolver);
+    const mockButton = {
+      currentTarget: {
+        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200),
+      } as any,
+      stopPropagation: () => {},
+    };
+
+    const localCollision = { padding: 45 };
+
+    // Set collision config dynamically via open options
+    store.getState().openRootWithResolver("item-col", mockButton, {
+      collision: localCollision,
+    });
+
+    const state = store.getState();
+    expect(state.trail).toHaveLength(1);
+    expect(state.trail[0].collision).toEqual(localCollision);
   });
 });

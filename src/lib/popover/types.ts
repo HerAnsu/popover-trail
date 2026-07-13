@@ -20,6 +20,8 @@ export interface TrailEntry<TData = any> {
   originalParentKey?: string;
   /** Original anchor bounding box stored to restore geometry after unpinning. */
   originalRect?: DOMRect;
+  /** Local overrides for collision boundaries and padding. */
+  collision?: CollisionConfig;
 }
 
 /**
@@ -57,6 +59,10 @@ export interface PopoverStateData<TData = any, TContext = any> {
   context: TContext | null;
   /** Whether to recursively close pinned descendants when parent closes. */
   closePinnedDescendants: boolean;
+  /** Global collision settings default. */
+  collisionConfig: CollisionConfig | null;
+  /** Custom data cache provider. */
+  cache: PopoverCache<TData> | null;
 }
 
 export interface PopoverActions<TData = any, TContext = any> {
@@ -88,13 +94,13 @@ export interface PopoverActions<TData = any, TContext = any> {
   openRootWithResolver: (
     keyOrName: string,
     anchorEvent: { currentTarget: HTMLElement; stopPropagation: () => void },
-    ownerIdOverride?: string,
+    options?: OpenRootOptions,
   ) => Promise<void>;
   /** Resolves data and opens a nested popover from a source parent popover key. */
   openNestedWithResolver: (
     keyOrName: string,
     sourceKey: string,
-    triggerRect?: DOMRect,
+    options?: OpenNestedOptions,
   ) => Promise<void>;
   /** Retries resolving data for an active popover that previously failed to load. */
   retryPopover: (key: string) => Promise<void>;
@@ -102,13 +108,15 @@ export interface PopoverActions<TData = any, TContext = any> {
   destroy: () => void;
   /** Set closePinnedDescendants configuration dynamically. */
   setClosePinnedDescendants: (close: boolean) => void;
+  /** Updates the global collision config dynamically. */
+  setCollisionConfig: (config: CollisionConfig | null) => void;
 }
 
 export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, TContext> &
   PopoverActions<TData, TContext> & {
     actions: Omit<
       PopoverActions<TData, TContext>,
-      "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy" | "setClosePinnedDescendants"
+      "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy" | "setClosePinnedDescendants" | "setCollisionConfig"
     >;
   };
 
@@ -131,4 +139,32 @@ export interface ClickOutsideConfig {
   ignoreClass?: string;
   /** CSS selector used to identify popover card elements (default: '.popover-card'). */
   popoverSelector?: string;
+}
+
+export interface PopoverCache<TData = any> {
+  /** Retrieves a cached entry. Can return value directly or a Promise. */
+  get: (key: string) => Promise<TData | undefined> | TData | undefined;
+  /** Saves data in cache. */
+  set: (key: string, data: TData) => Promise<void> | void;
+  /** Removes an item from the cache. */
+  delete: (key: string) => Promise<void> | void;
+  /** Clears the cache completely. */
+  clear: () => Promise<void> | void;
+}
+
+export interface CollisionConfig {
+  /** DOM element(s) to constrain the popover within (default: 'clippingAncestors'). */
+  boundary?: "clippingAncestors" | HTMLElement | HTMLElement[] | (() => HTMLElement | HTMLElement[] | null);
+  /** Safety padding margin around the boundary (default: 12 for shift, 0 for flip). */
+  padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
+}
+
+export interface OpenRootOptions {
+  ownerId?: string;
+  collision?: CollisionConfig;
+}
+
+export interface OpenNestedOptions {
+  triggerRect?: DOMRect;
+  collision?: CollisionConfig;
 }

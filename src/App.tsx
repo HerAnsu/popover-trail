@@ -158,7 +158,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
                       className="btn-link"
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        void actions.openNestedWithResolver(nextKey, entry.key, rect);
+                        void actions.openNestedWithResolver(nextKey, entry.key, { triggerRect: rect });
                       }}
                     >
                       🔗 {nextKey.replace("modifier-", "").replace("stat-", "")}

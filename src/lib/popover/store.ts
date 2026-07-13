@@ -5,6 +5,7 @@ import type {
   TrailEntry,
   PopoverStateData,
   PopoverActions,
+  PopoverCache,
 } from "./types";
 import equal from "fast-deep-equal";
 
@@ -455,6 +456,7 @@ function closeFromState<TData, TContext>(
 export function createPopoverStore<TData = any, TContext = any>(
   resolveData: PopoverResolver<TData, TContext>,
   initialContext?: TContext,
+  cache?: PopoverCache<TData>,
 ) {
   const activeControllers = new Map<string, AbortController>();
 
@@ -608,10 +610,11 @@ export function createPopoverStore<TData = any, TContext = any>(
       },
 
       // Async/Hydration Actions
-      openRootWithResolver: async (keyOrName, anchorEvent, ownerIdOverride) => {
+      openRootWithResolver: async (keyOrName, anchorEvent, options) => {
         anchorEvent.stopPropagation();
-        const { ownerId, context, rootHydrationRequestCounter } = get();
-        const finalOwnerId = ownerIdOverride ?? ownerId ?? "default";
+        const { ownerId, context, rootHydrationRequestCounter, cache } = get();
+        const finalOwnerId = options?.ownerId ?? ownerId ?? "default";
+        const localCollision = options?.collision;
 
         const anchorElement = anchorEvent.currentTarget;
         const anchorRect = anchorElement.getBoundingClientRect();
@@ -627,12 +630,34 @@ export function createPopoverStore<TData = any, TContext = any>(
         const controller = new AbortController();
         activeControllers.set("__root__", controller);
 
-        const resultOrPromise = resolveData(
-          keyOrName,
-          undefined,
-          context ?? undefined,
-          controller.signal,
-        );
+        // 1. Check cache first
+        const cachedResultOrPromise = cache ? cache.get(keyOrName) : undefined;
+        if (cachedResultOrPromise !== undefined) {
+          if (!isPromise(cachedResultOrPromise)) {
+            const resolved = cachedResultOrPromise;
+            const entry: TrailEntry<TData> = {
+              key: keyOrName,
+              rect: anchorRect,
+              originalRect: anchorRect,
+              data: resolved,
+              isLoading: false,
+              collision: localCollision,
+            };
+            set((state) => openRootState(state, finalOwnerId, entry));
+            activeControllers.delete("__root__");
+            return;
+          }
+        }
+
+        // 2. Fall back to resolver
+        const resultOrPromise = cachedResultOrPromise !== undefined
+          ? cachedResultOrPromise
+          : resolveData(
+              keyOrName,
+              undefined,
+              context ?? undefined,
+              controller.signal,
+            );
 
         if (!isPromise(resultOrPromise)) {
           const resolved = resultOrPromise;
@@ -642,8 +667,12 @@ export function createPopoverStore<TData = any, TContext = any>(
             originalRect: anchorRect,
             data: resolved,
             isLoading: false,
+            collision: localCollision,
           };
           set((state) => openRootState(state, finalOwnerId, entry));
+          if (cache && resolved !== undefined) {
+            void cache.set(keyOrName, resolved as TData);
+          }
           activeControllers.delete("__root__");
           return;
         }
@@ -657,6 +686,7 @@ export function createPopoverStore<TData = any, TContext = any>(
           rect: anchorRect,
           originalRect: anchorRect,
           isLoading: true,
+          collision: localCollision,
         };
         set((state) => openRootState(state, finalOwnerId, loadingEntry));
 
@@ -665,6 +695,11 @@ export function createPopoverStore<TData = any, TContext = any>(
 
           // Verify we aren't handling a stale response
           if (get().rootHydrationRequestCounter !== nextCounter) return;
+
+          // Update cache
+          if (cache && resolved !== undefined) {
+            void cache.set(keyOrName, resolved as TData);
+          }
 
           // Update data
           set((state) => {
@@ -695,8 +730,8 @@ export function createPopoverStore<TData = any, TContext = any>(
         }
       },
 
-      openNestedWithResolver: async (keyOrName, sourceKey, triggerRect) => {
-        const { floating, trail, context, nestedHydrationRequestCounters } = get();
+      openNestedWithResolver: async (keyOrName, sourceKey, options) => {
+        const { floating, trail, context, nestedHydrationRequestCounters, cache } = get();
         const sourceIndex = findEntryIndex(floating, trail, sourceKey);
         if (sourceIndex === -1) return;
 
@@ -711,14 +746,40 @@ export function createPopoverStore<TData = any, TContext = any>(
         const controller = new AbortController();
         activeControllers.set(keyOrName, controller);
 
-        const resultOrPromise = resolveData(
-          keyOrName,
-          sourceEntry.data,
-          context ?? undefined,
-          controller.signal,
-        );
-
+        const triggerRect = options?.triggerRect;
+        const localCollision = options?.collision;
         const rect = triggerRect ?? sourceEntry.rect;
+
+        // 1. Check cache first
+        const cachedResultOrPromise = cache ? cache.get(keyOrName) : undefined;
+        if (cachedResultOrPromise !== undefined) {
+          if (!isPromise(cachedResultOrPromise)) {
+            const resolved = cachedResultOrPromise;
+            const entry: TrailEntry<TData> = {
+              key: keyOrName,
+              parentKey: sourceKey,
+              originalParentKey: sourceKey,
+              rect,
+              originalRect: rect,
+              data: resolved,
+              isLoading: false,
+              collision: localCollision,
+            };
+            set((state) => pushNestedState(state, sourceIndex, entry));
+            activeControllers.delete(keyOrName);
+            return;
+          }
+        }
+
+        // 2. Fall back to resolver
+        const resultOrPromise = cachedResultOrPromise !== undefined
+          ? cachedResultOrPromise
+          : resolveData(
+              keyOrName,
+              sourceEntry.data,
+              context ?? undefined,
+              controller.signal,
+            );
 
         if (!isPromise(resultOrPromise)) {
           const resolved = resultOrPromise;
@@ -730,8 +791,12 @@ export function createPopoverStore<TData = any, TContext = any>(
             originalRect: rect,
             data: resolved,
             isLoading: false,
+            collision: localCollision,
           };
           set((state) => pushNestedState(state, sourceIndex, entry));
+          if (cache && resolved !== undefined) {
+            void cache.set(keyOrName, resolved as TData);
+          }
           activeControllers.delete(keyOrName);
           return;
         }
@@ -752,6 +817,7 @@ export function createPopoverStore<TData = any, TContext = any>(
           rect,
           originalRect: rect,
           isLoading: true,
+          collision: localCollision,
         };
         set((state) => pushNestedState(state, sourceIndex, loadingEntry));
 
@@ -759,6 +825,11 @@ export function createPopoverStore<TData = any, TContext = any>(
           const resolved = await resultOrPromise;
 
           if (get().nestedHydrationRequestCounters[sourceKey] !== nextCounter) return;
+
+          // Update cache
+          if (cache && resolved !== undefined) {
+            void cache.set(keyOrName, resolved as TData);
+          }
 
           set((state) => {
             const nextTrail = state.trail.map((e) =>
@@ -789,7 +860,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       },
 
       retryPopover: async (key) => {
-        const { floating, trail, context } = get();
+        const { floating, trail, context, cache } = get();
         const index = findEntryIndex(floating, trail, key);
         if (index === -1) return;
 
@@ -830,6 +901,9 @@ export function createPopoverStore<TData = any, TContext = any>(
             );
             return { trail: nextTrail, floating: nextFloating };
           });
+          if (cache && resolved !== undefined) {
+            void cache.set(key, resolved as TData);
+          }
           activeControllers.delete(key);
           return;
         }
@@ -846,6 +920,9 @@ export function createPopoverStore<TData = any, TContext = any>(
 
         try {
           const resolved = await resultOrPromise;
+          if (cache && resolved !== undefined) {
+            void cache.set(key, resolved as TData);
+          }
           set((state) => {
             const nextTrail = state.trail.map((e) =>
               e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
@@ -895,6 +972,9 @@ export function createPopoverStore<TData = any, TContext = any>(
       setClosePinnedDescendants: (closePinnedDescendants) => {
         set({ closePinnedDescendants });
       },
+      setCollisionConfig: (collisionConfig) => {
+        set({ collisionConfig });
+      },
     };
 
     const {
@@ -904,6 +984,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       pushNested: ____,
       destroy: _____,
       setClosePinnedDescendants: ______,
+      setCollisionConfig: _______,
       ...remainingActions
     } = actions;
 
@@ -920,6 +1001,8 @@ export function createPopoverStore<TData = any, TContext = any>(
       anchorRect: null,
       context: initialContext ?? null,
       closePinnedDescendants: false,
+      collisionConfig: null,
+      cache: cache ?? null,
 
       ...actions,
       actions: remainingActions,

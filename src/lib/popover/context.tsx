@@ -12,7 +12,15 @@ import { createPortal } from "react-dom";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import { createPopoverStore } from "./store";
-import type { PopoverStore, PopoverResolver, ClickOutsideConfig } from "./types";
+import type {
+  PopoverStore,
+  PopoverResolver,
+  ClickOutsideConfig,
+  PopoverCache,
+  CollisionConfig,
+  OpenRootOptions,
+  OpenNestedOptions,
+} from "./types";
 
 // Instantiate context with any-typed store as fallback
 export const PopoverStoreContext = createContext<StoreApi<PopoverStore<any, any>> | null>(null);
@@ -24,6 +32,8 @@ export interface PopoverProviderProps<TData = any, TContext = any> {
   clickOutside?: ClickOutsideConfig;
   enableKeyboardClose?: boolean;
   closePinnedDescendants?: boolean;
+  cache?: PopoverCache<TData>;
+  collision?: CollisionConfig;
 }
 
 /**
@@ -36,9 +46,13 @@ export function PopoverProvider<TData = any, TContext = any>({
   clickOutside,
   enableKeyboardClose = true,
   closePinnedDescendants = false,
+  cache,
+  collision,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
-  const [store] = useState(() => createPopoverStore<TData, TContext>(resolveData, initialContext));
+  const [store] = useState(() =>
+    createPopoverStore<TData, TContext>(resolveData, initialContext, cache),
+  );
 
   // Synchronize context reactively when the prop changes
   useEffect(() => {
@@ -49,6 +63,11 @@ export function PopoverProvider<TData = any, TContext = any>({
   useEffect(() => {
     store.getState().setClosePinnedDescendants(Boolean(closePinnedDescendants));
   }, [closePinnedDescendants, store]);
+
+  // Synchronize collisionConfig reactively when the prop changes
+  useEffect(() => {
+    store.getState().setCollisionConfig(collision ?? null);
+  }, [collision, store]);
 
   // Cleanup on Provider unmount: abort all in-flight requests and reset state
   useEffect(() => {
@@ -210,6 +229,13 @@ export function usePopoverContext<TContext = any>() {
 }
 
 /**
+ * Hook to retrieve global collision boundary settings.
+ */
+export function usePopoverCollisionConfig() {
+  return usePopoverStore((state) => state.collisionConfig);
+}
+
+/**
  * Hook to retrieve popover store action methods.
  */
 export function usePopoverActions<TData = any, TContext = any>() {
@@ -221,7 +247,7 @@ export function usePopoverActions<TData = any, TContext = any>() {
     () =>
       store.getState().actions as Omit<
         PopoverStore<TData, TContext>["actions"],
-        "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy" | "setClosePinnedDescendants"
+        "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy" | "setClosePinnedDescendants" | "setCollisionConfig"
       >,
     [store],
   );
@@ -230,13 +256,31 @@ export function usePopoverActions<TData = any, TContext = any>() {
 /**
  * Hook to simplify binding a button or element trigger to open a root popover on click.
  */
-export function usePopoverTrigger(key: string, ownerIdOverride?: string) {
+export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
   const actions = usePopoverActions();
   const onClick = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      void actions.openRootWithResolver(key, e, ownerIdOverride);
+      void actions.openRootWithResolver(key, e, options);
     },
-    [actions, key, ownerIdOverride],
+    [actions, key, options],
+  );
+  return useMemo(() => ({ onClick }), [onClick]);
+}
+
+/**
+ * Hook to simplify binding a button or element trigger to open a nested child popover on click.
+ */
+export function usePopoverNestedTrigger(
+  key: string,
+  sourceKey: string,
+  options?: OpenNestedOptions,
+) {
+  const actions = usePopoverActions();
+  const onClick = useCallback(
+    (_e: React.MouseEvent<HTMLElement>) => {
+      void actions.openNestedWithResolver(key, sourceKey, options);
+    },
+    [actions, key, sourceKey, options],
   );
   return useMemo(() => ({ onClick }), [onClick]);
 }
