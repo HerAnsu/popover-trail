@@ -349,4 +349,39 @@ describe("createPopoverStore", () => {
     expect(state.trail).toHaveLength(1); // root remains
     expect(state.floating).toHaveLength(0); // grandchild is recursively closed!
   });
+
+  it("should instantly resolve popover data synchronously without setting isLoading: true", async () => {
+    const syncResolver = (key: string) => {
+      return { title: `Sync Data for ${key}` };
+    };
+
+    const store = createPopoverStore(syncResolver);
+    const mockButton = {
+      currentTarget: {
+        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200),
+      } as any,
+      stopPropagation: () => {},
+    };
+
+    // Open root popover
+    const promise = store.getState().openRootWithResolver("item-sync", mockButton, "owner-1");
+    // Ensure it resolves immediately in the same callstack before awaiting anything
+    let state = store.getState();
+    expect(state.trail).toHaveLength(1);
+    expect(state.trail[0].key).toBe("item-sync");
+    expect(state.trail[0].isLoading).toBe(false); // No loading state!
+    expect(state.trail[0].data).toEqual({ title: "Sync Data for item-sync" });
+
+    // Open nested popover
+    const nestedPromise = store.getState().openNestedWithResolver("item-nested", "item-sync");
+    state = store.getState();
+    expect(state.trail).toHaveLength(2);
+    expect(state.trail[1].key).toBe("item-nested");
+    expect(state.trail[1].isLoading).toBe(false); // No loading state!
+    expect(state.trail[1].data).toEqual({ title: "Sync Data for item-nested" });
+
+    // Await promises to satisfy linting/async calls
+    await promise;
+    await nestedPromise;
+  });
 });

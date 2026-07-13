@@ -9,6 +9,13 @@ import type {
 import equal from "fast-deep-equal";
 
 /**
+ * Returns true if a value is a Promise or a thenable object.
+ */
+function isPromise<T>(value: any): value is Promise<T> {
+  return typeof value === "object" && value !== null && typeof value.then === "function";
+}
+
+/**
  * Filter a record object, retaining only the keys present in the allowed set.
  */
 function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
@@ -620,6 +627,27 @@ export function createPopoverStore<TData = any, TContext = any>(
         const controller = new AbortController();
         activeControllers.set("__root__", controller);
 
+        const resultOrPromise = resolveData(
+          keyOrName,
+          undefined,
+          context ?? undefined,
+          controller.signal,
+        );
+
+        if (!isPromise(resultOrPromise)) {
+          const resolved = resultOrPromise;
+          const entry: TrailEntry<TData> = {
+            key: keyOrName,
+            rect: anchorRect,
+            originalRect: anchorRect,
+            data: resolved,
+            isLoading: false,
+          };
+          set((state) => openRootState(state, finalOwnerId, entry));
+          activeControllers.delete("__root__");
+          return;
+        }
+
         const nextCounter = rootHydrationRequestCounter + 1;
         set({ rootHydrationRequestCounter: nextCounter });
 
@@ -627,17 +655,13 @@ export function createPopoverStore<TData = any, TContext = any>(
         const loadingEntry: TrailEntry<TData> = {
           key: keyOrName,
           rect: anchorRect,
+          originalRect: anchorRect,
           isLoading: true,
         };
         set((state) => openRootState(state, finalOwnerId, loadingEntry));
 
         try {
-          const resolved = await resolveData(
-            keyOrName,
-            undefined,
-            context ?? undefined,
-            controller.signal,
-          );
+          const resolved = await resultOrPromise;
 
           // Verify we aren't handling a stale response
           if (get().rootHydrationRequestCounter !== nextCounter) return;
@@ -687,6 +711,31 @@ export function createPopoverStore<TData = any, TContext = any>(
         const controller = new AbortController();
         activeControllers.set(keyOrName, controller);
 
+        const resultOrPromise = resolveData(
+          keyOrName,
+          sourceEntry.data,
+          context ?? undefined,
+          controller.signal,
+        );
+
+        const rect = triggerRect ?? sourceEntry.rect;
+
+        if (!isPromise(resultOrPromise)) {
+          const resolved = resultOrPromise;
+          const entry: TrailEntry<TData> = {
+            key: keyOrName,
+            parentKey: sourceKey,
+            originalParentKey: sourceKey,
+            rect,
+            originalRect: rect,
+            data: resolved,
+            isLoading: false,
+          };
+          set((state) => pushNestedState(state, sourceIndex, entry));
+          activeControllers.delete(keyOrName);
+          return;
+        }
+
         const nextCounter = (nestedHydrationRequestCounters[sourceKey] ?? 0) + 1;
         set((state) => ({
           nestedHydrationRequestCounters: {
@@ -696,22 +745,18 @@ export function createPopoverStore<TData = any, TContext = any>(
         }));
 
         // Pre-create loading entry
-        const rect = triggerRect ?? sourceEntry.rect;
         const loadingEntry: TrailEntry<TData> = {
           key: keyOrName,
           parentKey: sourceKey,
+          originalParentKey: sourceKey,
           rect,
+          originalRect: rect,
           isLoading: true,
         };
         set((state) => pushNestedState(state, sourceIndex, loadingEntry));
 
         try {
-          const resolved = await resolveData(
-            keyOrName,
-            sourceEntry.data,
-            context ?? undefined,
-            controller.signal,
-          );
+          const resolved = await resultOrPromise;
 
           if (get().nestedHydrationRequestCounters[sourceKey] !== nextCounter) return;
 
@@ -759,6 +804,36 @@ export function createPopoverStore<TData = any, TContext = any>(
         const controller = new AbortController();
         activeControllers.set(key, controller);
 
+        let parentData: any = undefined;
+        if (entry.parentKey) {
+          const pIndex = findEntryIndex(floating, trail, entry.parentKey);
+          if (pIndex !== -1) {
+            parentData = getEntryAtIndex(floating, trail, pIndex)?.data;
+          }
+        }
+
+        const resultOrPromise = resolveData(
+          key,
+          parentData,
+          context ?? undefined,
+          controller.signal,
+        );
+
+        if (!isPromise(resultOrPromise)) {
+          const resolved = resultOrPromise;
+          set((state) => {
+            const nextTrail = state.trail.map((e) =>
+              e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
+            );
+            const nextFloating = state.floating.map((e) =>
+              e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
+            );
+            return { trail: nextTrail, floating: nextFloating };
+          });
+          activeControllers.delete(key);
+          return;
+        }
+
         set((state) => {
           const nextTrail = state.trail.map((e) =>
             e.key === key ? { ...e, isLoading: true, error: null } : e,
@@ -769,21 +844,8 @@ export function createPopoverStore<TData = any, TContext = any>(
           return { trail: nextTrail, floating: nextFloating };
         });
 
-        let parentData: any = undefined;
-        if (entry.parentKey) {
-          const pIndex = findEntryIndex(floating, trail, entry.parentKey);
-          if (pIndex !== -1) {
-            parentData = getEntryAtIndex(floating, trail, pIndex)?.data;
-          }
-        }
-
         try {
-          const resolved = await resolveData(
-            key,
-            parentData,
-            context ?? undefined,
-            controller.signal,
-          );
+          const resolved = await resultOrPromise;
           set((state) => {
             const nextTrail = state.trail.map((e) =>
               e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
