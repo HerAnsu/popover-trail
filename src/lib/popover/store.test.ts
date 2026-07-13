@@ -119,7 +119,9 @@ describe('createPopoverStore', () => {
     store.getState().togglePin('root-item')
     const nextState = store.getState()
     expect(nextState.floating).toHaveLength(0)
-    expect(nextState.pinnedStates['root-item']).toBeUndefined()
+    expect(nextState.trail).toHaveLength(1)
+    expect(nextState.trail[0].key).toBe('root-item')
+    expect(nextState.pinnedStates['root-item']).toBe(false)
   })
 
   it('should clear all popovers on clear', () => {

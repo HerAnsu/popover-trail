@@ -153,6 +153,8 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
             <button
               type="button"
               onClick={handlePinToggle}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
               className="btn-action"
               title={isPinned ? 'Открепить поповер' : 'Приколоть поповер'}
             >
@@ -161,6 +163,8 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
             <button
               type="button"
               onClick={() => closeFrom(index)}
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
               className="btn-action"
               title="Закрыть"
             >

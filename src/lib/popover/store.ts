@@ -300,8 +300,15 @@ function togglePinState<TData, TContext>(
       nextZIndexOrder = [...nextZIndexOrder.filter((k) => k !== key), key]
     }
   } else {
+    const entry = nextFloating[floatingIndex]
     nextFloating.splice(floatingIndex, 1)
     nextPinnedStates[key] = false
+    if (entry) {
+      nextTrail.push({
+        ...entry,
+        pinnedLayoutPos: undefined,
+      })
+    }
   }
 
   const cleanupPatch = getCleanupStatePatch<TData, TContext>(
