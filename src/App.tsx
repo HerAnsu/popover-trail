@@ -130,7 +130,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
         <div className="popover-body">
           {entry.isLoading ? (
             <div className="spinner-container">
-              <div className="spinner"></div>
+              <div className="spinner" />
               <span>Получение данных...</span>
             </div>
           ) : entry.error ? (
