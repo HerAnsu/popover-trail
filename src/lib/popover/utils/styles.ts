@@ -21,13 +21,13 @@ export function getPopoverStyles({
   rotation = 0,
   zIndex = 1000,
 }: GetPopoverStylesParams): CSSProperties {
-  const translateX = dragX + offset.x;
-  const translateY = dragY + offset.y;
+  const translateX = Math.round(dragX + offset.x);
+  const translateY = Math.round(dragY + offset.y);
 
   return {
     position: "absolute",
-    top: finalLayoutPos.top,
-    left: finalLayoutPos.left,
+    top: Math.round(finalLayoutPos.top),
+    left: Math.round(finalLayoutPos.left),
     transform: `translate(${translateX}px, ${translateY}px) rotate(${rotation}deg)`,
     willChange: "transform",
     zIndex,

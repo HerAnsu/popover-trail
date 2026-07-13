@@ -110,6 +110,8 @@ export interface PopoverActions<TData = any, TContext = any> {
   setClosePinnedDescendants: (close: boolean) => void;
   /** Updates the global collision config dynamically. */
   setCollisionConfig: (config: CollisionConfig | null) => void;
+  /** Closes exactly the popover matching the specified key along with all its descendants. */
+  closeByKey: (key: string) => void;
 }
 
 export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, TContext> &

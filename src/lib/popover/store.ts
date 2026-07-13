@@ -162,9 +162,9 @@ function getAllDescendants(
   floating.forEach(mapEntry);
   trail.forEach(mapEntry);
 
-  while (queue.length > 0) {
-    const current = queue.shift();
-    if (current === undefined) break;
+  let head = 0;
+  while (head < queue.length) {
+    const current = queue[head++];
 
     const children = childrenMap.get(current);
     if (children) {
@@ -974,6 +974,13 @@ export function createPopoverStore<TData = any, TContext = any>(
       },
       setCollisionConfig: (collisionConfig) => {
         set({ collisionConfig });
+      },
+      closeByKey: (key) => {
+        const { floating, trail } = get();
+        const index = findEntryIndex(floating, trail, key);
+        if (index !== -1) {
+          actions.closeFrom(index);
+        }
       },
     };
 

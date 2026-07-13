@@ -457,4 +457,46 @@ describe("createPopoverStore", () => {
     expect(state.trail).toHaveLength(1);
     expect(state.trail[0].collision).toEqual(localCollision);
   });
+
+  it("should close popover by key and clean up descendants without closing unrelated siblings", () => {
+    const store = createPopoverStore(dummyResolver);
+    store.getState().setClosePinnedDescendants(true);
+
+    const rootEntry: TrailEntry = { key: "root-item" };
+    const child1Entry: TrailEntry = { key: "child-1", parentKey: "root-item" };
+    const child2Entry: TrailEntry = { key: "child-2", parentKey: "root-item" };
+    const grandchildEntry: TrailEntry = { key: "grandchild", parentKey: "child-1" };
+
+    store.getState().openRoot("owner-1", rootEntry);
+    store.getState().pushNested(0, child1Entry);
+
+    // Pin child-1
+    store.getState().togglePin("child-1", new DOMRect(100, 200, 150, 250));
+
+    // Push grandchild from child-1 (index 0 in floating)
+    store.getState().pushNested(0, grandchildEntry);
+
+    // Pin grandchild
+    store.getState().togglePin("grandchild", new DOMRect(150, 250, 150, 250));
+
+    // Open a new root under a different owner (child-2)
+    store.getState().openRoot("owner-2", child2Entry);
+
+    // We expect:
+    // trail: [child-2] (length 1)
+    // floating: [child-1, grandchild] (length 2)
+    let state = store.getState();
+    expect(state.trail).toHaveLength(1);
+    expect(state.floating).toHaveLength(2);
+
+    // Now let's close child-1 via closeByKey
+    store.getState().closeByKey("child-1");
+
+    state = store.getState();
+    // child-1 and its descendant grandchild are closed
+    expect(state.floating).toHaveLength(0);
+    // child-2 remains in the trail completely untouched!
+    expect(state.trail).toHaveLength(1);
+    expect(state.trail[0].key).toBe("child-2");
+  });
 });
