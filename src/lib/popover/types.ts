@@ -24,7 +24,8 @@ export interface TrailEntry<TData = any> {
 export type PopoverResolver<TData = any, TContext = any> = (
   keyOrName: string,
   parentData?: TData,
-  context?: TContext
+  context?: TContext,
+  signal?: AbortSignal
 ) => Promise<TData> | TData
 
 export interface PopoverStateData<TData = any, TContext = any> {

@@ -235,4 +235,40 @@ describe('createPopoverStore', () => {
     expect(state.trail[0].data?.title).toBe('Success resolved data')
     expect(state.trail[0].isLoading).toBe(false)
   })
+
+  it('should pass and abort AbortSignal on overlapping requests', async () => {
+    const signals: AbortSignal[] = []
+    const resolver = async (_key: string, _parentData?: any, _context?: any, signal?: AbortSignal) => {
+      if (signal) {
+        signals.push(signal)
+      }
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 50)
+      })
+      return { title: 'Resolved' }
+    }
+
+    const store = createPopoverStore(resolver)
+    const mockButton1 = {
+      currentTarget: {
+        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200)
+      } as any,
+      stopPropagation: () => {}
+    }
+    const mockButton2 = {
+      currentTarget: {
+        getBoundingClientRect: () => new DOMRect(30, 40, 100, 200)
+      } as any,
+      stopPropagation: () => {}
+    }
+
+    const p1 = store.getState().openRootWithResolver('item-a', mockButton1)
+    const p2 = store.getState().openRootWithResolver('item-b', mockButton2)
+
+    await Promise.all([p1, p2])
+
+    expect(signals).toHaveLength(2)
+    expect(signals[0].aborted).toBe(true)
+    expect(signals[1].aborted).toBe(false)
+  })
 })

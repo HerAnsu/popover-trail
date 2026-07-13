@@ -396,6 +396,8 @@ export function createPopoverStore<TData = any, TContext = any>(
   resolveData: PopoverResolver<TData, TContext>,
   initialContext?: TContext
 ) {
+  const activeControllers = new Map<string, AbortController>()
+
   return createStore<PopoverStore<TData, TContext>>((set, get) => {
     const actions: PopoverActions<TData, TContext> = {
       setContext: (context) => {
@@ -483,6 +485,14 @@ export function createPopoverStore<TData = any, TContext = any>(
         // Save anchor details immediately
         set({ anchorElement, anchorRect })
 
+        // Abort previous root loading requests if any
+        const prevController = activeControllers.get('__root__')
+        if (prevController) {
+          prevController.abort()
+        }
+        const controller = new AbortController()
+        activeControllers.set('__root__', controller)
+
         const nextCounter = rootHydrationRequestCounter + 1
         set({ rootHydrationRequestCounter: nextCounter })
 
@@ -495,7 +505,7 @@ export function createPopoverStore<TData = any, TContext = any>(
         set((state) => openRootState(state, finalOwnerId, loadingEntry))
 
         try {
-          const resolved = await resolveData(keyOrName, undefined, context ?? undefined)
+          const resolved = await resolveData(keyOrName, undefined, context ?? undefined, controller.signal)
           
           // Verify we aren't handling a stale response
           if (get().rootHydrationRequestCounter !== nextCounter) return
@@ -508,6 +518,7 @@ export function createPopoverStore<TData = any, TContext = any>(
             return { trail: nextTrail }
           })
         } catch (err) {
+          if (controller.signal.aborted) return
           if (get().rootHydrationRequestCounter !== nextCounter) return
           set((state) => {
             const nextTrail = state.trail.map((e) =>
@@ -517,6 +528,10 @@ export function createPopoverStore<TData = any, TContext = any>(
             )
             return { trail: nextTrail }
           })
+        } finally {
+          if (activeControllers.get('__root__') === controller) {
+            activeControllers.delete('__root__')
+          }
         }
       },
 
@@ -527,6 +542,14 @@ export function createPopoverStore<TData = any, TContext = any>(
 
         const sourceEntry = getEntryAtIndex(floating, trail, sourceIndex)
         if (!sourceEntry) return
+
+        // Abort previous loading requests for this key if any
+        const prevController = activeControllers.get(keyOrName)
+        if (prevController) {
+          prevController.abort()
+        }
+        const controller = new AbortController()
+        activeControllers.set(keyOrName, controller)
 
         const nextCounter = (nestedHydrationRequestCounters[sourceKey] ?? 0) + 1
         set((state) => ({
@@ -547,7 +570,7 @@ export function createPopoverStore<TData = any, TContext = any>(
         set((state) => pushNestedState(state, sourceIndex, loadingEntry))
 
         try {
-          const resolved = await resolveData(keyOrName, sourceEntry.data, context ?? undefined)
+          const resolved = await resolveData(keyOrName, sourceEntry.data, context ?? undefined, controller.signal)
           
           if (get().nestedHydrationRequestCounters[sourceKey] !== nextCounter) return
 
@@ -558,6 +581,7 @@ export function createPopoverStore<TData = any, TContext = any>(
             return { trail: nextTrail }
           })
         } catch (err) {
+          if (controller.signal.aborted) return
           if (get().nestedHydrationRequestCounters[sourceKey] !== nextCounter) return
           set((state) => {
             const nextTrail = state.trail.map((e) =>
@@ -567,6 +591,10 @@ export function createPopoverStore<TData = any, TContext = any>(
             )
             return { trail: nextTrail }
           })
+        } finally {
+          if (activeControllers.get(keyOrName) === controller) {
+            activeControllers.delete(keyOrName)
+          }
         }
       },
 
@@ -577,6 +605,14 @@ export function createPopoverStore<TData = any, TContext = any>(
 
         const entry = getEntryAtIndex(floating, trail, index)
         if (!entry) return
+
+        // Abort previous loading requests for this key if any
+        const prevController = activeControllers.get(key)
+        if (prevController) {
+          prevController.abort()
+        }
+        const controller = new AbortController()
+        activeControllers.set(key, controller)
 
         set((state) => {
           const nextTrail = state.trail.map((e) =>
@@ -597,7 +633,7 @@ export function createPopoverStore<TData = any, TContext = any>(
         }
 
         try {
-          const resolved = await resolveData(key, parentData, context ?? undefined)
+          const resolved = await resolveData(key, parentData, context ?? undefined, controller.signal)
           set((state) => {
             const nextTrail = state.trail.map((e) =>
               e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e
@@ -608,6 +644,7 @@ export function createPopoverStore<TData = any, TContext = any>(
             return { trail: nextTrail, floating: nextFloating }
           })
         } catch (err) {
+          if (controller.signal.aborted) return
           set((state) => {
             const errorObj = err instanceof Error ? err : new Error(String(err))
             const nextTrail = state.trail.map((e) =>
@@ -618,6 +655,10 @@ export function createPopoverStore<TData = any, TContext = any>(
             )
             return { trail: nextTrail, floating: nextFloating }
           })
+        } finally {
+          if (activeControllers.get(key) === controller) {
+            activeControllers.delete(key)
+          }
         }
       },
     }

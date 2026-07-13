@@ -37,9 +37,9 @@ Wrap your application (or popover context area) with `PopoverProvider`, passing 
 ```tsx
 import { PopoverProvider } from 'popover-trail';
 
-// Async resolver to fetch data for a given key
-const fetchDetailsResolver = async (key: string, parentData?: any) => {
-  const response = await fetch(`/api/details/${key}`);
+// Async resolver to fetch data for a given key, supporting AbortSignal cancellation
+const fetchDetailsResolver = async (key: string, parentData?: any, context?: any, signal?: AbortSignal) => {
+  const response = await fetch(`/api/details/${key}`, { signal });
   if (!response.ok) throw new Error('Network failure');
   return response.json();
 };

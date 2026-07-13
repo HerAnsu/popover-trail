@@ -3,9 +3,22 @@ import { useEffect, useRef, useState } from 'react'
 interface UsePopoverDragAndDropOptions {
   isDragging: boolean
   transform: { x: number; y: number } | null
+  enableTilt?: boolean
+  maxTiltAngle?: number
+  tiltSensitivity?: number
 }
 
-export function usePopoverDragAndDrop({ isDragging, transform }: UsePopoverDragAndDropOptions) {
+/**
+ * Hook to track dragging offsets and calculate horizontal drag velocity 
+ * for physics-based spring rotation (tilt/swing).
+ */
+export function usePopoverDragAndDrop({
+  isDragging,
+  transform,
+  enableTilt = true,
+  maxTiltAngle = 5,
+  tiltSensitivity = 8,
+}: UsePopoverDragAndDropOptions) {
   const lastDragX = useRef(0)
   const lastTime = useRef(0)
   const transformXRef = useRef(0)
@@ -17,7 +30,7 @@ export function usePopoverDragAndDrop({ isDragging, transform }: UsePopoverDragA
   useEffect(() => {
     let rafId: number
 
-    if (isDragging) {
+    if (isDragging && enableTilt) {
       const updateRotation = () => {
         const now = performance.now()
         const dt = Math.max(1, now - lastTime.current)
@@ -25,8 +38,8 @@ export function usePopoverDragAndDrop({ isDragging, transform }: UsePopoverDragA
         const velocity = (currentDragX - lastDragX.current) / dt
 
         setRotation((prev) => {
-          const next = prev * 0.95 + velocity * 8 * 0.05
-          return Math.max(-5, Math.min(5, next))
+          const next = prev * 0.95 + velocity * tiltSensitivity * 0.05
+          return Math.max(-maxTiltAngle, Math.min(maxTiltAngle, next))
         })
 
         lastDragX.current = currentDragX
@@ -38,7 +51,7 @@ export function usePopoverDragAndDrop({ isDragging, transform }: UsePopoverDragA
       lastDragX.current = transformXRef.current
       rafId = requestAnimationFrame(updateRotation)
     } else {
-      // Smoothly return rotation back to 0 (inertia decay) when dragging stops
+      // Smoothly return rotation back to 0 (inertia decay) when dragging stops or tilt is disabled
       const returnToZero = () => {
         setRotation((prev) => {
           if (Math.abs(prev) < 0.05) return 0
@@ -52,7 +65,7 @@ export function usePopoverDragAndDrop({ isDragging, transform }: UsePopoverDragA
     return () => {
       cancelAnimationFrame(rafId)
     }
-  }, [isDragging])
+  }, [isDragging, enableTilt, maxTiltAngle, tiltSensitivity])
 
   const dragX = transform?.x ?? 0
   const dragY = transform?.y ?? 0

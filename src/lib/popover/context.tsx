@@ -28,6 +28,11 @@ export function PopoverProvider<TData = any, TContext = any>({
   // Use useState to instantiate the store once
   const [store] = useState(() => createPopoverStore<TData, TContext>(resolveData, initialContext))
 
+  // Synchronize context reactively when the prop changes
+  useEffect(() => {
+    store.getState().setContext(initialContext as any)
+  }, [initialContext, store])
+
   // Setup click outside logic if enabled
   const enabled = clickOutside?.enabled
   const ignoreClass = clickOutside?.ignoreClass
