@@ -214,11 +214,7 @@ function MainContent() {
   const floating = usePopoverFloating()
 
   const handleTrigger = (key: string, e: React.MouseEvent<HTMLButtonElement>) => {
-    const event = {
-      currentTarget: e.currentTarget,
-      stopPropagation: () => e.stopPropagation(),
-    }
-    void openRootWithResolver(key, event)
+    void openRootWithResolver(key, e)
   }
 
   const totalActive = trail.length + floating.length
