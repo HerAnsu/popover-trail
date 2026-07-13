@@ -73,6 +73,8 @@ export interface PopoverActions<TData = any, TContext = any> {
   clear: () => void
   /** Clears only the active trail (retains floating ones). */
   clearTrail: () => void
+  /** Closes the topmost active popover based on z-index depth order. */
+  closeTopmost: () => void
 
   // Orchestrator Actions (with resolver support)
   /** Resolves data and opens a root popover. */

@@ -432,6 +432,16 @@ export function createPopoverStore<TData = any, TContext = any>(
         set((state) => getClearTrailPatch(state))
       },
 
+      closeTopmost: () => {
+        const { zIndexOrder, floating, trail } = get()
+        if (zIndexOrder.length === 0) return
+        const topKey = zIndexOrder[zIndexOrder.length - 1]
+        const idx = findEntryIndex(floating, trail, topKey)
+        if (idx !== -1) {
+          set((state) => closeFromState(state, idx))
+        }
+      },
+
       // Async/Hydration Actions
       openRootWithResolver: async (keyOrName, anchorEvent, ownerIdOverride) => {
         anchorEvent.stopPropagation()

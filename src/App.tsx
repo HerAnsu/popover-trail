@@ -17,6 +17,7 @@ import {
   usePopoverActions,
   usePopoverGeometry,
   usePopoverDragAndDrop,
+  usePopoverKeyboard,
   type PopoverResolver,
   type TrailEntry,
 } from './lib/popover'
@@ -251,6 +252,7 @@ function PopoverCanvas() {
 
 // 4. Main App layout
 function MainContent() {
+  usePopoverKeyboard()
   const { openRootWithResolver, clear } = usePopoverActions<DummyData>()
   const trail = usePopoverTrail()
   const floating = usePopoverFloating()
