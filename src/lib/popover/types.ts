@@ -118,29 +118,29 @@ export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, 
   PopoverActions<TData, TContext> & {
     actions: Omit<
       PopoverActions<TData, TContext>,
-      | "setContext"
-      | "setOwnerId"
-      | "openRoot"
-      | "pushNested"
-      | "destroy"
-      | "setClosePinnedDescendants"
-      | "setCollisionConfig"
+      | 'setContext'
+      | 'setOwnerId'
+      | 'openRoot'
+      | 'pushNested'
+      | 'destroy'
+      | 'setClosePinnedDescendants'
+      | 'setCollisionConfig'
     >;
   };
 
 export type PopoverPlacement =
-  | "top"
-  | "bottom"
-  | "left"
-  | "right"
-  | "top-start"
-  | "top-end"
-  | "bottom-start"
-  | "bottom-end"
-  | "right-start"
-  | "right-end"
-  | "left-start"
-  | "left-end";
+  | 'top'
+  | 'bottom'
+  | 'left'
+  | 'right'
+  | 'top-start'
+  | 'top-end'
+  | 'bottom-start'
+  | 'bottom-end'
+  | 'right-start'
+  | 'right-end'
+  | 'left-start'
+  | 'left-end';
 
 export interface ClickOutsideConfig {
   enabled?: boolean;
@@ -163,7 +163,7 @@ export interface PopoverCache<TData = any> {
 export interface CollisionConfig {
   /** DOM element(s) to constrain the popover within (default: 'clippingAncestors'). */
   boundary?:
-    | "clippingAncestors"
+    | 'clippingAncestors'
     | HTMLElement
     | HTMLElement[]
     | (() => HTMLElement | HTMLElement[] | null);

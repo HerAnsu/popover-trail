@@ -7,11 +7,11 @@ import {
   useCallback,
   useEffect,
   type ReactNode,
-} from "react";
-import { createPortal } from "react-dom";
-import { useStore } from "zustand";
-import type { StoreApi } from "zustand/vanilla";
-import { createPopoverStore } from "./store";
+} from 'react';
+import { createPortal } from 'react-dom';
+import { useStore } from 'zustand';
+import type { StoreApi } from 'zustand/vanilla';
+import { createPopoverStore } from './store';
 import type {
   PopoverStore,
   PopoverResolver,
@@ -20,7 +20,7 @@ import type {
   CollisionConfig,
   OpenRootOptions,
   OpenNestedOptions,
-} from "./types";
+} from './types';
 
 // Instantiate context with any-typed store as fallback
 export const PopoverStoreContext = createContext<StoreApi<PopoverStore<any, any>> | null>(null);
@@ -81,7 +81,7 @@ export function PopoverProvider<TData = any, TContext = any>({
     if (!enableKeyboardClose) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         const state = store.getState();
         const hasActive = state.trail.length > 0 || state.floating.length > 0;
         if (hasActive) {
@@ -90,14 +90,14 @@ export function PopoverProvider<TData = any, TContext = any>({
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [enableKeyboardClose, store]);
 
   // Setup click outside logic if enabled
   const enabled = clickOutside?.enabled;
   const ignoreClass = clickOutside?.ignoreClass;
-  const popoverSelector = clickOutside?.popoverSelector ?? ".popover-card";
+  const popoverSelector = clickOutside?.popoverSelector ?? '.popover-card';
 
   useEffect(() => {
     if (!enabled) return;
@@ -136,8 +136,8 @@ export function PopoverProvider<TData = any, TContext = any>({
       state.clearTrail();
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [enabled, ignoreClass, popoverSelector, store]);
 
   return (
@@ -153,7 +153,7 @@ export function usePopoverStore<TData = any, TContext = any, TSelected = any>(
 ): TSelected {
   const store = useContext(PopoverStoreContext);
   if (!store) {
-    throw new Error("usePopoverStore must be used within a PopoverProvider");
+    throw new Error('usePopoverStore must be used within a PopoverProvider');
   }
   return useStore(store, selector);
 }
@@ -241,19 +241,19 @@ export function usePopoverCollisionConfig() {
 export function usePopoverActions<TData = any, TContext = any>() {
   const store = useContext(PopoverStoreContext);
   if (!store) {
-    throw new Error("usePopoverActions must be used within a PopoverProvider");
+    throw new Error('usePopoverActions must be used within a PopoverProvider');
   }
   return useMemo(
     () =>
       store.getState().actions as Omit<
-        PopoverStore<TData, TContext>["actions"],
-        | "setContext"
-        | "setOwnerId"
-        | "openRoot"
-        | "pushNested"
-        | "destroy"
-        | "setClosePinnedDescendants"
-        | "setCollisionConfig"
+        PopoverStore<TData, TContext>['actions'],
+        | 'setContext'
+        | 'setOwnerId'
+        | 'openRoot'
+        | 'pushNested'
+        | 'destroy'
+        | 'setClosePinnedDescendants'
+        | 'setCollisionConfig'
       >,
     [store],
   );

@@ -1,4 +1,4 @@
-import { createStore } from "zustand/vanilla";
+import { createStore } from 'zustand/vanilla';
 import type {
   PopoverStore,
   PopoverResolver,
@@ -6,14 +6,14 @@ import type {
   PopoverStateData,
   PopoverActions,
   PopoverCache,
-} from "./types";
-import equal from "fast-deep-equal";
+} from './types';
+import equal from 'fast-deep-equal';
 
 /**
  * Returns true if a value is a Promise or a thenable object.
  */
 function isPromise<T>(value: any): value is Promise<T> {
-  return typeof value === "object" && value !== null && typeof value.then === "function";
+  return typeof value === 'object' && value !== null && typeof value.then === 'function';
 }
 
 /**
@@ -553,10 +553,10 @@ export function createPopoverStore<TData = any, TContext = any>(
 
       clearTrail: () => {
         // Abort the root hydration request and any trail-related nested requests
-        const rootController = activeControllers.get("__root__");
+        const rootController = activeControllers.get('__root__');
         if (rootController) {
           rootController.abort();
-          activeControllers.delete("__root__");
+          activeControllers.delete('__root__');
         }
         const {
           trail,
@@ -619,7 +619,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       openRootWithResolver: async (keyOrName, anchorEvent, options) => {
         anchorEvent.stopPropagation();
         const { ownerId, context, rootHydrationRequestCounter, cache } = get();
-        const finalOwnerId = options?.ownerId ?? ownerId ?? "default";
+        const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
         const localCollision = options?.collision;
 
         const anchorElement = anchorEvent.currentTarget;
@@ -629,12 +629,12 @@ export function createPopoverStore<TData = any, TContext = any>(
         set({ anchorElement, anchorRect });
 
         // Abort previous root loading requests if any
-        const prevController = activeControllers.get("__root__");
+        const prevController = activeControllers.get('__root__');
         if (prevController) {
           prevController.abort();
         }
         const controller = new AbortController();
-        activeControllers.set("__root__", controller);
+        activeControllers.set('__root__', controller);
 
         // 1. Check cache first
         const cachedResultOrPromise = cache ? cache.get(keyOrName) : undefined;
@@ -650,7 +650,7 @@ export function createPopoverStore<TData = any, TContext = any>(
               collision: localCollision,
             };
             set((state) => openRootState(state, finalOwnerId, entry));
-            activeControllers.delete("__root__");
+            activeControllers.delete('__root__');
             return;
           }
         }
@@ -675,7 +675,7 @@ export function createPopoverStore<TData = any, TContext = any>(
           if (cache && resolved !== undefined) {
             void cache.set(keyOrName, resolved as TData);
           }
-          activeControllers.delete("__root__");
+          activeControllers.delete('__root__');
           return;
         }
 
@@ -726,8 +726,8 @@ export function createPopoverStore<TData = any, TContext = any>(
             return { trail: nextTrail };
           });
         } finally {
-          if (activeControllers.get("__root__") === controller) {
-            activeControllers.delete("__root__");
+          if (activeControllers.get('__root__') === controller) {
+            activeControllers.delete('__root__');
           }
         }
       },

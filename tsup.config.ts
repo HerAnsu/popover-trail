@@ -16,6 +16,7 @@ export default defineConfig({
     'zustand',
     '@floating-ui/react',
     '@dnd-kit/core',
+    'react-focus-lock',
     'fast-deep-equal',
   ],
 })

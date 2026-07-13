@@ -1,15 +1,15 @@
-import { useRef, useCallback, useEffect } from "react";
-import { useDraggable } from "@dnd-kit/core";
-import { usePopoverGeometry } from "./useGeometry";
-import { usePopoverDragAndDrop } from "./useDragAndDrop";
+import { useRef, useCallback, useEffect } from 'react';
+import { useDraggable } from '@dnd-kit/core';
+import { usePopoverGeometry } from './useGeometry';
+import { usePopoverDragAndDrop } from './useDragAndDrop';
 import {
   usePopoverOffset,
   usePopoverZIndex,
   useIsPopoverTopMost,
   usePopoverActions,
-} from "../context";
-import { getPopoverStyles } from "../utils/styles";
-import type { TrailEntry, PopoverPlacement } from "../types";
+} from '../context';
+import { getPopoverStyles } from '../utils/styles';
+import type { TrailEntry, PopoverPlacement } from '../types';
 
 interface UsePopoverCardOptions {
   entry: TrailEntry;
@@ -31,7 +31,7 @@ export function usePopoverCard({
   entry,
   index,
   isPinned,
-  placement = "bottom",
+  placement = 'bottom',
   enableDrag = true,
   enableTilt = true,
   maxTiltAngle = 5,
@@ -42,7 +42,7 @@ export function usePopoverCard({
 
   // Capture active element on mount and restore focus on unmount (WAI-ARIA compliance)
   useEffect(() => {
-    if (typeof document !== "undefined") {
+    if (typeof document !== 'undefined') {
       previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
     }
 
@@ -50,7 +50,7 @@ export function usePopoverCard({
       const elementToFocus = previouslyFocusedElementRef.current;
       if (
         elementToFocus &&
-        typeof elementToFocus.focus === "function" &&
+        typeof elementToFocus.focus === 'function' &&
         document.body.contains(elementToFocus)
       ) {
         const activeEl = document.activeElement;

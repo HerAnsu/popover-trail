@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from "react";
-import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react";
-import type { TrailEntry, PopoverPlacement } from "../types";
-import { usePopoverCollisionConfig } from "../context";
+import { useEffect, useMemo } from 'react';
+import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react';
+import type { TrailEntry, PopoverPlacement } from '../types';
+import { usePopoverCollisionConfig } from '../context';
 
 interface UsePopoverGeometryOptions {
   id: string;
@@ -34,7 +34,7 @@ export function usePopoverGeometry({
   const padding = localCollision?.padding ?? globalCollision?.padding;
 
   // Resolve lazy-getter functions for boundary elements
-  const resolvedBoundary = typeof boundary === "function" ? boundary() : boundary;
+  const resolvedBoundary = typeof boundary === 'function' ? boundary() : boundary;
   const boundaryOption = resolvedBoundary || undefined;
 
   // 1. Setup a virtual element for Floating UI positioning using the anchor DOMRect
@@ -47,7 +47,7 @@ export function usePopoverGeometry({
 
   // 2. Configure useFloating positioning middleware with autoUpdate
   const { refs, x, y, update } = useFloating({
-    placement: placement ?? "bottom",
+    placement: placement ?? 'bottom',
     whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
     middleware: [
       offset(8), // Gap distance from trigger
