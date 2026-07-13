@@ -1,82 +1,82 @@
 # Popover Trail 🪄
 
-**Popover Trail** — это универсальная headless-библиотека для создания всплывающих окон (поповеров) в React с поддержкой бесконечной вложенности (цепочек окон), ленивой асинхронной загрузки связей, свободного перетаскивания и физики наклона.
+**Popover Trail** is a versatile, headless, and lightweight React library for building cascading popovers (popover trails) with support for infinite nesting, lazy asynchronous data loading, drag-and-drop pinning, and physics-based tilt motion.
 
-## Особенности 🌟
+## Features 🌟
 
-- 🔗 **Цепочки окон (Trail)**: Каждое вложенное окно связывается с родительским. Закрытие родителя автоматически очищает всю дочернюю ветку.
-- 📌 **Прикрепление (Pinning)**: Окна можно откреплять от цепочки (кнопкой пина) и превращать в независимые свободно перетаскиваемые плавающие карточки (`floating`).
-- 🎯 **Точечное позиционирование**: Позиционирование окон с учетом коллизий (умный сдвиг, перенос границ) на базе `@floating-ui/react`.
-- 🕹️ **Интерактивная физика**: Поддержка DND с реактивной физикой (плавный наклон при перетаскивании и мягкое затухание/инерция при остановке).
-- 🛡️ **Защита от Race Conditions**: Контроль очередей загрузки данных — стор отбрасывает устаревшие сетевые ответы, если пользователь быстро кликнул по нескольким ссылкам.
-- 🛡️ **Умный портал**: Компонент `<PopoverPortal>` монтирует окна на уровне `body`, избавляя интерфейс от обрезания границами родительских `overflow: hidden` контейнеров.
-- 🔁 **Повторные попытки (Retry)**: Возможность перезагрузить данные для карточки прямо внутри поповера с помощью экшена `retryPopover`.
-- ⌨️ **Keyboard & Mouse Events**: Закрытие верхнего активного окна кнопкой `Escape`, фокус-локи внутри активного окна и закрытие по клику вовне (`clickOutside`).
+- 🔗 **Cascading Trails**: Nested popovers are linked to their parents. Closing or updating a parent automatically cleans up all downstream child popovers.
+- 📌 **Draggable Pinning**: Popovers can be pinned/unpinned dynamically, detaching them from the cascading trail into independent, freely draggable floating cards (`floating`).
+- 🎯 **Smart Positioning**: Collision-aware positioning (shifting, flipping, boundaries) built on top of `@floating-ui/react`.
+- 🕹️ **Spring-like Physics**: Smooth drag-and-drop with realistic rotation tilt based on velocity, featuring smooth inertia decay when released.
+- 🛡️ **Race Condition Protection**: Requests are tracked using incremental counters, discarding stale async responses when navigating or clicking quickly.
+- 🚪 **DOM Portal Integration**: The `<PopoverPortal>` wrapper mounts popovers directly to `document.body` to prevent clipping issues caused by parent `overflow: hidden` CSS rules.
+- 🔁 **Built-in Retry Actions**: Instantly retry resolving data for a specific popover on failure using the `retryPopover` action without closing the card.
+- ⌨️ **A11y & Mouse Controls**: Focus trapping within active popovers (via `react-focus-lock`), closing the topmost popover on `Escape`, and global click-outside closing config.
 
 ---
 
-## Установка 📦
+## Installation 📦
 
-Установите пакет и его peer-зависимости:
+Install the package and its peer dependencies:
 
 ```bash
 npm install popover-trail
 ```
 
-Убедитесь, что в вашем проекте установлены необходимые `peerDependencies`:
+Make sure you have the required `peerDependencies` installed in your project:
 `react`, `react-dom`, `@dnd-kit/core`, `@floating-ui/react`, `zustand`.
 
 ---
 
-## Быстрый старт 🚀
+## Quick Start 🚀
 
-### 1. Подключение провайдера (`PopoverProvider`)
+### 1. Setup the Provider (`PopoverProvider`)
 
-Оберните ваше приложение или рабочую область в `PopoverProvider`, передав функцию-резолвер для ленивой подгрузки данных:
+Wrap your application (or popover context area) with `PopoverProvider`, passing the async data resolver function:
 
 ```tsx
 import { PopoverProvider } from 'popover-trail';
 
-// Асинхронный резолвер данных (например, запрос к API)
-const apiResolver = async (key: string, parentData?: any) => {
+// Async resolver to fetch data for a given key
+const fetchDetailsResolver = async (key: string, parentData?: any) => {
   const response = await fetch(`/api/details/${key}`);
-  if (!response.ok) throw new Error('Ошибка сети');
+  if (!response.ok) throw new Error('Network failure');
   return response.json();
 };
 
 export default function App() {
   return (
     <PopoverProvider 
-      resolveData={apiResolver}
+      resolveData={fetchDetailsResolver}
       clickOutside={{ enabled: true, ignoreClass: 'btn-trigger' }}
     >
-      <MyGameClient />
+      <MyWorkspace />
     </PopoverProvider>
   );
 }
 ```
 
-### 2. Привязка кнопок открытия (`usePopoverTrigger`)
+### 2. Bind Triggers (`usePopoverTrigger`)
 
-Используйте хук `usePopoverTrigger` для простой и быстрой привязки кнопок, открывающих корневой поповер:
+Use the `usePopoverTrigger` hook to bind a button element to open a root-level popover trail:
 
 ```tsx
 import { usePopoverTrigger } from 'popover-trail';
 
-export function SkillPanel() {
-  const teleportProps = usePopoverTrigger('skill-teleport');
+export function ActionButton() {
+  const triggerProps = usePopoverTrigger('item-sword');
 
   return (
-    <button className="btn-trigger" {...teleportProps}>
-      🪄 Телепортация
+    <button className="btn-trigger" {...triggerProps}>
+      ⚔️ Open Sword Details
     </button>
   );
 }
 ```
 
-### 3. Рендеринг холста окон (`PopoverPortal` + `usePopoverCard`)
+### 3. Render the Canvas (`PopoverPortal` + `usePopoverCard`)
 
-Создайте холст отрисовки всплывающих окон. Для безопасности верстки используйте `<PopoverPortal>`:
+Create a canvas overlay to render active popovers. Wrap it with `PopoverPortal` to mount at the document body level:
 
 ```tsx
 import { 
@@ -94,7 +94,7 @@ export function PopoverCanvas() {
 
   return (
     <PopoverPortal>
-      {/* Отрисовка прикрепленных и свободных поповеров */}
+      {/* Render both pinned (floating) and cascading (trail) popovers */}
       {[...floating, ...trail].map((entry, idx) => (
         <PopoverCard key={entry.key} entry={entry} index={idx} />
       ))}
@@ -103,47 +103,46 @@ export function PopoverCanvas() {
 }
 
 function PopoverCard({ entry, index }) {
-  const { clear, retryPopover } = usePopoverActions();
-  const isPinned = entry.parentKey === undefined; // или берем из состояния стора
+  const { togglePin, retryPopover } = usePopoverActions();
+  const isPinned = entry.parentKey === undefined; // or fetch from pinned state store
 
-  // Получаем стили позиционирования, драга и физики наклона
+  // Retrieve layout coordinates, drag offsets, and rotation tilt styling
   const { 
     ref, 
     style, 
     dragHandleProps, 
     isTopMost, 
-    togglePin, 
     close, 
     openNested 
   } = usePopoverCard({
     entry,
     index,
     isPinned,
-    placement: 'bottom',       // Базовое размещение
-    enableDrag: true,          // Разрешить перетаскивание при откреплении
-    enableTilt: true,          // Включить физику наклона
-    maxTiltAngle: 8,           // Максимальный градус наклона
-    tiltSensitivity: 10,       // Чувствительность наклона к скорости мыши
+    placement: 'bottom',       // Placement layout
+    enableDrag: true,          // Allow drag-and-drop when unpinned
+    enableTilt: true,          // Enable velocity-based rotation swing
+    maxTiltAngle: 8,           // Max swing angle in degrees
+    tiltSensitivity: 10,       // Swing sensitivity multiplier
   });
 
   return (
     <div ref={ref} style={style} className="popover-card">
       <FocusLock returnFocus disabled={!isTopMost}>
-        {/* Шапка, за которую можно перетаскивать карточку */}
+        {/* Header acts as drag handle */}
         <div className="popover-header" {...dragHandleProps}>
           <span>{entry.key}</span>
-          <button onClick={() => togglePin()}>📌</button>
+          <button onClick={() => togglePin(entry.key)}>📌</button>
           <button onClick={close}>❌</button>
         </div>
 
-        {/* Тело карточки */}
+        {/* Card Body */}
         <div className="popover-body">
-          {entry.isLoading && <div className="loader">Загрузка...</div>}
+          {entry.isLoading && <div className="loader">Loading...</div>}
           
           {entry.error && (
             <div className="error-zone">
-              <p>Не удалось загрузить данные</p>
-              <button onClick={() => retryPopover(entry.key)}>Повторить</button>
+              <p>Failed to resolve details.</p>
+              <button onClick={() => retryPopover(entry.key)}>Retry</button>
             </div>
           )}
 
@@ -152,9 +151,9 @@ function PopoverCard({ entry, index }) {
               <h3>{entry.data.title}</h3>
               <p>{entry.data.description}</p>
               
-              {/* Ссылка для открытия вложенного уровня */}
-              <button onClick={(e) => openNested('sub-item-key', e)}>
-                Открыть вложенный элемент
+              {/* Trigger nested child popover */}
+              <button onClick={(e) => openNested('child-element-key', e)}>
+                View Child Elements
               </button>
             </div>
           )}
@@ -167,13 +166,13 @@ function PopoverCard({ entry, index }) {
 
 ---
 
-## Стилизация (Vanilla CSS, SCSS, Tailwind) 🎨
+## Styling (CSS, SCSS, Tailwind) 🎨
 
-Headless-подход предоставляет вам полную свободу в дизайне. Вы можете использовать любые CSS-решения.
+Because Popover Trail is a headless library, it doesn't force any CSS on you. You can style the cards using any utility classes or preprocessors.
 
-### Пример с TailwindCSS:
+### TailwindCSS Example:
 
-Благодаря интеграции с библиотекой `clsx`, вы можете динамически управлять стилями Tailwind:
+You can combine it with `clsx` for dynamic responsive states:
 
 ```tsx
 import clsx from 'clsx';
@@ -190,7 +189,7 @@ function PopoverCard({ entry, index }) {
         isTopMost ? "border-indigo-500 shadow-indigo-500/20" : "border-slate-800"
       )}
     >
-      {/* Содержимое */}
+      {/* Content */}
     </div>
   );
 }
@@ -198,21 +197,21 @@ function PopoverCard({ entry, index }) {
 
 ---
 
-## Конфигурация API хука `usePopoverCard` ⚙️
+## Hook Configuration Options (`usePopoverCard`) ⚙️
 
-| Свойство | Тип | По умолчанию | Описание |
+| Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `entry` | `TrailEntry` | *Обязательно* | Объект поповера из стора. |
-| `index` | `number` | *Обязательно* | Z-Index / порядковый индекс карточки. |
-| `isPinned` | `boolean` | *Обязательно* | Находится ли карточка в прикрепленном (`floating`) состоянии. |
-| `placement` | `PopoverPlacement` | `'bottom'` | Базовое размещение относительно родителя (`top`, `bottom`, `left`, `right` + вариации `start`/`end`). |
-| `enableDrag` | `boolean` | `true` | Включает перетаскивание мышкой для открепленных окон. |
-| `enableTilt` | `boolean` | `true` | Включает физический наклон (покачивание) карточки при драге. |
-| `maxTiltAngle`| `number` | `5` | Максимальный угол наклона в градусах. |
-| `tiltSensitivity`| `number` | `8` | Множитель чувствительности физики наклона. |
+| `entry` | `TrailEntry` | *Required* | Popover state entry object. |
+| `index` | `number` | *Required* | Current virtual stack index (used for z-index ordering). |
+| `isPinned` | `boolean` | *Required* | Indicates if the card is pinned (independent floating state). |
+| `placement` | `PopoverPlacement` | `'bottom'` | Base positioning alignment relative to trigger. |
+| `enableDrag` | `boolean` | `true` | Enables draggable physics when pinned. |
+| `enableTilt` | `boolean` | `true` | Enables spring-like rotation tilt. |
+| `maxTiltAngle`| `number` | `5` | Maximum rotation angle in degrees. |
+| `tiltSensitivity`| `number` | `8` | Physics sensitivity multiplier. |
 
 ---
 
-## Лицензия 📄
+## License 📄
 
-MIT License. Сделано с любовью для отзывчивых и интерактивных интерфейсов.
+MIT License. Crafted with ❤️ for rich and interactive user experiences.
