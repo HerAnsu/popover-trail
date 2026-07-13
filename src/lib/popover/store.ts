@@ -128,8 +128,9 @@ function bringToFrontPatch<TData, TContext>(
 ): Partial<PopoverStateData<TData, TContext>> {
   const descendantEntries = getDescendants(key, state.floating, state.trail)
   const keysToMove = [...descendantEntries.map((e) => e.key), key]
+  const keysToMoveSet = new Set(keysToMove)
   const nextZIndexOrder = [
-    ...state.zIndexOrder.filter((k) => !keysToMove.includes(k)),
+    ...state.zIndexOrder.filter((k) => !keysToMoveSet.has(k)),
     ...keysToMove,
   ]
   const index = state.floating.findIndex((e) => e.key === key)
