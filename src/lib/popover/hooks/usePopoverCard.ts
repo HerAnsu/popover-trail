@@ -1,25 +1,25 @@
-import { useRef, useCallback } from 'react'
-import { useDraggable } from '@dnd-kit/core'
-import { usePopoverGeometry } from './useGeometry'
-import { usePopoverDragAndDrop } from './useDragAndDrop'
+import { useRef, useCallback } from "react";
+import { useDraggable } from "@dnd-kit/core";
+import { usePopoverGeometry } from "./useGeometry";
+import { usePopoverDragAndDrop } from "./useDragAndDrop";
 import {
   usePopoverOffset,
   usePopoverZIndex,
   useIsPopoverTopMost,
   usePopoverActions,
-} from '../context'
-import { getPopoverStyles } from '../utils/styles'
-import type { TrailEntry, PopoverPlacement } from '../types'
+} from "../context";
+import { getPopoverStyles } from "../utils/styles";
+import type { TrailEntry, PopoverPlacement } from "../types";
 
 interface UsePopoverCardOptions {
-  entry: TrailEntry
-  index: number
-  isPinned: boolean
-  placement?: PopoverPlacement
-  enableDrag?: boolean
-  enableTilt?: boolean
-  maxTiltAngle?: number
-  tiltSensitivity?: number
+  entry: TrailEntry;
+  index: number;
+  isPinned: boolean;
+  placement?: PopoverPlacement;
+  enableDrag?: boolean;
+  enableTilt?: boolean;
+  maxTiltAngle?: number;
+  tiltSensitivity?: number;
 }
 
 /**
@@ -31,19 +31,19 @@ export function usePopoverCard({
   entry,
   index,
   isPinned,
-  placement = 'bottom',
+  placement = "bottom",
   enableDrag = true,
   enableTilt = true,
   maxTiltAngle = 5,
   tiltSensitivity = 8,
 }: UsePopoverCardOptions) {
-  const ref = useRef<HTMLDivElement | null>(null)
+  const ref = useRef<HTMLDivElement | null>(null);
 
   // 1. Set up dnd-kit dragging (disabled if enableDrag is false or popover is not pinned)
   const { setNodeRef, transform, isDragging, attributes, listeners } = useDraggable({
     id: entry.key,
     disabled: !enableDrag || !isPinned,
-  })
+  });
 
   // 2. Physics-based rotation swing setup
   const { rotation, dragX, dragY } = usePopoverDragAndDrop({
@@ -52,7 +52,7 @@ export function usePopoverCard({
     enableTilt,
     maxTiltAngle,
     tiltSensitivity,
-  })
+  });
 
   // 3. Geometry positioning setup
   const { finalLayoutPos } = usePopoverGeometry({
@@ -64,13 +64,13 @@ export function usePopoverCard({
     isDragging: enableDrag ? isDragging : false,
     isPinned,
     entry,
-  })
+  });
 
   // 4. Select state coordinates and actions
-  const offset = usePopoverOffset(entry.key)
-  const zIndex = usePopoverZIndex(entry.key)
-  const isTop = useIsPopoverTopMost(entry.key)
-  const actions = usePopoverActions()
+  const offset = usePopoverOffset(entry.key);
+  const zIndex = usePopoverZIndex(entry.key);
+  const isTop = useIsPopoverTopMost(entry.key);
+  const actions = usePopoverActions();
 
   // 5. Compile styles using the compiler utility
   const style = getPopoverStyles({
@@ -80,21 +80,24 @@ export function usePopoverCard({
     dragY: enableDrag ? dragY : 0,
     rotation: enableDrag ? rotation : 0,
     zIndex: zIndex + 1000,
-  })
+  });
 
-  const setCombinedRef = useCallback((node: HTMLDivElement | null) => {
-    if (enableDrag) {
-      setNodeRef(node)
-    }
-    ref.current = node
-  }, [enableDrag, setNodeRef])
+  const setCombinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (enableDrag) {
+        setNodeRef(node);
+      }
+      ref.current = node;
+    },
+    [enableDrag, setNodeRef],
+  );
 
   const handlePinToggle = useCallback(() => {
     if (ref.current) {
-      const currentRect = ref.current.getBoundingClientRect()
-      actions.togglePin(entry.key, currentRect)
+      const currentRect = ref.current.getBoundingClientRect();
+      actions.togglePin(entry.key, currentRect);
     }
-  }, [actions, entry.key])
+  }, [actions, entry.key]);
 
   return {
     ref: setCombinedRef,
@@ -104,5 +107,5 @@ export function usePopoverCard({
     actions,
     dragHandleProps: enableDrag ? { ...attributes, ...listeners } : {},
     handlePinToggle,
-  }
+  };
 }

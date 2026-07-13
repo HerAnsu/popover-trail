@@ -1,21 +1,21 @@
 export interface TrailEntry<TData = any> {
   /** Unique identifier for this popover instance. */
-  key: string
+  key: string;
   /** Parent popover identifier (tracks tree hierarchy in nested paths). */
-  parentKey?: string
+  parentKey?: string;
   /** Bounding box of the element that triggered/anchored this popover. */
-  rect?: DOMRect
+  rect?: DOMRect;
   /** Custom coordinates if the popover is pinned/floating. */
   pinnedLayoutPos?: {
-    top: number
-    left: number
-  }
+    top: number;
+    left: number;
+  };
   /** Resolved data payload. */
-  data?: TData
+  data?: TData;
   /** Loading flag during asynchronous resolution. */
-  isLoading?: boolean
+  isLoading?: boolean;
   /** Error information if resolution fails. */
-  error?: Error | null
+  error?: Error | null;
 }
 
 /**
@@ -25,102 +25,102 @@ export type PopoverResolver<TData = any, TContext = any> = (
   keyOrName: string,
   parentData?: TData,
   context?: TContext,
-  signal?: AbortSignal
-) => Promise<TData> | TData
+  signal?: AbortSignal,
+) => Promise<TData> | TData;
 
 export interface PopoverStateData<TData = any, TContext = any> {
   /** The stack of active popovers in the current trail path. */
-  trail: TrailEntry<TData>[]
+  trail: TrailEntry<TData>[];
   /** Pinned/floating popovers in the viewport. */
-  floating: TrailEntry<TData>[]
+  floating: TrailEntry<TData>[];
   /** Current owner claiming the active trail path. */
-  ownerId: string | null
+  ownerId: string | null;
   /** Drag-and-drop coordinate offsets mapped by popover key. */
-  offsets: Record<string, { x: number; y: number }>
+  offsets: Record<string, { x: number; y: number }>;
   /** Pinned/floating status mapped by popover key. */
-  pinnedStates: Record<string, boolean>
+  pinnedStates: Record<string, boolean>;
   /** z-index depth order list of keys (highest is last). */
-  zIndexOrder: string[]
+  zIndexOrder: string[];
   /** Counter tracking root-level hydration requests to avoid race conditions. */
-  rootHydrationRequestCounter: number
+  rootHydrationRequestCounter: number;
   /** Counters tracking nested hydration requests mapped by parent key. */
-  nestedHydrationRequestCounters: Record<string, number>
+  nestedHydrationRequestCounters: Record<string, number>;
   /** The HTML anchor element triggering the root popover. */
-  anchorElement: HTMLElement | null
+  anchorElement: HTMLElement | null;
   /** Bound box rect of the root anchor element. */
-  anchorRect: DOMRect | null
+  anchorRect: DOMRect | null;
   /** Current external global context values. */
-  context: TContext | null
+  context: TContext | null;
 }
 
 export interface PopoverActions<TData = any, TContext = any> {
   /** Updates the shared global context field. */
-  setContext: (context: TContext) => void
+  setContext: (context: TContext) => void;
   /** Updates the owner ID claiming the trail. */
-  setOwnerId: (ownerId: string | null) => void
+  setOwnerId: (ownerId: string | null) => void;
   /** Spawns a new popover trail root. */
-  openRoot: (ownerId: string, entry: TrailEntry<TData>) => void
+  openRoot: (ownerId: string, entry: TrailEntry<TData>) => void;
   /** Appends a nested popover after a parent index. */
-  pushNested: (index: number, entry: TrailEntry<TData>) => void
+  pushNested: (index: number, entry: TrailEntry<TData>) => void;
   /** Toggles a popover's pinned status. */
-  togglePin: (key: string, rect?: DOMRect) => void
+  togglePin: (key: string, rect?: DOMRect) => void;
   /** Brings a popover and its descendants to the top of the z-index list. */
-  bringToFront: (key: string) => void
+  bringToFront: (key: string) => void;
   /** Closes all popovers at and after a specific index. */
-  closeFrom: (index: number) => void
+  closeFrom: (index: number) => void;
   /** Updates coordinate offsets from drag events. */
-  updateOffset: (key: string, x: number, y: number) => void
+  updateOffset: (key: string, x: number, y: number) => void;
   /** Resets state completely. */
-  clear: () => void
+  clear: () => void;
   /** Clears only the active trail (retains floating ones). */
-  clearTrail: () => void
+  clearTrail: () => void;
   /** Closes the topmost active popover based on z-index depth order. */
-  closeTopmost: () => void
+  closeTopmost: () => void;
 
   // Orchestrator Actions (with resolver support)
   /** Resolves data and opens a root popover. */
   openRootWithResolver: (
     keyOrName: string,
     anchorEvent: { currentTarget: HTMLElement; stopPropagation: () => void },
-    ownerIdOverride?: string
-  ) => Promise<void>
+    ownerIdOverride?: string,
+  ) => Promise<void>;
   /** Resolves data and opens a nested popover from a source parent popover key. */
   openNestedWithResolver: (
     keyOrName: string,
     sourceKey: string,
-    triggerRect?: DOMRect
-  ) => Promise<void>
+    triggerRect?: DOMRect,
+  ) => Promise<void>;
   /** Retries resolving data for an active popover that previously failed to load. */
-  retryPopover: (key: string) => Promise<void>
+  retryPopover: (key: string) => Promise<void>;
   /** Lifecycle cleanup: aborts all in-flight requests and resets state. */
-  destroy: () => void
+  destroy: () => void;
 }
 
 export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, TContext> &
   PopoverActions<TData, TContext> & {
     actions: Omit<
       PopoverActions<TData, TContext>,
-      'setContext' | 'setOwnerId' | 'openRoot' | 'pushNested' | 'destroy'
-    >
-  }
+      "setContext" | "setOwnerId" | "openRoot" | "pushNested" | "destroy"
+    >;
+  };
 
 export type PopoverPlacement =
-  | 'top'
-  | 'bottom'
-  | 'left'
-  | 'right'
-  | 'top-start'
-  | 'top-end'
-  | 'bottom-start'
-  | 'bottom-end'
-  | 'right-start'
-  | 'right-end'
-  | 'left-start'
-  | 'left-end'
+  | "top"
+  | "bottom"
+  | "left"
+  | "right"
+  | "top-start"
+  | "top-end"
+  | "bottom-start"
+  | "bottom-end"
+  | "right-start"
+  | "right-end"
+  | "left-start"
+  | "left-end";
 
 export interface ClickOutsideConfig {
-  enabled?: boolean
-  ignoreClass?: string
+  enabled?: boolean;
+  ignoreClass?: string;
   /** CSS selector used to identify popover card elements (default: '.popover-card'). */
-  popoverSelector?: string
+  popoverSelector?: string;
 }

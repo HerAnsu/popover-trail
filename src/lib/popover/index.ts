@@ -6,9 +6,9 @@ export type {
   PopoverStore,
   PopoverPlacement,
   ClickOutsideConfig,
-} from './types'
+} from "./types";
 
-export { createPopoverStore } from './store'
+export { createPopoverStore } from "./store";
 
 export {
   PopoverProvider,
@@ -25,10 +25,10 @@ export {
   usePopoverActions,
   PopoverPortal,
   usePopoverTrigger,
-} from './context'
+} from "./context";
 
-export { usePopoverGeometry } from './hooks/useGeometry'
-export { usePopoverDragAndDrop } from './hooks/useDragAndDrop'
-export { usePopoverKeyboard } from './hooks/usePopoverKeyboard'
-export { usePopoverCard } from './hooks/usePopoverCard'
-export { getPopoverStyles } from './utils/styles'
+export { usePopoverGeometry } from "./hooks/useGeometry";
+export { usePopoverDragAndDrop } from "./hooks/useDragAndDrop";
+export { usePopoverKeyboard } from "./hooks/usePopoverKeyboard";
+export { usePopoverCard } from "./hooks/usePopoverCard";
+export { getPopoverStyles } from "./utils/styles";

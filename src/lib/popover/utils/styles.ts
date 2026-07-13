@@ -1,12 +1,12 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties } from "react";
 
 interface GetPopoverStylesParams {
-  finalLayoutPos: { top: number; left: number }
-  offset?: { x: number; y: number }
-  dragX?: number
-  dragY?: number
-  rotation?: number
-  zIndex?: number
+  finalLayoutPos: { top: number; left: number };
+  offset?: { x: number; y: number };
+  dragX?: number;
+  dragY?: number;
+  rotation?: number;
+  zIndex?: number;
 }
 
 /**
@@ -21,15 +21,15 @@ export function getPopoverStyles({
   rotation = 0,
   zIndex = 1000,
 }: GetPopoverStylesParams): CSSProperties {
-  const translateX = dragX + offset.x
-  const translateY = dragY + offset.y
+  const translateX = dragX + offset.x;
+  const translateY = dragY + offset.y;
 
   return {
-    position: 'absolute',
+    position: "absolute",
     top: finalLayoutPos.top,
     left: finalLayoutPos.left,
     transform: `translate(${translateX}px, ${translateY}px) rotate(${rotation}deg)`,
-    willChange: 'transform',
+    willChange: "transform",
     zIndex,
-  }
+  };
 }

@@ -1,16 +1,16 @@
-import { useEffect, useMemo, type RefObject } from 'react'
-import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react'
-import type { TrailEntry, PopoverPlacement } from '../types'
+import { useEffect, useMemo, type RefObject } from "react";
+import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react";
+import type { TrailEntry, PopoverPlacement } from "../types";
 
 interface UsePopoverGeometryOptions {
-  id: string
-  anchorRect?: DOMRect
-  placement?: PopoverPlacement
-  zIndex: number
-  ref: RefObject<HTMLDivElement | null>
-  isDragging: boolean
-  isPinned: boolean
-  entry?: TrailEntry
+  id: string;
+  anchorRect?: DOMRect;
+  placement?: PopoverPlacement;
+  zIndex: number;
+  ref: RefObject<HTMLDivElement | null>;
+  isDragging: boolean;
+  isPinned: boolean;
+  entry?: TrailEntry;
 }
 
 /**
@@ -29,56 +29,56 @@ export function usePopoverGeometry({
 }: UsePopoverGeometryOptions) {
   // 1. Setup a virtual element for Floating UI positioning using the anchor DOMRect
   const virtualElement = useMemo(() => {
-    if (!anchorRect) return null
+    if (!anchorRect) return null;
     return {
       getBoundingClientRect: () => anchorRect,
-    }
-  }, [anchorRect])
+    };
+  }, [anchorRect]);
 
   // 2. Configure useFloating positioning middleware with autoUpdate
   const { refs, x, y, update } = useFloating({
-    placement: placement ?? 'bottom',
+    placement: placement ?? "bottom",
     whileElementsMounted: autoUpdate, // Native tracking of resize, scroll, and layout shifts
     middleware: [
       offset(8), // Gap distance from trigger
       flip(), // Collision fallback (automatically flips opposite)
       shift({ padding: 12 }), // Keep within viewport margins
     ],
-  })
+  });
 
   // 3. Keep references synced
   useEffect(() => {
     if (virtualElement) {
-      refs.setReference(virtualElement)
+      refs.setReference(virtualElement);
     }
-  }, [virtualElement, refs])
+  }, [virtualElement, refs]);
 
   useEffect(() => {
     if (ref.current) {
-      refs.setFloating(ref.current)
+      refs.setFloating(ref.current);
     }
-  }, [ref, refs])
+  }, [ref, refs]);
 
   // 4. Force updates when specific inputs change
   useEffect(() => {
-    void update()
-  }, [id, anchorRect, placement, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update])
+    void update();
+  }, [id, anchorRect, placement, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update]);
 
   // 5. Calculate the final coordinates
   const finalLayoutPos = useMemo(() => {
     if (isPinned && entry?.pinnedLayoutPos) {
-      return entry.pinnedLayoutPos
+      return entry.pinnedLayoutPos;
     }
     // Add slight horizontal cascade offset based on zIndex/nesting level to improve overlap aesthetics
-    const cascadeOffset = zIndex * 8
+    const cascadeOffset = zIndex * 8;
     return {
       top: y ?? 0,
       left: (x ?? 0) + cascadeOffset,
-    }
-  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex])
+    };
+  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex]);
 
   return {
     dimensions: { width: ref.current?.offsetWidth ?? 0, height: ref.current?.offsetHeight ?? 0 },
     finalLayoutPos,
-  }
+  };
 }
