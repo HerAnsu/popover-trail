@@ -84,19 +84,37 @@ function getDescendants(
   const visited = new Set<string>([parentKey])
   const floatingKeys = new Set(floating.map((e) => e.key))
 
+  // Build children adjacency list in linear time O(N)
+  const childrenMap = new Map<string, TrailEntry[]>()
+  const mapEntry = (entry: TrailEntry) => {
+    if (entry.parentKey) {
+      let list = childrenMap.get(entry.parentKey)
+      if (!list) {
+        list = []
+        childrenMap.set(entry.parentKey, list)
+      }
+      list.push(entry)
+    }
+  }
+  floating.forEach(mapEntry)
+  trail.forEach(mapEntry)
+
   while (queue.length > 0) {
     const current = queue.shift()
     if (current === undefined) break
-    const checkEntry = (entry: TrailEntry) => {
-      if (entry.parentKey === current && !visited.has(entry.key)) {
-        if (floatingKeys.has(entry.key)) return
-        visited.add(entry.key)
-        descendants.push(entry)
-        queue.push(entry.key)
+
+    const children = childrenMap.get(current)
+    if (children) {
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i]
+        if (!visited.has(child.key)) {
+          if (floatingKeys.has(child.key)) continue
+          visited.add(child.key)
+          descendants.push(child)
+          queue.push(child.key)
+        }
       }
     }
-    floating.forEach(checkEntry)
-    trail.forEach(checkEntry)
   }
   return descendants
 }
@@ -334,6 +352,9 @@ function closeFromState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
   index: number
 ): Partial<PopoverStateData<TData, TContext>> {
+  const totalCount = state.floating.length + state.trail.length
+  if (index < 0 || index >= totalCount) return {}
+
   const isFloating = index < state.floating.length
   const nextFloating = [...state.floating]
   let nextTrail = [...state.trail]
