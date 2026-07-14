@@ -6,6 +6,7 @@ import {
   useMemo,
   useCallback,
   useEffect,
+  useRef,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -56,7 +57,7 @@ export function PopoverProvider<TData = any, TContext = any>({
 
   // Synchronize context reactively when the prop changes
   useEffect(() => {
-    store.getState().setContext(initialContext as any);
+    store.getState().setContext(initialContext as TContext);
   }, [initialContext, store]);
 
   // Synchronize closePinnedDescendants reactively when the prop changes
@@ -264,11 +265,14 @@ export function usePopoverActions<TData = any, TContext = any>() {
  */
 export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
   const actions = usePopoverActions();
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   const onClick = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      void actions.openRootWithResolver(key, e, options);
+      void actions.openRootWithResolver(key, e, optionsRef.current);
     },
-    [actions, key, options],
+    [actions, key],
   );
   return useMemo(() => ({ onClick }), [onClick]);
 }
@@ -282,11 +286,14 @@ export function usePopoverNestedTrigger(
   options?: OpenNestedOptions,
 ) {
   const actions = usePopoverActions();
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   const onClick = useCallback(
     (_e: React.MouseEvent<HTMLElement>) => {
-      void actions.openNestedWithResolver(key, sourceKey, options);
+      void actions.openNestedWithResolver(key, sourceKey, optionsRef.current);
     },
-    [actions, key, sourceKey, options],
+    [actions, key, sourceKey],
   );
   return useMemo(() => ({ onClick }), [onClick]);
 }
