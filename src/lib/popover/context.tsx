@@ -383,10 +383,11 @@ export function usePopoverActions<TData = unknown, TContext = unknown>() {
 
 function usePopoverHoverHandlers(
   key: string,
-  openTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
-  optionsRef: React.MutableRefObject<OpenRootOptions | undefined>,
+  openTimerRef: { current: ReturnType<typeof setTimeout> | null },
+  optionsRef: { current: OpenRootOptions | undefined },
   onMouseEnter: (e: React.MouseEvent<HTMLElement>) => void,
   onClick: (e: React.MouseEvent<HTMLElement>) => void,
+  hoverEnabled: boolean,
 ) {
   const actions = usePopoverActions();
   const onMouseLeave = useCallback(() => {
@@ -401,11 +402,11 @@ function usePopoverHoverHandlers(
   }, [actions, key, optionsRef, openTimerRef]);
 
   return useMemo(() => {
-    if (optionsRef.current?.hover?.enabled) {
+    if (hoverEnabled) {
       return { onMouseEnter, onMouseLeave };
     }
     return { onClick };
-  }, [onClick, onMouseEnter, onMouseLeave, optionsRef.current?.hover?.enabled]);
+  }, [onClick, onMouseEnter, onMouseLeave, hoverEnabled]);
 }
 
 /**
@@ -445,7 +446,7 @@ export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
           clearTimeout(openTimerRef.current);
         }
         const currentTarget = e.currentTarget;
-        const fakeEvent = {
+        const fakeEvent: { currentTarget: HTMLElement; stopPropagation: () => void } = {
           currentTarget: currentTarget as HTMLElement,
           stopPropagation: () => {
             e.stopPropagation();
@@ -460,7 +461,14 @@ export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
     [actions, key],
   );
 
-  return usePopoverHoverHandlers(key, openTimerRef, optionsRef, onMouseEnter, onClick);
+  return usePopoverHoverHandlers(
+    key,
+    openTimerRef,
+    optionsRef,
+    onMouseEnter,
+    onClick,
+    Boolean(options?.hover?.enabled),
+  );
 }
 
 /**
@@ -516,9 +524,10 @@ export function usePopoverNestedTrigger(
   return usePopoverHoverHandlers(
     key,
     openTimerRef,
-    optionsRef as unknown as React.MutableRefObject<OpenRootOptions | undefined>,
+    optionsRef as unknown as { current: OpenRootOptions | undefined },
     onMouseEnter,
     onClick,
+    Boolean(options?.hover?.enabled),
   );
 }
 
