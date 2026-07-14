@@ -10,7 +10,11 @@ import type {
 import equal from "fast-deep-equal";
 
 /**
- * Returns true if a value is a Promise or a thenable object.
+ * Type guard to determine if a value is a Promise or a thenable object.
+ *
+ * @template T - The resolved value type of the promise.
+ * @param value - The value to inspect.
+ * @returns True if the value is a promise-like object.
  */
 function isPromise<T>(value: unknown): value is Promise<T> {
   return (
@@ -21,7 +25,13 @@ function isPromise<T>(value: unknown): value is Promise<T> {
 }
 
 /**
- * Filter a record object, retaining only the keys present in the allowed set.
+ * Filters a Record object, retaining only the keys present in the specified Set.
+ * Returns the original record reference if no keys were deleted to optimize rendering comparison.
+ *
+ * @template T - The record value type.
+ * @param record - The source record to filter.
+ * @param allowedKeys - The set of keys to preserve.
+ * @returns The filtered record copy, or the original record.
  */
 function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
   const nextRecord: Record<string, T> = {};
@@ -37,7 +47,14 @@ function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): R
 }
 
 /**
- * Retrieves a popover entry safely using a unified index.
+ * Retrieves a popover entry safely using a virtual index that merges
+ * the floating and trailing lists.
+ *
+ * @template TData - The resolved data payload type.
+ * @param floating - The array of floating popovers.
+ * @param trail - The array of trailing popovers.
+ * @param index - The virtual index to query.
+ * @returns The matching TrailEntry, or undefined if the index is out of bounds.
  */
 function getEntryAtIndex<TData>(
   floating: readonly TrailEntry<TData>[],
@@ -53,7 +70,14 @@ function getEntryAtIndex<TData>(
 }
 
 /**
- * Finds the virtual index of a popover entry by its key.
+ * Finds the virtual index of a popover entry by its unique key ID,
+ * combining the floating and trailing array ranges.
+ *
+ * @template TData - The resolved data payload type.
+ * @param floating - The array of floating popovers.
+ * @param trail - The array of trailing popovers.
+ * @param key - The unique key of the popover card.
+ * @returns The virtual index, or -1 if the key is not active.
  */
 function findEntryIndex<TData>(
   floating: readonly TrailEntry<TData>[],
@@ -68,7 +92,14 @@ function findEntryIndex<TData>(
 }
 
 /**
- * Returns true if a popover with the given key is currently active.
+ * Verifies if a popover with the given key is currently active
+ * in either the floating or trailing arrays.
+ *
+ * @template TData - The resolved data payload type.
+ * @param floating - The array of floating popovers.
+ * @param trail - The array of trailing popovers.
+ * @param key - The unique key of the popover card.
+ * @returns True if the popover is active.
  */
 function hasEntryWithKey<TData>(
   floating: readonly TrailEntry<TData>[],
@@ -79,7 +110,13 @@ function hasEntryWithKey<TData>(
 }
 
 /**
- * Calculates the updated z-index render order list, bringing the new key to the front.
+ * Calculates the updated z-index depth order list, moving the specified key to the top (end)
+ * and filtering out any obsolete keys.
+ *
+ * @param zIndexOrder - The current z-index depth order list.
+ * @param activeKeys - The set of currently active popover keys.
+ * @param newKey - The key to bring to the topmost stack depth.
+ * @returns The updated z-index order array.
  */
 function getNextZIndexOrder(
   zIndexOrder: readonly string[],
@@ -90,7 +127,14 @@ function getNextZIndexOrder(
 }
 
 /**
- * Retrieves all children and descendants spawned by a parent popover.
+ * Recursively retrieves all child and descendant popovers currently in the active trail,
+ * ignoring any pinned/floating descendant branches.
+ *
+ * @template TData - The resolved data payload type.
+ * @param parentKey - The parent popover key starting the search.
+ * @param floating - The array of floating popovers.
+ * @param trail - The array of trailing popovers.
+ * @returns Array of descendant popover entries.
  */
 function getDescendants<TData>(
   parentKey: string,
@@ -138,8 +182,18 @@ function getDescendants<TData>(
 }
 
 /**
- * Recursively retrieves all descendant keys (both trailing and floating) spawned by a parent popover.
- * It tracks parent-child linkages via both current parentKey and originalParentKey.
+ * Recursively retrieves all descendant keys (both trailing and floating) spawned by a parent popover key.
+ * Traverses parent-child linkages via both current parentKey and originalParentKey.
+ *
+ * @remarks
+ * Uses an optimized pointer-based BFS queue traversal to achieve linear O(N) complexity
+ * and prevent memory overhead compared to shifting array elements.
+ *
+ * @template TData - The resolved data payload type.
+ * @param parentKeys - The parent key(s) to start the descendant traversal.
+ * @param floating - The array of floating popovers.
+ * @param trail - The array of trailing popovers.
+ * @returns A Set containing all descendant popover key IDs.
  */
 function getAllDescendants<TData>(
   parentKeys: string[],
@@ -186,7 +240,14 @@ function getAllDescendants<TData>(
 }
 
 /**
- * Focuses a popover and drags its children trail to the top of z-index.
+ * Returns a state patch that brings the targeted popover card and all of its trail descendants
+ * to the top of the z-index depth stack.
+ *
+ * @template TData - The resolved data payload type.
+ * @template TContext - The shared context type.
+ * @param state - The current popover state data.
+ * @param key - The target popover key.
+ * @returns State patch updating zIndexOrder and floating arrays.
  */
 function bringToFrontPatch<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
@@ -223,8 +284,19 @@ function bringToFrontPatch<TData, TContext>(
 }
 
 /**
- * Builds a state patch containing cleaned offsets, zIndexOrder,
- * and pinnedStates based on the current active popover keys.
+ * Builds a clean state patch pruning coordinate offsets, z-index orders,
+ * pinned states, and pending request counters for any obsolete keys.
+ * Also immediately clears root trigger anchors if the active trail becomes empty.
+ *
+ * @template TData - The resolved data payload type.
+ * @template TContext - The shared context type.
+ * @param floating - The list of floating popovers.
+ * @param trail - The active trail stack.
+ * @param offsets - Current drag coordinate offsets record.
+ * @param zIndexOrder - Current depth stacking list.
+ * @param pinnedStates - Current pinning flags record.
+ * @param nestedHydrationRequestCounters - Stale-resolver request counters.
+ * @returns State patch updating tracking records.
  */
 function getCleanupStatePatch<TData, TContext>(
   floating: readonly TrailEntry<TData>[],
@@ -261,7 +333,15 @@ function getCleanupStatePatch<TData, TContext>(
 }
 
 /**
- * Pure state updater for spawning/opening a new root popover.
+ * Pure state updater for spawning or opening a new root popover.
+ * Resets the active trail if ownerId changes, otherwise appends it.
+ *
+ * @template TData - The resolved data payload type.
+ * @template TContext - The shared context type.
+ * @param state - The current Zustand store state.
+ * @param ownerId - The owner identifier claiming the new root.
+ * @param entry - The root TrailEntry to insert.
+ * @returns State patch spawning the root.
  */
 function openRootState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
@@ -292,7 +372,15 @@ function openRootState<TData, TContext>(
 }
 
 /**
- * Pure state updater for pushing/opening a nested popover.
+ * Pure state updater for pushing or appending a nested popover into the active path.
+ * Resolves child insertions next to their parent indices and slices any downstream trail branches.
+ *
+ * @template TData - The resolved data payload type.
+ * @template TContext - The shared context type.
+ * @param state - The current Zustand store state.
+ * @param index - The parent popover's virtual index.
+ * @param entry - The nested TrailEntry to insert.
+ * @returns State patch appending the child card.
  */
 function pushNestedState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
@@ -339,7 +427,14 @@ function pushNestedState<TData, TContext>(
 }
 
 /**
- * Pure state updater for toggling a popover's pinned vs trailing state.
+ * Pure state updater for toggling a popover's modeless pinned/floating vs trailing status.
+ *
+ * @template TData - The resolved data payload type.
+ * @template TContext - The shared context type.
+ * @param state - The current Zustand store state.
+ * @param key - The target popover card key.
+ * @param rect - The immediate viewport-relative bounding box of the card.
+ * @returns State patch toggling pinned status.
  */
 function togglePinState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
@@ -401,7 +496,14 @@ function togglePinState<TData, TContext>(
 }
 
 /**
- * Pure state updater for closing popovers starting at a target index.
+ * Pure state updater for closing popovers starting at a target virtual index,
+ * recursively cleaning up descendant branches based on provider configurations.
+ *
+ * @template TData - The resolved data payload type.
+ * @template TContext - The shared context type.
+ * @param state - The current Zustand store state.
+ * @param index - The virtual index starting the closure range.
+ * @returns State patch cleaning up closed keys.
  */
 function closeFromState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
@@ -455,7 +557,20 @@ function closeFromState<TData, TContext>(
 }
 
 /**
- * Creates the generic Zustand popover store.
+ * Instantiates and returns a generic Zustand vanilla StoreApi instance.
+ * Coordinates trail linkages, floating/pinned states, drag offsets, stacking order,
+ * active loaders, and abort controllers.
+ *
+ * @remarks
+ * Keeps AbortControllers in a private local Map closed over by actions to ensure
+ * they are completely isolated from React rendering lifecycles and GC safely.
+ *
+ * @template TData - The resolved data payload type.
+ * @template TContext - The shared context type.
+ * @param resolveData - The active data resolver callback.
+ * @param initialContext - Optional initial context values.
+ * @param cache - Optional synchronous/asynchronous cache provider.
+ * @returns A Zustand StoreApi instance matching PopoverStore.
  */
 export function createPopoverStore<TData = any, TContext = any>(
   resolveData: PopoverResolver<TData, TContext>,

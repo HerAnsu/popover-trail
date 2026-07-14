@@ -1,16 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 
+/**
+ * Options parameters for the `usePopoverDragAndDrop` hook.
+ */
 interface UsePopoverDragAndDropOptions {
+  /** True if the popover card is currently being dragged. */
   isDragging: boolean;
+  /** Current dnd-kit transform offset coordinates. */
   transform: { x: number; y: number } | null;
+  /** True to enable physical spring rotation (tilt/swing) effects when dragging. */
   enableTilt?: boolean;
+  /** Maximum tilt swing angle in degrees (default: 5). */
   maxTiltAngle?: number;
+  /** Factor scaling tilt response to drag velocity (default: 8). */
   tiltSensitivity?: number;
 }
 
 /**
- * Hook to track dragging offsets and calculate horizontal drag velocity
- * for physics-based spring rotation (tilt/swing).
+ * Custom hook to track active coordinate offsets and calculate drag velocity
+ * to apply dynamic physics-based spring rotation (tilt/swing) styles during drag events.
+ *
+ * @remarks
+ * Uses a requestAnimationFrame loop to continuously decay rotation spring tension,
+ * ensuring high performance. Ref mutations are isolated to effects to ensure complete
+ * compatibility with React 18/19 Concurrent Mode.
+ *
+ * @param options - Hook configuration settings.
+ * @returns Object containing computed rotation angle in degrees and active drag x/y coordinates.
  */
 export function usePopoverDragAndDrop({
   isDragging,

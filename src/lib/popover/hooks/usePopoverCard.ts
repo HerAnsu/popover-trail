@@ -11,21 +11,38 @@ import {
 import { getPopoverStyles } from '../utils/styles';
 import type { TrailEntry, PopoverPlacement } from '../types';
 
+/**
+ * Options parameters for the `usePopoverCard` unified hook.
+ */
 interface UsePopoverCardOptions {
+  /** The specific trail entry data represented by the card. */
   entry: TrailEntry;
+  /** The virtual rendering index of the card. */
   index: number;
+  /** True if this card is currently pinned/floating. */
   isPinned: boolean;
+  /** Relative alignment placement direction preference (default: "bottom"). */
   placement?: PopoverPlacement;
+  /** True to allow drag-and-drop movement when pinned (default: true). */
   enableDrag?: boolean;
+  /** True to enable physical spring rotation (tilt/swing) effects when dragging (default: true). */
   enableTilt?: boolean;
+  /** Maximum tilt swing angle in degrees (default: 5). */
   maxTiltAngle?: number;
+  /** Factor scaling tilt response to drag velocity (default: 8). */
   tiltSensitivity?: number;
 }
 
 /**
- * A unified helper hook that encapsulates all layout positioning, dragging physics,
- * z-index ordering, topmost check, and actions into a single simple interface.
- * Supports disabling drag-and-drop dynamically.
+ * A unified composite hook that encapsulates all layout positioning, dragging physics,
+ * focus lock restoration, z-index ordering, and actions into a single simple interface.
+ *
+ * @remarks
+ * Restores keyboard focus to the triggering element upon unmounting (WAI-ARIA compliance).
+ * Merges dnd-kit `useDraggable` ref bindings and Floating UI refs into a single composite ref.
+ *
+ * @param options - Hook configuration settings.
+ * @returns Object containing refs, compiled styles, interaction state flags, and actions.
  */
 export function usePopoverCard({
   entry,
