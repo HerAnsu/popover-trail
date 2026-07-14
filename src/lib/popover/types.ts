@@ -15,7 +15,7 @@ export interface HoverConfig {
  *
  * @template TData - The type of resolved data payload associated with this popover.
  */
-export interface TrailEntry<TData = any> {
+export interface TrailEntry<TData = unknown> {
   /**
    * Unique identifier for this popover instance.
    * Typically derived from the expression, name, or key of the resolved entity.
@@ -98,7 +98,7 @@ export interface TrailEntry<TData = any> {
  *
  * @throws {Error} If data resolution fails.
  */
-export type PopoverResolver<TData = any, TContext = any> = (
+export type PopoverResolver<TData = unknown, TContext = unknown> = (
   keyOrName: string,
   parentData?: TData,
   context?: TContext,
@@ -111,7 +111,7 @@ export type PopoverResolver<TData = any, TContext = any> = (
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
  */
-export interface PopoverStateData<TData = any, TContext = any> {
+export interface PopoverStateData<TData = unknown, TContext = unknown> {
   /** The stack of active popovers in the current trail path. */
   trail: TrailEntry<TData>[];
 
@@ -173,7 +173,7 @@ export interface PopoverStateData<TData = any, TContext = any> {
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
  */
-export interface PopoverActions<TData = any, TContext = any> {
+export interface PopoverActions<TData = unknown, TContext = unknown> {
   /** Updates the shared global context field. */
   setContext: (context: TContext) => void;
 
@@ -258,7 +258,7 @@ export interface PopoverActions<TData = any, TContext = any> {
 /**
  * Complete representation of the Popover Zustand store state and actions.
  */
-export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, TContext> &
+export type PopoverStore<TData = unknown, TContext = unknown> = PopoverStateData<TData, TContext> &
   PopoverActions<TData, TContext> & {
     actions: Omit<
       PopoverActions<TData, TContext>,
@@ -310,7 +310,7 @@ export interface ClickOutsideConfig {
 /**
  * Interface definition for a generic synchronous/asynchronous cache provider.
  */
-export interface PopoverCache<TData = any> {
+export interface PopoverCache<TData = unknown> {
   /** Retrieves a cached entry. Can return the value directly or a Promise. */
   get: (key: string) => Promise<TData | undefined> | TData | undefined;
 

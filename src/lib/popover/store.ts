@@ -6,6 +6,8 @@ import type {
   PopoverStateData,
   PopoverActions,
   PopoverCache,
+  OpenRootOptions,
+  OpenNestedOptions,
 } from "./types";
 import equal from "fast-deep-equal";
 
@@ -136,6 +138,28 @@ function getNextZIndexOrder(
  * @param trail - The array of trailing popovers.
  * @returns Array of descendant popover entries.
  */
+function buildChildrenMap<TData>(
+  floating: readonly TrailEntry<TData>[],
+  trail: readonly TrailEntry<TData>[],
+  useOriginalParent = false,
+): Map<string, TrailEntry<TData>[]> {
+  const childrenMap = new Map<string, TrailEntry<TData>[]>();
+  const mapEntry = (entry: TrailEntry<TData>) => {
+    const pKey = useOriginalParent ? (entry.parentKey ?? entry.originalParentKey) : entry.parentKey;
+    if (pKey) {
+      let list = childrenMap.get(pKey);
+      if (!list) {
+        list = [];
+        childrenMap.set(pKey, list);
+      }
+      list.push(entry);
+    }
+  };
+  floating.forEach(mapEntry);
+  trail.forEach(mapEntry);
+  return childrenMap;
+}
+
 function getDescendants<TData>(
   parentKey: string,
   floating: readonly TrailEntry<TData>[],
@@ -145,21 +169,7 @@ function getDescendants<TData>(
   const queue = [parentKey];
   const visited = new Set<string>([parentKey]);
   const floatingKeys = new Set(floating.map((e) => e.key));
-
-  // Build children adjacency list in linear time O(N)
-  const childrenMap = new Map<string, TrailEntry<TData>[]>();
-  const mapEntry = (entry: TrailEntry<TData>) => {
-    if (entry.parentKey) {
-      let list = childrenMap.get(entry.parentKey);
-      if (!list) {
-        list = [];
-        childrenMap.set(entry.parentKey, list);
-      }
-      list.push(entry);
-    }
-  };
-  floating.forEach(mapEntry);
-  trail.forEach(mapEntry);
+  const childrenMap = buildChildrenMap(floating, trail, false);
 
   while (queue.length > 0) {
     const current = queue.shift();
@@ -203,22 +213,7 @@ function getAllDescendants<TData>(
   const descendants = new Set<string>();
   const queue = [...parentKeys];
   const visited = new Set<string>(parentKeys);
-
-  // Build children adjacency list in linear time O(N)
-  const childrenMap = new Map<string, TrailEntry<TData>[]>();
-  const mapEntry = (entry: TrailEntry<TData>) => {
-    const pKey = entry.parentKey ?? entry.originalParentKey;
-    if (pKey) {
-      let list = childrenMap.get(pKey);
-      if (!list) {
-        list = [];
-        childrenMap.set(pKey, list);
-      }
-      list.push(entry);
-    }
-  };
-  floating.forEach(mapEntry);
-  trail.forEach(mapEntry);
+  const childrenMap = buildChildrenMap(floating, trail, true);
 
   let head = 0;
   while (head < queue.length) {
@@ -572,7 +567,7 @@ function closeFromState<TData, TContext>(
  * @param cache - Optional synchronous/asynchronous cache provider.
  * @returns A Zustand StoreApi instance matching PopoverStore.
  */
-export function createPopoverStore<TData = any, TContext = any>(
+export function createPopoverStore<TData = unknown, TContext = unknown>(
   resolveData: PopoverResolver<TData, TContext>,
   initialContext?: TContext,
   cache?: PopoverCache<TData>,
@@ -600,6 +595,122 @@ export function createPopoverStore<TData = any, TContext = any>(
         }
         return patch;
       });
+    };
+
+    const resolvePopoverEntry = async (
+      key: string,
+      parentKey: string | undefined,
+      rect: DOMRect | null,
+      parentData: TData | undefined,
+      options: (OpenRootOptions & OpenNestedOptions) | undefined,
+      controllerKey: string,
+      incrementCounter: () => number,
+      isStale: (counter: number) => boolean,
+      insertStatePatch: (
+        entry: TrailEntry<TData>,
+      ) =>
+        | Partial<PopoverStore<TData, TContext>>
+        | ((state: PopoverStore<TData, TContext>) => Partial<PopoverStore<TData, TContext>>),
+    ): Promise<void> => {
+      const prevController = activeControllers.get(controllerKey);
+      if (prevController) {
+        prevController.abort();
+      }
+      const controller = new AbortController();
+      activeControllers.set(controllerKey, controller);
+
+      const localCollision = options?.collision;
+      const { cache: storeCache, context } = get();
+
+      const buildEntry = (
+        data?: TData,
+        error?: Error | null,
+        isLoading = false,
+      ): TrailEntry<TData> => ({
+        key,
+        parentKey,
+        originalParentKey: parentKey,
+        rect: rect ?? undefined,
+        originalRect: rect ?? undefined,
+        data,
+        error,
+        isLoading,
+        collision: localCollision,
+        hover: options?.hover,
+        ariaDescribedby: options?.ariaDescribedby,
+        allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
+      });
+
+      const cachedResultOrPromise = storeCache ? storeCache.get(key) : undefined;
+      if (cachedResultOrPromise !== undefined) {
+        if (!isPromise<TData>(cachedResultOrPromise)) {
+          const resolved = cachedResultOrPromise as TData | undefined;
+          set(insertStatePatch(buildEntry(resolved)));
+          activeControllers.delete(controllerKey);
+          return;
+        }
+      }
+
+      let resultOrPromise: Promise<TData> | TData | undefined;
+      try {
+        resultOrPromise =
+          cachedResultOrPromise !== undefined
+            ? (cachedResultOrPromise as Promise<TData> | TData)
+            : get().resolveData(key, parentData, context ?? undefined, controller.signal);
+      } catch (err) {
+        const errorObj = err instanceof Error ? err : new Error(String(err));
+        set(insertStatePatch(buildEntry(undefined, errorObj)));
+        activeControllers.delete(controllerKey);
+        return;
+      }
+
+      if (!isPromise<TData>(resultOrPromise)) {
+        set(insertStatePatch(buildEntry(resultOrPromise)));
+        if (storeCache && resultOrPromise !== undefined) {
+          void storeCache.set(key, resultOrPromise);
+        }
+        activeControllers.delete(controllerKey);
+        return;
+      }
+
+      const startedCounter = incrementCounter();
+      set(insertStatePatch(buildEntry(undefined, null, true)));
+
+      try {
+        const resolved = await resultOrPromise;
+        if (controller.signal.aborted || isStale(startedCounter)) return;
+
+        if (storeCache && resolved !== undefined) {
+          void storeCache.set(key, resolved);
+        }
+
+        set((state) => {
+          const nextTrail = state.trail.map((e) =>
+            e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
+          );
+          const nextFloating = state.floating.map((e) =>
+            e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
+          );
+          return { trail: nextTrail, floating: nextFloating };
+        });
+      } catch (err) {
+        if (controller.signal.aborted || isStale(startedCounter)) return;
+        const errorObj = err instanceof Error ? err : new Error(String(err));
+
+        set((state) => {
+          const nextTrail = state.trail.map((e) =>
+            e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
+          );
+          const nextFloating = state.floating.map((e) =>
+            e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
+          );
+          return { trail: nextTrail, floating: nextFloating };
+        });
+      } finally {
+        if (activeControllers.get(controllerKey) === controller) {
+          activeControllers.delete(controllerKey);
+        }
+      }
     };
 
     const actions: PopoverActions<TData, TContext> = {
@@ -772,7 +883,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       // Async/Hydration Actions
       openRootWithResolver: async (keyOrName, anchorEvent, options) => {
         anchorEvent.stopPropagation();
-        const { ownerId, context, rootHydrationRequestCounter, cache, trail } = get();
+        const { ownerId, rootHydrationRequestCounter, trail } = get();
         const finalOwnerId = options?.ownerId ?? ownerId ?? "default";
 
         // Check if already open as root of active trail
@@ -780,159 +891,31 @@ export function createPopoverStore<TData = any, TContext = any>(
           return;
         }
 
-        const localCollision = options?.collision;
-
         const anchorElement = anchorEvent.currentTarget;
         const anchorRect = anchorElement.getBoundingClientRect();
 
         // Save anchor details immediately
         set({ anchorElement, anchorRect });
 
-        // Abort previous root loading requests if any
-        const prevController = activeControllers.get("__root__");
-        if (prevController) {
-          prevController.abort();
-        }
-        const controller = new AbortController();
-        activeControllers.set("__root__", controller);
-
-        // 1. Check cache first
-        const cachedResultOrPromise = cache ? cache.get(keyOrName) : undefined;
-        if (cachedResultOrPromise !== undefined) {
-          if (!isPromise(cachedResultOrPromise)) {
-            const resolved = cachedResultOrPromise;
-            const entry: TrailEntry<TData> = {
-              key: keyOrName,
-              rect: anchorRect,
-              originalRect: anchorRect,
-              data: resolved,
-              isLoading: false,
-              collision: localCollision,
-              hover: options?.hover,
-              ariaDescribedby: options?.ariaDescribedby,
-              allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
-            };
-            set((state) => openRootState(state, finalOwnerId, entry));
-            activeControllers.delete("__root__");
-            return;
-          }
-        }
-
-        let resultOrPromise;
-        try {
-          resultOrPromise =
-            cachedResultOrPromise !== undefined
-              ? cachedResultOrPromise
-              : get().resolveData(keyOrName, undefined, context ?? undefined, controller.signal);
-        } catch (err) {
-          const errorObj = err instanceof Error ? err : new Error(String(err));
-          const entry: TrailEntry<TData> = {
-            key: keyOrName,
-            rect: anchorRect,
-            originalRect: anchorRect,
-            error: errorObj,
-            isLoading: false,
-            collision: localCollision,
-            hover: options?.hover,
-            ariaDescribedby: options?.ariaDescribedby,
-            allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
-          };
-          set((state) => openRootState(state, finalOwnerId, entry));
-          activeControllers.delete("__root__");
-          return;
-        }
-
-        if (!isPromise(resultOrPromise)) {
-          const resolved = resultOrPromise;
-          const entry: TrailEntry<TData> = {
-            key: keyOrName,
-            rect: anchorRect,
-            originalRect: anchorRect,
-            data: resolved,
-            isLoading: false,
-            collision: localCollision,
-            hover: options?.hover,
-            ariaDescribedby: options?.ariaDescribedby,
-            allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
-          };
-          set((state) => openRootState(state, finalOwnerId, entry));
-          if (cache && resolved !== undefined) {
-            void cache.set(keyOrName, resolved as TData);
-          }
-          activeControllers.delete("__root__");
-          return;
-        }
-
-        const nextCounter = rootHydrationRequestCounter + 1;
-        set({ rootHydrationRequestCounter: nextCounter });
-
-        // Pre-create loading entry
-        const loadingEntry: TrailEntry<TData> = {
-          key: keyOrName,
-          rect: anchorRect,
-          originalRect: anchorRect,
-          isLoading: true,
-          collision: localCollision,
-          hover: options?.hover,
-          ariaDescribedby: options?.ariaDescribedby,
-          allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
-        };
-        set((state) => openRootState(state, finalOwnerId, loadingEntry));
-
-        try {
-          const resolved = await resultOrPromise;
-
-          // Verify we aren't handling a stale response
-          if (get().rootHydrationRequestCounter !== nextCounter) return;
-
-          // Update cache
-          if (cache && resolved !== undefined) {
-            void cache.set(keyOrName, resolved as TData);
-          }
-
-          // Update data in both trail and floating (resolves pinned-while-loading)
-          set((state) => {
-            const nextTrail = state.trail.map((e) =>
-              e.key === keyOrName ? { ...e, isLoading: false, data: resolved, error: null } : e,
-            );
-            const nextFloating = state.floating.map((e) =>
-              e.key === keyOrName ? { ...e, isLoading: false, data: resolved, error: null } : e,
-            );
-            return { trail: nextTrail, floating: nextFloating };
-          });
-        } catch (err) {
-          if (controller.signal.aborted) return;
-          if (get().rootHydrationRequestCounter !== nextCounter) return;
-          set((state) => {
-            const nextTrail = state.trail.map((e) =>
-              e.key === keyOrName
-                ? {
-                    ...e,
-                    isLoading: false,
-                    error: err instanceof Error ? err : new Error(String(err)),
-                  }
-                : e,
-            );
-            const nextFloating = state.floating.map((e) =>
-              e.key === keyOrName
-                ? {
-                    ...e,
-                    isLoading: false,
-                    error: err instanceof Error ? err : new Error(String(err)),
-                  }
-                : e,
-            );
-            return { trail: nextTrail, floating: nextFloating };
-          });
-        } finally {
-          if (activeControllers.get("__root__") === controller) {
-            activeControllers.delete("__root__");
-          }
-        }
+        await resolvePopoverEntry(
+          keyOrName,
+          undefined,
+          anchorRect,
+          undefined,
+          options,
+          "__root__",
+          () => {
+            const next = rootHydrationRequestCounter + 1;
+            set({ rootHydrationRequestCounter: next });
+            return next;
+          },
+          (startedCounter) => get().rootHydrationRequestCounter !== startedCounter,
+          (entry) => (state) => openRootState(state, finalOwnerId, entry),
+        );
       },
 
       openNestedWithResolver: async (keyOrName, sourceKey, options) => {
-        const { floating, trail, context, nestedHydrationRequestCounters, cache } = get();
+        const { floating, trail, nestedHydrationRequestCounters } = get();
         const sourceIndex = findEntryIndex(floating, trail, sourceKey);
         if (sourceIndex === -1) return;
 
@@ -948,185 +931,38 @@ export function createPopoverStore<TData = any, TContext = any>(
         const sourceEntry = getEntryAtIndex(floating, trail, sourceIndex);
         if (!sourceEntry) return;
 
-        // Abort previous loading requests for this key if any
-        const prevController = activeControllers.get(keyOrName);
-        if (prevController) {
-          prevController.abort();
-        }
-        const controller = new AbortController();
-        activeControllers.set(keyOrName, controller);
-
         const triggerRect = options?.triggerRect;
-        const localCollision = options?.collision;
         const rect = triggerRect ?? sourceEntry.rect;
 
-        // 1. Check cache first
-        const cachedResultOrPromise = cache ? cache.get(keyOrName) : undefined;
-        if (cachedResultOrPromise !== undefined) {
-          if (!isPromise(cachedResultOrPromise)) {
-            const resolved = cachedResultOrPromise;
-            const entry: TrailEntry<TData> = {
-              key: keyOrName,
-              parentKey: sourceKey,
-              originalParentKey: sourceKey,
-              rect,
-              originalRect: rect,
-              data: resolved,
-              isLoading: false,
-              collision: localCollision,
-              hover: options?.hover,
-              ariaDescribedby: options?.ariaDescribedby,
-              allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
-            };
-            set((state) => pushNestedState(state, sourceIndex, entry));
-            activeControllers.delete(keyOrName);
-            return;
-          }
-        }
-
-        let resultOrPromise;
-        try {
-          resultOrPromise =
-            cachedResultOrPromise !== undefined
-              ? cachedResultOrPromise
-              : get().resolveData(
-                  keyOrName,
-                  sourceEntry.data,
-                  context ?? undefined,
-                  controller.signal,
-                );
-        } catch (err) {
-          const errorObj = err instanceof Error ? err : new Error(String(err));
-          const entry: TrailEntry<TData> = {
-            key: keyOrName,
-            parentKey: sourceKey,
-            originalParentKey: sourceKey,
-            rect,
-            originalRect: rect,
-            error: errorObj,
-            isLoading: false,
-            collision: localCollision,
-            hover: options?.hover,
-            ariaDescribedby: options?.ariaDescribedby,
-            allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
-          };
-          set((state) => pushNestedState(state, sourceIndex, entry));
-          activeControllers.delete(keyOrName);
-          return;
-        }
-
-        if (!isPromise(resultOrPromise)) {
-          const resolved = resultOrPromise;
-          const entry: TrailEntry<TData> = {
-            key: keyOrName,
-            parentKey: sourceKey,
-            originalParentKey: sourceKey,
-            rect,
-            originalRect: rect,
-            data: resolved,
-            isLoading: false,
-            collision: localCollision,
-            hover: options?.hover,
-            ariaDescribedby: options?.ariaDescribedby,
-            allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
-          };
-          set((state) => pushNestedState(state, sourceIndex, entry));
-          if (cache && resolved !== undefined) {
-            void cache.set(keyOrName, resolved as TData);
-          }
-          activeControllers.delete(keyOrName);
-          return;
-        }
-
-        const nextCounter = (nestedHydrationRequestCounters[sourceKey] ?? 0) + 1;
-        set((state) => ({
-          nestedHydrationRequestCounters: {
-            ...state.nestedHydrationRequestCounters,
-            [sourceKey]: nextCounter,
+        await resolvePopoverEntry(
+          keyOrName,
+          sourceKey,
+          rect ?? null,
+          sourceEntry.data,
+          options,
+          keyOrName,
+          () => {
+            const next = (nestedHydrationRequestCounters[sourceKey] ?? 0) + 1;
+            set((state) => ({
+              nestedHydrationRequestCounters: {
+                ...state.nestedHydrationRequestCounters,
+                [sourceKey]: next,
+              },
+            }));
+            return next;
           },
-        }));
-
-        // Pre-create loading entry
-        const loadingEntry: TrailEntry<TData> = {
-          key: keyOrName,
-          parentKey: sourceKey,
-          originalParentKey: sourceKey,
-          rect,
-          originalRect: rect,
-          isLoading: true,
-          collision: localCollision,
-          hover: options?.hover,
-          ariaDescribedby: options?.ariaDescribedby,
-          allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
-        };
-        set((state) => pushNestedState(state, sourceIndex, loadingEntry));
-
-        try {
-          const resolved = await resultOrPromise;
-
-          if (get().nestedHydrationRequestCounters[sourceKey] !== nextCounter) return;
-
-          // Update cache
-          if (cache && resolved !== undefined) {
-            void cache.set(keyOrName, resolved as TData);
-          }
-
-          // Update data in both trail and floating (resolves pinned-while-loading)
-          set((state) => {
-            const nextTrail = state.trail.map((e) =>
-              e.key === keyOrName ? { ...e, isLoading: false, data: resolved, error: null } : e,
-            );
-            const nextFloating = state.floating.map((e) =>
-              e.key === keyOrName ? { ...e, isLoading: false, data: resolved, error: null } : e,
-            );
-            return { trail: nextTrail, floating: nextFloating };
-          });
-        } catch (err) {
-          if (controller.signal.aborted) return;
-          if (get().nestedHydrationRequestCounters[sourceKey] !== nextCounter) return;
-          set((state) => {
-            const nextTrail = state.trail.map((e) =>
-              e.key === keyOrName
-                ? {
-                    ...e,
-                    isLoading: false,
-                    error: err instanceof Error ? err : new Error(String(err)),
-                  }
-                : e,
-            );
-            const nextFloating = state.floating.map((e) =>
-              e.key === keyOrName
-                ? {
-                    ...e,
-                    isLoading: false,
-                    error: err instanceof Error ? err : new Error(String(err)),
-                  }
-                : e,
-            );
-            return { trail: nextTrail, floating: nextFloating };
-          });
-        } finally {
-          if (activeControllers.get(keyOrName) === controller) {
-            activeControllers.delete(keyOrName);
-          }
-        }
+          (startedCounter) => get().nestedHydrationRequestCounters[sourceKey] !== startedCounter,
+          (entry) => (state) => pushNestedState(state, sourceIndex, entry),
+        );
       },
 
       retryPopover: async (key) => {
-        const { floating, trail, context, cache } = get();
+        const { floating, trail, nestedHydrationRequestCounters } = get();
         const index = findEntryIndex(floating, trail, key);
         if (index === -1) return;
 
         const entry = getEntryAtIndex(floating, trail, index);
         if (!entry) return;
-
-        // Abort previous loading requests for this key if any
-        const prevController = activeControllers.get(key);
-        if (prevController) {
-          prevController.abort();
-        }
-        const controller = new AbortController();
-        activeControllers.set(key, controller);
 
         let parentData: TData | undefined = undefined;
         if (entry.parentKey) {
@@ -1136,84 +972,67 @@ export function createPopoverStore<TData = any, TContext = any>(
           }
         }
 
-        let resultOrPromise;
-        try {
-          resultOrPromise = resolveData(key, parentData, context ?? undefined, controller.signal);
-        } catch (err) {
-          const errorObj = err instanceof Error ? err : new Error(String(err));
-          set((state) => {
-            const nextTrail = state.trail.map((e) =>
-              e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
-            );
-            const nextFloating = state.floating.map((e) =>
-              e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
-            );
-            return { trail: nextTrail, floating: nextFloating };
-          });
-          activeControllers.delete(key);
-          return;
-        }
+        const options = {
+          collision: entry.collision,
+          hover: entry.hover,
+          ariaDescribedby: entry.ariaDescribedby,
+          allowDragWhenUnpinned: entry.allowDragWhenUnpinned,
+        };
 
-        if (!isPromise(resultOrPromise)) {
-          const resolved = resultOrPromise;
-          set((state) => {
-            const nextTrail = state.trail.map((e) =>
-              e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
-            );
-            const nextFloating = state.floating.map((e) =>
-              e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
-            );
-            return { trail: nextTrail, floating: nextFloating };
-          });
-          if (cache && resolved !== undefined) {
-            void cache.set(key, resolved as TData);
-          }
-          activeControllers.delete(key);
-          return;
-        }
-
-        set((state) => {
-          const nextTrail = state.trail.map((e) =>
-            e.key === key ? { ...e, isLoading: true, error: null } : e,
+        if (entry.parentKey) {
+          await resolvePopoverEntry(
+            key,
+            entry.parentKey,
+            entry.rect ?? null,
+            parentData,
+            options,
+            key,
+            () => {
+              const next = (nestedHydrationRequestCounters[entry.parentKey!] ?? 0) + 1;
+              set((state) => ({
+                nestedHydrationRequestCounters: {
+                  ...state.nestedHydrationRequestCounters,
+                  [entry.parentKey!]: next,
+                },
+              }));
+              return next;
+            },
+            (startedCounter) =>
+              get().nestedHydrationRequestCounters[entry.parentKey!] !== startedCounter,
+            (updatedEntry) => (state) => {
+              const nextTrail = state.trail.map((e) =>
+                e.key === key ? { ...e, ...updatedEntry } : e,
+              );
+              const nextFloating = state.floating.map((e) =>
+                e.key === key ? { ...e, ...updatedEntry } : e,
+              );
+              return { trail: nextTrail, floating: nextFloating };
+            },
           );
-          const nextFloating = state.floating.map((e) =>
-            e.key === key ? { ...e, isLoading: true, error: null } : e,
+        } else {
+          await resolvePopoverEntry(
+            key,
+            undefined,
+            entry.rect ?? null,
+            undefined,
+            options,
+            "__root__",
+            () => {
+              const next = get().rootHydrationRequestCounter + 1;
+              set({ rootHydrationRequestCounter: next });
+              return next;
+            },
+            (startedCounter) => get().rootHydrationRequestCounter !== startedCounter,
+            (updatedEntry) => (state) => {
+              const nextTrail = state.trail.map((e) =>
+                e.key === key ? { ...e, ...updatedEntry } : e,
+              );
+              const nextFloating = state.floating.map((e) =>
+                e.key === key ? { ...e, ...updatedEntry } : e,
+              );
+              return { trail: nextTrail, floating: nextFloating };
+            },
           );
-          return { trail: nextTrail, floating: nextFloating };
-        });
-
-        try {
-          const resolved = await resultOrPromise;
-          if (activeControllers.get(key) !== controller) return;
-          if (cache && resolved !== undefined) {
-            void cache.set(key, resolved as TData);
-          }
-          set((state) => {
-            const nextTrail = state.trail.map((e) =>
-              e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
-            );
-            const nextFloating = state.floating.map((e) =>
-              e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
-            );
-            return { trail: nextTrail, floating: nextFloating };
-          });
-        } catch (err) {
-          if (controller.signal.aborted) return;
-          if (activeControllers.get(key) !== controller) return;
-          set((state) => {
-            const errorObj = err instanceof Error ? err : new Error(String(err));
-            const nextTrail = state.trail.map((e) =>
-              e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
-            );
-            const nextFloating = state.floating.map((e) =>
-              e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
-            );
-            return { trail: nextTrail, floating: nextFloating };
-          });
-        } finally {
-          if (activeControllers.get(key) === controller) {
-            activeControllers.delete(key);
-          }
         }
       },
       destroy: () => {
@@ -1299,20 +1118,20 @@ export function createPopoverStore<TData = any, TContext = any>(
       },
     };
 
-    const {
-      setContext: _,
-      setResolveData: _rd,
-      setOwnerId: __,
-      openRoot: ___,
-      pushNested: ____,
-      destroy: _____,
-      setClosePinnedDescendants: ______,
-      setCollisionConfig: _______,
-      setEnableArrowNavigation: ________,
-      setDebug: _________,
-      setCascadeOffsetStep: __________,
-      ...remainingActions
-    } = actions;
+    const remainingActions: Record<string, unknown> = {
+      ...actions,
+    } as unknown as Record<string, unknown>;
+    delete remainingActions.setContext;
+    delete remainingActions.setResolveData;
+    delete remainingActions.setOwnerId;
+    delete remainingActions.openRoot;
+    delete remainingActions.pushNested;
+    delete remainingActions.destroy;
+    delete remainingActions.setClosePinnedDescendants;
+    delete remainingActions.setCollisionConfig;
+    delete remainingActions.setEnableArrowNavigation;
+    delete remainingActions.setDebug;
+    delete remainingActions.setCascadeOffsetStep;
 
     return {
       ownerId: null,
@@ -1335,7 +1154,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       cascadeOffsetStep: 8,
 
       ...actions,
-      actions: remainingActions,
+      actions: remainingActions as unknown as PopoverStore<TData, TContext>["actions"],
     };
   });
 }
