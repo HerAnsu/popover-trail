@@ -1,4 +1,4 @@
-import type { PopoverCache } from "../types";
+import type { PopoverCache } from '../types';
 
 /**
  * A standard, generic in-memory cache implementation of PopoverCache

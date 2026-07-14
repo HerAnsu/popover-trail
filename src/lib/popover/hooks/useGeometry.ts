@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react";
-import type { TrailEntry, PopoverPlacement } from "../types";
-import { usePopoverCollisionConfig, usePopoverStore } from "../context";
+import { useEffect, useMemo, useState } from 'react';
+import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react';
+import type { TrailEntry, PopoverPlacement } from '../types';
+import { usePopoverCollisionConfig, usePopoverStore } from '../context';
 
 /**
  * Options parameters for the `usePopoverGeometry` hook.
@@ -54,11 +54,11 @@ export function usePopoverGeometry({
   const padding = localCollision?.padding ?? globalCollision?.padding;
 
   const [resolvedBoundary, setResolvedBoundary] = useState<
-    "clippingAncestors" | HTMLElement | HTMLElement[] | undefined
-  >(typeof boundary === "string" ? boundary : undefined);
+    'clippingAncestors' | HTMLElement | HTMLElement[] | undefined
+  >(typeof boundary === 'string' ? boundary : undefined);
 
   useEffect(() => {
-    if (typeof boundary === "function") {
+    if (typeof boundary === 'function') {
       try {
         const el = boundary();
         if (el) {
@@ -84,7 +84,7 @@ export function usePopoverGeometry({
 
   // 2. Configure useFloating positioning middleware with autoUpdate
   const { refs, x, y, update } = useFloating({
-    placement: placement ?? "bottom",
+    placement: placement ?? 'bottom',
     whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
     middleware: [
       offset(8), // Gap distance from trigger

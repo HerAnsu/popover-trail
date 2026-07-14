@@ -668,16 +668,15 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
     const isNestedStale = (parentKey: string, startedCounter: number) =>
       get().nestedHydrationRequestCounters[parentKey] !== startedCounter;
 
-    const getUpdateEntryStatePatch = (
-      key: string,
-      updatedFields: Partial<TrailEntry<TData>>,
-    ) => (state: PopoverStateData<TData, TContext>) => {
-      const update = (e: TrailEntry<TData>) => (e.key === key ? { ...e, ...updatedFields } : e);
-      return {
-        trail: state.trail.map(update),
-        floating: state.floating.map(update),
+    const getUpdateEntryStatePatch =
+      (key: string, updatedFields: Partial<TrailEntry<TData>>) =>
+      (state: PopoverStateData<TData, TContext>) => {
+        const update = (e: TrailEntry<TData>) => (e.key === key ? { ...e, ...updatedFields } : e);
+        return {
+          trail: state.trail.map(update),
+          floating: state.floating.map(update),
+        };
       };
-    };
 
     const resolvePopoverEntry = async (
       key: string,

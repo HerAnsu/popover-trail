@@ -8,9 +8,9 @@ import {
   useIsPopoverTopMost,
   usePopoverActions,
   usePopoverStore,
-} from "../context";
-import { getPopoverStyles } from "../utils/styles";
-import type { TrailEntry, PopoverPlacement } from "../types";
+} from '../context';
+import { getPopoverStyles } from '../utils/styles';
+import type { TrailEntry, PopoverPlacement } from '../types';
 
 /**
  * Options parameters for the `usePopoverCard` unified hook.
@@ -68,7 +68,7 @@ export function usePopoverCard({
       const elementToFocus = previouslyFocusedElementRef.current;
       const isStillInDom = elementToFocus && document.body.contains(elementToFocus);
 
-      if (isStillInDom && typeof elementToFocus?.focus === "function") {
+      if (isStillInDom && typeof elementToFocus?.focus === 'function') {
         const activeEl = document.activeElement;
         const isFocusInside =
           ref.current?.contains(activeEl) || activeEl === document.body || !activeEl;
@@ -94,7 +94,7 @@ export function usePopoverCard({
           }
         }
         // Fallback to page h1 or body
-        const mainHeading = document.querySelector("h1");
+        const mainHeading = document.querySelector('h1');
         if (mainHeading) {
           mainHeading.focus();
         }
@@ -182,18 +182,18 @@ export function usePopoverCard({
     (e: React.KeyboardEvent<HTMLElement>) => {
       if (!enableArrowNavigation) return;
 
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         // Find all focusable elements inside the card
         const focusableSelectors = [
-          "a[href]",
-          "area[href]",
-          "input:not([disabled])",
-          "select:not([disabled])",
-          "textarea:not([disabled])",
-          "button:not([disabled])",
+          'a[href]',
+          'area[href]',
+          'input:not([disabled])',
+          'select:not([disabled])',
+          'textarea:not([disabled])',
+          'button:not([disabled])',
           "[tabindex]:not([tabindex='-1'])",
-        ].join(",");
+        ].join(',');
 
         if (!ref.current) return;
         const elements = Array.from(ref.current.querySelectorAll<HTMLElement>(focusableSelectors));
@@ -202,7 +202,7 @@ export function usePopoverCard({
         const activeEl = document.activeElement as HTMLElement;
         let currentIndex = elements.indexOf(activeEl);
 
-        if (e.key === "ArrowDown") {
+        if (e.key === 'ArrowDown') {
           currentIndex = (currentIndex + 1) % elements.length;
         } else {
           currentIndex = (currentIndex - 1 + elements.length) % elements.length;
@@ -210,16 +210,16 @@ export function usePopoverCard({
         elements[currentIndex]?.focus();
       }
 
-      if (e.key === "ArrowRight") {
+      if (e.key === 'ArrowRight') {
         const activeEl = document.activeElement as HTMLElement;
         // If focused element is a button/link (meaning a nested trigger)
-        if (activeEl && (activeEl.tagName === "BUTTON" || activeEl.tagName === "A")) {
+        if (activeEl && (activeEl.tagName === 'BUTTON' || activeEl.tagName === 'A')) {
           e.preventDefault();
           activeEl.click();
         }
       }
 
-      if (e.key === "ArrowLeft") {
+      if (e.key === 'ArrowLeft') {
         if (!isPinned) {
           const trailIndex = trail.findIndex((t) => t.key === entry.key);
           if (trailIndex > 0) {
@@ -242,7 +242,7 @@ export function usePopoverCard({
       ? {
           ...attributes,
           ...listeners,
-          style: { cursor: isDragging ? "grabbing" : "grab" },
+          style: { cursor: isDragging ? 'grabbing' : 'grab' },
         }
       : {},
     handlePinToggle,

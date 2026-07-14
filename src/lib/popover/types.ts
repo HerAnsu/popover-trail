@@ -262,17 +262,17 @@ export type PopoverStore<TData = unknown, TContext = unknown> = PopoverStateData
   PopoverActions<TData, TContext> & {
     actions: Omit<
       PopoverActions<TData, TContext>,
-      | "setContext"
-      | "setResolveData"
-      | "setOwnerId"
-      | "openRoot"
-      | "pushNested"
-      | "destroy"
-      | "setClosePinnedDescendants"
-      | "setCollisionConfig"
-      | "setEnableArrowNavigation"
-      | "setDebug"
-      | "setCascadeOffsetStep"
+      | 'setContext'
+      | 'setResolveData'
+      | 'setOwnerId'
+      | 'openRoot'
+      | 'pushNested'
+      | 'destroy'
+      | 'setClosePinnedDescendants'
+      | 'setCollisionConfig'
+      | 'setEnableArrowNavigation'
+      | 'setDebug'
+      | 'setCascadeOffsetStep'
     >;
   };
 
