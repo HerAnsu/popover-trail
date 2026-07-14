@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
-import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react';
-import type { TrailEntry, PopoverPlacement } from '../types';
-import { usePopoverCollisionConfig } from '../context';
+import { useEffect, useMemo, useState } from "react";
+import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react";
+import type { TrailEntry, PopoverPlacement } from "../types";
+import { usePopoverCollisionConfig } from "../context";
 
 interface UsePopoverGeometryOptions {
   id: string;
@@ -33,8 +33,25 @@ export function usePopoverGeometry({
   const boundary = localCollision?.boundary ?? globalCollision?.boundary;
   const padding = localCollision?.padding ?? globalCollision?.padding;
 
-  // Resolve lazy-getter functions for boundary elements
-  const resolvedBoundary = typeof boundary === 'function' ? boundary() : boundary;
+  const [resolvedBoundary, setResolvedBoundary] = useState<
+    "clippingAncestors" | HTMLElement | HTMLElement[] | undefined
+  >(typeof boundary === "string" ? boundary : undefined);
+
+  useEffect(() => {
+    if (typeof boundary === "function") {
+      try {
+        const el = boundary();
+        if (el) {
+          setResolvedBoundary(el);
+        }
+      } catch {
+        // Fail-safe for early mount phases
+      }
+    } else {
+      setResolvedBoundary(boundary);
+    }
+  }, [boundary]);
+
   const boundaryOption = resolvedBoundary || undefined;
 
   // 1. Setup a virtual element for Floating UI positioning using the anchor DOMRect
@@ -47,7 +64,7 @@ export function usePopoverGeometry({
 
   // 2. Configure useFloating positioning middleware with autoUpdate
   const { refs, x, y, update } = useFloating({
-    placement: placement ?? 'bottom',
+    placement: placement ?? "bottom",
     whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
     middleware: [
       offset(8), // Gap distance from trigger
@@ -67,9 +84,11 @@ export function usePopoverGeometry({
     refs.setReference(virtualElement);
   }, [virtualElement, refs]);
 
-  // 4. Force updates when specific inputs change
+  // 4. Force updates when specific inputs change (disabled when pinned)
   useEffect(() => {
-    void update();
+    if (!isPinned) {
+      void update();
+    }
   }, [id, anchorRect, placement, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update]);
 
   // 5. Calculate the final coordinates

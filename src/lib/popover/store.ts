@@ -1,4 +1,4 @@
-import { createStore } from 'zustand/vanilla';
+import { createStore } from "zustand/vanilla";
 import type {
   PopoverStore,
   PopoverResolver,
@@ -6,14 +6,18 @@ import type {
   PopoverStateData,
   PopoverActions,
   PopoverCache,
-} from './types';
-import equal from 'fast-deep-equal';
+} from "./types";
+import equal from "fast-deep-equal";
 
 /**
  * Returns true if a value is a Promise or a thenable object.
  */
-function isPromise<T>(value: any): value is Promise<T> {
-  return typeof value === 'object' && value !== null && typeof value.then === 'function';
+function isPromise<T>(value: unknown): value is Promise<T> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as Record<string, unknown>).then === "function"
+  );
 }
 
 /**
@@ -51,9 +55,9 @@ function getEntryAtIndex<TData>(
 /**
  * Finds the virtual index of a popover entry by its key.
  */
-function findEntryIndex(
-  floating: readonly TrailEntry[],
-  trail: readonly TrailEntry[],
+function findEntryIndex<TData>(
+  floating: readonly TrailEntry<TData>[],
+  trail: readonly TrailEntry<TData>[],
   key: string,
 ): number {
   const fIndex = floating.findIndex((e) => e.key === key);
@@ -66,9 +70,9 @@ function findEntryIndex(
 /**
  * Returns true if a popover with the given key is currently active.
  */
-function hasEntryWithKey(
-  floating: readonly TrailEntry[],
-  trail: readonly TrailEntry[],
+function hasEntryWithKey<TData>(
+  floating: readonly TrailEntry<TData>[],
+  trail: readonly TrailEntry<TData>[],
   key: string,
 ): boolean {
   return floating.some((e) => e.key === key) || trail.some((e) => e.key === key);
@@ -88,19 +92,19 @@ function getNextZIndexOrder(
 /**
  * Retrieves all children and descendants spawned by a parent popover.
  */
-function getDescendants(
+function getDescendants<TData>(
   parentKey: string,
-  floating: readonly TrailEntry[],
-  trail: readonly TrailEntry[],
-): TrailEntry[] {
-  const descendants: TrailEntry[] = [];
+  floating: readonly TrailEntry<TData>[],
+  trail: readonly TrailEntry<TData>[],
+): TrailEntry<TData>[] {
+  const descendants: TrailEntry<TData>[] = [];
   const queue = [parentKey];
   const visited = new Set<string>([parentKey]);
   const floatingKeys = new Set(floating.map((e) => e.key));
 
   // Build children adjacency list in linear time O(N)
-  const childrenMap = new Map<string, TrailEntry[]>();
-  const mapEntry = (entry: TrailEntry) => {
+  const childrenMap = new Map<string, TrailEntry<TData>[]>();
+  const mapEntry = (entry: TrailEntry<TData>) => {
     if (entry.parentKey) {
       let list = childrenMap.get(entry.parentKey);
       if (!list) {
@@ -137,18 +141,18 @@ function getDescendants(
  * Recursively retrieves all descendant keys (both trailing and floating) spawned by a parent popover.
  * It tracks parent-child linkages via both current parentKey and originalParentKey.
  */
-function getAllDescendants(
+function getAllDescendants<TData>(
   parentKeys: string[],
-  floating: readonly TrailEntry[],
-  trail: readonly TrailEntry[],
+  floating: readonly TrailEntry<TData>[],
+  trail: readonly TrailEntry<TData>[],
 ): Set<string> {
   const descendants = new Set<string>();
   const queue = [...parentKeys];
   const visited = new Set<string>(parentKeys);
 
   // Build children adjacency list in linear time O(N)
-  const childrenMap = new Map<string, TrailEntry[]>();
-  const mapEntry = (entry: TrailEntry) => {
+  const childrenMap = new Map<string, TrailEntry<TData>[]>();
+  const mapEntry = (entry: TrailEntry<TData>) => {
     const pKey = entry.parentKey ?? entry.originalParentKey;
     if (pKey) {
       let list = childrenMap.get(pKey);
@@ -522,6 +526,8 @@ export function createPopoverStore<TData = any, TContext = any>(
       },
 
       updateOffset: (key, x, y) => {
+        const current = get().offsets[key];
+        if (current && current.x === x && current.y === y) return;
         set((state) => ({
           offsets: {
             ...state.offsets,
@@ -553,10 +559,10 @@ export function createPopoverStore<TData = any, TContext = any>(
 
       clearTrail: () => {
         // Abort the root hydration request and any trail-related nested requests
-        const rootController = activeControllers.get('__root__');
+        const rootController = activeControllers.get("__root__");
         if (rootController) {
           rootController.abort();
-          activeControllers.delete('__root__');
+          activeControllers.delete("__root__");
         }
         const {
           trail,
@@ -619,7 +625,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       openRootWithResolver: async (keyOrName, anchorEvent, options) => {
         anchorEvent.stopPropagation();
         const { ownerId, context, rootHydrationRequestCounter, cache } = get();
-        const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
+        const finalOwnerId = options?.ownerId ?? ownerId ?? "default";
         const localCollision = options?.collision;
 
         const anchorElement = anchorEvent.currentTarget;
@@ -629,12 +635,12 @@ export function createPopoverStore<TData = any, TContext = any>(
         set({ anchorElement, anchorRect });
 
         // Abort previous root loading requests if any
-        const prevController = activeControllers.get('__root__');
+        const prevController = activeControllers.get("__root__");
         if (prevController) {
           prevController.abort();
         }
         const controller = new AbortController();
-        activeControllers.set('__root__', controller);
+        activeControllers.set("__root__", controller);
 
         // 1. Check cache first
         const cachedResultOrPromise = cache ? cache.get(keyOrName) : undefined;
@@ -650,7 +656,7 @@ export function createPopoverStore<TData = any, TContext = any>(
               collision: localCollision,
             };
             set((state) => openRootState(state, finalOwnerId, entry));
-            activeControllers.delete('__root__');
+            activeControllers.delete("__root__");
             return;
           }
         }
@@ -675,7 +681,7 @@ export function createPopoverStore<TData = any, TContext = any>(
           if (cache && resolved !== undefined) {
             void cache.set(keyOrName, resolved as TData);
           }
-          activeControllers.delete('__root__');
+          activeControllers.delete("__root__");
           return;
         }
 
@@ -726,8 +732,8 @@ export function createPopoverStore<TData = any, TContext = any>(
             return { trail: nextTrail };
           });
         } finally {
-          if (activeControllers.get('__root__') === controller) {
-            activeControllers.delete('__root__');
+          if (activeControllers.get("__root__") === controller) {
+            activeControllers.delete("__root__");
           }
         }
       },
@@ -873,7 +879,7 @@ export function createPopoverStore<TData = any, TContext = any>(
         const controller = new AbortController();
         activeControllers.set(key, controller);
 
-        let parentData: any = undefined;
+        let parentData: TData | undefined = undefined;
         if (entry.parentKey) {
           const pIndex = findEntryIndex(floating, trail, entry.parentKey);
           if (pIndex !== -1) {
