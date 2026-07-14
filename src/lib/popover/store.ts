@@ -1032,10 +1032,14 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         resetStoreState();
       },
       setClosePinnedDescendants: (closePinnedDescendants) => {
-        set({ closePinnedDescendants });
+        if (get().closePinnedDescendants !== closePinnedDescendants) {
+          set({ closePinnedDescendants });
+        }
       },
       setCollisionConfig: (collisionConfig) => {
-        set({ collisionConfig });
+        if (!equal(get().collisionConfig, collisionConfig)) {
+          set({ collisionConfig });
+        }
       },
       closeByKey: (key) => {
         const { floating, trail } = get();
@@ -1045,10 +1049,14 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         }
       },
       setEnableArrowNavigation: (enableArrowNavigation) => {
-        set({ enableArrowNavigation });
+        if (get().enableArrowNavigation !== enableArrowNavigation) {
+          set({ enableArrowNavigation });
+        }
       },
       setDebug: (debug) => {
-        set({ debug });
+        if (get().debug !== debug) {
+          set({ debug });
+        }
       },
       hoverEnter: (key) => {
         clearHoverTimer(key);
@@ -1075,7 +1083,9 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         hoverCloseTimers.set(key, newTimer);
       },
       setCascadeOffsetStep: (cascadeOffsetStep) => {
-        set({ cascadeOffsetStep });
+        if (get().cascadeOffsetStep !== cascadeOffsetStep) {
+          set({ cascadeOffsetStep });
+        }
       },
     };
 
