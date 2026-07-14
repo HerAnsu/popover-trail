@@ -249,10 +249,12 @@ function getCleanupStatePatch<TData, TContext>(
     pinnedStates: nextPinnedStates,
     nestedHydrationRequestCounters: nextNestedCounters,
   };
-  if (floating.length === 0 && trail.length === 0) {
-    patch.zIndexOrder = [];
+  if (trail.length === 0) {
     patch.anchorElement = null;
     patch.anchorRect = null;
+  }
+  if (floating.length === 0 && trail.length === 0) {
+    patch.zIndexOrder = [];
     patch.ownerId = null;
   }
   return patch;
@@ -470,6 +472,10 @@ export function createPopoverStore<TData = any, TContext = any>(
         }
       },
 
+      setResolveData: (resolveData) => {
+        set({ resolveData });
+      },
+
       setOwnerId: (ownerId) => {
         if (get().ownerId !== ownerId) {
           set({ ownerId });
@@ -624,8 +630,14 @@ export function createPopoverStore<TData = any, TContext = any>(
       // Async/Hydration Actions
       openRootWithResolver: async (keyOrName, anchorEvent, options) => {
         anchorEvent.stopPropagation();
-        const { ownerId, context, rootHydrationRequestCounter, cache } = get();
+        const { ownerId, context, rootHydrationRequestCounter, cache, trail } = get();
         const finalOwnerId = options?.ownerId ?? ownerId ?? "default";
+
+        // Check if already open as root of active trail
+        if (trail.length > 0 && trail[0].key === keyOrName && get().ownerId === finalOwnerId) {
+          return;
+        }
+
         const localCollision = options?.collision;
 
         const anchorElement = anchorEvent.currentTarget;
@@ -666,7 +678,7 @@ export function createPopoverStore<TData = any, TContext = any>(
           resultOrPromise =
             cachedResultOrPromise !== undefined
               ? cachedResultOrPromise
-              : resolveData(keyOrName, undefined, context ?? undefined, controller.signal);
+              : get().resolveData(keyOrName, undefined, context ?? undefined, controller.signal);
         } catch (err) {
           const errorObj = err instanceof Error ? err : new Error(String(err));
           const entry: TrailEntry<TData> = {
@@ -724,12 +736,15 @@ export function createPopoverStore<TData = any, TContext = any>(
             void cache.set(keyOrName, resolved as TData);
           }
 
-          // Update data
+          // Update data in both trail and floating (resolves pinned-while-loading)
           set((state) => {
             const nextTrail = state.trail.map((e) =>
               e.key === keyOrName ? { ...e, isLoading: false, data: resolved, error: null } : e,
             );
-            return { trail: nextTrail };
+            const nextFloating = state.floating.map((e) =>
+              e.key === keyOrName ? { ...e, isLoading: false, data: resolved, error: null } : e,
+            );
+            return { trail: nextTrail, floating: nextFloating };
           });
         } catch (err) {
           if (controller.signal.aborted) return;
@@ -744,7 +759,16 @@ export function createPopoverStore<TData = any, TContext = any>(
                   }
                 : e,
             );
-            return { trail: nextTrail };
+            const nextFloating = state.floating.map((e) =>
+              e.key === keyOrName
+                ? {
+                    ...e,
+                    isLoading: false,
+                    error: err instanceof Error ? err : new Error(String(err)),
+                  }
+                : e,
+            );
+            return { trail: nextTrail, floating: nextFloating };
           });
         } finally {
           if (activeControllers.get("__root__") === controller) {
@@ -757,6 +781,15 @@ export function createPopoverStore<TData = any, TContext = any>(
         const { floating, trail, context, nestedHydrationRequestCounters, cache } = get();
         const sourceIndex = findEntryIndex(floating, trail, sourceKey);
         if (sourceIndex === -1) return;
+
+        // Check if already open as direct child of sourceKey
+        const existingIndex = findEntryIndex(floating, trail, keyOrName);
+        if (existingIndex !== -1) {
+          const existingEntry = getEntryAtIndex(floating, trail, existingIndex);
+          if (existingEntry && existingEntry.parentKey === sourceKey) {
+            return;
+          }
+        }
 
         const sourceEntry = getEntryAtIndex(floating, trail, sourceIndex);
         if (!sourceEntry) return;
@@ -799,7 +832,12 @@ export function createPopoverStore<TData = any, TContext = any>(
           resultOrPromise =
             cachedResultOrPromise !== undefined
               ? cachedResultOrPromise
-              : resolveData(keyOrName, sourceEntry.data, context ?? undefined, controller.signal);
+              : get().resolveData(
+                  keyOrName,
+                  sourceEntry.data,
+                  context ?? undefined,
+                  controller.signal,
+                );
         } catch (err) {
           const errorObj = err instanceof Error ? err : new Error(String(err));
           const entry: TrailEntry<TData> = {
@@ -867,11 +905,15 @@ export function createPopoverStore<TData = any, TContext = any>(
             void cache.set(keyOrName, resolved as TData);
           }
 
+          // Update data in both trail and floating (resolves pinned-while-loading)
           set((state) => {
             const nextTrail = state.trail.map((e) =>
               e.key === keyOrName ? { ...e, isLoading: false, data: resolved, error: null } : e,
             );
-            return { trail: nextTrail };
+            const nextFloating = state.floating.map((e) =>
+              e.key === keyOrName ? { ...e, isLoading: false, data: resolved, error: null } : e,
+            );
+            return { trail: nextTrail, floating: nextFloating };
           });
         } catch (err) {
           if (controller.signal.aborted) return;
@@ -886,7 +928,16 @@ export function createPopoverStore<TData = any, TContext = any>(
                   }
                 : e,
             );
-            return { trail: nextTrail };
+            const nextFloating = state.floating.map((e) =>
+              e.key === keyOrName
+                ? {
+                    ...e,
+                    isLoading: false,
+                    error: err instanceof Error ? err : new Error(String(err)),
+                  }
+                : e,
+            );
+            return { trail: nextTrail, floating: nextFloating };
           });
         } finally {
           if (activeControllers.get(keyOrName) === controller) {
@@ -1035,6 +1086,7 @@ export function createPopoverStore<TData = any, TContext = any>(
 
     const {
       setContext: _,
+      setResolveData: _rd,
       setOwnerId: __,
       openRoot: ___,
       pushNested: ____,
@@ -1059,6 +1111,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       closePinnedDescendants: false,
       collisionConfig: null,
       cache: cache ?? null,
+      resolveData,
 
       ...actions,
       actions: remainingActions,

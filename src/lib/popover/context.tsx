@@ -60,6 +60,11 @@ export function PopoverProvider<TData = any, TContext = any>({
     store.getState().setContext(initialContext as TContext);
   }, [initialContext, store]);
 
+  // Synchronize resolveData reactively when the prop changes to prevent stale closures
+  useEffect(() => {
+    store.getState().setResolveData(resolveData);
+  }, [resolveData, store]);
+
   // Synchronize closePinnedDescendants reactively when the prop changes
   useEffect(() => {
     store.getState().setClosePinnedDescendants(Boolean(closePinnedDescendants));
@@ -255,14 +260,15 @@ export function usePopoverActions<TData = any, TContext = any>() {
   return useMemo(
     () =>
       store.getState().actions as Omit<
-        PopoverStore<TData, TContext>['actions'],
-        | 'setContext'
-        | 'setOwnerId'
-        | 'openRoot'
-        | 'pushNested'
-        | 'destroy'
-        | 'setClosePinnedDescendants'
-        | 'setCollisionConfig'
+        PopoverStore<TData, TContext>["actions"],
+        | "setContext"
+        | "setResolveData"
+        | "setOwnerId"
+        | "openRoot"
+        | "pushNested"
+        | "destroy"
+        | "setClosePinnedDescendants"
+        | "setCollisionConfig"
       >,
     [store],
   );

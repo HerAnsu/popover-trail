@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
-import { createPopoverStore } from './store';
-import type { TrailEntry } from './types';
+import { describe, it, expect, vi } from "vitest";
+import { createPopoverStore } from "./store";
+import type { TrailEntry } from "./types";
+import { SimplePopoverCache } from "./utils/cache";
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -519,5 +520,66 @@ describe('createPopoverStore', () => {
     // child-2 remains in the trail completely untouched!
     expect(state.trail).toHaveLength(1);
     expect(state.trail[0].key).toBe('child-2');
+  });
+
+  it("should support TTL expiration and cleanup in SimplePopoverCache", async () => {
+    const cache = new SimplePopoverCache<{ name: string }>(100); // 100ms TTL
+    cache.set("item-1", { name: "Expiring Item" });
+
+    // Retrieve active item
+    expect(cache.get("item-1")).toEqual({ name: "Expiring Item" });
+
+    // Wait for TTL expiration
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    // Retrieve expired item (should trigger cleanup and return undefined)
+    expect(cache.get("item-1")).toBeUndefined();
+  });
+
+  it("should successfully resolve data when a popover is pinned while loading", async () => {
+    let resolvePromise!: (val: any) => void;
+    const asyncPromise = new Promise((resolve) => {
+      resolvePromise = resolve;
+    });
+
+    const resolver = async () => {
+      await asyncPromise;
+      return "async payload";
+    };
+
+    const store = createPopoverStore(resolver);
+    const mockButton = {
+      currentTarget: {
+        getBoundingClientRect: () => new DOMRect(0, 0, 100, 100),
+      } as any,
+      stopPropagation: () => {},
+    };
+
+    // Trigger root loading
+    const loadPromise = store.getState().openRootWithResolver("async-popover", mockButton);
+
+    // Verify it is loading in the trail
+    let state = store.getState();
+    expect(state.trail).toHaveLength(1);
+    expect(state.trail[0].isLoading).toBe(true);
+
+    // Pin it immediately while loading is in progress
+    store.getState().togglePin("async-popover", new DOMRect(50, 50, 100, 100));
+
+    // Verify it moved to floating but remains isLoading: true
+    state = store.getState();
+    expect(state.trail).toHaveLength(0);
+    expect(state.floating).toHaveLength(1);
+    expect(state.floating[0].isLoading).toBe(true);
+
+    // Finish resolving the data
+    resolvePromise("Async Loaded Data");
+    await loadPromise;
+
+    // Verify the pinned/floating element got resolved successfully!
+    state = store.getState();
+    expect(state.floating).toHaveLength(1);
+    expect(state.floating[0].isLoading).toBe(false);
+    expect(state.floating[0].data).toBe("async payload");
   });
 });

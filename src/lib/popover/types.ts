@@ -63,11 +63,15 @@ export interface PopoverStateData<TData = any, TContext = any> {
   collisionConfig: CollisionConfig | null;
   /** Custom data cache provider. */
   cache: PopoverCache<TData> | null;
+  /** Active resolver callback. */
+  resolveData: PopoverResolver<TData, TContext>;
 }
 
 export interface PopoverActions<TData = any, TContext = any> {
   /** Updates the shared global context field. */
   setContext: (context: TContext) => void;
+  /** Updates the active data resolver. */
+  setResolveData: (resolver: PopoverResolver<TData, TContext>) => void;
   /** Updates the owner ID claiming the trail. */
   setOwnerId: (ownerId: string | null) => void;
   /** Spawns a new popover trail root. */
@@ -118,13 +122,14 @@ export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, 
   PopoverActions<TData, TContext> & {
     actions: Omit<
       PopoverActions<TData, TContext>,
-      | 'setContext'
-      | 'setOwnerId'
-      | 'openRoot'
-      | 'pushNested'
-      | 'destroy'
-      | 'setClosePinnedDescendants'
-      | 'setCollisionConfig'
+      | "setContext"
+      | "setResolveData"
+      | "setOwnerId"
+      | "openRoot"
+      | "pushNested"
+      | "destroy"
+      | "setClosePinnedDescendants"
+      | "setCollisionConfig"
     >;
   };
 
