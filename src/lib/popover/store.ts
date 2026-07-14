@@ -129,14 +129,13 @@ function getNextZIndexOrder(
 }
 
 /**
- * Recursively retrieves all child and descendant popovers currently in the active trail,
- * ignoring any pinned/floating descendant branches.
+ * Builds a Map grouping popovers by their parent key IDs.
  *
  * @template TData - The resolved data payload type.
- * @param parentKey - The parent popover key starting the search.
  * @param floating - The array of floating popovers.
  * @param trail - The array of trailing popovers.
- * @returns Array of descendant popover entries.
+ * @param useOriginalParent - Optional flag to group by originalParentKey fallback.
+ * @returns A Map mapping parent keys to arrays of child entries.
  */
 function buildChildrenMap<TData>(
   floating: readonly TrailEntry<TData>[],
@@ -597,6 +596,31 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       });
     };
 
+    const resetStoreState = () => {
+      for (const controller of activeControllers.values()) {
+        controller.abort();
+      }
+      activeControllers.clear();
+
+      for (const timer of hoverCloseTimers.values()) {
+        clearTimeout(timer);
+      }
+      hoverCloseTimers.clear();
+
+      set({
+        ownerId: null,
+        trail: [],
+        floating: [],
+        offsets: {},
+        pinnedStates: {},
+        zIndexOrder: [],
+        rootHydrationRequestCounter: 0,
+        nestedHydrationRequestCounters: {},
+        anchorElement: null,
+        anchorRect: null,
+      });
+    };
+
     const resolvePopoverEntry = async (
       key: string,
       parentKey: string | undefined,
@@ -790,29 +814,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       },
 
       clear: () => {
-        // Abort all in-flight requests
-        for (const controller of activeControllers.values()) {
-          controller.abort();
-        }
-        activeControllers.clear();
-
-        for (const timer of hoverCloseTimers.values()) {
-          clearTimeout(timer);
-        }
-        hoverCloseTimers.clear();
-
-        set({
-          ownerId: null,
-          trail: [],
-          floating: [],
-          offsets: {},
-          pinnedStates: {},
-          zIndexOrder: [],
-          rootHydrationRequestCounter: 0,
-          nestedHydrationRequestCounters: {},
-          anchorElement: null,
-          anchorRect: null,
-        });
+        resetStoreState();
       },
 
       clearTrail: () => {
@@ -1035,28 +1037,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         }
       },
       destroy: () => {
-        for (const controller of activeControllers.values()) {
-          controller.abort();
-        }
-        activeControllers.clear();
-
-        for (const timer of hoverCloseTimers.values()) {
-          clearTimeout(timer);
-        }
-        hoverCloseTimers.clear();
-
-        set({
-          ownerId: null,
-          trail: [],
-          floating: [],
-          offsets: {},
-          pinnedStates: {},
-          zIndexOrder: [],
-          rootHydrationRequestCounter: 0,
-          nestedHydrationRequestCounters: {},
-          anchorElement: null,
-          anchorRect: null,
-        });
+        resetStoreState();
       },
       setClosePinnedDescendants: (closePinnedDescendants) => {
         set({ closePinnedDescendants });
