@@ -1,6 +1,7 @@
-import FocusLock from 'react-focus-lock';
-import clsx from 'clsx';
-import { DndContext, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
+import { useState } from "react";
+import FocusLock from "react-focus-lock";
+import clsx from "clsx";
+import { DndContext, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import {
   PopoverProvider,
   usePopoverTrail,
@@ -12,7 +13,7 @@ import {
   usePopoverTrigger,
   type PopoverResolver,
   type TrailEntry,
-} from './lib/popover';
+} from "./lib/popover";
 
 // Math Expression tree data shape
 interface MathData {
@@ -30,12 +31,12 @@ function parseExpression(expr: string): MathData {
 
   // Strip wrapping parentheses if they wrap the entire expression (e.g. "(3 + 5)" -> "3 + 5")
   let cleaned = expr;
-  while (cleaned.startsWith('(') && cleaned.endsWith(')')) {
+  while (cleaned.startsWith("(") && cleaned.endsWith(")")) {
     let depth = 0;
     let balanceMatch = true;
     for (let i = 0; i < cleaned.length - 1; i++) {
-      if (cleaned[i] === '(') depth++;
-      if (cleaned[i] === ')') depth--;
+      if (cleaned[i] === "(") depth++;
+      if (cleaned[i] === ")") depth--;
       if (depth === 0) {
         balanceMatch = false;
         break;
@@ -56,10 +57,10 @@ function parseExpression(expr: string): MathData {
   // Scan backwards for + and -
   for (let i = cleaned.length - 1; i >= 0; i--) {
     const char = cleaned[i];
-    if (char === ')') depth++;
-    if (char === '(') depth--;
+    if (char === ")") depth++;
+    if (char === "(") depth--;
     if (depth === 0) {
-      if (char === '+' || char === '-') {
+      if (char === "+" || char === "-") {
         opIndex = i;
         opType = char;
         break;
@@ -72,10 +73,10 @@ function parseExpression(expr: string): MathData {
     depth = 0;
     for (let i = cleaned.length - 1; i >= 0; i--) {
       const char = cleaned[i];
-      if (char === ')') depth++;
-      if (char === '(') depth--;
+      if (char === ")") depth++;
+      if (char === "(") depth--;
       if (depth === 0) {
-        if (char === '*' || char === '/') {
+        if (char === "*" || char === "/") {
           opIndex = i;
           opType = char;
           break;
@@ -89,10 +90,10 @@ function parseExpression(expr: string): MathData {
     depth = 0;
     for (let i = cleaned.length - 1; i >= 0; i--) {
       const char = cleaned[i];
-      if (char === ')') depth++;
-      if (char === '(') depth--;
+      if (char === ")") depth++;
+      if (char === "(") depth--;
       if (depth === 0) {
-        if (char === '^') {
+        if (char === "^") {
           opIndex = i;
           opType = char;
           break;
@@ -109,22 +110,22 @@ function parseExpression(expr: string): MathData {
     const rightParsed = parseExpression(rightStr);
 
     let value = 0;
-    let opName = '';
-    if (opType === '+') {
+    let opName = "";
+    if (opType === "+") {
       value = leftParsed.value + rightParsed.value;
-      opName = 'Addition (+)';
-    } else if (opType === '-') {
+      opName = "Addition (+)";
+    } else if (opType === "-") {
       value = leftParsed.value - rightParsed.value;
-      opName = 'Subtraction (-)';
-    } else if (opType === '*') {
+      opName = "Subtraction (-)";
+    } else if (opType === "*") {
       value = leftParsed.value * rightParsed.value;
-      opName = 'Multiplication (*)';
-    } else if (opType === '/') {
+      opName = "Multiplication (*)";
+    } else if (opType === "/") {
       value = rightParsed.value !== 0 ? leftParsed.value / rightParsed.value : 0;
-      opName = 'Division (/)';
-    } else if (opType === '^') {
+      opName = "Division (/)";
+    } else if (opType === "^") {
       value = leftParsed.value ** rightParsed.value;
-      opName = 'Exponentiation (^)';
+      opName = "Exponentiation (^)";
     }
 
     return {
@@ -160,11 +161,12 @@ interface PopoverCardProps {
 }
 
 function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
+  const [branchInput, setBranchInput] = useState("");
   const { ref, style, isTop, actions, dragHandleProps, handlePinToggle } = usePopoverCard({
     entry,
     index,
     isPinned,
-    placement: 'bottom',
+    placement: "bottom",
   });
 
   return (
@@ -172,12 +174,13 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
       ref={ref}
       style={style}
       role="dialog"
-      className={clsx('popover-card', isTop && 'topmost', isPinned && 'pinned')}
-      onMouseDown={() => actions.bringToFront(entry.key)}>
+      className={clsx("popover-card", isTop && "topmost", isPinned && "pinned")}
+      onMouseDown={() => actions.bringToFront(entry.key)}
+    >
       <FocusLock disabled={!isTop} returnFocus>
         <div className="popover-header" {...dragHandleProps}>
           <span className="popover-title">
-            {entry.isLoading ? 'Evaluating...' : entry.data?.title}
+            {entry.isLoading ? "Evaluating..." : entry.data?.title}
           </span>
           <div className="popover-actions">
             <button
@@ -186,8 +189,9 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               className="btn-action"
-              title={isPinned ? 'Unpin popover' : 'Pin popover'}>
-              {isPinned ? '📌' : '📍'}
+              title={isPinned ? "Unpin popover" : "Pin popover"}
+            >
+              {isPinned ? "📌" : "📍"}
             </button>
             <button
               type="button"
@@ -195,7 +199,8 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               className="btn-action"
-              title="Close">
+              title="Close"
+            >
               ✕
             </button>
           </div>
@@ -208,15 +213,15 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
               <span>Parsing expression...</span>
             </div>
           ) : entry.error ? (
-            <div style={{ color: '#ef4444' }}>
+            <div style={{ color: "#ef4444" }}>
               <strong>Error:</strong> {entry.error.message}
             </div>
           ) : (
             <div>
-              <div className="math-expression-display" style={{ marginBottom: '0.8rem' }}>
+              <div className="math-expression-display" style={{ marginBottom: "0.8rem" }}>
                 <span className="math-label">Expression:</span>
                 <code className="math-code">{entry.data?.expression}</code>
-                <div className="math-result" style={{ marginTop: '0.4rem', fontWeight: 700 }}>
+                <div className="math-result" style={{ marginTop: "0.4rem", fontWeight: 700 }}>
                   Result = <span className="math-value">{entry.data?.value}</span>
                 </div>
               </div>
@@ -224,9 +229,11 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
               {entry.data?.operator && (
                 <div
                   className="popover-links"
-                  style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
+                >
                   <span
-                    style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-primary)" }}
+                  >
                     Drill down operands:
                   </span>
                   {entry.data.leftExpr && (
@@ -238,7 +245,8 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
                         void actions.openNestedWithResolver(entry.data!.leftExpr!, entry.key, {
                           triggerRect: rect,
                         });
-                      }}>
+                      }}
+                    >
                       👈 Left: {entry.data.leftExpr}
                     </button>
                   )}
@@ -251,12 +259,74 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
                         void actions.openNestedWithResolver(entry.data!.rightExpr!, entry.key, {
                           triggerRect: rect,
                         });
-                      }}>
+                      }}
+                    >
                       👉 Right: {entry.data.rightExpr}
                     </button>
                   )}
                 </div>
               )}
+
+              <div
+                className="custom-branch-zone"
+                style={{
+                  marginTop: "1rem",
+                  paddingTop: "0.8rem",
+                  borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    color: "var(--text-secondary)",
+                    display: "block",
+                    marginBottom: "0.3rem",
+                  }}
+                >
+                  Extend with custom formula:
+                </span>
+                <div style={{ display: "flex", gap: "0.3rem" }}>
+                  <input
+                    type="text"
+                    placeholder="e.g. 5 * (2 + 1)"
+                    value={branchInput}
+                    onChange={(e) => setBranchInput(e.target.value)}
+                    style={{
+                      flex: 1,
+                      background: "rgba(0, 0, 0, 0.3)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: "4px",
+                      color: "#fff",
+                      padding: "0.3rem 0.5rem",
+                      fontSize: "0.75rem",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={!branchInput.trim()}
+                    style={{
+                      background: "rgba(99, 102, 241, 0.2)",
+                      border: "1px solid rgba(99, 102, 241, 0.4)",
+                      borderRadius: "4px",
+                      color: "#fff",
+                      padding: "0.3rem 0.6rem",
+                      fontSize: "0.75rem",
+                      cursor: branchInput.trim() ? "pointer" : "not-allowed",
+                      fontWeight: 600,
+                    }}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      void actions.openNestedWithResolver(branchInput.trim(), entry.key, {
+                        triggerRect: rect,
+                      });
+                      setBranchInput("");
+                    }}
+                  >
+                    Branch
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -289,9 +359,9 @@ function PopoverCanvas() {
 
   return (
     <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none" }}>
         {activeEntries.map(({ entry, isPinned }, idx) => (
-          <div key={entry.key} style={{ pointerEvents: 'auto' }}>
+          <div key={entry.key} style={{ pointerEvents: "auto" }}>
             <PopoverCard
               entry={entry}
               index={isPinned ? idx : floating.length + trail.indexOf(entry)}
@@ -305,13 +375,22 @@ function PopoverCanvas() {
 }
 
 function MainContent() {
-  const { clear } = usePopoverActions<MathData>();
+  const [customRoot, setCustomRoot] = useState("((1 + 2) * 3) / (4 - (5 ^ 2))");
+  const { clear, openRootWithResolver } = usePopoverActions<MathData>();
   const trail = usePopoverTrail();
   const floating = usePopoverFloating();
 
-  const trig1 = usePopoverTrigger('2 * (3 + (15 / 5))');
-  const trig2 = usePopoverTrigger('(4 ^ 2) - (2 * (5 + 1))');
-  const trig3 = usePopoverTrigger('100 / (2 * (3 + (4 - 2)))');
+  const trig1 = usePopoverTrigger("2 * (3 + (15 / 5))");
+  const trig2 = usePopoverTrigger("(4 ^ 2) - (2 * (5 + 1))");
+  const trig3 = usePopoverTrigger("100 / (2 * (3 + (4 - 2)))");
+
+  const handleOpenCustomRoot = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!customRoot.trim()) return;
+    void openRootWithResolver(customRoot.trim(), {
+      currentTarget: e.currentTarget,
+      stopPropagation: () => {},
+    });
+  };
 
   const totalActive = trail.length + floating.length;
 
@@ -328,21 +407,65 @@ function MainContent() {
       <div
         className="trigger-zone"
         style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.8rem',
-          width: '100%',
-          maxWidth: '480px',
-        }}>
-        <button type="button" className="btn-trigger" {...trig1} style={{ textAlign: 'left' }}>
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.8rem",
+          width: "100%",
+          maxWidth: "480px",
+        }}
+      >
+        <button type="button" className="btn-trigger" {...trig1} style={{ textAlign: "left" }}>
           🧮 Compute: 2 * (3 + (15 / 5))
         </button>
-        <button type="button" className="btn-trigger" {...trig2} style={{ textAlign: 'left' }}>
+        <button type="button" className="btn-trigger" {...trig2} style={{ textAlign: "left" }}>
           🧮 Compute: (4 ^ 2) - (2 * (5 + 1))
         </button>
-        <button type="button" className="btn-trigger" {...trig3} style={{ textAlign: 'left' }}>
+        <button type="button" className="btn-trigger" {...trig3} style={{ textAlign: "left" }}>
           🧮 Compute: 100 / (2 * (3 + (4 - 2)))
         </button>
+
+        <div
+          className="custom-root-zone"
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            width: "100%",
+            marginTop: "0.4rem",
+          }}
+        >
+          <input
+            type="text"
+            value={customRoot}
+            onChange={(e) => setCustomRoot(e.target.value)}
+            placeholder="Type custom math formula..."
+            style={{
+              flex: 1,
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              borderRadius: "8px",
+              color: "#fff",
+              padding: "0.6rem 0.8rem",
+              fontSize: "0.9rem",
+            }}
+          />
+          <button
+            type="button"
+            onClick={handleOpenCustomRoot}
+            disabled={!customRoot.trim()}
+            style={{
+              background: "indigo",
+              border: "none",
+              borderRadius: "8px",
+              color: "#fff",
+              padding: "0.6rem 1.2rem",
+              fontSize: "0.9rem",
+              cursor: customRoot.trim() ? "pointer" : "not-allowed",
+              fontWeight: 600,
+            }}
+          >
+            Compute
+          </button>
+        </div>
       </div>
 
       {totalActive > 0 && (
@@ -350,24 +473,25 @@ function MainContent() {
           type="button"
           onClick={clear}
           style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#ef4444',
-            padding: '0.6rem 1.2rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
+            background: "rgba(239, 68, 68, 0.1)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
+            color: "#ef4444",
+            padding: "0.6rem 1.2rem",
+            borderRadius: "8px",
+            cursor: "pointer",
             fontWeight: 600,
-            transition: 'all 0.2s',
-            marginTop: '1rem',
+            transition: "all 0.2s",
+            marginTop: "1rem",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#ef4444';
-            e.currentTarget.style.color = '#fff';
+            e.currentTarget.style.background = "#ef4444";
+            e.currentTarget.style.color = "#fff";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-            e.currentTarget.style.color = '#ef4444';
-          }}>
+            e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
+            e.currentTarget.style.color = "#ef4444";
+          }}
+        >
           Reset All Popovers
         </button>
       )}
@@ -384,7 +508,8 @@ export default function App() {
     <PopoverProvider
       resolveData={mathResolver}
       initialContext="math-client"
-      clickOutside={{ enabled: true, ignoreClass: 'btn-trigger' }}>
+      clickOutside={{ enabled: true, ignoreClass: "btn-trigger" }}
+    >
       <MainContent />
     </PopoverProvider>
   );
