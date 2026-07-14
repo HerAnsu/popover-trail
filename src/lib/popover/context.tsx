@@ -29,7 +29,7 @@ import type {
  *
  * @internal
  */
-export const PopoverStoreContext = createContext<StoreApi<PopoverStore<unknown, unknown>> | null>(null);
+export const PopoverStoreContext = createContext<StoreApi<PopoverStore> | null>(null);
 
 /**
  * Props for the {@link PopoverProvider} component.
@@ -214,7 +214,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   }, [enabled, ignoreClass, popoverSelector, store]);
 
   return (
-    <PopoverStoreContext.Provider value={store as unknown as StoreApi<PopoverStore<unknown, unknown>>}>{children}</PopoverStoreContext.Provider>
+    <PopoverStoreContext.Provider value={store as unknown as StoreApi<PopoverStore>}>{children}</PopoverStoreContext.Provider>
   );
 }
 
@@ -227,7 +227,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
  *
  * @param selector - Selector function extracting values from state.
  * @returns The reactive value slice.
- * @throws {Error} If called outside of a PopoverProvider.
+ * @throws {Error} If called outside a PopoverProvider.
  */
 export function usePopoverStore<TData = unknown, TContext = unknown, TSelected = unknown>(
   selector: (state: PopoverStore<TData, TContext>) => TSelected,
@@ -236,7 +236,7 @@ export function usePopoverStore<TData = unknown, TContext = unknown, TSelected =
   if (!store) {
     throw new Error("usePopoverStore must be used within a PopoverProvider");
   }
-  return useStore(store, selector as (state: PopoverStore<unknown, unknown>) => TSelected);
+  return useStore(store, selector as (state: PopoverStore) => TSelected);
 }
 
 /**
@@ -247,7 +247,7 @@ export function usePopoverStore<TData = unknown, TContext = unknown, TSelected =
  * @template TContext - The type of global shared context.
  *
  * @returns The raw Zustand StoreApi instance.
- * @throws {Error} If called outside of a PopoverProvider.
+ * @throws {Error} If called outside a PopoverProvider.
  */
 export function usePopoverStoreApi<TData = unknown, TContext = unknown>() {
   const store = useContext(PopoverStoreContext);
@@ -381,6 +381,33 @@ export function usePopoverActions<TData = unknown, TContext = unknown>() {
   return store.getState().actions as PopoverStore<TData, TContext>["actions"];
 }
 
+function usePopoverHoverHandlers(
+  key: string,
+  openTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>,
+  optionsRef: React.MutableRefObject<OpenRootOptions | undefined>,
+  onMouseEnter: (e: React.MouseEvent<HTMLElement>) => void,
+  onClick: (e: React.MouseEvent<HTMLElement>) => void,
+) {
+  const actions = usePopoverActions();
+  const onMouseLeave = useCallback(() => {
+    const hoverOpts = optionsRef.current?.hover;
+    if (hoverOpts?.enabled) {
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+      }
+      const delay = hoverOpts.closeDelay ?? 300;
+      actions.hoverLeave(key, delay);
+    }
+  }, [actions, key, optionsRef, openTimerRef]);
+
+  return useMemo(() => {
+    if (optionsRef.current?.hover?.enabled) {
+      return { onMouseEnter, onMouseLeave };
+    }
+    return { onClick };
+  }, [onClick, onMouseEnter, onMouseLeave, optionsRef.current?.hover?.enabled]);
+}
+
 /**
  * Hook to simplify binding an HTML element click trigger to open a root popover.
  *
@@ -420,7 +447,9 @@ export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
         const currentTarget = e.currentTarget;
         const fakeEvent = {
           currentTarget: currentTarget as HTMLElement,
-          stopPropagation: () => {},
+          stopPropagation: () => {
+            e.stopPropagation();
+          },
         };
         const delay = hoverOpts.openDelay ?? 200;
         openTimerRef.current = setTimeout(() => {
@@ -431,23 +460,7 @@ export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
     [actions, key],
   );
 
-  const onMouseLeave = useCallback(() => {
-    const hoverOpts = optionsRef.current?.hover;
-    if (hoverOpts?.enabled) {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
-      }
-      const delay = hoverOpts.closeDelay ?? 300;
-      actions.hoverLeave(key, delay);
-    }
-  }, [actions, key]);
-
-  return useMemo(() => {
-    if (options?.hover?.enabled) {
-      return { onMouseEnter, onMouseLeave };
-    }
-    return { onClick };
-  }, [onClick, onMouseEnter, onMouseLeave, options?.hover?.enabled]);
+  return usePopoverHoverHandlers(key, openTimerRef, optionsRef, onMouseEnter, onClick);
 }
 
 /**
@@ -500,27 +513,17 @@ export function usePopoverNestedTrigger(
     [actions, key, sourceKey],
   );
 
-  const onMouseLeave = useCallback(() => {
-    const hoverOpts = optionsRef.current?.hover;
-    if (hoverOpts?.enabled) {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
-      }
-      const delay = hoverOpts.closeDelay ?? 300;
-      actions.hoverLeave(key, delay);
-    }
-  }, [actions, key]);
-
-  return useMemo(() => {
-    if (options?.hover?.enabled) {
-      return { onMouseEnter, onMouseLeave };
-    }
-    return { onClick };
-  }, [onClick, onMouseEnter, onMouseLeave, options?.hover?.enabled]);
+  return usePopoverHoverHandlers(
+    key,
+    openTimerRef,
+    optionsRef as unknown as React.MutableRefObject<OpenRootOptions | undefined>,
+    onMouseEnter,
+    onClick,
+  );
 }
 
 /**
- * Portal wrapper component that safely mounts children elements to document.body,
+ * Portal wrapper component that safely mounts children elements to `document.body`,
  * bypassing parent `overflow: hidden` layouts and clipping issues.
  *
  * @param props - Portal configuration props.
