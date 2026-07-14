@@ -1,4 +1,16 @@
 /**
+ * Configuration options for hover triggers and delay buffers.
+ */
+export interface HoverConfig {
+  /** If true, triggers opening/closing on hover. */
+  enabled: boolean;
+  /** Delay in milliseconds before opening the popover on hover (default: 200). */
+  openDelay?: number;
+  /** Delay in milliseconds before closing the popover when cursor leaves (default: 300). */
+  closeDelay?: number;
+}
+
+/**
  * Represents a single popover instance within the active trail stack or floating list.
  *
  * @template TData - The type of resolved data payload associated with this popover.
@@ -61,6 +73,9 @@ export interface TrailEntry<TData = any> {
    * Local overrides for boundary collision settings and safety padding.
    */
   collision?: CollisionConfig;
+
+  /** Hover-trigger options configuration stored for this entry. */
+  hover?: HoverConfig;
 }
 
 /**
@@ -135,6 +150,12 @@ export interface PopoverStateData<TData = any, TContext = any> {
 
   /** Active resolver callback. */
   resolveData: PopoverResolver<TData, TContext>;
+
+  /** Whether keyboard arrow navigation is enabled. */
+  enableArrowNavigation: boolean;
+
+  /** Whether debug logging is enabled. */
+  debug: boolean;
 }
 
 /**
@@ -208,6 +229,18 @@ export interface PopoverActions<TData = any, TContext = any> {
 
   /** Closes exactly the popover matching the specified key along with all its descendants. */
   closeByKey: (key: string) => void;
+
+  /** Sets whether keyboard arrow navigation is enabled. */
+  setEnableArrowNavigation: (enable: boolean) => void;
+
+  /** Sets whether debug logging is enabled. */
+  setDebug: (debug: boolean) => void;
+
+  /** Clears the close timer for the given key and its ancestors. */
+  hoverEnter: (key: string) => void;
+
+  /** Starts a close timer for the given key. */
+  hoverLeave: (key: string, delay?: number) => void;
 }
 
 /**
@@ -225,6 +258,8 @@ export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, 
       | "destroy"
       | "setClosePinnedDescendants"
       | "setCollisionConfig"
+      | "setEnableArrowNavigation"
+      | "setDebug"
     >;
   };
 
@@ -303,6 +338,9 @@ export interface OpenRootOptions {
 
   /** Custom boundary collision overrides. */
   collision?: CollisionConfig;
+
+  /** Hover-trigger options configuration overrides. */
+  hover?: HoverConfig;
 }
 
 /**
@@ -314,4 +352,7 @@ export interface OpenNestedOptions {
 
   /** Custom boundary collision overrides. */
   collision?: CollisionConfig;
+
+  /** Hover-trigger options configuration overrides. */
+  hover?: HoverConfig;
 }

@@ -7,9 +7,10 @@ import {
   usePopoverZIndex,
   useIsPopoverTopMost,
   usePopoverActions,
-} from '../context';
-import { getPopoverStyles } from '../utils/styles';
-import type { TrailEntry, PopoverPlacement } from '../types';
+  usePopoverStore,
+} from "../context";
+import { getPopoverStyles } from "../utils/styles";
+import type { TrailEntry, PopoverPlacement } from "../types";
 
 /**
  * Options parameters for the `usePopoverCard` unified hook.
@@ -111,6 +112,9 @@ export function usePopoverCard({
   const zIndex = usePopoverZIndex(entry.key);
   const isTop = useIsPopoverTopMost(entry.key);
   const actions = usePopoverActions();
+  const enableArrowNavigation = usePopoverStore((state) => state.enableArrowNavigation);
+  const trail = usePopoverStore((state) => state.trail);
+  const floating = usePopoverStore((state) => state.floating);
 
   // 5. Compile styles using the compiler utility
   const style = getPopoverStyles({
@@ -140,6 +144,70 @@ export function usePopoverCard({
     }
   }, [actions, entry.key]);
 
+  const onMouseEnter = useCallback(() => {
+    actions.hoverEnter(entry.key);
+  }, [actions, entry.key]);
+
+  const onMouseLeave = useCallback(() => {
+    if (isDragging) return;
+    const delay = entry.hover?.closeDelay ?? 300;
+    actions.hoverLeave(entry.key, delay);
+  }, [actions, entry.key, entry.hover, isDragging]);
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLElement>) => {
+      if (!enableArrowNavigation) return;
+
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        // Find all focusable elements inside the card
+        const focusableSelectors = [
+          "a[href]",
+          "area[href]",
+          "input:not([disabled])",
+          "select:not([disabled])",
+          "textarea:not([disabled])",
+          "button:not([disabled])",
+          "[tabindex]:not([tabindex='-1'])",
+        ].join(",");
+
+        if (!ref.current) return;
+        const elements = Array.from(ref.current.querySelectorAll<HTMLElement>(focusableSelectors));
+        if (elements.length === 0) return;
+
+        const activeEl = document.activeElement as HTMLElement;
+        let currentIndex = elements.indexOf(activeEl);
+
+        if (e.key === "ArrowDown") {
+          currentIndex = (currentIndex + 1) % elements.length;
+        } else {
+          currentIndex = (currentIndex - 1 + elements.length) % elements.length;
+        }
+        elements[currentIndex]?.focus();
+      }
+
+      if (e.key === "ArrowRight") {
+        const activeEl = document.activeElement as HTMLElement;
+        // If focused element is a button/link (meaning a nested trigger)
+        if (activeEl && (activeEl.tagName === "BUTTON" || activeEl.tagName === "A")) {
+          e.preventDefault();
+          activeEl.click();
+        }
+      }
+
+      if (e.key === "ArrowLeft") {
+        if (!isPinned) {
+          const trailIndex = trail.findIndex((t) => t.key === entry.key);
+          if (trailIndex > 0) {
+            e.preventDefault();
+            actions.closeFrom(floating.length + trailIndex);
+          }
+        }
+      }
+    },
+    [enableArrowNavigation, isPinned, trail, floating.length, entry.key, actions],
+  );
+
   return {
     ref: setCombinedRef,
     style,
@@ -148,5 +216,8 @@ export function usePopoverCard({
     actions,
     dragHandleProps: enableDrag ? { ...attributes, ...listeners } : {},
     handlePinToggle,
+    onMouseEnter,
+    onMouseLeave,
+    onKeyDown,
   };
 }

@@ -582,4 +582,46 @@ describe('createPopoverStore', () => {
     expect(state.floating[0].isLoading).toBe(false);
     expect(state.floating[0].data).toBe("async payload");
   });
+
+  it("should support hover timers, buffers, and clear parent timers on child hoverEnter", async () => {
+    const store = createPopoverStore(dummyResolver);
+    const rootEntry: TrailEntry = { key: "root-item", isLoading: false };
+    const childEntry: TrailEntry = { key: "child-item", parentKey: "root-item", isLoading: false };
+
+    store.getState().openRoot("owner-1", rootEntry);
+    store.getState().pushNested(0, childEntry);
+
+    let state = store.getState();
+    expect(state.trail).toHaveLength(2);
+
+    // Call hoverLeave on child-item with a short delay of 50ms
+    store.getState().hoverLeave("child-item", 50);
+
+    // Call hoverLeave on root-item with a delay of 50ms
+    store.getState().hoverLeave("root-item", 50);
+
+    // Immediate state: both should still be active
+    state = store.getState();
+    expect(state.trail).toHaveLength(2);
+
+    // Call hoverEnter on child-item: this should clear its timer AND its parent (root-item) timer!
+    store.getState().hoverEnter("child-item");
+
+    // Wait 100ms
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Verify both are still open!
+    state = store.getState();
+    expect(state.trail).toHaveLength(2);
+
+    // Now call hoverLeave on child-item again, but don't enter. Let it expire.
+    store.getState().hoverLeave("child-item", 30);
+
+    // Wait 60ms
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    // child-item should now be closed!
+    state = store.getState();
+    expect(state.trail.find((t) => t.key === "child-item")).toBeUndefined();
+  });
 });

@@ -578,8 +578,30 @@ export function createPopoverStore<TData = any, TContext = any>(
   cache?: PopoverCache<TData>,
 ) {
   const activeControllers = new Map<string, AbortController>();
+  const hoverCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  return createStore<PopoverStore<TData, TContext>>((set, get) => {
+  return createStore<PopoverStore<TData, TContext>>((rawSet, get) => {
+    const set = (
+      patchOrFn:
+        | Partial<PopoverStore<TData, TContext>>
+        | ((state: PopoverStore<TData, TContext>) => Partial<PopoverStore<TData, TContext>>),
+    ) => {
+      const debug = get()?.debug;
+      rawSet((state: PopoverStore<TData, TContext>) => {
+        const patch = typeof patchOrFn === "function" ? patchOrFn(state) : patchOrFn;
+        if (debug) {
+          console.group(`Popover Store Update [${new Date().toLocaleTimeString()}]`);
+          console.log("State Patch:", patch);
+        }
+        const nextState = { ...state, ...patch };
+        if (debug) {
+          console.log("Next State:", nextState);
+          console.groupEnd();
+        }
+        return patch;
+      });
+    };
+
     const actions: PopoverActions<TData, TContext> = {
       setContext: (context) => {
         if (!equal(get().context, context)) {
@@ -663,6 +685,11 @@ export function createPopoverStore<TData = any, TContext = any>(
           controller.abort();
         }
         activeControllers.clear();
+
+        for (const timer of hoverCloseTimers.values()) {
+          clearTimeout(timer);
+        }
+        hoverCloseTimers.clear();
 
         set({
           ownerId: null,
@@ -781,6 +808,7 @@ export function createPopoverStore<TData = any, TContext = any>(
               data: resolved,
               isLoading: false,
               collision: localCollision,
+              hover: options?.hover,
             };
             set((state) => openRootState(state, finalOwnerId, entry));
             activeControllers.delete("__root__");
@@ -803,6 +831,7 @@ export function createPopoverStore<TData = any, TContext = any>(
             error: errorObj,
             isLoading: false,
             collision: localCollision,
+            hover: options?.hover,
           };
           set((state) => openRootState(state, finalOwnerId, entry));
           activeControllers.delete("__root__");
@@ -818,6 +847,7 @@ export function createPopoverStore<TData = any, TContext = any>(
             data: resolved,
             isLoading: false,
             collision: localCollision,
+            hover: options?.hover,
           };
           set((state) => openRootState(state, finalOwnerId, entry));
           if (cache && resolved !== undefined) {
@@ -837,6 +867,7 @@ export function createPopoverStore<TData = any, TContext = any>(
           originalRect: anchorRect,
           isLoading: true,
           collision: localCollision,
+          hover: options?.hover,
         };
         set((state) => openRootState(state, finalOwnerId, loadingEntry));
 
@@ -935,6 +966,7 @@ export function createPopoverStore<TData = any, TContext = any>(
               data: resolved,
               isLoading: false,
               collision: localCollision,
+              hover: options?.hover,
             };
             set((state) => pushNestedState(state, sourceIndex, entry));
             activeControllers.delete(keyOrName);
@@ -964,6 +996,7 @@ export function createPopoverStore<TData = any, TContext = any>(
             error: errorObj,
             isLoading: false,
             collision: localCollision,
+            hover: options?.hover,
           };
           set((state) => pushNestedState(state, sourceIndex, entry));
           activeControllers.delete(keyOrName);
@@ -981,6 +1014,7 @@ export function createPopoverStore<TData = any, TContext = any>(
             data: resolved,
             isLoading: false,
             collision: localCollision,
+            hover: options?.hover,
           };
           set((state) => pushNestedState(state, sourceIndex, entry));
           if (cache && resolved !== undefined) {
@@ -1007,6 +1041,7 @@ export function createPopoverStore<TData = any, TContext = any>(
           originalRect: rect,
           isLoading: true,
           collision: localCollision,
+          hover: options?.hover,
         };
         set((state) => pushNestedState(state, sourceIndex, loadingEntry));
 
@@ -1171,6 +1206,11 @@ export function createPopoverStore<TData = any, TContext = any>(
         }
         activeControllers.clear();
 
+        for (const timer of hoverCloseTimers.values()) {
+          clearTimeout(timer);
+        }
+        hoverCloseTimers.clear();
+
         set({
           ownerId: null,
           trail: [],
@@ -1197,6 +1237,47 @@ export function createPopoverStore<TData = any, TContext = any>(
           actions.closeFrom(index);
         }
       },
+      setEnableArrowNavigation: (enableArrowNavigation) => {
+        set({ enableArrowNavigation });
+      },
+      setDebug: (debug) => {
+        set({ debug });
+      },
+      hoverEnter: (key) => {
+        const timer = hoverCloseTimers.get(key);
+        if (timer) {
+          clearTimeout(timer);
+          hoverCloseTimers.delete(key);
+        }
+        const { trail, floating } = get();
+        let currentKey: string | undefined = key;
+        while (currentKey) {
+          const entryIndex: number = findEntryIndex(floating, trail, currentKey);
+          if (entryIndex === -1) break;
+          const entry: TrailEntry<TData> | undefined = getEntryAtIndex(floating, trail, entryIndex);
+          if (entry && entry.parentKey) {
+            const parentTimer = hoverCloseTimers.get(entry.parentKey);
+            if (parentTimer) {
+              clearTimeout(parentTimer);
+              hoverCloseTimers.delete(entry.parentKey);
+            }
+            currentKey = entry.parentKey;
+          } else {
+            break;
+          }
+        }
+      },
+      hoverLeave: (key, delay = 300) => {
+        const timer = hoverCloseTimers.get(key);
+        if (timer) {
+          clearTimeout(timer);
+        }
+        const newTimer = setTimeout(() => {
+          actions.closeByKey(key);
+          hoverCloseTimers.delete(key);
+        }, delay);
+        hoverCloseTimers.set(key, newTimer);
+      },
     };
 
     const {
@@ -1208,6 +1289,8 @@ export function createPopoverStore<TData = any, TContext = any>(
       destroy: _____,
       setClosePinnedDescendants: ______,
       setCollisionConfig: _______,
+      setEnableArrowNavigation: ________,
+      setDebug: _________,
       ...remainingActions
     } = actions;
 
@@ -1227,6 +1310,8 @@ export function createPopoverStore<TData = any, TContext = any>(
       collisionConfig: null,
       cache: cache ?? null,
       resolveData,
+      enableArrowNavigation: false,
+      debug: false,
 
       ...actions,
       actions: remainingActions,
