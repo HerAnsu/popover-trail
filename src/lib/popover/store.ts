@@ -644,8 +644,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       const cachedResultOrPromise = storeCache ? storeCache.get(key) : undefined;
       if (cachedResultOrPromise !== undefined) {
         if (!isPromise<TData>(cachedResultOrPromise)) {
-          const resolved = cachedResultOrPromise as TData | undefined;
-          set(insertStatePatch(buildEntry(resolved)));
+          set(insertStatePatch(buildEntry(cachedResultOrPromise as TData | undefined)));
           activeControllers.delete(controllerKey);
           return;
         }
