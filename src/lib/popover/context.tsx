@@ -21,6 +21,7 @@ import type {
   CollisionConfig,
   OpenRootOptions,
   OpenNestedOptions,
+  TrailEntry,
 } from "./types";
 
 /**
@@ -28,7 +29,7 @@ import type {
  *
  * @internal
  */
-export const PopoverStoreContext = createContext<StoreApi<PopoverStore<any, any>> | null>(null);
+export const PopoverStoreContext = createContext<StoreApi<PopoverStore<unknown, unknown>> | null>(null);
 
 /**
  * Props for the {@link PopoverProvider} component.
@@ -36,7 +37,7 @@ export const PopoverStoreContext = createContext<StoreApi<PopoverStore<any, any>
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
  */
-export interface PopoverProviderProps<TData = any, TContext = any> {
+export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
   /** React child elements rendered inside the provider. */
   children: ReactNode;
 
@@ -91,7 +92,7 @@ export interface PopoverProviderProps<TData = any, TContext = any> {
  * @param props - Provider configuration properties.
  * @returns The provider element wrapping children.
  */
-export function PopoverProvider<TData = any, TContext = any>({
+export function PopoverProvider<TData = unknown, TContext = unknown>({
   children,
   resolveData,
   initialContext,
@@ -213,7 +214,7 @@ export function PopoverProvider<TData = any, TContext = any>({
   }, [enabled, ignoreClass, popoverSelector, store]);
 
   return (
-    <PopoverStoreContext.Provider value={store as any}>{children}</PopoverStoreContext.Provider>
+    <PopoverStoreContext.Provider value={store as unknown as StoreApi<PopoverStore<unknown, unknown>>}>{children}</PopoverStoreContext.Provider>
   );
 }
 
@@ -228,14 +229,14 @@ export function PopoverProvider<TData = any, TContext = any>({
  * @returns The reactive value slice.
  * @throws {Error} If called outside of a PopoverProvider.
  */
-export function usePopoverStore<TData = any, TContext = any, TSelected = any>(
+export function usePopoverStore<TData = unknown, TContext = unknown, TSelected = unknown>(
   selector: (state: PopoverStore<TData, TContext>) => TSelected,
 ): TSelected {
   const store = useContext(PopoverStoreContext);
   if (!store) {
     throw new Error("usePopoverStore must be used within a PopoverProvider");
   }
-  return useStore(store, selector);
+  return useStore(store, selector as (state: PopoverStore<unknown, unknown>) => TSelected);
 }
 
 /**
@@ -248,12 +249,12 @@ export function usePopoverStore<TData = any, TContext = any, TSelected = any>(
  * @returns The raw Zustand StoreApi instance.
  * @throws {Error} If called outside of a PopoverProvider.
  */
-export function usePopoverStoreApi<TData = any, TContext = any>() {
+export function usePopoverStoreApi<TData = unknown, TContext = unknown>() {
   const store = useContext(PopoverStoreContext);
   if (!store) {
     throw new Error("usePopoverStoreApi must be used within a PopoverProvider");
   }
-  return store as StoreApi<PopoverStore<TData, TContext>>;
+  return store as unknown as StoreApi<PopoverStore<TData, TContext>>;
 }
 
 /**
@@ -262,8 +263,8 @@ export function usePopoverStoreApi<TData = any, TContext = any>() {
  * @template TData - The type of resolved data payloads.
  * @returns Array of active trailing popover entries.
  */
-export function usePopoverTrail<TData = any>() {
-  return usePopoverStore<TData>((state) => state.trail);
+export function usePopoverTrail<TData = unknown>() {
+  return usePopoverStore<TData, unknown, TrailEntry<TData>[]>((state) => state.trail);
 }
 
 /**
@@ -272,8 +273,8 @@ export function usePopoverTrail<TData = any>() {
  * @template TData - The type of resolved data payloads.
  * @returns Array of floating popover entries.
  */
-export function usePopoverFloating<TData = any>() {
-  return usePopoverStore<TData>((state) => state.floating);
+export function usePopoverFloating<TData = unknown>() {
+  return usePopoverStore<TData, unknown, TrailEntry<TData>[]>((state) => state.floating);
 }
 
 /**
@@ -302,8 +303,8 @@ export function useIsPopoverPinned(key: string) {
  * @param key - The unique identifier key of the popover.
  * @returns The matching TrailEntry or undefined if not found.
  */
-export function usePopoverEntry<TData = any>(key: string) {
-  return usePopoverStore<TData>(
+export function usePopoverEntry<TData = unknown>(key: string) {
+  return usePopoverStore<TData, unknown, TrailEntry<TData> | undefined>(
     (state) => state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key),
   );
 }
@@ -349,8 +350,8 @@ export function usePopoverOffset(key: string) {
  * @template TContext - The type of context.
  * @returns The active context object.
  */
-export function usePopoverContext<TContext = any>() {
-  return usePopoverStore<any, TContext>((state) => state.context);
+export function usePopoverContext<TContext = unknown>() {
+  return usePopoverStore<unknown, TContext, TContext | null>((state) => state.context);
 }
 
 /**
@@ -372,7 +373,7 @@ export function usePopoverCollisionConfig() {
  * @template TContext - The type of global shared context.
  * @returns Object containing dispatch actions.
  */
-export function usePopoverActions<TData = any, TContext = any>() {
+export function usePopoverActions<TData = unknown, TContext = unknown>() {
   const store = useContext(PopoverStoreContext);
   if (!store) {
     throw new Error("usePopoverActions must be used within a PopoverProvider");
@@ -418,12 +419,12 @@ export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
         }
         const currentTarget = e.currentTarget;
         const fakeEvent = {
-          currentTarget,
+          currentTarget: currentTarget as HTMLElement,
           stopPropagation: () => {},
         };
         const delay = hoverOpts.openDelay ?? 200;
         openTimerRef.current = setTimeout(() => {
-          void actions.openRootWithResolver(key, fakeEvent as any, optionsRef.current);
+          void actions.openRootWithResolver(key, fakeEvent, optionsRef.current);
         }, delay);
       }
     },

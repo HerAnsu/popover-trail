@@ -181,7 +181,7 @@ describe("createPopoverStore", () => {
     };
 
     const store = createPopoverStore(delayResolver);
-    const rootEntry: TrailEntry = { key: "root-item", isLoading: false };
+    const rootEntry = { key: "root-item", isLoading: false };
     store.getState().openRoot("owner-1", rootEntry);
 
     // Trigger nested slow call (parentKey: 'root-item')

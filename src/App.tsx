@@ -540,8 +540,8 @@ function MainContent({
 }: MainContentProps) {
   const [customRoot, setCustomRoot] = useState("((1 + 2) * 3) / (4 - (5 ^ 2))");
   const { clear, openRootWithResolver } = usePopoverActions<MathData>();
-  const trail = usePopoverTrail();
-  const floating = usePopoverFloating();
+  const trail = usePopoverTrail<MathData>();
+  const floating = usePopoverFloating<MathData>();
 
   const hoverConfig = { enabled: hoverEnabled, openDelay: 200, closeDelay: 300 };
 
