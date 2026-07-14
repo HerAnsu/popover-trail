@@ -643,6 +643,40 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       });
     };
 
+    const incrementRootCounter = () => {
+      const next = get().rootHydrationRequestCounter + 1;
+      set({ rootHydrationRequestCounter: next });
+      return next;
+    };
+
+    const isRootStale = (startedCounter: number) =>
+      get().rootHydrationRequestCounter !== startedCounter;
+
+    const incrementNestedCounter = (parentKey: string) => {
+      const next = (get().nestedHydrationRequestCounters[parentKey] ?? 0) + 1;
+      set((state) => ({
+        nestedHydrationRequestCounters: {
+          ...state.nestedHydrationRequestCounters,
+          [parentKey]: next,
+        },
+      }));
+      return next;
+    };
+
+    const isNestedStale = (parentKey: string, startedCounter: number) =>
+      get().nestedHydrationRequestCounters[parentKey] !== startedCounter;
+
+    const getUpdateEntryStatePatch = (
+      key: string,
+      updatedFields: Partial<TrailEntry<TData>>,
+    ) => (state: PopoverStateData<TData, TContext>) => {
+      const update = (e: TrailEntry<TData>) => (e.key === key ? { ...e, ...updatedFields } : e);
+      return {
+        trail: state.trail.map(update),
+        floating: state.floating.map(update),
+      };
+    };
+
     const resolvePopoverEntry = async (
       key: string,
       parentKey: string | undefined,
@@ -888,7 +922,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       // Async/Hydration Actions
       openRootWithResolver: async (keyOrName, anchorEvent, options) => {
         anchorEvent.stopPropagation();
-        const { ownerId, rootHydrationRequestCounter, trail } = get();
+        const { ownerId, trail } = get();
         const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
 
         // Check if already open as root of active trail
@@ -909,18 +943,14 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           undefined,
           options,
           '__root__',
-          () => {
-            const next = rootHydrationRequestCounter + 1;
-            set({ rootHydrationRequestCounter: next });
-            return next;
-          },
-          (startedCounter) => get().rootHydrationRequestCounter !== startedCounter,
+          incrementRootCounter,
+          isRootStale,
           (entry) => (state) => openRootState(state, finalOwnerId, entry),
         );
       },
 
       openNestedWithResolver: async (keyOrName, sourceKey, options) => {
-        const { floating, trail, nestedHydrationRequestCounters } = get();
+        const { floating, trail } = get();
         const sourceIndex = findEntryIndex(floating, trail, sourceKey);
         if (sourceIndex === -1) return;
 
@@ -946,23 +976,14 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           sourceEntry.data,
           options,
           keyOrName,
-          () => {
-            const next = (nestedHydrationRequestCounters[sourceKey] ?? 0) + 1;
-            set((state) => ({
-              nestedHydrationRequestCounters: {
-                ...state.nestedHydrationRequestCounters,
-                [sourceKey]: next,
-              },
-            }));
-            return next;
-          },
-          (startedCounter) => get().nestedHydrationRequestCounters[sourceKey] !== startedCounter,
+          () => incrementNestedCounter(sourceKey),
+          (startedCounter) => isNestedStale(sourceKey, startedCounter),
           (entry) => (state) => pushNestedState(state, sourceIndex, entry),
         );
       },
 
       retryPopover: async (key) => {
-        const { floating, trail, nestedHydrationRequestCounters } = get();
+        const { floating, trail } = get();
         const index = findEntryIndex(floating, trail, key);
         if (index === -1) return;
 
@@ -992,27 +1013,9 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
             parentData,
             options,
             key,
-            () => {
-              const next = (nestedHydrationRequestCounters[entry.parentKey!] ?? 0) + 1;
-              set((state) => ({
-                nestedHydrationRequestCounters: {
-                  ...state.nestedHydrationRequestCounters,
-                  [entry.parentKey!]: next,
-                },
-              }));
-              return next;
-            },
-            (startedCounter) =>
-              get().nestedHydrationRequestCounters[entry.parentKey!] !== startedCounter,
-            (updatedEntry) => (state) => {
-              const nextTrail = state.trail.map((e) =>
-                e.key === key ? { ...e, ...updatedEntry } : e,
-              );
-              const nextFloating = state.floating.map((e) =>
-                e.key === key ? { ...e, ...updatedEntry } : e,
-              );
-              return { trail: nextTrail, floating: nextFloating };
-            },
+            () => incrementNestedCounter(entry.parentKey!),
+            (startedCounter) => isNestedStale(entry.parentKey!, startedCounter),
+            (updatedEntry) => getUpdateEntryStatePatch(key, updatedEntry),
           );
         } else {
           await resolvePopoverEntry(
@@ -1022,21 +1025,9 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
             undefined,
             options,
             '__root__',
-            () => {
-              const next = get().rootHydrationRequestCounter + 1;
-              set({ rootHydrationRequestCounter: next });
-              return next;
-            },
-            (startedCounter) => get().rootHydrationRequestCounter !== startedCounter,
-            (updatedEntry) => (state) => {
-              const nextTrail = state.trail.map((e) =>
-                e.key === key ? { ...e, ...updatedEntry } : e,
-              );
-              const nextFloating = state.floating.map((e) =>
-                e.key === key ? { ...e, ...updatedEntry } : e,
-              );
-              return { trail: nextTrail, floating: nextFloating };
-            },
+            incrementRootCounter,
+            isRootStale,
+            (updatedEntry) => getUpdateEntryStatePatch(key, updatedEntry),
           );
         }
       },
