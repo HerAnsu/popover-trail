@@ -66,6 +66,12 @@ export interface PopoverProviderProps<TData = any, TContext = any> {
 
   /** Global default settings for boundary collision checking. */
   collision?: CollisionConfig;
+
+  /** If true, enables keyboard arrow key navigation (default: true). */
+  enableArrowNavigation?: boolean;
+
+  /** If true, prints Zustand state updates to the console (default: false). */
+  debug?: boolean;
 }
 
 /**
@@ -91,11 +97,23 @@ export function PopoverProvider<TData = any, TContext = any>({
   closePinnedDescendants = false,
   cache,
   collision,
+  enableArrowNavigation = true,
+  debug = false,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() =>
     createPopoverStore<TData, TContext>(resolveData, initialContext, cache),
   );
+
+  // Synchronize enableArrowNavigation reactively when the prop changes
+  useEffect(() => {
+    store.getState().setEnableArrowNavigation(Boolean(enableArrowNavigation));
+  }, [enableArrowNavigation, store]);
+
+  // Synchronize debug reactively when the prop changes
+  useEffect(() => {
+    store.getState().setDebug(Boolean(debug));
+  }, [debug, store]);
 
   // Synchronize context reactively when the prop changes
   useEffect(() => {
@@ -350,21 +368,7 @@ export function usePopoverActions<TData = any, TContext = any>() {
   if (!store) {
     throw new Error("usePopoverActions must be used within a PopoverProvider");
   }
-  return useMemo(
-    () =>
-      store.getState().actions as Omit<
-        PopoverStore<TData, TContext>["actions"],
-        | "setContext"
-        | "setResolveData"
-        | "setOwnerId"
-        | "openRoot"
-        | "pushNested"
-        | "destroy"
-        | "setClosePinnedDescendants"
-        | "setCollisionConfig"
-      >,
-    [store],
-  );
+  return store.getState().actions as PopoverStore<TData, TContext>["actions"];
 }
 
 /**
@@ -378,14 +382,62 @@ export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
   const actions = usePopoverActions();
   const optionsRef = useRef(options);
   optionsRef.current = options;
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+      }
+    };
+  }, []);
 
   const onClick = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
+      if (optionsRef.current?.hover?.enabled) return;
       void actions.openRootWithResolver(key, e, optionsRef.current);
     },
     [actions, key],
   );
-  return useMemo(() => ({ onClick }), [onClick]);
+
+  const onMouseEnter = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      const hoverOpts = optionsRef.current?.hover;
+      if (hoverOpts?.enabled) {
+        if (openTimerRef.current) {
+          clearTimeout(openTimerRef.current);
+        }
+        const currentTarget = e.currentTarget;
+        const fakeEvent = {
+          currentTarget,
+          stopPropagation: () => {},
+        };
+        const delay = hoverOpts.openDelay ?? 200;
+        openTimerRef.current = setTimeout(() => {
+          void actions.openRootWithResolver(key, fakeEvent as any, optionsRef.current);
+        }, delay);
+      }
+    },
+    [actions, key],
+  );
+
+  const onMouseLeave = useCallback(() => {
+    const hoverOpts = optionsRef.current?.hover;
+    if (hoverOpts?.enabled) {
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+      }
+      const delay = hoverOpts.closeDelay ?? 300;
+      actions.hoverLeave(key, delay);
+    }
+  }, [actions, key]);
+
+  return useMemo(() => {
+    if (options?.hover?.enabled) {
+      return { onMouseEnter, onMouseLeave };
+    }
+    return { onClick };
+  }, [onClick, onMouseEnter, onMouseLeave, options?.hover?.enabled]);
 }
 
 /**
@@ -404,14 +456,57 @@ export function usePopoverNestedTrigger(
   const actions = usePopoverActions();
   const optionsRef = useRef(options);
   optionsRef.current = options;
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+      }
+    };
+  }, []);
 
   const onClick = useCallback(
     (_e: React.MouseEvent<HTMLElement>) => {
+      if (optionsRef.current?.hover?.enabled) return;
       void actions.openNestedWithResolver(key, sourceKey, optionsRef.current);
     },
     [actions, key, sourceKey],
   );
-  return useMemo(() => ({ onClick }), [onClick]);
+
+  const onMouseEnter = useCallback(
+    (_e: React.MouseEvent<HTMLElement>) => {
+      const hoverOpts = optionsRef.current?.hover;
+      if (hoverOpts?.enabled) {
+        if (openTimerRef.current) {
+          clearTimeout(openTimerRef.current);
+        }
+        const delay = hoverOpts.openDelay ?? 200;
+        openTimerRef.current = setTimeout(() => {
+          void actions.openNestedWithResolver(key, sourceKey, optionsRef.current);
+        }, delay);
+      }
+    },
+    [actions, key, sourceKey],
+  );
+
+  const onMouseLeave = useCallback(() => {
+    const hoverOpts = optionsRef.current?.hover;
+    if (hoverOpts?.enabled) {
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+      }
+      const delay = hoverOpts.closeDelay ?? 300;
+      actions.hoverLeave(key, delay);
+    }
+  }, [actions, key]);
+
+  return useMemo(() => {
+    if (options?.hover?.enabled) {
+      return { onMouseEnter, onMouseLeave };
+    }
+    return { onClick };
+  }, [onClick, onMouseEnter, onMouseLeave, options?.hover?.enabled]);
 }
 
 /**
