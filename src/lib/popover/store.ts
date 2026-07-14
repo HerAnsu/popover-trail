@@ -279,10 +279,7 @@ function bringToFrontPatch<TData, TContext>(
     const clickedEntry = state.floating[index];
     const floatingKeySet = new Set(state.floating.map((f) => f.key));
     const floatingDescendants = descendantEntries.filter((e) => floatingKeySet.has(e.key));
-    const floatingKeysToMove = new Set<string>([key]);
-    for (const desc of floatingDescendants) {
-      floatingKeysToMove.add(desc.key);
-    }
+    const floatingKeysToMove = new Set<string>([key, ...floatingDescendants.map((d) => d.key)]);
     nextFloating = [
       ...state.floating.filter((e) => !floatingKeysToMove.has(e.key)),
       clickedEntry,
