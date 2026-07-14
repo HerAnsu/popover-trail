@@ -109,24 +109,21 @@ export function PopoverProvider<TData = any, TContext = any>({
 
       if (state.trail.length === 0) return;
 
-      // If click target is inside any active popover card, ignore
-      if (target.closest(popoverSelector)) {
-        return;
-      }
-
-      // If click target has the ignoreClass, ignore
-      if (ignoreClass) {
-        try {
-          if (target.closest(`.${CSS.escape(ignoreClass)}`)) {
-            return;
-          }
-        } catch {
-          // Fallback: CSS.escape not available in older environments
-          if (target.closest(`.${ignoreClass}`)) {
-            return;
+      // Use composedPath to handle detached DOM nodes correctly
+      const path = e.composedPath ? e.composedPath() : [];
+      const clickedInside = path.some((el) => {
+        if (el instanceof HTMLElement) {
+          try {
+            if (el.matches(popoverSelector)) return true;
+            if (ignoreClass && el.matches(`.${CSS.escape(ignoreClass)}`)) return true;
+          } catch {
+            if (ignoreClass && el.classList.contains(ignoreClass)) return true;
           }
         }
-      }
+        return false;
+      });
+
+      if (clickedInside) return;
 
       // If click target is the anchor element itself, ignore
       if (state.anchorElement && state.anchorElement.contains(target)) {
@@ -157,6 +154,17 @@ export function usePopoverStore<TData = any, TContext = any, TSelected = any>(
     throw new Error("usePopoverStore must be used within a PopoverProvider");
   }
   return useStore(store, selector);
+}
+
+/**
+ * Hook to retrieve the raw store API instance directly, without subscribing to state changes.
+ */
+export function usePopoverStoreApi<TData = any, TContext = any>() {
+  const store = useContext(PopoverStoreContext);
+  if (!store) {
+    throw new Error("usePopoverStoreApi must be used within a PopoverProvider");
+  }
+  return store as StoreApi<PopoverStore<TData, TContext>>;
 }
 
 /**

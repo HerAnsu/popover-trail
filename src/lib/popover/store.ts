@@ -924,6 +924,7 @@ export function createPopoverStore<TData = any, TContext = any>(
 
         try {
           const resolved = await resultOrPromise;
+          if (activeControllers.get(key) !== controller) return;
           if (cache && resolved !== undefined) {
             void cache.set(key, resolved as TData);
           }
@@ -938,6 +939,7 @@ export function createPopoverStore<TData = any, TContext = any>(
           });
         } catch (err) {
           if (controller.signal.aborted) return;
+          if (activeControllers.get(key) !== controller) return;
           set((state) => {
             const errorObj = err instanceof Error ? err : new Error(String(err));
             const nextTrail = state.trail.map((e) =>

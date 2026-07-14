@@ -6,7 +6,7 @@ import {
   PopoverProvider,
   usePopoverTrail,
   usePopoverFloating,
-  usePopoverOffsets,
+  usePopoverStoreApi,
   usePopoverActions,
   usePopoverCard,
   PopoverPortal,
@@ -338,7 +338,7 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
 function PopoverCanvas() {
   const trail = usePopoverTrail<MathData>();
   const floating = usePopoverFloating<MathData>();
-  const offsets = usePopoverOffsets();
+  const store = usePopoverStoreApi<MathData>();
   const { updateOffset, bringToFront } = usePopoverActions<MathData>();
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -348,7 +348,7 @@ function PopoverCanvas() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
     const key = active.id as string;
-    const currentOffset = offsets[key] || { x: 0, y: 0 };
+    const currentOffset = store.getState().offsets[key] || { x: 0, y: 0 };
     updateOffset(key, currentOffset.x + delta.x, currentOffset.y + delta.y);
   };
 

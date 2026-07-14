@@ -13,6 +13,7 @@ export { createPopoverStore } from "./store";
 export {
   PopoverProvider,
   usePopoverStore,
+  usePopoverStoreApi,
   usePopoverTrail,
   usePopoverFloating,
   usePopoverOffsets,
