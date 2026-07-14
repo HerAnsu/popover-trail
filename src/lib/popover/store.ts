@@ -694,10 +694,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         | Partial<PopoverStore<TData, TContext>>
         | ((state: PopoverStore<TData, TContext>) => Partial<PopoverStore<TData, TContext>>),
     ): Promise<void> => {
-      const prevController = activeControllers.get(controllerKey);
-      if (prevController) {
-        prevController.abort();
-      }
+      abortControllersForKeys([controllerKey]);
       const controller = new AbortController();
       activeControllers.set(controllerKey, controller);
 
@@ -733,20 +730,18 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         });
       };
 
-      const cachedResultOrPromise = storeCache ? storeCache.get(key) : undefined;
-      if (cachedResultOrPromise !== undefined) {
-        if (!isPromise<TData>(cachedResultOrPromise)) {
-          set(insertStatePatch(buildEntry(cachedResultOrPromise as TData | undefined)));
-          activeControllers.delete(controllerKey);
-          return;
-        }
+      const cached = storeCache?.get(key);
+      if (cached !== undefined && !isPromise<TData>(cached)) {
+        set(insertStatePatch(buildEntry(cached as TData | undefined)));
+        activeControllers.delete(controllerKey);
+        return;
       }
 
       let resultOrPromise: Promise<TData> | TData | undefined;
       try {
         resultOrPromise =
-          cachedResultOrPromise !== undefined
-            ? (cachedResultOrPromise as Promise<TData> | TData)
+          cached !== undefined
+            ? (cached as Promise<TData> | TData)
             : get().resolveData(key, parentData, context ?? undefined, controller.signal);
       } catch (err) {
         const errorObj = err instanceof Error ? err : new Error(String(err));
