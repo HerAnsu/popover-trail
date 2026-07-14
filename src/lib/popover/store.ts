@@ -1,4 +1,4 @@
-import { createStore } from "zustand/vanilla";
+import { createStore } from 'zustand/vanilla';
 import type {
   PopoverStore,
   PopoverResolver,
@@ -8,8 +8,8 @@ import type {
   PopoverCache,
   OpenRootOptions,
   OpenNestedOptions,
-} from "./types";
-import equal from "fast-deep-equal";
+} from './types';
+import equal from 'fast-deep-equal';
 
 /**
  * Type guard to determine if a value is a Promise or a thenable object.
@@ -20,9 +20,9 @@ import equal from "fast-deep-equal";
  */
 function isPromise<T>(value: unknown): value is Promise<T> {
   return (
-    typeof value === "object" &&
+    typeof value === 'object' &&
     value !== null &&
-    typeof (value as Record<string, unknown>).then === "function"
+    typeof (value as Record<string, unknown>).then === 'function'
   );
 }
 
@@ -582,14 +582,14 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
     ) => {
       const debug = get()?.debug;
       rawSet((state: PopoverStore<TData, TContext>) => {
-        const patch = typeof patchOrFn === "function" ? patchOrFn(state) : patchOrFn;
+        const patch = typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
         if (debug) {
           console.group(`Popover Store Update [${new Date().toLocaleTimeString()}]`);
-          console.log("State Patch:", patch);
+          console.log('State Patch:', patch);
         }
         const nextState = { ...state, ...patch };
         if (debug) {
-          console.log("Next State:", nextState);
+          console.log('Next State:', nextState);
           console.groupEnd();
         }
         return patch;
@@ -665,6 +665,16 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
       });
 
+      const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
+        set((state) => {
+          const update = (e: TrailEntry<TData>) => (e.key === key ? { ...e, ...patch } : e);
+          return {
+            trail: state.trail.map(update),
+            floating: state.floating.map(update),
+          };
+        });
+      };
+
       const cachedResultOrPromise = storeCache ? storeCache.get(key) : undefined;
       if (cachedResultOrPromise !== undefined) {
         if (!isPromise<TData>(cachedResultOrPromise)) {
@@ -707,28 +717,12 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           void storeCache.set(key, resolved);
         }
 
-        set((state) => {
-          const nextTrail = state.trail.map((e) =>
-            e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
-          );
-          const nextFloating = state.floating.map((e) =>
-            e.key === key ? { ...e, isLoading: false, data: resolved, error: null } : e,
-          );
-          return { trail: nextTrail, floating: nextFloating };
-        });
+        updateEntryStateInLists({ isLoading: false, data: resolved, error: null });
       } catch (err) {
         if (controller.signal.aborted || isStale(startedCounter)) return;
         const errorObj = err instanceof Error ? err : new Error(String(err));
 
-        set((state) => {
-          const nextTrail = state.trail.map((e) =>
-            e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
-          );
-          const nextFloating = state.floating.map((e) =>
-            e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
-          );
-          return { trail: nextTrail, floating: nextFloating };
-        });
+        updateEntryStateInLists({ isLoading: false, error: errorObj });
       } finally {
         if (activeControllers.get(controllerKey) === controller) {
           activeControllers.delete(controllerKey);
@@ -819,10 +813,10 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
 
       clearTrail: () => {
         // Abort the root hydration request and any trail-related nested requests
-        const rootController = activeControllers.get("__root__");
+        const rootController = activeControllers.get('__root__');
         if (rootController) {
           rootController.abort();
-          activeControllers.delete("__root__");
+          activeControllers.delete('__root__');
         }
         const {
           trail,
@@ -885,7 +879,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       openRootWithResolver: async (keyOrName, anchorEvent, options) => {
         anchorEvent.stopPropagation();
         const { ownerId, rootHydrationRequestCounter, trail } = get();
-        const finalOwnerId = options?.ownerId ?? ownerId ?? "default";
+        const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
 
         // Check if already open as root of active trail
         if (trail.length > 0 && trail[0].key === keyOrName && get().ownerId === finalOwnerId) {
@@ -904,7 +898,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           anchorRect,
           undefined,
           options,
-          "__root__",
+          '__root__',
           () => {
             const next = rootHydrationRequestCounter + 1;
             set({ rootHydrationRequestCounter: next });
@@ -1017,7 +1011,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
             entry.rect ?? null,
             undefined,
             options,
-            "__root__",
+            '__root__',
             () => {
               const next = get().rootHydrationRequestCounter + 1;
               set({ rootHydrationRequestCounter: next });
@@ -1134,7 +1128,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       cascadeOffsetStep: 8,
 
       ...actions,
-      actions: remainingActions as unknown as PopoverStore<TData, TContext>["actions"],
+      actions: remainingActions as unknown as PopoverStore<TData, TContext>['actions'],
     };
   });
 }

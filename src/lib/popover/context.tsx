@@ -8,11 +8,11 @@ import {
   useEffect,
   useRef,
   type ReactNode,
-} from "react";
-import { createPortal } from "react-dom";
-import { useStore } from "zustand";
-import type { StoreApi } from "zustand/vanilla";
-import { createPopoverStore } from "./store";
+} from 'react';
+import { createPortal } from 'react-dom';
+import { useStore } from 'zustand';
+import type { StoreApi } from 'zustand/vanilla';
+import { createPopoverStore } from './store';
 import type {
   PopoverStore,
   PopoverResolver,
@@ -22,7 +22,7 @@ import type {
   OpenRootOptions,
   OpenNestedOptions,
   TrailEntry,
-} from "./types";
+} from './types';
 
 /**
  * Context container holding the Zustand StoreApi instance.
@@ -157,7 +157,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     if (!enableKeyboardClose) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         const state = store.getState();
         const hasActive = state.trail.length > 0 || state.floating.length > 0;
         if (hasActive) {
@@ -166,14 +166,14 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [enableKeyboardClose, store]);
 
   // Setup click outside logic if enabled
   const enabled = clickOutside?.enabled;
   const ignoreClass = clickOutside?.ignoreClass;
-  const popoverSelector = clickOutside?.popoverSelector ?? ".popover-card";
+  const popoverSelector = clickOutside?.popoverSelector ?? '.popover-card';
 
   useEffect(() => {
     if (!enabled) return;
@@ -209,12 +209,14 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
       state.clearTrail();
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [enabled, ignoreClass, popoverSelector, store]);
 
   return (
-    <PopoverStoreContext.Provider value={store as unknown as StoreApi<PopoverStore>}>{children}</PopoverStoreContext.Provider>
+    <PopoverStoreContext.Provider value={store as unknown as StoreApi<PopoverStore>}>
+      {children}
+    </PopoverStoreContext.Provider>
   );
 }
 
@@ -234,7 +236,7 @@ export function usePopoverStore<TData = unknown, TContext = unknown, TSelected =
 ): TSelected {
   const store = useContext(PopoverStoreContext);
   if (!store) {
-    throw new Error("usePopoverStore must be used within a PopoverProvider");
+    throw new Error('usePopoverStore must be used within a PopoverProvider');
   }
   return useStore(store, selector as (state: PopoverStore) => TSelected);
 }
@@ -252,7 +254,7 @@ export function usePopoverStore<TData = unknown, TContext = unknown, TSelected =
 export function usePopoverStoreApi<TData = unknown, TContext = unknown>() {
   const store = useContext(PopoverStoreContext);
   if (!store) {
-    throw new Error("usePopoverStoreApi must be used within a PopoverProvider");
+    throw new Error('usePopoverStoreApi must be used within a PopoverProvider');
   }
   return store as unknown as StoreApi<PopoverStore<TData, TContext>>;
 }
@@ -376,9 +378,9 @@ export function usePopoverCollisionConfig() {
 export function usePopoverActions<TData = unknown, TContext = unknown>() {
   const store = useContext(PopoverStoreContext);
   if (!store) {
-    throw new Error("usePopoverActions must be used within a PopoverProvider");
+    throw new Error('usePopoverActions must be used within a PopoverProvider');
   }
-  return store.getState().actions as PopoverStore<TData, TContext>["actions"];
+  return store.getState().actions as PopoverStore<TData, TContext>['actions'];
 }
 
 function usePopoverHoverHandlers(
