@@ -3,19 +3,38 @@ import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react
 import type { TrailEntry, PopoverPlacement } from "../types";
 import { usePopoverCollisionConfig } from "../context";
 
+/**
+ * Options parameters for the `usePopoverGeometry` hook.
+ */
 interface UsePopoverGeometryOptions {
+  /** The unique key identifier of the popover card. */
   id: string;
+  /** Bounding box of the trigger element to position against. */
   anchorRect?: DOMRect;
+  /** Relative alignment placement direction preference. */
   placement?: PopoverPlacement;
+  /** z-index depth factor. Used to calculate visual cascade offsets. */
   zIndex: number;
+  /** True if this card is currently being dragged. */
   isDragging: boolean;
+  /** True if this card is modeless/pinned. */
   isPinned: boolean;
+  /** Reference to the full trail entry data object. */
   entry?: TrailEntry;
 }
 
 /**
- * Hook to compute coordinates positioning relative to anchor rect.
- * Integrates with Floating UI autoUpdate for dynamic scrolls/resizes.
+ * Custom hook to calculate and track absolute positioning coordinates.
+ * Integrates with Floating UI and supports auto-position updates on viewport scroll or resize.
+ *
+ * @remarks
+ * Auto-position listeners are automatically detached when `isPinned` is active
+ * to save CPU cycles and prevent scroll shifts from overriding custom pinned placement.
+ * Includes a cascading offset multiplier based on depth (zIndex) to prevent identical
+ * sibling popovers from stacking perfectly directly on top of each other.
+ *
+ * @param options - Hook options configuration.
+ * @returns An object containing the computed layout coordinates and the floating ref setter.
  */
 export function usePopoverGeometry({
   id,
@@ -45,7 +64,7 @@ export function usePopoverGeometry({
           setResolvedBoundary(el);
         }
       } catch {
-        // Fail-safe for early mount phases
+        // Fail-safe for early mount phases where DOM nodes might not be created yet
       }
     } else {
       setResolvedBoundary(boundary);
