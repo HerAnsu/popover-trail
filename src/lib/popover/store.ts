@@ -1093,20 +1093,23 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       },
     };
 
-    const remainingActions: Record<string, unknown> = {
-      ...actions,
-    } as unknown as Record<string, unknown>;
-    delete remainingActions.setContext;
-    delete remainingActions.setResolveData;
-    delete remainingActions.setOwnerId;
-    delete remainingActions.openRoot;
-    delete remainingActions.pushNested;
-    delete remainingActions.destroy;
-    delete remainingActions.setClosePinnedDescendants;
-    delete remainingActions.setCollisionConfig;
-    delete remainingActions.setEnableArrowNavigation;
-    delete remainingActions.setDebug;
-    delete remainingActions.setCascadeOffsetStep;
+    const remainingActions = { ...actions } as Record<string, unknown>;
+    const internalKeys = [
+      'setContext',
+      'setResolveData',
+      'setOwnerId',
+      'openRoot',
+      'pushNested',
+      'destroy',
+      'setClosePinnedDescendants',
+      'setCollisionConfig',
+      'setEnableArrowNavigation',
+      'setDebug',
+      'setCascadeOffsetStep',
+    ];
+    for (const key of internalKeys) {
+      delete remainingActions[key];
+    }
 
     return {
       ownerId: null,
