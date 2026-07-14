@@ -661,11 +661,26 @@ export function createPopoverStore<TData = any, TContext = any>(
           }
         }
 
-        // 2. Fall back to resolver
-        const resultOrPromise =
-          cachedResultOrPromise !== undefined
-            ? cachedResultOrPromise
-            : resolveData(keyOrName, undefined, context ?? undefined, controller.signal);
+        let resultOrPromise;
+        try {
+          resultOrPromise =
+            cachedResultOrPromise !== undefined
+              ? cachedResultOrPromise
+              : resolveData(keyOrName, undefined, context ?? undefined, controller.signal);
+        } catch (err) {
+          const errorObj = err instanceof Error ? err : new Error(String(err));
+          const entry: TrailEntry<TData> = {
+            key: keyOrName,
+            rect: anchorRect,
+            originalRect: anchorRect,
+            error: errorObj,
+            isLoading: false,
+            collision: localCollision,
+          };
+          set((state) => openRootState(state, finalOwnerId, entry));
+          activeControllers.delete("__root__");
+          return;
+        }
 
         if (!isPromise(resultOrPromise)) {
           const resolved = resultOrPromise;
@@ -779,11 +794,28 @@ export function createPopoverStore<TData = any, TContext = any>(
           }
         }
 
-        // 2. Fall back to resolver
-        const resultOrPromise =
-          cachedResultOrPromise !== undefined
-            ? cachedResultOrPromise
-            : resolveData(keyOrName, sourceEntry.data, context ?? undefined, controller.signal);
+        let resultOrPromise;
+        try {
+          resultOrPromise =
+            cachedResultOrPromise !== undefined
+              ? cachedResultOrPromise
+              : resolveData(keyOrName, sourceEntry.data, context ?? undefined, controller.signal);
+        } catch (err) {
+          const errorObj = err instanceof Error ? err : new Error(String(err));
+          const entry: TrailEntry<TData> = {
+            key: keyOrName,
+            parentKey: sourceKey,
+            originalParentKey: sourceKey,
+            rect,
+            originalRect: rect,
+            error: errorObj,
+            isLoading: false,
+            collision: localCollision,
+          };
+          set((state) => pushNestedState(state, sourceIndex, entry));
+          activeControllers.delete(keyOrName);
+          return;
+        }
 
         if (!isPromise(resultOrPromise)) {
           const resolved = resultOrPromise;
@@ -887,12 +919,23 @@ export function createPopoverStore<TData = any, TContext = any>(
           }
         }
 
-        const resultOrPromise = resolveData(
-          key,
-          parentData,
-          context ?? undefined,
-          controller.signal,
-        );
+        let resultOrPromise;
+        try {
+          resultOrPromise = resolveData(key, parentData, context ?? undefined, controller.signal);
+        } catch (err) {
+          const errorObj = err instanceof Error ? err : new Error(String(err));
+          set((state) => {
+            const nextTrail = state.trail.map((e) =>
+              e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
+            );
+            const nextFloating = state.floating.map((e) =>
+              e.key === key ? { ...e, isLoading: false, error: errorObj } : e,
+            );
+            return { trail: nextTrail, floating: nextFloating };
+          });
+          activeControllers.delete(key);
+          return;
+        }
 
         if (!isPromise(resultOrPromise)) {
           const resolved = resultOrPromise;
