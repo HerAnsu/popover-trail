@@ -63,12 +63,7 @@ function getEntryAtIndex<TData>(
   trail: readonly TrailEntry<TData>[],
   index: number,
 ): TrailEntry<TData> | undefined {
-  if (index < 0) return undefined;
-  if (index < floating.length) {
-    return floating[index];
-  }
-  const trailIndex = index - floating.length;
-  return trail[trailIndex];
+  return [...floating, ...trail][index];
 }
 
 /**
@@ -86,11 +81,7 @@ function findEntryIndex<TData>(
   trail: readonly TrailEntry<TData>[],
   key: string,
 ): number {
-  const fIndex = floating.findIndex((e) => e.key === key);
-  if (fIndex !== -1) return fIndex;
-  const tIndex = trail.findIndex((e) => e.key === key);
-  if (tIndex !== -1) return floating.length + tIndex;
-  return -1;
+  return [...floating, ...trail].findIndex((e) => e.key === key);
 }
 
 /**
@@ -108,7 +99,7 @@ function hasEntryWithKey<TData>(
   trail: readonly TrailEntry<TData>[],
   key: string,
 ): boolean {
-  return floating.some((e) => e.key === key) || trail.some((e) => e.key === key);
+  return [...floating, ...trail].some((e) => e.key === key);
 }
 
 /**
