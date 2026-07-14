@@ -72,6 +72,9 @@ export interface PopoverProviderProps<TData = any, TContext = any> {
 
   /** If true, prints Zustand state updates to the console (default: false). */
   debug?: boolean;
+
+  /** Horizontal offset step applied per level of the cascade trail (default: 8px). */
+  cascadeOffsetStep?: number;
 }
 
 /**
@@ -99,6 +102,7 @@ export function PopoverProvider<TData = any, TContext = any>({
   collision,
   enableArrowNavigation = true,
   debug = false,
+  cascadeOffsetStep = 8,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() =>
@@ -114,6 +118,11 @@ export function PopoverProvider<TData = any, TContext = any>({
   useEffect(() => {
     store.getState().setDebug(Boolean(debug));
   }, [debug, store]);
+
+  // Synchronize cascadeOffsetStep reactively when the prop changes
+  useEffect(() => {
+    store.getState().setCascadeOffsetStep(Number(cascadeOffsetStep));
+  }, [cascadeOffsetStep, store]);
 
   // Synchronize context reactively when the prop changes
   useEffect(() => {
