@@ -596,6 +596,14 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
     }
   };
 
+  const clearHoverTimer = (key: string) => {
+    const timer = hoverCloseTimers.get(key);
+    if (timer) {
+      clearTimeout(timer);
+      hoverCloseTimers.delete(key);
+    }
+  };
+
   return createStore<PopoverStore<TData, TContext>>((rawSet, get) => {
     const set = (
       patchOrFn:
@@ -1054,11 +1062,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         set({ debug });
       },
       hoverEnter: (key) => {
-        const timer = hoverCloseTimers.get(key);
-        if (timer) {
-          clearTimeout(timer);
-          hoverCloseTimers.delete(key);
-        }
+        clearHoverTimer(key);
         const { trail, floating } = get();
         let currentKey: string | undefined = key;
         while (currentKey) {
@@ -1066,11 +1070,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           if (entryIndex === -1) break;
           const entry: TrailEntry<TData> | undefined = getEntryAtIndex(floating, trail, entryIndex);
           if (entry && entry.parentKey) {
-            const parentTimer = hoverCloseTimers.get(entry.parentKey);
-            if (parentTimer) {
-              clearTimeout(parentTimer);
-              hoverCloseTimers.delete(entry.parentKey);
-            }
+            clearHoverTimer(entry.parentKey);
             currentKey = entry.parentKey;
           } else {
             break;
@@ -1078,10 +1078,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         }
       },
       hoverLeave: (key, delay = 300) => {
-        const timer = hoverCloseTimers.get(key);
-        if (timer) {
-          clearTimeout(timer);
-        }
+        clearHoverTimer(key);
         const newTimer = setTimeout(() => {
           actions.closeByKey(key);
           hoverCloseTimers.delete(key);
