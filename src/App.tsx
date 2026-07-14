@@ -178,7 +178,7 @@ const PopoverCard = memo(({ entry, index, isPinned }: PopoverCardProps) => {
       className={clsx("popover-card", isTop && "topmost", isPinned && "pinned")}
       onMouseDown={() => actions.bringToFront(entry.key)}
     >
-      <FocusLock disabled={!isTop} returnFocus>
+      <FocusLock disabled={!isTop || isPinned} returnFocus>
         <div className="popover-header" {...dragHandleProps}>
           <span id={`title-${entry.key}`} className="popover-title">
             {entry.isLoading ? "Evaluating..." : entry.data?.title}

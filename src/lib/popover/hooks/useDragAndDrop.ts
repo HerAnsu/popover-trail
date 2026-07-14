@@ -25,9 +25,14 @@ export function usePopoverDragAndDrop({
   const rotationRef = useRef(0);
   const [rotation, setRotation] = useState(0);
 
-  // Update transform reference synchronously in render phase to avoid effect latency
-  transformXRef.current = transform?.x ?? 0;
-  rotationRef.current = rotation;
+  // Update transform reference inside an effect to ensure React Concurrent Mode safety
+  useEffect(() => {
+    transformXRef.current = transform?.x ?? 0;
+  }, [transform]);
+
+  useEffect(() => {
+    rotationRef.current = rotation;
+  }, [rotation]);
 
   useEffect(() => {
     let rafId: number;
