@@ -159,294 +159,320 @@ interface PopoverCardProps {
   index: number;
   isPinned: boolean;
   hoverEnabled: boolean;
+  allowDragWhenUnpinned: boolean;
 }
 
-const PopoverCard = memo(({ entry, index, isPinned, hoverEnabled }: PopoverCardProps) => {
-  const [branchInput, setBranchInput] = useState("");
-  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+const PopoverCard = memo(
+  ({ entry, index, isPinned, hoverEnabled, allowDragWhenUnpinned }: PopoverCardProps) => {
+    const [branchInput, setBranchInput] = useState("");
+    const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
-      }
+    useEffect(() => {
+      return () => {
+        if (openTimerRef.current) {
+          clearTimeout(openTimerRef.current);
+        }
+      };
+    }, []);
+
+    const {
+      ref,
+      style,
+      isTop,
+      actions,
+      dragHandleProps,
+      handlePinToggle,
+      onMouseEnter,
+      onMouseLeave,
+      onKeyDown,
+    } = usePopoverCard({
+      entry,
+      index,
+      isPinned,
+      placement: "bottom",
+    });
+
+    const handleLeftMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!hoverEnabled || !entry.data?.leftExpr) return;
+      if (openTimerRef.current) clearTimeout(openTimerRef.current);
+      const rect = e.currentTarget.getBoundingClientRect();
+      openTimerRef.current = setTimeout(() => {
+        void actions.openNestedWithResolver(entry.data!.leftExpr!, entry.key, {
+          triggerRect: rect,
+          hover: { enabled: true, openDelay: 200, closeDelay: 300 },
+          allowDragWhenUnpinned,
+          ariaDescribedby: `Evaluation details for left operand: ${entry.data!.leftExpr}`,
+        });
+      }, 200);
     };
-  }, []);
 
-  const {
-    ref,
-    style,
-    isTop,
-    actions,
-    dragHandleProps,
-    handlePinToggle,
-    onMouseEnter,
-    onMouseLeave,
-    onKeyDown,
-  } = usePopoverCard({
-    entry,
-    index,
-    isPinned,
-    placement: "bottom",
-  });
+    const handleLeftMouseLeave = () => {
+      if (!hoverEnabled || !entry.data?.leftExpr) return;
+      if (openTimerRef.current) clearTimeout(openTimerRef.current);
+      actions.hoverLeave(entry.data.leftExpr, 300);
+    };
 
-  const handleLeftMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!hoverEnabled || !entry.data?.leftExpr) return;
-    if (openTimerRef.current) clearTimeout(openTimerRef.current);
-    const rect = e.currentTarget.getBoundingClientRect();
-    openTimerRef.current = setTimeout(() => {
-      void actions.openNestedWithResolver(entry.data!.leftExpr!, entry.key, {
-        triggerRect: rect,
-        hover: { enabled: true, openDelay: 200, closeDelay: 300 },
-      });
-    }, 200);
-  };
+    const handleRightMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!hoverEnabled || !entry.data?.rightExpr) return;
+      if (openTimerRef.current) clearTimeout(openTimerRef.current);
+      const rect = e.currentTarget.getBoundingClientRect();
+      openTimerRef.current = setTimeout(() => {
+        void actions.openNestedWithResolver(entry.data!.rightExpr!, entry.key, {
+          triggerRect: rect,
+          hover: { enabled: true, openDelay: 200, closeDelay: 300 },
+          allowDragWhenUnpinned,
+          ariaDescribedby: `Evaluation details for right operand: ${entry.data!.rightExpr}`,
+        });
+      }, 200);
+    };
 
-  const handleLeftMouseLeave = () => {
-    if (!hoverEnabled || !entry.data?.leftExpr) return;
-    if (openTimerRef.current) clearTimeout(openTimerRef.current);
-    actions.hoverLeave(entry.data.leftExpr, 300);
-  };
+    const handleRightMouseLeave = () => {
+      if (!hoverEnabled || !entry.data?.rightExpr) return;
+      if (openTimerRef.current) clearTimeout(openTimerRef.current);
+      actions.hoverLeave(entry.data.rightExpr, 300);
+    };
 
-  const handleRightMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!hoverEnabled || !entry.data?.rightExpr) return;
-    if (openTimerRef.current) clearTimeout(openTimerRef.current);
-    const rect = e.currentTarget.getBoundingClientRect();
-    openTimerRef.current = setTimeout(() => {
-      void actions.openNestedWithResolver(entry.data!.rightExpr!, entry.key, {
-        triggerRect: rect,
-        hover: { enabled: true, openDelay: 200, closeDelay: 300 },
-      });
-    }, 200);
-  };
+    const handleCustomMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (!hoverEnabled || !branchInput.trim()) return;
+      if (openTimerRef.current) clearTimeout(openTimerRef.current);
+      const rect = e.currentTarget.getBoundingClientRect();
+      openTimerRef.current = setTimeout(() => {
+        void actions.openNestedWithResolver(branchInput.trim(), entry.key, {
+          triggerRect: rect,
+          hover: { enabled: true, openDelay: 200, closeDelay: 300 },
+          allowDragWhenUnpinned,
+          ariaDescribedby: `Evaluation details for custom expression: ${branchInput.trim()}`,
+        });
+      }, 200);
+    };
 
-  const handleRightMouseLeave = () => {
-    if (!hoverEnabled || !entry.data?.rightExpr) return;
-    if (openTimerRef.current) clearTimeout(openTimerRef.current);
-    actions.hoverLeave(entry.data.rightExpr, 300);
-  };
+    const handleCustomMouseLeave = () => {
+      if (!hoverEnabled || !branchInput.trim()) return;
+      if (openTimerRef.current) clearTimeout(openTimerRef.current);
+      actions.hoverLeave(branchInput.trim(), 300);
+    };
 
-  const handleCustomMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!hoverEnabled || !branchInput.trim()) return;
-    if (openTimerRef.current) clearTimeout(openTimerRef.current);
-    const rect = e.currentTarget.getBoundingClientRect();
-    openTimerRef.current = setTimeout(() => {
-      void actions.openNestedWithResolver(branchInput.trim(), entry.key, {
-        triggerRect: rect,
-        hover: { enabled: true, openDelay: 200, closeDelay: 300 },
-      });
-    }, 200);
-  };
-
-  const handleCustomMouseLeave = () => {
-    if (!hoverEnabled || !branchInput.trim()) return;
-    if (openTimerRef.current) clearTimeout(openTimerRef.current);
-    actions.hoverLeave(branchInput.trim(), 300);
-  };
-
-  return (
-    <div
-      ref={ref}
-      style={style}
-      role="dialog"
-      aria-labelledby={`title-${entry.key}`}
-      className={clsx("popover-card", isTop && "topmost", isPinned && "pinned")}
-      onMouseDown={() => actions.bringToFront(entry.key)}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onKeyDown={onKeyDown}
-    >
-      <FocusLock disabled={!isTop || isPinned} returnFocus>
-        <div className="popover-header" {...dragHandleProps}>
-          <span id={`title-${entry.key}`} className="popover-title">
-            {entry.isLoading ? "Evaluating..." : entry.data?.title}
-          </span>
-          <div className="popover-actions">
-            <button
-              type="button"
-              onClick={handlePinToggle}
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              className="btn-action"
-              title={isPinned ? "Unpin popover" : "Pin popover"}
-            >
-              {isPinned ? "📌" : "📍"}
-            </button>
-            <button
-              type="button"
-              onClick={() => actions.closeFrom(index)}
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              className="btn-action"
-              title="Close"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        <div className="popover-body">
-          {entry.isLoading ? (
-            <div className="spinner-container">
-              <div className="spinner" />
-              <span>Parsing expression...</span>
-            </div>
-          ) : entry.error ? (
-            <div
-              style={{ color: "#ef4444", display: "flex", flexDirection: "column", gap: "0.5rem" }}
-            >
-              <div>
-                <strong>Error:</strong> {entry.error.message}
-              </div>
-              <button
-                type="button"
-                className="btn-retry"
-                onClick={() => actions.retryPopover(entry.key)}
-                style={{
-                  alignSelf: "flex-start",
-                  padding: "0.2rem 0.6rem",
-                  fontSize: "0.8rem",
-                  borderRadius: "4px",
-                  background: "rgba(239, 68, 68, 0.2)",
-                  border: "1px solid #ef4444",
-                  color: "#f87171",
-                  cursor: "pointer",
-                }}
-              >
-                Retry
-              </button>
-            </div>
-          ) : (
-            <div>
-              <div className="math-expression-display" style={{ marginBottom: "0.8rem" }}>
-                <span className="math-label">Expression:</span>
-                <code className="math-code">{entry.data?.expression}</code>
-                <div className="math-result" style={{ marginTop: "0.4rem", fontWeight: 700 }}>
-                  Result = <span className="math-value">{entry.data?.value}</span>
-                </div>
-              </div>
-
-              {entry.data?.operator && (
-                <div
-                  className="popover-links"
-                  style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
-                >
-                  <span
-                    style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-primary)" }}
-                  >
-                    Drill down operands:
-                  </span>
-                  {entry.data.leftExpr && (
-                    <button
-                      type="button"
-                      className="btn-link"
-                      onClick={(e) => {
-                        if (hoverEnabled) return;
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        void actions.openNestedWithResolver(entry.data!.leftExpr!, entry.key, {
-                          triggerRect: rect,
-                        });
-                      }}
-                      onMouseEnter={handleLeftMouseEnter}
-                      onMouseLeave={handleLeftMouseLeave}
-                    >
-                      👈 Left: {entry.data.leftExpr}
-                    </button>
-                  )}
-                  {entry.data.rightExpr && (
-                    <button
-                      type="button"
-                      className="btn-link"
-                      onClick={(e) => {
-                        if (hoverEnabled) return;
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        void actions.openNestedWithResolver(entry.data!.rightExpr!, entry.key, {
-                          triggerRect: rect,
-                        });
-                      }}
-                      onMouseEnter={handleRightMouseEnter}
-                      onMouseLeave={handleRightMouseLeave}
-                    >
-                      👉 Right: {entry.data.rightExpr}
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div
-                className="custom-branch-zone"
-                style={{
-                  marginTop: "1rem",
-                  paddingTop: "0.8rem",
-                  borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "0.7rem",
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                    display: "block",
-                    marginBottom: "0.3rem",
-                  }}
-                >
-                  Extend with custom formula:
-                </span>
-                <div style={{ display: "flex", gap: "0.3rem" }}>
-                  <input
-                    type="text"
-                    placeholder="e.g. 5 * (2 + 1)"
-                    value={branchInput}
-                    onChange={(e) => setBranchInput(e.target.value)}
-                    style={{
-                      flex: 1,
-                      background: "rgba(0, 0, 0, 0.3)",
-                      border: "1px solid rgba(255, 255, 255, 0.2)",
-                      borderRadius: "4px",
-                      color: "#fff",
-                      padding: "0.3rem 0.5rem",
-                      fontSize: "0.75rem",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    disabled={!branchInput.trim()}
-                    style={{
-                      background: "rgba(99, 102, 241, 0.2)",
-                      border: "1px solid rgba(99, 102, 241, 0.4)",
-                      borderRadius: "4px",
-                      color: "#fff",
-                      padding: "0.3rem 0.6rem",
-                      fontSize: "0.75rem",
-                      cursor: branchInput.trim() ? "pointer" : "not-allowed",
-                      fontWeight: 600,
-                    }}
-                    onClick={(e) => {
-                      if (hoverEnabled) return;
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      void actions.openNestedWithResolver(branchInput.trim(), entry.key, {
-                        triggerRect: rect,
-                      });
-                      setBranchInput("");
-                    }}
-                    onMouseEnter={handleCustomMouseEnter}
-                    onMouseLeave={handleCustomMouseLeave}
-                  >
-                    Branch
-                  </button>
-                </div>
-              </div>
+    return (
+      <div
+        ref={ref}
+        style={style}
+        role="dialog"
+        aria-labelledby={`title-${entry.key}`}
+        aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
+        className={clsx("popover-card", isTop && "topmost", isPinned && "pinned")}
+        onMouseDown={() => actions.bringToFront(entry.key)}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onKeyDown={onKeyDown}
+      >
+        <FocusLock disabled={!isTop || isPinned} returnFocus>
+          {entry.ariaDescribedby && (
+            <div id={`desc-${entry.key}`} className="sr-only">
+              {entry.ariaDescribedby}
             </div>
           )}
-        </div>
-      </FocusLock>
-    </div>
-  );
-});
+          <div className="popover-header" {...dragHandleProps}>
+            <span id={`title-${entry.key}`} className="popover-title">
+              {entry.isLoading ? "Evaluating..." : entry.data?.title}
+            </span>
+            <div className="popover-actions">
+              <button
+                type="button"
+                onClick={handlePinToggle}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="btn-action"
+                title={isPinned ? "Unpin popover" : "Pin popover"}
+              >
+                {isPinned ? "📌" : "📍"}
+              </button>
+              <button
+                type="button"
+                onClick={() => actions.closeFrom(index)}
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="btn-action"
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div className="popover-body">
+            {entry.isLoading ? (
+              <div className="spinner-container">
+                <div className="spinner" />
+                <span>Parsing expression...</span>
+              </div>
+            ) : entry.error ? (
+              <div
+                style={{
+                  color: "#ef4444",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem",
+                }}
+              >
+                <div>
+                  <strong>Error:</strong> {entry.error.message}
+                </div>
+                <button
+                  type="button"
+                  className="btn-retry"
+                  onClick={() => actions.retryPopover(entry.key)}
+                  style={{
+                    alignSelf: "flex-start",
+                    padding: "0.2rem 0.6rem",
+                    fontSize: "0.8rem",
+                    borderRadius: "4px",
+                    background: "rgba(239, 68, 68, 0.2)",
+                    border: "1px solid #ef4444",
+                    color: "#f87171",
+                    cursor: "pointer",
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="math-expression-display" style={{ marginBottom: "0.8rem" }}>
+                  <span className="math-label">Expression:</span>
+                  <code className="math-code">{entry.data?.expression}</code>
+                  <div className="math-result" style={{ marginTop: "0.4rem", fontWeight: 700 }}>
+                    Result = <span className="math-value">{entry.data?.value}</span>
+                  </div>
+                </div>
+
+                {entry.data?.operator && (
+                  <div
+                    className="popover-links"
+                    style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}
+                  >
+                    <span
+                      style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-primary)" }}
+                    >
+                      Drill down operands:
+                    </span>
+                    {entry.data.leftExpr && (
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={(e) => {
+                          if (hoverEnabled) return;
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          void actions.openNestedWithResolver(entry.data!.leftExpr!, entry.key, {
+                            triggerRect: rect,
+                          });
+                        }}
+                        onMouseEnter={handleLeftMouseEnter}
+                        onMouseLeave={handleLeftMouseLeave}
+                      >
+                        👈 Left: {entry.data.leftExpr}
+                      </button>
+                    )}
+                    {entry.data.rightExpr && (
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={(e) => {
+                          if (hoverEnabled) return;
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          void actions.openNestedWithResolver(entry.data!.rightExpr!, entry.key, {
+                            triggerRect: rect,
+                          });
+                        }}
+                        onMouseEnter={handleRightMouseEnter}
+                        onMouseLeave={handleRightMouseLeave}
+                      >
+                        👉 Right: {entry.data.rightExpr}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div
+                  className="custom-branch-zone"
+                  style={{
+                    marginTop: "1rem",
+                    paddingTop: "0.8rem",
+                    borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      color: "var(--text-secondary)",
+                      display: "block",
+                      marginBottom: "0.3rem",
+                    }}
+                  >
+                    Extend with custom formula:
+                  </span>
+                  <div style={{ display: "flex", gap: "0.3rem" }}>
+                    <input
+                      type="text"
+                      placeholder="e.g. 5 * (2 + 1)"
+                      value={branchInput}
+                      onChange={(e) => setBranchInput(e.target.value)}
+                      style={{
+                        flex: 1,
+                        background: "rgba(0, 0, 0, 0.3)",
+                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                        borderRadius: "4px",
+                        color: "#fff",
+                        padding: "0.3rem 0.5rem",
+                        fontSize: "0.75rem",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={!branchInput.trim()}
+                      style={{
+                        background: "rgba(99, 102, 241, 0.2)",
+                        border: "1px solid rgba(99, 102, 241, 0.4)",
+                        borderRadius: "4px",
+                        color: "#fff",
+                        padding: "0.3rem 0.6rem",
+                        fontSize: "0.75rem",
+                        cursor: branchInput.trim() ? "pointer" : "not-allowed",
+                        fontWeight: 600,
+                      }}
+                      onClick={(e) => {
+                        if (hoverEnabled) return;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        void actions.openNestedWithResolver(branchInput.trim(), entry.key, {
+                          triggerRect: rect,
+                        });
+                        setBranchInput("");
+                      }}
+                      onMouseEnter={handleCustomMouseEnter}
+                      onMouseLeave={handleCustomMouseLeave}
+                    >
+                      Branch
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </FocusLock>
+      </div>
+    );
+  },
+);
 
 PopoverCard.displayName = "PopoverCard";
 
-function PopoverCanvas({ hoverEnabled }: { hoverEnabled: boolean }) {
+function PopoverCanvas({
+  hoverEnabled,
+  allowDragWhenUnpinned,
+}: {
+  hoverEnabled: boolean;
+  allowDragWhenUnpinned: boolean;
+}) {
   const trail = usePopoverTrail<MathData>();
   const floating = usePopoverFloating<MathData>();
   const store = usePopoverStoreApi<MathData>();
@@ -478,6 +504,7 @@ function PopoverCanvas({ hoverEnabled }: { hoverEnabled: boolean }) {
               index={isPinned ? idx : floating.length + trail.indexOf(entry)}
               isPinned={isPinned}
               hoverEnabled={hoverEnabled}
+              allowDragWhenUnpinned={allowDragWhenUnpinned}
             />
           </div>
         ))}
@@ -493,6 +520,10 @@ interface MainContentProps {
   setArrowNavEnabled: (val: boolean) => void;
   debugEnabled: boolean;
   setDebugEnabled: (val: boolean) => void;
+  allowDragWhenUnpinned: boolean;
+  setAllowDragWhenUnpinned: (val: boolean) => void;
+  cascadeOffsetStep: number;
+  setCascadeOffsetStep: (val: number) => void;
 }
 
 function MainContent({
@@ -502,6 +533,10 @@ function MainContent({
   setArrowNavEnabled,
   debugEnabled,
   setDebugEnabled,
+  allowDragWhenUnpinned,
+  setAllowDragWhenUnpinned,
+  cascadeOffsetStep,
+  setCascadeOffsetStep,
 }: MainContentProps) {
   const [customRoot, setCustomRoot] = useState("((1 + 2) * 3) / (4 - (5 ^ 2))");
   const { clear, openRootWithResolver } = usePopoverActions<MathData>();
@@ -510,9 +545,21 @@ function MainContent({
 
   const hoverConfig = { enabled: hoverEnabled, openDelay: 200, closeDelay: 300 };
 
-  const trig1 = usePopoverTrigger("2 * (3 + (15 / 5))", { hover: hoverConfig });
-  const trig2 = usePopoverTrigger("(4 ^ 2) - (2 * (5 + 1))", { hover: hoverConfig });
-  const trig3 = usePopoverTrigger("100 / (2 * (3 + (4 - 2)))", { hover: hoverConfig });
+  const trig1 = usePopoverTrigger("2 * (3 + (15 / 5))", {
+    hover: hoverConfig,
+    allowDragWhenUnpinned,
+    ariaDescribedby: "Mathematical evaluation details for 2 * (3 + (15 / 5))",
+  });
+  const trig2 = usePopoverTrigger("(4 ^ 2) - (2 * (5 + 1))", {
+    hover: hoverConfig,
+    allowDragWhenUnpinned,
+    ariaDescribedby: "Mathematical evaluation details for (4 ^ 2) - (2 * (5 + 1))",
+  });
+  const trig3 = usePopoverTrigger("100 / (2 * (3 + (4 - 2)))", {
+    hover: hoverConfig,
+    allowDragWhenUnpinned,
+    ariaDescribedby: "Mathematical evaluation details for 100 / (2 * (3 + (4 - 2)))",
+  });
 
   const handleOpenCustomRoot = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!customRoot.trim()) return;
@@ -522,7 +569,11 @@ function MainContent({
         currentTarget: e.currentTarget,
         stopPropagation: () => {},
       },
-      { hover: hoverConfig },
+      {
+        hover: hoverConfig,
+        allowDragWhenUnpinned,
+        ariaDescribedby: `Mathematical evaluation details for custom expression: ${customRoot.trim()}`,
+      },
     );
   };
 
@@ -607,6 +658,53 @@ function MainContent({
             onChange={(e) => setDebugEnabled(e.target.checked)}
           />
           Enable Console Debug Logger (see browser developer tools)
+        </label>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            cursor: "pointer",
+            fontSize: "0.85rem",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={allowDragWhenUnpinned}
+            onChange={(e) => setAllowDragWhenUnpinned(e.target.checked)}
+          />
+          Allow Dragging Unpinned/Trailing Cards
+        </label>
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            cursor: "pointer",
+            fontSize: "0.85rem",
+            color: "var(--text-secondary)",
+          }}
+        >
+          Cascade Offset Step:
+          <select
+            value={cascadeOffsetStep}
+            onChange={(e) => setCascadeOffsetStep(Number(e.target.value))}
+            style={{
+              background: "rgba(0, 0, 0, 0.3)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              borderRadius: "4px",
+              color: "#fff",
+              fontSize: "0.8rem",
+              padding: "2px 4px",
+              pointerEvents: "auto",
+            }}
+          >
+            <option value={0}>0px (Stacked)</option>
+            <option value={8}>8px (Default)</option>
+            <option value={15}>15px (Wide)</option>
+            <option value={30}>30px (Extra Wide)</option>
+          </select>
         </label>
       </div>
 
@@ -703,7 +801,7 @@ function MainContent({
       )}
 
       <PopoverPortal>
-        <PopoverCanvas hoverEnabled={hoverEnabled} />
+        <PopoverCanvas hoverEnabled={hoverEnabled} allowDragWhenUnpinned={allowDragWhenUnpinned} />
       </PopoverPortal>
     </div>
   );
@@ -713,6 +811,8 @@ export default function App() {
   const [hoverEnabled, setHoverEnabled] = useState(false);
   const [arrowNavEnabled, setArrowNavEnabled] = useState(true);
   const [debugEnabled, setDebugEnabled] = useState(true);
+  const [allowDragWhenUnpinned, setAllowDragWhenUnpinned] = useState(false);
+  const [cascadeOffsetStep, setCascadeOffsetStep] = useState(8);
 
   return (
     <PopoverProvider
@@ -721,6 +821,7 @@ export default function App() {
       clickOutside={{ enabled: true, ignoreClass: "btn-trigger" }}
       enableArrowNavigation={arrowNavEnabled}
       debug={debugEnabled}
+      cascadeOffsetStep={cascadeOffsetStep}
     >
       <MainContent
         hoverEnabled={hoverEnabled}
@@ -729,6 +830,10 @@ export default function App() {
         setArrowNavEnabled={setArrowNavEnabled}
         debugEnabled={debugEnabled}
         setDebugEnabled={setDebugEnabled}
+        allowDragWhenUnpinned={allowDragWhenUnpinned}
+        setAllowDragWhenUnpinned={setAllowDragWhenUnpinned}
+        cascadeOffsetStep={cascadeOffsetStep}
+        setCascadeOffsetStep={setCascadeOffsetStep}
       />
     </PopoverProvider>
   );

@@ -76,6 +76,12 @@ export interface TrailEntry<TData = any> {
 
   /** Hover-trigger options configuration stored for this entry. */
   hover?: HoverConfig;
+
+  /** Accessibility description text linked via aria-describedby. */
+  ariaDescribedby?: string;
+
+  /** True to allow dragging even when the popover is unpinned/trailing. */
+  allowDragWhenUnpinned?: boolean;
 }
 
 /**
@@ -156,6 +162,9 @@ export interface PopoverStateData<TData = any, TContext = any> {
 
   /** Whether debug logging is enabled. */
   debug: boolean;
+
+  /** Horizontal offset step applied per level of the cascade trail (default: 8px). */
+  cascadeOffsetStep: number;
 }
 
 /**
@@ -241,6 +250,9 @@ export interface PopoverActions<TData = any, TContext = any> {
 
   /** Starts a close timer for the given key. */
   hoverLeave: (key: string, delay?: number) => void;
+
+  /** Sets the horizontal stepping shift per nesting level. */
+  setCascadeOffsetStep: (step: number) => void;
 }
 
 /**
@@ -260,6 +272,7 @@ export type PopoverStore<TData = any, TContext = any> = PopoverStateData<TData, 
       | "setCollisionConfig"
       | "setEnableArrowNavigation"
       | "setDebug"
+      | "setCascadeOffsetStep"
     >;
   };
 
@@ -341,6 +354,12 @@ export interface OpenRootOptions {
 
   /** Hover-trigger options configuration overrides. */
   hover?: HoverConfig;
+
+  /** Accessibility description text linked via aria-describedby. */
+  ariaDescribedby?: string;
+
+  /** True to allow dragging even when the popover is unpinned/trailing. */
+  allowDragWhenUnpinned?: boolean;
 }
 
 /**
@@ -355,4 +374,10 @@ export interface OpenNestedOptions {
 
   /** Hover-trigger options configuration overrides. */
   hover?: HoverConfig;
+
+  /** Accessibility description text linked via aria-describedby. */
+  ariaDescribedby?: string;
+
+  /** True to allow dragging even when the popover is unpinned/trailing. */
+  allowDragWhenUnpinned?: boolean;
 }

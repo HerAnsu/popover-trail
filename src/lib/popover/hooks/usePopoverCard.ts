@@ -66,31 +66,55 @@ export function usePopoverCard({
 
     return () => {
       const elementToFocus = previouslyFocusedElementRef.current;
-      if (
-        elementToFocus &&
-        typeof elementToFocus.focus === "function" &&
-        document.body.contains(elementToFocus)
-      ) {
+      const isStillInDom = elementToFocus && document.body.contains(elementToFocus);
+
+      if (isStillInDom && typeof elementToFocus?.focus === "function") {
         const activeEl = document.activeElement;
         const isFocusInside =
           ref.current?.contains(activeEl) || activeEl === document.body || !activeEl;
         if (isFocusInside) {
           elementToFocus.focus();
         }
+      } else {
+        // Fallback: search for parent popover card in DOM
+        if (entry.parentKey) {
+          const parentCard = document.querySelector<HTMLElement>(
+            `[aria-labelledby="title-${CSS.escape(entry.parentKey)}"]`,
+          );
+          if (parentCard) {
+            const firstFocusable = parentCard.querySelector<HTMLElement>(
+              "button, a, input, select, textarea, [tabindex]:not([tabindex='-1'])",
+            );
+            if (firstFocusable) {
+              firstFocusable.focus();
+              return;
+            }
+            parentCard.focus();
+            return;
+          }
+        }
+        // Fallback to page h1 or body
+        const mainHeading = document.querySelector("h1");
+        if (mainHeading) {
+          mainHeading.focus();
+        }
       }
     };
-  }, []);
+  }, [entry.parentKey]);
 
-  // 1. Set up dnd-kit dragging (disabled if enableDrag is false or popover is not pinned)
+  const allowDragWhenUnpinned = entry.allowDragWhenUnpinned ?? false;
+  const isDragAllowed = enableDrag && (isPinned || allowDragWhenUnpinned);
+
+  // 1. Set up dnd-kit dragging
   const { setNodeRef, transform, isDragging, attributes, listeners } = useDraggable({
     id: entry.key,
-    disabled: !enableDrag || !isPinned,
+    disabled: !isDragAllowed,
   });
 
   // 2. Physics-based rotation swing setup
   const { rotation, dragX, dragY } = usePopoverDragAndDrop({
-    isDragging: enableDrag ? isDragging : false,
-    transform: enableDrag ? transform : null,
+    isDragging: isDragAllowed ? isDragging : false,
+    transform: isDragAllowed ? transform : null,
     enableTilt,
     maxTiltAngle,
     tiltSensitivity,
@@ -102,7 +126,7 @@ export function usePopoverCard({
     anchorRect: entry.rect,
     placement,
     zIndex: index,
-    isDragging: enableDrag ? isDragging : false,
+    isDragging: isDragAllowed ? isDragging : false,
     isPinned,
     entry,
   });
@@ -119,22 +143,22 @@ export function usePopoverCard({
   // 5. Compile styles using the compiler utility
   const style = getPopoverStyles({
     finalLayoutPos,
-    offset: enableDrag ? offset : { x: 0, y: 0 },
-    dragX: enableDrag ? dragX : 0,
-    dragY: enableDrag ? dragY : 0,
-    rotation: enableDrag ? rotation : 0,
+    offset: isDragAllowed ? offset : { x: 0, y: 0 },
+    dragX: isDragAllowed ? dragX : 0,
+    dragY: isDragAllowed ? dragY : 0,
+    rotation: isDragAllowed ? rotation : 0,
     zIndex: zIndex + 1000,
   });
 
   const setCombinedRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (enableDrag) {
+      if (isDragAllowed) {
         setNodeRef(node);
       }
       setFloating(node);
       ref.current = node;
     },
-    [enableDrag, setNodeRef, setFloating],
+    [isDragAllowed, setNodeRef, setFloating],
   );
 
   const handlePinToggle = useCallback(() => {
@@ -212,9 +236,15 @@ export function usePopoverCard({
     ref: setCombinedRef,
     style,
     isTop,
-    isDragging: enableDrag ? isDragging : false,
+    isDragging: isDragAllowed ? isDragging : false,
     actions,
-    dragHandleProps: enableDrag ? { ...attributes, ...listeners } : {},
+    dragHandleProps: isDragAllowed
+      ? {
+          ...attributes,
+          ...listeners,
+          style: { cursor: isDragging ? "grabbing" : "grab" },
+        }
+      : {},
     handlePinToggle,
     onMouseEnter,
     onMouseLeave,

@@ -624,4 +624,35 @@ describe("createPopoverStore", () => {
     state = store.getState();
     expect(state.trail.find((t) => t.key === "child-item")).toBeUndefined();
   });
+
+  it("should support cascadeOffsetStep configuration and custom trigger options", async () => {
+    const store = createPopoverStore(dummyResolver);
+    expect(store.getState().cascadeOffsetStep).toBe(8);
+
+    // Set custom cascadeOffsetStep
+    store.getState().setCascadeOffsetStep(15);
+    expect(store.getState().cascadeOffsetStep).toBe(15);
+
+    // Trigger open with allowDragWhenUnpinned and ariaDescribedby
+    const dummyRect = new DOMRect(0, 0, 100, 40);
+    const mockElement = {
+      getBoundingClientRect: () => dummyRect,
+    } as any;
+
+    await store.getState().openRootWithResolver(
+      "item-1",
+      {
+        currentTarget: mockElement,
+        stopPropagation: () => {},
+      },
+      {
+        allowDragWhenUnpinned: true,
+        ariaDescribedby: "Descriptor text",
+      },
+    );
+
+    const entry = store.getState().trail[0];
+    expect(entry.allowDragWhenUnpinned).toBe(true);
+    expect(entry.ariaDescribedby).toBe("Descriptor text");
+  });
 });

@@ -809,6 +809,8 @@ export function createPopoverStore<TData = any, TContext = any>(
               isLoading: false,
               collision: localCollision,
               hover: options?.hover,
+              ariaDescribedby: options?.ariaDescribedby,
+              allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
             };
             set((state) => openRootState(state, finalOwnerId, entry));
             activeControllers.delete("__root__");
@@ -832,6 +834,8 @@ export function createPopoverStore<TData = any, TContext = any>(
             isLoading: false,
             collision: localCollision,
             hover: options?.hover,
+            ariaDescribedby: options?.ariaDescribedby,
+            allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
           };
           set((state) => openRootState(state, finalOwnerId, entry));
           activeControllers.delete("__root__");
@@ -848,6 +852,8 @@ export function createPopoverStore<TData = any, TContext = any>(
             isLoading: false,
             collision: localCollision,
             hover: options?.hover,
+            ariaDescribedby: options?.ariaDescribedby,
+            allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
           };
           set((state) => openRootState(state, finalOwnerId, entry));
           if (cache && resolved !== undefined) {
@@ -868,6 +874,8 @@ export function createPopoverStore<TData = any, TContext = any>(
           isLoading: true,
           collision: localCollision,
           hover: options?.hover,
+          ariaDescribedby: options?.ariaDescribedby,
+          allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
         };
         set((state) => openRootState(state, finalOwnerId, loadingEntry));
 
@@ -967,6 +975,8 @@ export function createPopoverStore<TData = any, TContext = any>(
               isLoading: false,
               collision: localCollision,
               hover: options?.hover,
+              ariaDescribedby: options?.ariaDescribedby,
+              allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
             };
             set((state) => pushNestedState(state, sourceIndex, entry));
             activeControllers.delete(keyOrName);
@@ -997,6 +1007,8 @@ export function createPopoverStore<TData = any, TContext = any>(
             isLoading: false,
             collision: localCollision,
             hover: options?.hover,
+            ariaDescribedby: options?.ariaDescribedby,
+            allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
           };
           set((state) => pushNestedState(state, sourceIndex, entry));
           activeControllers.delete(keyOrName);
@@ -1015,6 +1027,8 @@ export function createPopoverStore<TData = any, TContext = any>(
             isLoading: false,
             collision: localCollision,
             hover: options?.hover,
+            ariaDescribedby: options?.ariaDescribedby,
+            allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
           };
           set((state) => pushNestedState(state, sourceIndex, entry));
           if (cache && resolved !== undefined) {
@@ -1042,6 +1056,8 @@ export function createPopoverStore<TData = any, TContext = any>(
           isLoading: true,
           collision: localCollision,
           hover: options?.hover,
+          ariaDescribedby: options?.ariaDescribedby,
+          allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
         };
         set((state) => pushNestedState(state, sourceIndex, loadingEntry));
 
@@ -1278,6 +1294,9 @@ export function createPopoverStore<TData = any, TContext = any>(
         }, delay);
         hoverCloseTimers.set(key, newTimer);
       },
+      setCascadeOffsetStep: (cascadeOffsetStep) => {
+        set({ cascadeOffsetStep });
+      },
     };
 
     const {
@@ -1291,6 +1310,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       setCollisionConfig: _______,
       setEnableArrowNavigation: ________,
       setDebug: _________,
+      setCascadeOffsetStep: __________,
       ...remainingActions
     } = actions;
 
@@ -1312,6 +1332,7 @@ export function createPopoverStore<TData = any, TContext = any>(
       resolveData,
       enableArrowNavigation: false,
       debug: false,
+      cascadeOffsetStep: 8,
 
       ...actions,
       actions: remainingActions,

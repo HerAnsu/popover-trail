@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react";
 import type { TrailEntry, PopoverPlacement } from "../types";
-import { usePopoverCollisionConfig } from "../context";
+import { usePopoverCollisionConfig, usePopoverStore } from "../context";
 
 /**
  * Options parameters for the `usePopoverGeometry` hook.
@@ -46,6 +46,7 @@ export function usePopoverGeometry({
   entry,
 }: UsePopoverGeometryOptions) {
   const globalCollision = usePopoverCollisionConfig();
+  const cascadeOffsetStep = usePopoverStore((state) => state.cascadeOffsetStep);
   const localCollision = entry?.collision;
 
   // Merge local overrides with global defaults
@@ -116,12 +117,12 @@ export function usePopoverGeometry({
       return entry.pinnedLayoutPos;
     }
     // Add slight horizontal cascade offset based on zIndex/nesting level to improve overlap aesthetics
-    const cascadeOffset = zIndex * 8;
+    const cascadeOffset = zIndex * cascadeOffsetStep;
     return {
       top: y ?? 0,
       left: (x ?? 0) + cascadeOffset,
     };
-  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex]);
+  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex, cascadeOffsetStep]);
 
   return {
     finalLayoutPos,
