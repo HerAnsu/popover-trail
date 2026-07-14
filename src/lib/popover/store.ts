@@ -177,27 +177,43 @@ function buildChildrenMap<TData>(
   return childrenMap;
 }
 
-function getDescendants<TData>(
-  parentKey: string,
+/**
+ * Unified pointer-based BFS descendants traverser.
+ *
+ * @template TData - The resolved data payload type.
+ * @param startKeys - The start keys for BFS traversal.
+ * @param floating - The array of floating popovers.
+ * @param trail - The array of trailing popovers.
+ * @param options - Traversal options (useOriginalParent / ignoreFloating).
+ * @returns Array of found descendant popovers.
+ */
+function traverseDescendants<TData>(
+  startKeys: readonly string[],
   floating: readonly TrailEntry<TData>[],
   trail: readonly TrailEntry<TData>[],
+  options: {
+    useOriginalParent?: boolean;
+    ignoreFloating?: boolean;
+  } = {},
 ): TrailEntry<TData>[] {
+  const { useOriginalParent = false, ignoreFloating = false } = options;
+  const childrenMap = buildChildrenMap(floating, trail, useOriginalParent);
   const descendants: TrailEntry<TData>[] = [];
-  const queue = [parentKey];
-  const visited = new Set<string>([parentKey]);
-  const floatingKeys = new Set(floating.map((e) => e.key));
-  const childrenMap = buildChildrenMap(floating, trail, false);
+  const queue = [...startKeys];
+  const visited = new Set<string>(startKeys);
+  const floatingKeys = ignoreFloating ? new Set(floating.map((e) => e.key)) : null;
 
-  while (queue.length > 0) {
-    const current = queue.shift();
-    if (current === undefined) break;
-
+  let head = 0;
+  while (head < queue.length) {
+    const current = queue[head++];
     const children = childrenMap.get(current);
     if (children) {
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
         if (!visited.has(child.key)) {
-          if (floatingKeys.has(child.key)) continue;
+          if (floatingKeys && floatingKeys.has(child.key)) {
+            continue;
+          }
           visited.add(child.key);
           descendants.push(child);
           queue.push(child.key);
@@ -208,13 +224,20 @@ function getDescendants<TData>(
   return descendants;
 }
 
+function getDescendants<TData>(
+  parentKey: string,
+  floating: readonly TrailEntry<TData>[],
+  trail: readonly TrailEntry<TData>[],
+): TrailEntry<TData>[] {
+  return traverseDescendants([parentKey], floating, trail, {
+    useOriginalParent: false,
+    ignoreFloating: true,
+  });
+}
+
 /**
  * Recursively retrieves all descendant keys (both trailing and floating) spawned by a parent popover key.
  * Traverses parent-child linkages via both current parentKey and originalParentKey.
- *
- * @remarks
- * Uses an optimized pointer-based BFS queue traversal to achieve linear O(N) complexity
- * and prevent memory overhead compared to shifting array elements.
  *
  * @template TData - The resolved data payload type.
  * @param parentKeys - The parent key(s) to start the descendant traversal.
@@ -227,28 +250,11 @@ function getAllDescendants<TData>(
   floating: readonly TrailEntry<TData>[],
   trail: readonly TrailEntry<TData>[],
 ): Set<string> {
-  const descendants = new Set<string>();
-  const queue = [...parentKeys];
-  const visited = new Set<string>(parentKeys);
-  const childrenMap = buildChildrenMap(floating, trail, true);
-
-  let head = 0;
-  while (head < queue.length) {
-    const current = queue[head++];
-
-    const children = childrenMap.get(current);
-    if (children) {
-      for (let i = 0; i < children.length; i++) {
-        const child = children[i];
-        if (!visited.has(child.key)) {
-          visited.add(child.key);
-          descendants.add(child.key);
-          queue.push(child.key);
-        }
-      }
-    }
-  }
-  return descendants;
+  const descendants = traverseDescendants(parentKeys, floating, trail, {
+    useOriginalParent: true,
+    ignoreFloating: false,
+  });
+  return new Set(descendants.map((d) => d.key));
 }
 
 /**
