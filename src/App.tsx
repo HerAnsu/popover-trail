@@ -1,3 +1,4 @@
+import { useState } from "react";
 import FocusLock from "react-focus-lock";
 import clsx from "clsx";
 import { DndContext, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
@@ -160,6 +161,7 @@ interface PopoverCardProps {
 }
 
 function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
+  const [branchInput, setBranchInput] = useState("");
   const { ref, style, isTop, actions, dragHandleProps, handlePinToggle } = usePopoverCard({
     entry,
     index,
@@ -264,6 +266,67 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
                   )}
                 </div>
               )}
+
+              <div
+                className="custom-branch-zone"
+                style={{
+                  marginTop: "1rem",
+                  paddingTop: "0.8rem",
+                  borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    color: "var(--text-secondary)",
+                    display: "block",
+                    marginBottom: "0.3rem",
+                  }}
+                >
+                  Extend with custom formula:
+                </span>
+                <div style={{ display: "flex", gap: "0.3rem" }}>
+                  <input
+                    type="text"
+                    placeholder="e.g. 5 * (2 + 1)"
+                    value={branchInput}
+                    onChange={(e) => setBranchInput(e.target.value)}
+                    style={{
+                      flex: 1,
+                      background: "rgba(0, 0, 0, 0.3)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: "4px",
+                      color: "#fff",
+                      padding: "0.3rem 0.5rem",
+                      fontSize: "0.75rem",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={!branchInput.trim()}
+                    style={{
+                      background: "rgba(99, 102, 241, 0.2)",
+                      border: "1px solid rgba(99, 102, 241, 0.4)",
+                      borderRadius: "4px",
+                      color: "#fff",
+                      padding: "0.3rem 0.6rem",
+                      fontSize: "0.75rem",
+                      cursor: branchInput.trim() ? "pointer" : "not-allowed",
+                      fontWeight: 600,
+                    }}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      void actions.openNestedWithResolver(branchInput.trim(), entry.key, {
+                        triggerRect: rect,
+                      });
+                      setBranchInput("");
+                    }}
+                  >
+                    Branch
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -312,13 +375,22 @@ function PopoverCanvas() {
 }
 
 function MainContent() {
-  const { clear } = usePopoverActions<MathData>();
+  const [customRoot, setCustomRoot] = useState("((1 + 2) * 3) / (4 - (5 ^ 2))");
+  const { clear, openRootWithResolver } = usePopoverActions<MathData>();
   const trail = usePopoverTrail();
   const floating = usePopoverFloating();
 
   const trig1 = usePopoverTrigger("2 * (3 + (15 / 5))");
   const trig2 = usePopoverTrigger("(4 ^ 2) - (2 * (5 + 1))");
   const trig3 = usePopoverTrigger("100 / (2 * (3 + (4 - 2)))");
+
+  const handleOpenCustomRoot = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!customRoot.trim()) return;
+    void openRootWithResolver(customRoot.trim(), {
+      currentTarget: e.currentTarget,
+      stopPropagation: () => {},
+    });
+  };
 
   const totalActive = trail.length + floating.length;
 
@@ -351,6 +423,49 @@ function MainContent() {
         <button type="button" className="btn-trigger" {...trig3} style={{ textAlign: "left" }}>
           🧮 Compute: 100 / (2 * (3 + (4 - 2)))
         </button>
+
+        <div
+          className="custom-root-zone"
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            width: "100%",
+            marginTop: "0.4rem",
+          }}
+        >
+          <input
+            type="text"
+            value={customRoot}
+            onChange={(e) => setCustomRoot(e.target.value)}
+            placeholder="Type custom math formula..."
+            style={{
+              flex: 1,
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              borderRadius: "8px",
+              color: "#fff",
+              padding: "0.6rem 0.8rem",
+              fontSize: "0.9rem",
+            }}
+          />
+          <button
+            type="button"
+            onClick={handleOpenCustomRoot}
+            disabled={!customRoot.trim()}
+            style={{
+              background: "indigo",
+              border: "none",
+              borderRadius: "8px",
+              color: "#fff",
+              padding: "0.6rem 1.2rem",
+              fontSize: "0.9rem",
+              cursor: customRoot.trim() ? "pointer" : "not-allowed",
+              fontWeight: 600,
+            }}
+          >
+            Compute
+          </button>
+        </div>
       </div>
 
       {totalActive > 0 && (
