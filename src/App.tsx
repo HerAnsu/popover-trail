@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import FocusLock from "react-focus-lock";
 import clsx from "clsx";
 import { DndContext, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
@@ -160,7 +160,7 @@ interface PopoverCardProps {
   isPinned: boolean;
 }
 
-function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
+const PopoverCard = memo(({ entry, index, isPinned }: PopoverCardProps) => {
   const [branchInput, setBranchInput] = useState("");
   const { ref, style, isTop, actions, dragHandleProps, handlePinToggle } = usePopoverCard({
     entry,
@@ -174,12 +174,13 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
       ref={ref}
       style={style}
       role="dialog"
+      aria-labelledby={`title-${entry.key}`}
       className={clsx("popover-card", isTop && "topmost", isPinned && "pinned")}
       onMouseDown={() => actions.bringToFront(entry.key)}
     >
       <FocusLock disabled={!isTop} returnFocus>
         <div className="popover-header" {...dragHandleProps}>
-          <span className="popover-title">
+          <span id={`title-${entry.key}`} className="popover-title">
             {entry.isLoading ? "Evaluating..." : entry.data?.title}
           </span>
           <div className="popover-actions">
@@ -213,8 +214,29 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
               <span>Parsing expression...</span>
             </div>
           ) : entry.error ? (
-            <div style={{ color: "#ef4444" }}>
-              <strong>Error:</strong> {entry.error.message}
+            <div
+              style={{ color: "#ef4444", display: "flex", flexDirection: "column", gap: "0.5rem" }}
+            >
+              <div>
+                <strong>Error:</strong> {entry.error.message}
+              </div>
+              <button
+                type="button"
+                className="btn-retry"
+                onClick={() => actions.retryPopover(entry.key)}
+                style={{
+                  alignSelf: "flex-start",
+                  padding: "0.2rem 0.6rem",
+                  fontSize: "0.8rem",
+                  borderRadius: "4px",
+                  background: "rgba(239, 68, 68, 0.2)",
+                  border: "1px solid #ef4444",
+                  color: "#f87171",
+                  cursor: "pointer",
+                }}
+              >
+                Retry
+              </button>
             </div>
           ) : (
             <div>
@@ -333,7 +355,9 @@ function PopoverCard({ entry, index, isPinned }: PopoverCardProps) {
       </FocusLock>
     </div>
   );
-}
+});
+
+PopoverCard.displayName = "PopoverCard";
 
 function PopoverCanvas() {
   const trail = usePopoverTrail<MathData>();
