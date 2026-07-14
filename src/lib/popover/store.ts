@@ -586,6 +586,16 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
   const activeControllers = new Map<string, AbortController>();
   const hoverCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+  const abortControllersForKeys = (keys: Iterable<string>) => {
+    for (const key of keys) {
+      const controller = activeControllers.get(key);
+      if (controller) {
+        controller.abort();
+        activeControllers.delete(key);
+      }
+    }
+  };
+
   return createStore<PopoverStore<TData, TContext>>((rawSet, get) => {
     const set = (
       patchOrFn:
@@ -797,13 +807,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           }
           const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
 
-          for (const key of removedKeys) {
-            const controller = activeControllers.get(key);
-            if (controller) {
-              controller.abort();
-              activeControllers.delete(key);
-            }
-          }
+          abortControllersForKeys(removedKeys);
         }
         set((state) => closeFromState(state, index));
       },
@@ -847,13 +851,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         }
         const removedKeys = new Set<string>([...trailKeys, ...descendants]);
 
-        for (const key of removedKeys) {
-          const controller = activeControllers.get(key);
-          if (controller) {
-            controller.abort();
-            activeControllers.delete(key);
-          }
-        }
+        abortControllersForKeys(removedKeys);
 
         const nextFloating = floating.filter((e) => !removedKeys.has(e.key));
         const nextPinnedStates = { ...pinnedStates };
