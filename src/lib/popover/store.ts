@@ -129,6 +129,24 @@ function getNextZIndexOrder(
 }
 
 /**
+ * Helper to collect all active popover keys from floating and trail arrays.
+ *
+ * @template TData - The resolved data payload type.
+ * @param floating - The array of floating popovers.
+ * @param trail - The array of trailing popovers.
+ * @returns A Set containing all active popover keys.
+ */
+function getActiveKeys<TData>(
+  floating: readonly TrailEntry<TData>[],
+  trail: readonly TrailEntry<TData>[],
+): Set<string> {
+  const activeKeys = new Set<string>();
+  floating.forEach((e) => activeKeys.add(e.key));
+  trail.forEach((e) => activeKeys.add(e.key));
+  return activeKeys;
+}
+
+/**
  * Builds a Map grouping popovers by their parent key IDs.
  *
  * @template TData - The resolved data payload type.
@@ -300,9 +318,7 @@ function getCleanupStatePatch<TData, TContext>(
   pinnedStates: Record<string, boolean>,
   nestedHydrationRequestCounters: Record<string, number>,
 ): Partial<PopoverStateData<TData, TContext>> {
-  const activeKeys = new Set<string>();
-  floating.forEach((e) => activeKeys.add(e.key));
-  trail.forEach((e) => activeKeys.add(e.key));
+  const activeKeys = getActiveKeys(floating, trail);
 
   const nextOffsets = filterRecord(offsets, activeKeys);
   const nextZIndexOrder = zIndexOrder.filter((k) => activeKeys.has(k));
@@ -353,9 +369,7 @@ function openRootState<TData, TContext>(
   const isSameOwner = state.ownerId === ownerId;
   const nextTrail = isSameOwner ? [...state.trail, nextEntry] : [nextEntry];
 
-  const activeKeys = new Set<string>();
-  state.floating.forEach((e) => activeKeys.add(e.key));
-  nextTrail.forEach((e) => activeKeys.add(e.key));
+  const activeKeys = getActiveKeys(state.floating, nextTrail);
 
   return {
     ownerId,
@@ -409,9 +423,7 @@ function pushNestedState<TData, TContext>(
     nextTrail = state.trail.slice(0, trailIndex + 1).concat(finalEntry);
   }
 
-  const activeKeys = new Set<string>();
-  state.floating.forEach((e) => activeKeys.add(e.key));
-  nextTrail.forEach((e) => activeKeys.add(e.key));
+  const activeKeys = getActiveKeys(state.floating, nextTrail);
 
   return {
     trail: nextTrail,
