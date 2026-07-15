@@ -1,5 +1,5 @@
 /* eslint-disable react/only-export-components */
-import { useCallback, type ReactNode } from 'react';
+import { useCallback, useRef, type ReactNode } from 'react';
 import { useDraggable, DndContext, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core';
 import { usePopoverCard } from './hooks/usePopoverCard';
 import { usePopoverDragAndDrop } from './hooks/useDragAndDrop';
@@ -86,15 +86,25 @@ export function usePopoverDraggableCard({
     zIndex: (card.style.zIndex as number) - 1000,
   });
 
+  const domRef = useRef<HTMLDivElement | null>(null);
+
   const setCombinedRef = useCallback(
     (node: HTMLDivElement | null) => {
       card.ref(node);
+      domRef.current = node;
       if (isDragAllowed) {
         setNodeRef(node);
       }
     },
     [card, setNodeRef, isDragAllowed],
   );
+
+  const handlePinToggle = useCallback(() => {
+    if (domRef.current) {
+      const currentRect = domRef.current.getBoundingClientRect();
+      card.actions.togglePin(entry.key, currentRect);
+    }
+  }, [card.actions, entry.key]);
 
   return {
     ...card,
@@ -108,6 +118,7 @@ export function usePopoverDraggableCard({
           style: { cursor: isDragging ? 'grabbing' : 'grab' },
         }
       : {},
+    handlePinToggle,
   };
 }
 

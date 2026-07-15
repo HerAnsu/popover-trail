@@ -123,13 +123,6 @@ export function usePopoverCard({
     [setFloating],
   );
 
-  const handlePinToggle = useCallback(() => {
-    if (ref.current) {
-      const currentRect = ref.current.getBoundingClientRect();
-      actions.togglePin(entry.key, currentRect);
-    }
-  }, [actions, entry.key]);
-
   const onMouseEnter = useCallback(() => {
     actions.hoverEnter(entry.key);
   }, [actions, entry.key]);
@@ -201,7 +194,6 @@ export function usePopoverCard({
     isDragging: false,
     actions,
     dragHandleProps: {},
-    handlePinToggle,
     onMouseEnter,
     onMouseLeave,
     onKeyDown,
