@@ -104,6 +104,12 @@ export interface TrailEntry<TData = unknown> {
   maxTiltAngle?: number;
   /** Custom spring tilt speed sensitivity override. */
   tiltSensitivity?: number;
+  /** Custom lock axis constraints for dragging ('x' | 'y' | 'both'). */
+  dragAxis?: 'x' | 'y' | 'both';
+  /** Custom spring tilt friction coefficient (default: 0.95). */
+  tiltFriction?: number;
+  /** Custom spring tilt inertia decay coefficient (default: 0.82). */
+  tiltDecay?: number;
 }
 
 /**
@@ -427,6 +433,12 @@ export interface OpenRootOptions {
   maxTiltAngle?: number;
   /** Custom spring tilt speed sensitivity override. */
   tiltSensitivity?: number;
+  /** Custom lock axis constraints for dragging ('x' | 'y' | 'both'). */
+  dragAxis?: 'x' | 'y' | 'both';
+  /** Custom spring tilt friction coefficient (default: 0.95). */
+  tiltFriction?: number;
+  /** Custom spring tilt inertia decay coefficient (default: 0.82). */
+  tiltDecay?: number;
 }
 
 /**
@@ -465,4 +477,10 @@ export interface OpenNestedOptions {
   maxTiltAngle?: number;
   /** Custom spring tilt speed sensitivity override. */
   tiltSensitivity?: number;
+  /** Custom lock axis constraints for dragging ('x' | 'y' | 'both'). */
+  dragAxis?: 'x' | 'y' | 'both';
+  /** Custom spring tilt friction coefficient (default: 0.95). */
+  tiltFriction?: number;
+  /** Custom spring tilt inertia decay coefficient (default: 0.82). */
+  tiltDecay?: number;
 }

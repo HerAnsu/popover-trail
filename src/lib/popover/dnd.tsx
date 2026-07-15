@@ -67,6 +67,9 @@ export function usePopoverDraggableCard({
   const tiltEnabled = entry.enableTilt ?? enableTilt;
   const maxTilt = entry.maxTiltAngle ?? maxTiltAngle;
   const sensitivity = entry.tiltSensitivity ?? tiltSensitivity;
+  const axis = entry.dragAxis ?? 'both';
+  const friction = entry.tiltFriction ?? 0.95;
+  const decay = entry.tiltDecay ?? 0.82;
 
   const { rotation, dragX, dragY } = usePopoverDragAndDrop({
     isDragging: isDragAllowed ? isDragging : false,
@@ -74,6 +77,9 @@ export function usePopoverDraggableCard({
     enableTilt: tiltEnabled,
     maxTiltAngle: maxTilt,
     tiltSensitivity: sensitivity,
+    dragAxis: axis,
+    tiltFriction: friction,
+    tiltDecay: decay,
   });
 
   // 3. Compile styles using the compiler utility with active dragging offsets and rotation angles
