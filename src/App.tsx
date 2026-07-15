@@ -195,6 +195,7 @@ const PopoverCard = memo(
     });
 
     const leftTrigger = usePopoverNestedTrigger(entry.data?.leftExpr ?? '', entry.key, {
+      placement: 'left',
       hover: {
         enabled: hoverEnabled,
         openDelay: hoverOpenDelay,
@@ -206,6 +207,7 @@ const PopoverCard = memo(
     });
 
     const rightTrigger = usePopoverNestedTrigger(entry.data?.rightExpr ?? '', entry.key, {
+      placement: 'right',
       hover: {
         enabled: hoverEnabled,
         openDelay: hoverOpenDelay,

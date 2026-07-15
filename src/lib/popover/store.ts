@@ -717,6 +717,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         hover: options?.hover,
         ariaDescribedby: options?.ariaDescribedby,
         allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
+        placement: options?.placement,
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {

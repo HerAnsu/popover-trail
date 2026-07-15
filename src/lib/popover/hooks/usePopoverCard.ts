@@ -89,7 +89,7 @@ export function usePopoverCard({
   const { finalLayoutPos, setFloating } = usePopoverGeometry({
     id: entry.key,
     anchorRect: entry.rect,
-    placement,
+    placement: entry.placement ?? placement,
     zIndex: index,
     isDragging: false,
     isPinned,

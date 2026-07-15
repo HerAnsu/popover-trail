@@ -84,6 +84,8 @@ export interface TrailEntry<TData = unknown> {
 
   /** True to allow dragging even when the popover is unpinned/trailing. */
   allowDragWhenUnpinned?: boolean;
+  /** Preferred layout placement direction relative to trigger. */
+  placement?: PopoverPlacement;
 }
 
 /**
@@ -362,6 +364,8 @@ export interface OpenRootOptions {
 
   /** True to allow dragging even when the popover is unpinned/trailing. */
   allowDragWhenUnpinned?: boolean;
+  /** Preferred layout placement direction relative to trigger. */
+  placement?: PopoverPlacement;
 }
 
 /**
@@ -382,4 +386,6 @@ export interface OpenNestedOptions {
 
   /** True to allow dragging even when the popover is unpinned/trailing. */
   allowDragWhenUnpinned?: boolean;
+  /** Preferred layout placement direction relative to trigger. */
+  placement?: PopoverPlacement;
 }
