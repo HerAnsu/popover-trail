@@ -79,6 +79,9 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
 
   /** Duration of the exit transition in milliseconds before the card is unmounted (default: 0). */
   exitTransitionDuration?: number;
+
+  /** Default distance gap offset override from trigger in pixels (default: 8px). */
+  defaultOffset?: number;
 }
 
 /**
@@ -108,6 +111,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   debug = false,
   cascadeOffsetStep = 8,
   exitTransitionDuration = 0,
+  defaultOffset = 8,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() =>
@@ -133,6 +137,11 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   useEffect(() => {
     store.getState().setExitTransitionDuration(Number(exitTransitionDuration));
   }, [exitTransitionDuration, store]);
+
+  // Synchronize defaultOffset reactively when the prop changes
+  useEffect(() => {
+    store.getState().setDefaultOffset(Number(defaultOffset));
+  }, [defaultOffset, store]);
 
   // Synchronize context reactively when the prop changes
   useEffect(() => {

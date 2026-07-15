@@ -88,6 +88,10 @@ export interface TrailEntry<TData = unknown> {
   placement?: PopoverPlacement;
   /** Transition lifecycle state for animating mount/exit states. */
   transitionStatus?: 'mounting' | 'mounted' | 'unmounting';
+  /** Custom distance gap offset from the trigger in pixels. */
+  offset?: number;
+  /** Custom exit transition duration override in milliseconds. */
+  exitTransitionDuration?: number;
 }
 
 /**
@@ -173,6 +177,8 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   cascadeOffsetStep: number;
   /** Duration in milliseconds of the card exit animation before it is removed from DOM (default: 0). */
   exitTransitionDuration: number;
+  /** Default distance gap offset from the trigger in pixels (default: 8px). */
+  defaultOffset: number;
 }
 
 /**
@@ -270,6 +276,9 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
 
   /** Sets the exit transition duration. */
   setExitTransitionDuration: (duration: number) => void;
+
+  /** Sets the default distance gap offset. */
+  setDefaultOffset: (offset: number) => void;
 }
 
 /**
@@ -379,6 +388,10 @@ export interface OpenRootOptions {
   allowDragWhenUnpinned?: boolean;
   /** Preferred layout placement direction relative to trigger. */
   placement?: PopoverPlacement;
+  /** Custom distance gap offset override from trigger in pixels. */
+  offset?: number;
+  /** Custom exit transition duration override in milliseconds. */
+  exitTransitionDuration?: number;
 }
 
 /**
@@ -401,4 +414,8 @@ export interface OpenNestedOptions {
   allowDragWhenUnpinned?: boolean;
   /** Preferred layout placement direction relative to trigger. */
   placement?: PopoverPlacement;
+  /** Custom distance gap offset override from trigger in pixels. */
+  offset?: number;
+  /** Custom exit transition duration override in milliseconds. */
+  exitTransitionDuration?: number;
 }

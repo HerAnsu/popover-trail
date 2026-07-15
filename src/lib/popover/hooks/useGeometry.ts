@@ -47,6 +47,7 @@ export function usePopoverGeometry({
 }: UsePopoverGeometryOptions) {
   const globalCollision = usePopoverCollisionConfig();
   const cascadeOffsetStep = usePopoverStore((state) => state.cascadeOffsetStep);
+  const defaultOffset = usePopoverStore((state) => state.defaultOffset);
   const localCollision = entry?.collision;
 
   // Merge local overrides with global defaults
@@ -87,7 +88,7 @@ export function usePopoverGeometry({
     placement: placement ?? 'bottom',
     whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
     middleware: [
-      offset(8), // Gap distance from trigger
+      offset(entry?.offset ?? defaultOffset ?? 8), // Gap distance from trigger
       flip({
         boundary: boundaryOption,
         padding: padding ?? undefined,

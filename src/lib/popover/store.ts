@@ -719,6 +719,8 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
         placement: options?.placement,
         transitionStatus: 'mounting',
+        offset: options?.offset,
+        exitTransitionDuration: options?.exitTransitionDuration,
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
@@ -842,8 +844,16 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           // 1. Abort controllers immediately
           abortControllersForKeys(removedKeys);
 
-          const { exitTransitionDuration } = get();
-          if (options?.transition && exitTransitionDuration > 0) {
+          const { exitTransitionDuration: globalDuration } = get();
+          let maxDuration = globalDuration;
+          for (const key of removedKeys) {
+            const entry = [...floating, ...trail].find((e) => e.key === key);
+            if (entry?.exitTransitionDuration !== undefined) {
+              maxDuration = Math.max(maxDuration, entry.exitTransitionDuration);
+            }
+          }
+
+          if (options?.transition && maxDuration > 0) {
             // 2. Mark entries as unmounting in the state
             set((state) => {
               const update = (e: TrailEntry<TData>) =>
@@ -884,7 +894,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
                   ),
                 };
               });
-            }, exitTransitionDuration); // exit transition window
+            }, maxDuration); // exit transition window
           } else {
             // Instant synchronous close
             set((state) => {
@@ -1170,6 +1180,11 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           set({ exitTransitionDuration });
         }
       },
+      setDefaultOffset: (defaultOffset) => {
+        if (get().defaultOffset !== defaultOffset) {
+          set({ defaultOffset });
+        }
+      },
     };
 
     const remainingActions = { ...actions } as Record<string, unknown>;
@@ -1186,6 +1201,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       'setDebug',
       'setCascadeOffsetStep',
       'setExitTransitionDuration',
+      'setDefaultOffset',
     ];
     for (const key of internalKeys) {
       delete remainingActions[key];
@@ -1211,6 +1227,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       debug: false,
       cascadeOffsetStep: 8,
       exitTransitionDuration: 0,
+      defaultOffset: 8,
 
       ...actions,
       actions: remainingActions as unknown as PopoverStore<TData, TContext>['actions'],

@@ -197,6 +197,7 @@ const PopoverCard = memo(
 
     const leftTrigger = usePopoverNestedTrigger(entry.data?.leftExpr ?? '', entry.key, {
       placement: 'left',
+      offset: 16, // Custom gap override (16px instead of default 8px)
       hover: {
         enabled: hoverEnabled,
         openDelay: hoverOpenDelay,
@@ -209,6 +210,7 @@ const PopoverCard = memo(
 
     const rightTrigger = usePopoverNestedTrigger(entry.data?.rightExpr ?? '', entry.key, {
       placement: 'right',
+      exitTransitionDuration: 600, // Custom exit transition duration override (600ms instead of 300ms)
       hover: {
         enabled: hoverEnabled,
         openDelay: hoverOpenDelay,
@@ -238,7 +240,12 @@ const PopoverCard = memo(
     return (
       <div
         ref={ref}
-        style={style}
+        style={{
+          ...style,
+          ...(entry.exitTransitionDuration !== undefined
+            ? { transitionDuration: `${entry.exitTransitionDuration}ms` }
+            : {}),
+        }}
         role="dialog"
         aria-labelledby={`title-${entry.key}`}
         aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
