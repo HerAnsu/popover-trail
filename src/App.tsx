@@ -9,6 +9,7 @@ import {
   PopoverPortal,
   usePopoverTrigger,
   usePopoverNestedTrigger,
+  useIsPopoverOpen,
   type PopoverResolver,
   type TrailEntry,
 } from './lib/popover';
@@ -241,7 +242,12 @@ const PopoverCard = memo(
         role="dialog"
         aria-labelledby={`title-${entry.key}`}
         aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
-        className={clsx('popover-card', isTop && 'topmost', isPinned && 'pinned')}
+        className={clsx(
+          'popover-card',
+          isTop && 'topmost',
+          isPinned && 'pinned',
+          entry.transitionStatus,
+        )}
         onMouseDown={() => actions.bringToFront(entry.key)}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
@@ -268,7 +274,7 @@ const PopoverCard = memo(
               </button>
               <button
                 type="button"
-                onClick={() => actions.closeFrom(index)}
+                onClick={() => actions.closeFrom(index, { transition: true })}
                 onPointerDown={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
                 className="btn-action"
@@ -480,6 +486,10 @@ function MainContent({
     allowDragWhenUnpinned,
     ariaDescribedby: 'Mathematical evaluation details for 100 / (2 * (3 + (4 - 2)))',
   });
+
+  const isTrig1Open = useIsPopoverOpen('2 * (3 + (15 / 5))');
+  const isTrig2Open = useIsPopoverOpen('(4 ^ 2) - (2 * (5 + 1))');
+  const isTrig3Open = useIsPopoverOpen('100 / (2 * (3 + (4 - 2)))');
 
   const handleOpenCustomRoot = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!customRoot.trim()) return;
@@ -712,13 +722,25 @@ function MainContent({
           width: '100%',
           maxWidth: '480px',
         }}>
-        <button type="button" className="btn-trigger" {...trig1} style={{ textAlign: 'left' }}>
+        <button
+          type="button"
+          className={clsx('btn-trigger', { active: isTrig1Open })}
+          {...trig1}
+          style={{ textAlign: 'left' }}>
           🧮 Compute: 2 * (3 + (15 / 5))
         </button>
-        <button type="button" className="btn-trigger" {...trig2} style={{ textAlign: 'left' }}>
+        <button
+          type="button"
+          className={clsx('btn-trigger', { active: isTrig2Open })}
+          {...trig2}
+          style={{ textAlign: 'left' }}>
           🧮 Compute: (4 ^ 2) - (2 * (5 + 1))
         </button>
-        <button type="button" className="btn-trigger" {...trig3} style={{ textAlign: 'left' }}>
+        <button
+          type="button"
+          className={clsx('btn-trigger', { active: isTrig3Open })}
+          {...trig3}
+          style={{ textAlign: 'left' }}>
           🧮 Compute: 100 / (2 * (3 + (4 - 2)))
         </button>
 
@@ -828,7 +850,8 @@ export default function App() {
       clickOutside={{ enabled: true, ignoreClass: 'btn-trigger' }}
       enableArrowNavigation={arrowNavEnabled}
       debug={debugEnabled}
-      cascadeOffsetStep={cascadeOffsetStep}>
+      cascadeOffsetStep={cascadeOffsetStep}
+      exitTransitionDuration={300}>
       <MainContent
         hoverEnabled={hoverEnabled}
         setHoverEnabled={setHoverEnabled}

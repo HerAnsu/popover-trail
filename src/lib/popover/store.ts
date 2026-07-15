@@ -718,6 +718,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         ariaDescribedby: options?.ariaDescribedby,
         allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
         placement: options?.placement,
+        transitionStatus: 'mounting',
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
@@ -819,7 +820,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         });
       },
 
-      closeFrom: (index) => {
+      closeFrom: (index, options) => {
         const { floating, trail, closePinnedDescendants } = get();
         const totalCount = floating.length + trail.length;
         if (index >= 0 && index < totalCount) {
@@ -838,9 +839,76 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           }
           const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
 
+          // 1. Abort controllers immediately
           abortControllersForKeys(removedKeys);
+
+          const { exitTransitionDuration } = get();
+          if (options?.transition && exitTransitionDuration > 0) {
+            // 2. Mark entries as unmounting in the state
+            set((state) => {
+              const update = (e: TrailEntry<TData>) =>
+                removedKeys.has(e.key) ? { ...e, transitionStatus: 'unmounting' as const } : e;
+              return {
+                trail: state.trail.map(update),
+                floating: state.floating.map(update),
+              };
+            });
+
+            // 3. Defer actual array removal to let exit transition finish
+            setTimeout(() => {
+              set((state) => {
+                const nextFloating = state.floating.filter(
+                  (e) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting',
+                );
+                const nextTrail = state.trail.filter(
+                  (e) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting',
+                );
+                const nextPinnedStates = { ...state.pinnedStates };
+                for (const k of removedKeys) {
+                  const exists =
+                    nextFloating.some((e) => e.key === k) || nextTrail.some((e) => e.key === k);
+                  if (!exists) {
+                    nextPinnedStates[k] = false;
+                  }
+                }
+                return {
+                  floating: nextFloating,
+                  trail: nextTrail,
+                  ...getCleanupStatePatch<TData, TContext>(
+                    nextFloating,
+                    nextTrail,
+                    state.offsets,
+                    state.zIndexOrder,
+                    nextPinnedStates,
+                    state.nestedHydrationRequestCounters,
+                  ),
+                };
+              });
+            }, exitTransitionDuration); // exit transition window
+          } else {
+            // Instant synchronous close
+            set((state) => {
+              const nextFloating = state.floating.filter((e) => !removedKeys.has(e.key));
+              const nextTrail = state.trail.filter((e) => !removedKeys.has(e.key));
+              const nextPinnedStates = { ...state.pinnedStates };
+              for (const k of removedKeys) {
+                nextPinnedStates[k] = false;
+              }
+              return {
+                floating: nextFloating,
+                trail: nextTrail,
+                ...getCleanupStatePatch<TData, TContext>(
+                  nextFloating,
+                  nextTrail,
+                  state.offsets,
+                  state.zIndexOrder,
+                  nextPinnedStates,
+                  state.nestedHydrationRequestCounters,
+                ),
+              };
+            });
+          }
         }
-        set((state) => closeFromState(state, index));
       },
 
       updateOffset: (key, x, y) => {
@@ -1041,11 +1109,11 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           set({ collisionConfig });
         }
       },
-      closeByKey: (key) => {
+      closeByKey: (key, options) => {
         const { floating, trail } = get();
         const index = findEntryIndex(floating, trail, key);
         if (index !== -1) {
-          actions.closeFrom(index);
+          actions.closeFrom(index, options);
         }
       },
       setEnableArrowNavigation: (enableArrowNavigation) => {
@@ -1077,7 +1145,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       hoverLeave: (key, delay = 300) => {
         clearHoverTimer(key);
         const newTimer = setTimeout(() => {
-          actions.closeByKey(key);
+          actions.closeByKey(key, { transition: true });
           hoverCloseTimers.delete(key);
         }, delay);
         hoverCloseTimers.set(key, newTimer);
@@ -1085,6 +1153,21 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       setCascadeOffsetStep: (cascadeOffsetStep) => {
         if (get().cascadeOffsetStep !== cascadeOffsetStep) {
           set({ cascadeOffsetStep });
+        }
+      },
+      setTransitionStatus: (key, status) => {
+        set((state) => {
+          const update = (e: TrailEntry<TData>) =>
+            e.key === key ? { ...e, transitionStatus: status } : e;
+          return {
+            trail: state.trail.map(update),
+            floating: state.floating.map(update),
+          };
+        });
+      },
+      setExitTransitionDuration: (exitTransitionDuration) => {
+        if (get().exitTransitionDuration !== exitTransitionDuration) {
+          set({ exitTransitionDuration });
         }
       },
     };
@@ -1102,6 +1185,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       'setEnableArrowNavigation',
       'setDebug',
       'setCascadeOffsetStep',
+      'setExitTransitionDuration',
     ];
     for (const key of internalKeys) {
       delete remainingActions[key];
@@ -1126,6 +1210,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       enableArrowNavigation: false,
       debug: false,
       cascadeOffsetStep: 8,
+      exitTransitionDuration: 0,
 
       ...actions,
       actions: remainingActions as unknown as PopoverStore<TData, TContext>['actions'],

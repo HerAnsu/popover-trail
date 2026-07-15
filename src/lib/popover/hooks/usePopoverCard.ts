@@ -105,6 +105,16 @@ export function usePopoverCard({
   const trail = usePopoverStore((state) => state.trail);
   const floating = usePopoverStore((state) => state.floating);
 
+  // Handle transition state automatically (mounting -> mounted)
+  useEffect(() => {
+    if (entry.transitionStatus === 'mounting') {
+      const timer = setTimeout(() => {
+        actions.setTransitionStatus(entry.key, 'mounted');
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [entry.key, entry.transitionStatus, actions]);
+
   // Compile styles using the compiler utility (static offsets only)
   const style = getPopoverStyles({
     finalLayoutPos,

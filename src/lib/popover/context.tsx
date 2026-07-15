@@ -76,6 +76,9 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
 
   /** Horizontal offset step applied per level of the cascade trail (default: 8px). */
   cascadeOffsetStep?: number;
+
+  /** Duration of the exit transition in milliseconds before the card is unmounted (default: 0). */
+  exitTransitionDuration?: number;
 }
 
 /**
@@ -104,6 +107,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   enableArrowNavigation = true,
   debug = false,
   cascadeOffsetStep = 8,
+  exitTransitionDuration = 0,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() =>
@@ -124,6 +128,11 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   useEffect(() => {
     store.getState().setCascadeOffsetStep(Number(cascadeOffsetStep));
   }, [cascadeOffsetStep, store]);
+
+  // Synchronize exitTransitionDuration reactively when the prop changes
+  useEffect(() => {
+    store.getState().setExitTransitionDuration(Number(exitTransitionDuration));
+  }, [exitTransitionDuration, store]);
 
   // Synchronize context reactively when the prop changes
   useEffect(() => {
@@ -364,7 +373,16 @@ export function usePopoverContext<TContext = unknown>() {
 export function usePopoverCollisionConfig() {
   return usePopoverStore((state) => state.collisionConfig);
 }
-
+export function useIsPopoverOpen(key: string): boolean {
+  return usePopoverStore<unknown, unknown, boolean>(
+    useCallback(
+      (state) =>
+        state.trail.some((e) => e.key === key) ||
+        state.floating.some((e) => e.key === key),
+      [key],
+    ),
+  );
+}
 /**
  * Hook to retrieve public popover store action dispatch methods.
  *

@@ -86,6 +86,8 @@ export interface TrailEntry<TData = unknown> {
   allowDragWhenUnpinned?: boolean;
   /** Preferred layout placement direction relative to trigger. */
   placement?: PopoverPlacement;
+  /** Transition lifecycle state for animating mount/exit states. */
+  transitionStatus?: 'mounting' | 'mounted' | 'unmounting';
 }
 
 /**
@@ -169,6 +171,8 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
 
   /** Horizontal offset step applied per level of the cascade trail (default: 8px). */
   cascadeOffsetStep: number;
+  /** Duration in milliseconds of the card exit animation before it is removed from DOM (default: 0). */
+  exitTransitionDuration: number;
 }
 
 /**
@@ -200,7 +204,7 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   bringToFront: (key: string) => void;
 
   /** Closes all popovers at and after a specific virtual index. */
-  closeFrom: (index: number) => void;
+  closeFrom: (index: number, options?: { transition?: boolean }) => void;
 
   /** Updates coordinate offsets from drag events. */
   updateOffset: (key: string, x: number, y: number) => void;
@@ -241,7 +245,7 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   setCollisionConfig: (config: CollisionConfig | null) => void;
 
   /** Closes exactly the popover matching the specified key along with all its descendants. */
-  closeByKey: (key: string) => void;
+  closeByKey: (key: string, options?: { transition?: boolean }) => void;
 
   /** Sets whether keyboard arrow navigation is enabled. */
   setEnableArrowNavigation: (enable: boolean) => void;
@@ -257,6 +261,15 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
 
   /** Sets the horizontal stepping shift per nesting level. */
   setCascadeOffsetStep: (step: number) => void;
+
+  /** Sets the transition lifecycle status of a specific popover card. */
+  setTransitionStatus: (
+    key: string,
+    status: 'mounting' | 'mounted' | 'unmounting',
+  ) => void;
+
+  /** Sets the exit transition duration. */
+  setExitTransitionDuration: (duration: number) => void;
 }
 
 /**

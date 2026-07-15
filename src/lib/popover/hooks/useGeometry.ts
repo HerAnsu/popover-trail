@@ -83,7 +83,7 @@ export function usePopoverGeometry({
   }, [anchorRect]);
 
   // 2. Configure useFloating positioning middleware with autoUpdate
-  const { refs, x, y, update } = useFloating({
+  const { refs, x, y, update, placement: resolvedPlacement } = useFloating({
     placement: placement ?? 'bottom',
     whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
     middleware: [
@@ -118,11 +118,12 @@ export function usePopoverGeometry({
     }
     // Add slight horizontal cascade offset based on zIndex/nesting level to improve overlap aesthetics
     const cascadeOffset = zIndex * cascadeOffsetStep;
+    const isLeftPlacement = resolvedPlacement.startsWith('left');
     return {
       top: y ?? 0,
-      left: (x ?? 0) + cascadeOffset,
+      left: (x ?? 0) + (isLeftPlacement ? -cascadeOffset : cascadeOffset),
     };
-  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex, cascadeOffsetStep]);
+  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex, cascadeOffsetStep, resolvedPlacement]);
 
   return {
     finalLayoutPos,
