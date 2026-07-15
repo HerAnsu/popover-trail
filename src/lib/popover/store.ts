@@ -721,6 +721,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         transitionStatus: 'mounting',
         offset: options?.offset,
         exitTransitionDuration: options?.exitTransitionDuration,
+        baseZIndex: options?.baseZIndex,
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
@@ -996,7 +997,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
 
       // Async/Hydration Actions
       openRootWithResolver: async (keyOrName, anchorEvent, options) => {
-        anchorEvent.stopPropagation();
+        anchorEvent.stopPropagation?.();
         const { ownerId, trail } = get();
         const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
 
@@ -1005,8 +1006,14 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           return;
         }
 
-        const anchorElement = anchorEvent.currentTarget;
-        const anchorRect = anchorElement.getBoundingClientRect();
+        const anchorElement =
+          'currentTarget' in anchorEvent ? anchorEvent.currentTarget : null;
+        const anchorRect =
+          'currentTarget' in anchorEvent && anchorEvent.currentTarget
+            ? anchorEvent.currentTarget.getBoundingClientRect()
+            : 'getBoundingClientRect' in anchorEvent
+            ? anchorEvent.getBoundingClientRect()
+            : new DOMRect(0, 0, 0, 0);
 
         // Save anchor details immediately
         set({ anchorElement, anchorRect });
@@ -1185,6 +1192,11 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           set({ defaultOffset });
         }
       },
+      setBaseZIndex: (baseZIndex) => {
+        if (get().baseZIndex !== baseZIndex) {
+          set({ baseZIndex });
+        }
+      },
     };
 
     const remainingActions = { ...actions } as Record<string, unknown>;
@@ -1202,6 +1214,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       'setCascadeOffsetStep',
       'setExitTransitionDuration',
       'setDefaultOffset',
+      'setBaseZIndex',
     ];
     for (const key of internalKeys) {
       delete remainingActions[key];
@@ -1228,6 +1241,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       cascadeOffsetStep: 8,
       exitTransitionDuration: 0,
       defaultOffset: 8,
+      baseZIndex: 1000,
 
       ...actions,
       actions: remainingActions as unknown as PopoverStore<TData, TContext>['actions'],

@@ -82,6 +82,9 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
 
   /** Default distance gap offset override from trigger in pixels (default: 8px). */
   defaultOffset?: number;
+
+  /** Base z-index offset applied to all popover layers (default: 1000). */
+  baseZIndex?: number;
 }
 
 /**
@@ -112,6 +115,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   cascadeOffsetStep = 8,
   exitTransitionDuration = 0,
   defaultOffset = 8,
+  baseZIndex = 1000,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() =>
@@ -142,6 +146,11 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   useEffect(() => {
     store.getState().setDefaultOffset(Number(defaultOffset));
   }, [defaultOffset, store]);
+
+  // Synchronize baseZIndex reactively when the prop changes
+  useEffect(() => {
+    store.getState().setBaseZIndex(Number(baseZIndex));
+  }, [baseZIndex, store]);
 
   // Synchronize context reactively when the prop changes
   useEffect(() => {
@@ -582,7 +591,7 @@ export function PopoverPortal({
   /** React elements to portal. */
   children: ReactNode;
   /** Optional custom DOM element target. Defaults to document.body. */
-  container?: HTMLElement;
+  container?: HTMLElement | (() => HTMLElement | null) | React.RefObject<HTMLElement | null>;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -591,5 +600,17 @@ export function PopoverPortal({
   }, []);
 
   if (!mounted) return null;
-  return createPortal(children, container ?? document.body);
+
+  let target: HTMLElement | null = null;
+  if (container) {
+    if (typeof container === 'function') {
+      target = container();
+    } else if ('current' in container) {
+      target = container.current;
+    } else {
+      target = container;
+    }
+  }
+
+  return createPortal(children, target ?? document.body);
 }

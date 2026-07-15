@@ -92,6 +92,8 @@ export interface TrailEntry<TData = unknown> {
   offset?: number;
   /** Custom exit transition duration override in milliseconds. */
   exitTransitionDuration?: number;
+  /** Custom base z-index layering override. */
+  baseZIndex?: number;
 }
 
 /**
@@ -179,6 +181,8 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   exitTransitionDuration: number;
   /** Default distance gap offset from the trigger in pixels (default: 8px). */
   defaultOffset: number;
+  /** Base z-index offset applied to all popover layers (default: 1000). */
+  baseZIndex: number;
 }
 
 /**
@@ -227,7 +231,9 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   /** Resolves data and opens a root popover. */
   openRootWithResolver: (
     keyOrName: string,
-    anchorEvent: { currentTarget: HTMLElement; stopPropagation: () => void },
+    anchorEvent:
+      | { currentTarget: HTMLElement; stopPropagation?: () => void }
+      | { getBoundingClientRect: () => DOMRect; stopPropagation?: () => void },
     options?: OpenRootOptions,
   ) => Promise<void>;
 
@@ -279,6 +285,9 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
 
   /** Sets the default distance gap offset. */
   setDefaultOffset: (offset: number) => void;
+
+  /** Sets the base z-index layering offset. */
+  setBaseZIndex: (baseZIndex: number) => void;
 }
 
 /**
@@ -392,6 +401,8 @@ export interface OpenRootOptions {
   offset?: number;
   /** Custom exit transition duration override in milliseconds. */
   exitTransitionDuration?: number;
+  /** Custom base z-index layering override. */
+  baseZIndex?: number;
 }
 
 /**
@@ -418,4 +429,6 @@ export interface OpenNestedOptions {
   offset?: number;
   /** Custom exit transition duration override in milliseconds. */
   exitTransitionDuration?: number;
+  /** Custom base z-index layering override. */
+  baseZIndex?: number;
 }

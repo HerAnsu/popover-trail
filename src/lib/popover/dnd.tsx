@@ -83,7 +83,7 @@ export function usePopoverDraggableCard({
     dragX: isDragAllowed ? dragX : 0,
     dragY: isDragAllowed ? dragY : 0,
     rotation: isDragAllowed ? rotation : 0,
-    zIndex: (card.style.zIndex as number) - 1000,
+    zIndex: card.style.zIndex as number,
   });
 
   const domRef = useRef<HTMLDivElement | null>(null);

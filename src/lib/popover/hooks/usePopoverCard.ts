@@ -104,6 +104,7 @@ export function usePopoverCard({
   const enableArrowNavigation = usePopoverStore((state) => state.enableArrowNavigation);
   const trail = usePopoverStore((state) => state.trail);
   const floating = usePopoverStore((state) => state.floating);
+  const baseZIndex = usePopoverStore((state) => state.baseZIndex);
 
   // Handle transition state automatically (mounting -> mounted) using requestAnimationFrame for frame-adaptive rendering
   useEffect(() => {
@@ -130,7 +131,7 @@ export function usePopoverCard({
     dragX: 0,
     dragY: 0,
     rotation: 0,
-    zIndex: zIndex + 1000,
+    zIndex: zIndex + (entry.baseZIndex ?? baseZIndex ?? 1000),
   });
 
   const setCombinedRef = useCallback(
