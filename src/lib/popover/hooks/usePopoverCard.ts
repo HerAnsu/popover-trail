@@ -1,7 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
-import { useDraggable } from '@dnd-kit/core';
 import { usePopoverGeometry } from './useGeometry';
-import { usePopoverDragAndDrop } from './useDragAndDrop';
 import {
   usePopoverOffset,
   usePopoverZIndex,
@@ -24,23 +22,12 @@ interface UsePopoverCardOptions {
   isPinned: boolean;
   /** Relative alignment placement direction preference (default: "bottom"). */
   placement?: PopoverPlacement;
-  /** True to allow drag-and-drop movement when pinned (default: true). */
-  enableDrag?: boolean;
-  /** True to enable physical spring rotation (tilt/swing) effects when dragging (default: true). */
-  enableTilt?: boolean;
-  /** Maximum tilt swing angle in degrees (default: 5). */
-  maxTiltAngle?: number;
-  /** Factor scaling tilt response to drag velocity (default: 8). */
-  tiltSensitivity?: number;
 }
 
 /**
- * A unified composite hook that encapsulates all layout positioning, dragging physics,
- * focus lock restoration, z-index ordering, and actions into a single simple interface.
- *
- * @remarks
- * Restores keyboard focus to the triggering element upon unmounting (WAI-ARIA compliance).
- * Merges dnd-kit `useDraggable` ref bindings and Floating UI refs into a single composite ref.
+ * A unified composite hook that encapsulates all layout positioning, keyboard/hover controls,
+ * focus lock restoration, and actions into a single simple interface.
+ * Independent of drag-and-drop libraries.
  *
  * @param options - Hook configuration settings.
  * @returns Object containing refs, compiled styles, interaction state flags, and actions.
@@ -50,10 +37,6 @@ export function usePopoverCard({
   index,
   isPinned,
   placement = 'bottom',
-  enableDrag = true,
-  enableTilt = true,
-  maxTiltAngle = 5,
-  tiltSensitivity = 8,
 }: UsePopoverCardOptions) {
   const ref = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
@@ -102,36 +85,18 @@ export function usePopoverCard({
     };
   }, [entry.parentKey]);
 
-  const allowDragWhenUnpinned = entry.allowDragWhenUnpinned ?? false;
-  const isDragAllowed = enableDrag && (isPinned || allowDragWhenUnpinned);
-
-  // 1. Set up dnd-kit dragging
-  const { setNodeRef, transform, isDragging, attributes, listeners } = useDraggable({
-    id: entry.key,
-    disabled: !isDragAllowed,
-  });
-
-  // 2. Physics-based rotation swing setup
-  const { rotation, dragX, dragY } = usePopoverDragAndDrop({
-    isDragging: isDragAllowed ? isDragging : false,
-    transform: isDragAllowed ? transform : null,
-    enableTilt,
-    maxTiltAngle,
-    tiltSensitivity,
-  });
-
-  // 3. Geometry positioning setup
+  // Geometry positioning setup
   const { finalLayoutPos, setFloating } = usePopoverGeometry({
     id: entry.key,
     anchorRect: entry.rect,
     placement,
     zIndex: index,
-    isDragging: isDragAllowed ? isDragging : false,
+    isDragging: false,
     isPinned,
     entry,
   });
 
-  // 4. Select state coordinates and actions
+  // Select state coordinates and actions
   const offset = usePopoverOffset(entry.key);
   const zIndex = usePopoverZIndex(entry.key);
   const isTop = useIsPopoverTopMost(entry.key);
@@ -140,25 +105,22 @@ export function usePopoverCard({
   const trail = usePopoverStore((state) => state.trail);
   const floating = usePopoverStore((state) => state.floating);
 
-  // 5. Compile styles using the compiler utility
+  // Compile styles using the compiler utility (static offsets only)
   const style = getPopoverStyles({
     finalLayoutPos,
-    offset: isDragAllowed ? offset : { x: 0, y: 0 },
-    dragX: isDragAllowed ? dragX : 0,
-    dragY: isDragAllowed ? dragY : 0,
-    rotation: isDragAllowed ? rotation : 0,
+    offset,
+    dragX: 0,
+    dragY: 0,
+    rotation: 0,
     zIndex: zIndex + 1000,
   });
 
   const setCombinedRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (isDragAllowed) {
-        setNodeRef(node);
-      }
       setFloating(node);
       ref.current = node;
     },
-    [isDragAllowed, setNodeRef, setFloating],
+    [setFloating],
   );
 
   const handlePinToggle = useCallback(() => {
@@ -173,11 +135,10 @@ export function usePopoverCard({
   }, [actions, entry.key]);
 
   const onMouseLeave = useCallback(() => {
-    if (isDragging) return;
     if (entry.hover?.closeOnMouseLeave === false) return;
     const delay = entry.hover?.closeDelay ?? 300;
     actions.hoverLeave(entry.key, delay);
-  }, [actions, entry.key, entry.hover, isDragging]);
+  }, [actions, entry.key, entry.hover]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
@@ -237,15 +198,9 @@ export function usePopoverCard({
     ref: setCombinedRef,
     style,
     isTop,
-    isDragging: isDragAllowed ? isDragging : false,
+    isDragging: false,
     actions,
-    dragHandleProps: isDragAllowed
-      ? {
-          ...attributes,
-          ...listeners,
-          style: { cursor: isDragging ? 'grabbing' : 'grab' },
-        }
-      : {},
+    dragHandleProps: {},
     handlePinToggle,
     onMouseEnter,
     onMouseLeave,

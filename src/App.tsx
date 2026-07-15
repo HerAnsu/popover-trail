@@ -6,14 +6,13 @@ import {
   usePopoverTrail,
   usePopoverFloating,
   usePopoverActions,
-  usePopoverCard,
   PopoverPortal,
   usePopoverTrigger,
   usePopoverNestedTrigger,
-  PopoverCanvas,
   type PopoverResolver,
   type TrailEntry,
 } from './lib/popover';
+import { PopoverCanvas, usePopoverDraggableCard } from './lib/popover/dnd';
 
 // Math Expression tree data shape
 interface MathData {
@@ -188,7 +187,7 @@ const PopoverCard = memo(
       onMouseEnter,
       onMouseLeave,
       onKeyDown,
-    } = usePopoverCard({
+    } = usePopoverDraggableCard({
       entry,
       index,
       isPinned,

@@ -11,6 +11,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./dnd": {
+      "types": "./dist/dnd.d.ts",
+      "import": "./dist/dnd.js",
+      "require": "./dist/dnd.cjs"
     }
   },
   "scripts": {
