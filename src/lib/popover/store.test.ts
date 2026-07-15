@@ -655,4 +655,33 @@ describe('createPopoverStore', () => {
     expect(entry.allowDragWhenUnpinned).toBe(true);
     expect(entry.ariaDescribedby).toBe('Descriptor text');
   });
+
+  it('should support hover options including delays and closeOnMouseLeave', async () => {
+    const store = createPopoverStore(dummyResolver);
+    const mockElement = {
+      getBoundingClientRect: () => new DOMRect(0, 0, 100, 40),
+    } as any;
+
+    await store.getState().openRootWithResolver(
+      'item-1',
+      {
+        currentTarget: mockElement,
+        stopPropagation: () => {},
+      },
+      {
+        hover: {
+          enabled: true,
+          openDelay: 150,
+          closeDelay: 250,
+          closeOnMouseLeave: false,
+        },
+      },
+    );
+
+    const entry = store.getState().trail[0];
+    expect(entry.hover?.enabled).toBe(true);
+    expect(entry.hover?.openDelay).toBe(150);
+    expect(entry.hover?.closeDelay).toBe(250);
+    expect(entry.hover?.closeOnMouseLeave).toBe(false);
+  });
 });

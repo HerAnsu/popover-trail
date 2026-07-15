@@ -174,6 +174,7 @@ export function usePopoverCard({
 
   const onMouseLeave = useCallback(() => {
     if (isDragging) return;
+    if (entry.hover?.closeOnMouseLeave === false) return;
     const delay = entry.hover?.closeDelay ?? 300;
     actions.hoverLeave(entry.key, delay);
   }, [actions, entry.key, entry.hover, isDragging]);

@@ -160,10 +160,22 @@ interface PopoverCardProps {
   isPinned: boolean;
   hoverEnabled: boolean;
   allowDragWhenUnpinned: boolean;
+  hoverOpenDelay: number;
+  hoverCloseDelay: number;
+  hoverCloseOnMouseLeave: boolean;
 }
 
 const PopoverCard = memo(
-  ({ entry, index, isPinned, hoverEnabled, allowDragWhenUnpinned }: PopoverCardProps) => {
+  ({
+    entry,
+    index,
+    isPinned,
+    hoverEnabled,
+    allowDragWhenUnpinned,
+    hoverOpenDelay,
+    hoverCloseDelay,
+    hoverCloseOnMouseLeave,
+  }: PopoverCardProps) => {
     const [branchInput, setBranchInput] = useState('');
     const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -199,17 +211,22 @@ const PopoverCard = memo(
       openTimerRef.current = setTimeout(() => {
         void actions.openNestedWithResolver(entry.data!.leftExpr!, entry.key, {
           triggerRect: rect,
-          hover: { enabled: true, openDelay: 200, closeDelay: 300 },
+          hover: {
+            enabled: true,
+            openDelay: hoverOpenDelay,
+            closeDelay: hoverCloseDelay,
+            closeOnMouseLeave: hoverCloseOnMouseLeave,
+          },
           allowDragWhenUnpinned,
           ariaDescribedby: `Evaluation details for left operand: ${entry.data!.leftExpr}`,
         });
-      }, 200);
+      }, hoverOpenDelay);
     };
 
     const handleLeftMouseLeave = () => {
       if (!hoverEnabled || !entry.data?.leftExpr) return;
       if (openTimerRef.current) clearTimeout(openTimerRef.current);
-      actions.hoverLeave(entry.data.leftExpr, 300);
+      actions.hoverLeave(entry.data.leftExpr, hoverCloseDelay);
     };
 
     const handleRightMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -219,17 +236,22 @@ const PopoverCard = memo(
       openTimerRef.current = setTimeout(() => {
         void actions.openNestedWithResolver(entry.data!.rightExpr!, entry.key, {
           triggerRect: rect,
-          hover: { enabled: true, openDelay: 200, closeDelay: 300 },
+          hover: {
+            enabled: true,
+            openDelay: hoverOpenDelay,
+            closeDelay: hoverCloseDelay,
+            closeOnMouseLeave: hoverCloseOnMouseLeave,
+          },
           allowDragWhenUnpinned,
           ariaDescribedby: `Evaluation details for right operand: ${entry.data!.rightExpr}`,
         });
-      }, 200);
+      }, hoverOpenDelay);
     };
 
     const handleRightMouseLeave = () => {
       if (!hoverEnabled || !entry.data?.rightExpr) return;
       if (openTimerRef.current) clearTimeout(openTimerRef.current);
-      actions.hoverLeave(entry.data.rightExpr, 300);
+      actions.hoverLeave(entry.data.rightExpr, hoverCloseDelay);
     };
 
     const handleCustomMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -239,17 +261,22 @@ const PopoverCard = memo(
       openTimerRef.current = setTimeout(() => {
         void actions.openNestedWithResolver(branchInput.trim(), entry.key, {
           triggerRect: rect,
-          hover: { enabled: true, openDelay: 200, closeDelay: 300 },
+          hover: {
+            enabled: true,
+            openDelay: hoverOpenDelay,
+            closeDelay: hoverCloseDelay,
+            closeOnMouseLeave: hoverCloseOnMouseLeave,
+          },
           allowDragWhenUnpinned,
           ariaDescribedby: `Evaluation details for custom expression: ${branchInput.trim()}`,
         });
-      }, 200);
+      }, hoverOpenDelay);
     };
 
     const handleCustomMouseLeave = () => {
       if (!hoverEnabled || !branchInput.trim()) return;
       if (openTimerRef.current) clearTimeout(openTimerRef.current);
-      actions.hoverLeave(branchInput.trim(), 300);
+      actions.hoverLeave(branchInput.trim(), hoverCloseDelay);
     };
 
     return (
@@ -461,9 +488,15 @@ PopoverCard.displayName = 'PopoverCard';
 function PopoverCanvas({
   hoverEnabled,
   allowDragWhenUnpinned,
+  hoverOpenDelay,
+  hoverCloseDelay,
+  hoverCloseOnMouseLeave,
 }: {
   hoverEnabled: boolean;
   allowDragWhenUnpinned: boolean;
+  hoverOpenDelay: number;
+  hoverCloseDelay: number;
+  hoverCloseOnMouseLeave: boolean;
 }) {
   const trail = usePopoverTrail<MathData>();
   const floating = usePopoverFloating<MathData>();
@@ -497,6 +530,9 @@ function PopoverCanvas({
               isPinned={isPinned}
               hoverEnabled={hoverEnabled}
               allowDragWhenUnpinned={allowDragWhenUnpinned}
+              hoverOpenDelay={hoverOpenDelay}
+              hoverCloseDelay={hoverCloseDelay}
+              hoverCloseOnMouseLeave={hoverCloseOnMouseLeave}
             />
           </div>
         ))}
@@ -516,6 +552,12 @@ interface MainContentProps {
   setAllowDragWhenUnpinned: (val: boolean) => void;
   cascadeOffsetStep: number;
   setCascadeOffsetStep: (val: number) => void;
+  hoverOpenDelay: number;
+  setHoverOpenDelay: (val: number) => void;
+  hoverCloseDelay: number;
+  setHoverCloseDelay: (val: number) => void;
+  hoverCloseOnMouseLeave: boolean;
+  setHoverCloseOnMouseLeave: (val: boolean) => void;
 }
 
 function MainContent({
@@ -529,13 +571,24 @@ function MainContent({
   setAllowDragWhenUnpinned,
   cascadeOffsetStep,
   setCascadeOffsetStep,
+  hoverOpenDelay,
+  setHoverOpenDelay,
+  hoverCloseDelay,
+  setHoverCloseDelay,
+  hoverCloseOnMouseLeave,
+  setHoverCloseOnMouseLeave,
 }: MainContentProps) {
   const [customRoot, setCustomRoot] = useState('((1 + 2) * 3) / (4 - (5 ^ 2))');
   const { clear, openRootWithResolver } = usePopoverActions<MathData>();
   const trail = usePopoverTrail<MathData>();
   const floating = usePopoverFloating<MathData>();
 
-  const hoverConfig = { enabled: hoverEnabled, openDelay: 200, closeDelay: 300 };
+  const hoverConfig = {
+    enabled: hoverEnabled,
+    openDelay: hoverOpenDelay,
+    closeDelay: hoverCloseDelay,
+    closeOnMouseLeave: hoverCloseOnMouseLeave,
+  };
 
   const trig1 = usePopoverTrigger('2 * (3 + (15 / 5))', {
     hover: hoverConfig,
@@ -613,8 +666,90 @@ function MainContent({
             checked={hoverEnabled}
             onChange={(e) => setHoverEnabled(e.target.checked)}
           />
-          Enable Hover Triggers (with 200ms open/300ms close buffer)
+          Enable Hover Triggers
         </label>
+
+        {hoverEnabled && (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.6rem',
+              paddingLeft: '1.2rem',
+              borderLeft: '2px solid rgba(255, 255, 255, 0.1)',
+              marginTop: '-0.2rem',
+              marginBottom: '0.2rem',
+              pointerEvents: 'auto',
+            }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary)',
+              }}>
+              <input
+                type="checkbox"
+                checked={hoverCloseOnMouseLeave}
+                onChange={(e) => setHoverCloseOnMouseLeave(e.target.checked)}
+              />
+              Close popover when cursor leaves popover card
+            </label>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary)',
+              }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                Open delay:
+                <input
+                  type="number"
+                  min={0}
+                  max={2000}
+                  step={50}
+                  value={hoverOpenDelay}
+                  onChange={(e) => setHoverOpenDelay(Math.max(0, Number(e.target.value)))}
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '4px',
+                    color: '#fff',
+                    padding: '2px 6px',
+                    width: '60px',
+                    pointerEvents: 'auto',
+                  }}
+                />
+                ms
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                Close delay:
+                <input
+                  type="number"
+                  min={0}
+                  max={2000}
+                  step={50}
+                  value={hoverCloseDelay}
+                  onChange={(e) => setHoverCloseDelay(Math.max(0, Number(e.target.value)))}
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '4px',
+                    color: '#fff',
+                    padding: '2px 6px',
+                    width: '60px',
+                    pointerEvents: 'auto',
+                  }}
+                />
+                ms
+              </label>
+            </div>
+          </div>
+        )}
         <label
           style={{
             display: 'flex',
@@ -782,7 +917,13 @@ function MainContent({
       )}
 
       <PopoverPortal>
-        <PopoverCanvas hoverEnabled={hoverEnabled} allowDragWhenUnpinned={allowDragWhenUnpinned} />
+        <PopoverCanvas
+          hoverEnabled={hoverEnabled}
+          allowDragWhenUnpinned={allowDragWhenUnpinned}
+          hoverOpenDelay={hoverOpenDelay}
+          hoverCloseDelay={hoverCloseDelay}
+          hoverCloseOnMouseLeave={hoverCloseOnMouseLeave}
+        />
       </PopoverPortal>
     </div>
   );
@@ -794,6 +935,9 @@ export default function App() {
   const [debugEnabled, setDebugEnabled] = useState(true);
   const [allowDragWhenUnpinned, setAllowDragWhenUnpinned] = useState(false);
   const [cascadeOffsetStep, setCascadeOffsetStep] = useState(8);
+  const [hoverOpenDelay, setHoverOpenDelay] = useState(200);
+  const [hoverCloseDelay, setHoverCloseDelay] = useState(300);
+  const [hoverCloseOnMouseLeave, setHoverCloseOnMouseLeave] = useState(true);
 
   return (
     <PopoverProvider
@@ -814,6 +958,12 @@ export default function App() {
         setAllowDragWhenUnpinned={setAllowDragWhenUnpinned}
         cascadeOffsetStep={cascadeOffsetStep}
         setCascadeOffsetStep={setCascadeOffsetStep}
+        hoverOpenDelay={hoverOpenDelay}
+        setHoverOpenDelay={setHoverOpenDelay}
+        hoverCloseDelay={hoverCloseDelay}
+        setHoverCloseDelay={setHoverCloseDelay}
+        hoverCloseOnMouseLeave={hoverCloseOnMouseLeave}
+        setHoverCloseOnMouseLeave={setHoverCloseOnMouseLeave}
       />
     </PopoverProvider>
   );

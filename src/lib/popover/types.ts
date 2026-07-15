@@ -8,6 +8,8 @@ export interface HoverConfig {
   openDelay?: number;
   /** Delay in milliseconds before closing the popover when cursor leaves (default: 300). */
   closeDelay?: number;
+  /** If false, the popover card itself will not trigger closing when mouse leaves the card (default: true). */
+  closeOnMouseLeave?: boolean;
 }
 
 /**
