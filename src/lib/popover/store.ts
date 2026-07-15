@@ -722,6 +722,11 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         offset: options?.offset,
         exitTransitionDuration: options?.exitTransitionDuration,
         baseZIndex: options?.baseZIndex,
+        cascadeOffsetStep: options?.cascadeOffsetStep,
+        cascadeOffsetDirection: options?.cascadeOffsetDirection,
+        enableTilt: options?.enableTilt,
+        maxTiltAngle: options?.maxTiltAngle,
+        tiltSensitivity: options?.tiltSensitivity,
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {

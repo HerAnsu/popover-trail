@@ -198,6 +198,10 @@ const PopoverCard = memo(
     const leftTrigger = usePopoverNestedTrigger(entry.data?.leftExpr ?? '', entry.key, {
       placement: 'left',
       offset: 16, // Custom gap override (16px instead of default 8px)
+      cascadeOffsetStep: 16, // Double step
+      cascadeOffsetDirection: 'top', // Cascade upwards!
+      maxTiltAngle: 15, // High swing tilt angle override
+      collision: { flip: false }, // Disable auto-flipping on collision override
       hover: {
         enabled: hoverEnabled,
         openDelay: hoverOpenDelay,

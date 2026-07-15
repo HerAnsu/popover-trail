@@ -64,12 +64,16 @@ export function usePopoverDraggableCard({
   });
 
   // 2. Physics-based rotation swing setup
+  const tiltEnabled = entry.enableTilt ?? enableTilt;
+  const maxTilt = entry.maxTiltAngle ?? maxTiltAngle;
+  const sensitivity = entry.tiltSensitivity ?? tiltSensitivity;
+
   const { rotation, dragX, dragY } = usePopoverDragAndDrop({
     isDragging: isDragAllowed ? isDragging : false,
     transform: isDragAllowed ? transform : null,
-    enableTilt,
-    maxTiltAngle,
-    tiltSensitivity,
+    enableTilt: tiltEnabled,
+    maxTiltAngle: maxTilt,
+    tiltSensitivity: sensitivity,
   });
 
   // 3. Compile styles using the compiler utility with active dragging offsets and rotation angles

@@ -94,6 +94,16 @@ export interface TrailEntry<TData = unknown> {
   exitTransitionDuration?: number;
   /** Custom base z-index layering override. */
   baseZIndex?: number;
+  /** Custom horizontal/vertical cascade offset step override. */
+  cascadeOffsetStep?: number;
+  /** Custom cascade stacking offset shift direction override. */
+  cascadeOffsetDirection?: 'left' | 'right' | 'top' | 'bottom' | 'none';
+  /** Custom spring tilt effect toggle override. */
+  enableTilt?: boolean;
+  /** Custom max spring tilt angle override. */
+  maxTiltAngle?: number;
+  /** Custom spring tilt speed sensitivity override. */
+  tiltSensitivity?: number;
 }
 
 /**
@@ -375,6 +385,10 @@ export interface CollisionConfig {
 
   /** Safety padding margin around the boundary (default: 12 for shift, 0 for flip). */
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
+  /** Toggle or configure the Floating UI flip middleware (default: true). */
+  flip?: boolean | object;
+  /** Toggle or configure the Floating UI shift middleware (default: true). */
+  shift?: boolean | object;
 }
 
 /**
@@ -403,6 +417,16 @@ export interface OpenRootOptions {
   exitTransitionDuration?: number;
   /** Custom base z-index layering override. */
   baseZIndex?: number;
+  /** Custom horizontal/vertical cascade offset step override. */
+  cascadeOffsetStep?: number;
+  /** Custom cascade stacking offset shift direction override. */
+  cascadeOffsetDirection?: 'left' | 'right' | 'top' | 'bottom' | 'none';
+  /** Custom spring tilt effect toggle override. */
+  enableTilt?: boolean;
+  /** Custom max spring tilt angle override. */
+  maxTiltAngle?: number;
+  /** Custom spring tilt speed sensitivity override. */
+  tiltSensitivity?: number;
 }
 
 /**
@@ -431,4 +455,14 @@ export interface OpenNestedOptions {
   exitTransitionDuration?: number;
   /** Custom base z-index layering override. */
   baseZIndex?: number;
+  /** Custom horizontal/vertical cascade offset step override. */
+  cascadeOffsetStep?: number;
+  /** Custom cascade stacking offset shift direction override. */
+  cascadeOffsetDirection?: 'left' | 'right' | 'top' | 'bottom' | 'none';
+  /** Custom spring tilt effect toggle override. */
+  enableTilt?: boolean;
+  /** Custom max spring tilt angle override. */
+  maxTiltAngle?: number;
+  /** Custom spring tilt speed sensitivity override. */
+  tiltSensitivity?: number;
 }

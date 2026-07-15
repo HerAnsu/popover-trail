@@ -53,6 +53,8 @@ export function usePopoverGeometry({
   // Merge local overrides with global defaults
   const boundary = localCollision?.boundary ?? globalCollision?.boundary;
   const padding = localCollision?.padding ?? globalCollision?.padding;
+  const flipOption = localCollision?.flip ?? globalCollision?.flip;
+  const shiftOption = localCollision?.shift ?? globalCollision?.shift;
 
   const [resolvedBoundary, setResolvedBoundary] = useState<
     'clippingAncestors' | HTMLElement | HTMLElement[] | undefined
@@ -83,21 +85,39 @@ export function usePopoverGeometry({
     };
   }, [anchorRect]);
 
-  // 2. Configure useFloating positioning middleware with autoUpdate
+  // 2. Configure useFloating positioning middleware dynamically with autoUpdate
+  const middleware = useMemo(() => {
+    const list = [
+      offset(entry?.offset ?? defaultOffset ?? 8), // Gap distance from trigger
+    ];
+
+    if (flipOption !== false) {
+      list.push(
+        flip({
+          boundary: boundaryOption,
+          padding: padding ?? undefined,
+          ...(typeof flipOption === 'object' ? flipOption : {}),
+        })
+      );
+    }
+
+    if (shiftOption !== false) {
+      list.push(
+        shift({
+          boundary: boundaryOption,
+          padding: padding ?? 12,
+          ...(typeof shiftOption === 'object' ? shiftOption : {}),
+        })
+      );
+    }
+
+    return list;
+  }, [entry?.offset, defaultOffset, flipOption, shiftOption, boundaryOption, padding]);
+
   const { refs, x, y, update, placement: resolvedPlacement } = useFloating({
     placement: placement ?? 'bottom',
     whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
-    middleware: [
-      offset(entry?.offset ?? defaultOffset ?? 8), // Gap distance from trigger
-      flip({
-        boundary: boundaryOption,
-        padding: padding ?? undefined,
-      }), // Collision fallback (automatically flips opposite)
-      shift({
-        boundary: boundaryOption,
-        padding: padding ?? 12, // Keep within viewport margins (default: 12)
-      }),
-    ],
+    middleware,
   });
 
   // 3. Keep references synced (accepts null safely if virtualElement unmounts)
@@ -117,14 +137,30 @@ export function usePopoverGeometry({
     if (isPinned && entry?.pinnedLayoutPos) {
       return entry.pinnedLayoutPos;
     }
-    // Add slight horizontal cascade offset based on zIndex/nesting level to improve overlap aesthetics
-    const cascadeOffset = zIndex * cascadeOffsetStep;
-    const isLeftPlacement = resolvedPlacement.startsWith('left');
+    // Calculate horizontal/vertical offsets dynamically based on nesting level and custom direction overrides
+    const step = entry?.cascadeOffsetStep ?? cascadeOffsetStep;
+    const direction =
+      entry?.cascadeOffsetDirection ??
+      (resolvedPlacement.startsWith('left') ? 'left' : 'right');
+    const offsetVal = zIndex * step;
+
+    let topOffset = 0;
+    let leftOffset = 0;
+    if (direction === 'left') {
+      leftOffset = -offsetVal;
+    } else if (direction === 'right') {
+      leftOffset = offsetVal;
+    } else if (direction === 'top') {
+      topOffset = -offsetVal;
+    } else if (direction === 'bottom') {
+      topOffset = offsetVal;
+    }
+
     return {
-      top: y ?? 0,
-      left: (x ?? 0) + (isLeftPlacement ? -cascadeOffset : cascadeOffset),
+      top: (y ?? 0) + topOffset,
+      left: (x ?? 0) + leftOffset,
     };
-  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex, cascadeOffsetStep, resolvedPlacement]);
+  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex, cascadeOffsetStep, resolvedPlacement, entry?.cascadeOffsetStep, entry?.cascadeOffsetDirection]);
 
   return {
     finalLayoutPos,
