@@ -1,16 +1,16 @@
-import { useState, memo, useRef, useEffect } from 'react';
+import { useState, memo } from 'react';
 import FocusLock from 'react-focus-lock';
 import clsx from 'clsx';
-import { DndContext, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import {
   PopoverProvider,
   usePopoverTrail,
   usePopoverFloating,
-  usePopoverStoreApi,
   usePopoverActions,
   usePopoverCard,
   PopoverPortal,
   usePopoverTrigger,
+  usePopoverNestedTrigger,
+  PopoverCanvas,
   type PopoverResolver,
   type TrailEntry,
 } from './lib/popover';
@@ -177,15 +177,6 @@ const PopoverCard = memo(
     hoverCloseOnMouseLeave,
   }: PopoverCardProps) => {
     const [branchInput, setBranchInput] = useState('');
-    const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    useEffect(() => {
-      return () => {
-        if (openTimerRef.current) {
-          clearTimeout(openTimerRef.current);
-        }
-      };
-    }, []);
 
     const {
       ref,
@@ -204,79 +195,42 @@ const PopoverCard = memo(
       placement: 'bottom',
     });
 
-    const handleLeftMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (!hoverEnabled || !entry.data?.leftExpr) return;
-      if (openTimerRef.current) clearTimeout(openTimerRef.current);
-      const rect = e.currentTarget.getBoundingClientRect();
-      openTimerRef.current = setTimeout(() => {
-        void actions.openNestedWithResolver(entry.data!.leftExpr!, entry.key, {
-          triggerRect: rect,
-          hover: {
-            enabled: true,
-            openDelay: hoverOpenDelay,
-            closeDelay: hoverCloseDelay,
-            closeOnMouseLeave: hoverCloseOnMouseLeave,
-          },
-          allowDragWhenUnpinned,
-          ariaDescribedby: `Evaluation details for left operand: ${entry.data!.leftExpr}`,
-        });
-      }, hoverOpenDelay);
-    };
+    const leftTrigger = usePopoverNestedTrigger(entry.data?.leftExpr ?? '', entry.key, {
+      hover: {
+        enabled: hoverEnabled,
+        openDelay: hoverOpenDelay,
+        closeDelay: hoverCloseDelay,
+        closeOnMouseLeave: hoverCloseOnMouseLeave,
+      },
+      allowDragWhenUnpinned,
+      ariaDescribedby: entry.data?.leftExpr ? `Evaluation details for left operand: ${entry.data.leftExpr}` : undefined,
+    });
 
-    const handleLeftMouseLeave = () => {
-      if (!hoverEnabled || !entry.data?.leftExpr) return;
-      if (openTimerRef.current) clearTimeout(openTimerRef.current);
-      actions.hoverLeave(entry.data.leftExpr, hoverCloseDelay);
-    };
+    const rightTrigger = usePopoverNestedTrigger(entry.data?.rightExpr ?? '', entry.key, {
+      hover: {
+        enabled: hoverEnabled,
+        openDelay: hoverOpenDelay,
+        closeDelay: hoverCloseDelay,
+        closeOnMouseLeave: hoverCloseOnMouseLeave,
+      },
+      allowDragWhenUnpinned,
+      ariaDescribedby: entry.data?.rightExpr ? `Evaluation details for right operand: ${entry.data.rightExpr}` : undefined,
+    });
 
-    const handleRightMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (!hoverEnabled || !entry.data?.rightExpr) return;
-      if (openTimerRef.current) clearTimeout(openTimerRef.current);
-      const rect = e.currentTarget.getBoundingClientRect();
-      openTimerRef.current = setTimeout(() => {
-        void actions.openNestedWithResolver(entry.data!.rightExpr!, entry.key, {
-          triggerRect: rect,
-          hover: {
-            enabled: true,
-            openDelay: hoverOpenDelay,
-            closeDelay: hoverCloseDelay,
-            closeOnMouseLeave: hoverCloseOnMouseLeave,
-          },
-          allowDragWhenUnpinned,
-          ariaDescribedby: `Evaluation details for right operand: ${entry.data!.rightExpr}`,
-        });
-      }, hoverOpenDelay);
-    };
+    const customTriggerProps = usePopoverNestedTrigger(branchInput.trim(), entry.key, {
+      hover: {
+        enabled: hoverEnabled,
+        openDelay: hoverOpenDelay,
+        closeDelay: hoverCloseDelay,
+        closeOnMouseLeave: hoverCloseOnMouseLeave,
+      },
+      allowDragWhenUnpinned,
+      ariaDescribedby: branchInput.trim() ? `Evaluation details for custom expression: ${branchInput.trim()}` : undefined,
+    });
 
-    const handleRightMouseLeave = () => {
-      if (!hoverEnabled || !entry.data?.rightExpr) return;
-      if (openTimerRef.current) clearTimeout(openTimerRef.current);
-      actions.hoverLeave(entry.data.rightExpr, hoverCloseDelay);
-    };
-
-    const handleCustomMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (!hoverEnabled || !branchInput.trim()) return;
-      if (openTimerRef.current) clearTimeout(openTimerRef.current);
-      const rect = e.currentTarget.getBoundingClientRect();
-      openTimerRef.current = setTimeout(() => {
-        void actions.openNestedWithResolver(branchInput.trim(), entry.key, {
-          triggerRect: rect,
-          hover: {
-            enabled: true,
-            openDelay: hoverOpenDelay,
-            closeDelay: hoverCloseDelay,
-            closeOnMouseLeave: hoverCloseOnMouseLeave,
-          },
-          allowDragWhenUnpinned,
-          ariaDescribedby: `Evaluation details for custom expression: ${branchInput.trim()}`,
-        });
-      }, hoverOpenDelay);
-    };
-
-    const handleCustomMouseLeave = () => {
-      if (!hoverEnabled || !branchInput.trim()) return;
-      if (openTimerRef.current) clearTimeout(openTimerRef.current);
-      actions.hoverLeave(branchInput.trim(), hoverCloseDelay);
+    const handleCustomClick = (e: React.MouseEvent<HTMLElement>) => {
+      customTriggerProps.onClick?.(e);
+      setBranchInput('');
     };
 
     return (
@@ -292,11 +246,11 @@ const PopoverCard = memo(
         onMouseLeave={onMouseLeave}
         onKeyDown={onKeyDown}>
         <FocusLock disabled={!isTop || isPinned} returnFocus>
-          {entry.ariaDescribedby && (
+          {entry.ariaDescribedby ? (
             <div id={`desc-${entry.key}`} className="sr-only">
               {entry.ariaDescribedby}
             </div>
-          )}
+          ) : null}
           <div className="popover-header" {...dragHandleProps}>
             <span id={`title-${entry.key}`} className="popover-title">
               {entry.isLoading ? 'Evaluating...' : entry.data?.title}
@@ -367,7 +321,7 @@ const PopoverCard = memo(
                   </div>
                 </div>
 
-                {entry.data?.operator && (
+                {entry.data?.operator ? (
                   <div
                     className="popover-links"
                     style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -379,40 +333,24 @@ const PopoverCard = memo(
                       }}>
                       Drill down operands:
                     </span>
-                    {entry.data.leftExpr && (
+                    {entry.data.leftExpr ? (
                       <button
                         type="button"
                         className="btn-link"
-                        onClick={(e) => {
-                          if (hoverEnabled) return;
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          void actions.openNestedWithResolver(entry.data!.leftExpr!, entry.key, {
-                            triggerRect: rect,
-                          });
-                        }}
-                        onMouseEnter={handleLeftMouseEnter}
-                        onMouseLeave={handleLeftMouseLeave}>
+                        {...leftTrigger}>
                         👈 Left: {entry.data.leftExpr}
                       </button>
-                    )}
-                    {entry.data.rightExpr && (
+                    ) : null}
+                    {entry.data.rightExpr ? (
                       <button
                         type="button"
                         className="btn-link"
-                        onClick={(e) => {
-                          if (hoverEnabled) return;
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          void actions.openNestedWithResolver(entry.data!.rightExpr!, entry.key, {
-                            triggerRect: rect,
-                          });
-                        }}
-                        onMouseEnter={handleRightMouseEnter}
-                        onMouseLeave={handleRightMouseLeave}>
+                        {...rightTrigger}>
                         👉 Right: {entry.data.rightExpr}
                       </button>
-                    )}
+                    ) : null}
                   </div>
-                )}
+                ) : null}
 
                 <div
                   className="custom-branch-zone"
@@ -428,7 +366,7 @@ const PopoverCard = memo(
                       color: 'var(--text-secondary)',
                       display: 'block',
                       marginBottom: '0.3rem',
-                    }}>
+                     }}>
                     Extend with custom formula:
                   </span>
                   <div style={{ display: 'flex', gap: '0.3rem' }}>
@@ -460,16 +398,8 @@ const PopoverCard = memo(
                         cursor: branchInput.trim() ? 'pointer' : 'not-allowed',
                         fontWeight: 600,
                       }}
-                      onClick={(e) => {
-                        if (hoverEnabled) return;
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        void actions.openNestedWithResolver(branchInput.trim(), entry.key, {
-                          triggerRect: rect,
-                        });
-                        setBranchInput('');
-                      }}
-                      onMouseEnter={handleCustomMouseEnter}
-                      onMouseLeave={handleCustomMouseLeave}>
+                      {...customTriggerProps}
+                      onClick={handleCustomClick}>
                       Branch
                     </button>
                   </div>
@@ -484,62 +414,6 @@ const PopoverCard = memo(
 );
 
 PopoverCard.displayName = 'PopoverCard';
-
-function PopoverCanvas({
-  hoverEnabled,
-  allowDragWhenUnpinned,
-  hoverOpenDelay,
-  hoverCloseDelay,
-  hoverCloseOnMouseLeave,
-}: {
-  hoverEnabled: boolean;
-  allowDragWhenUnpinned: boolean;
-  hoverOpenDelay: number;
-  hoverCloseDelay: number;
-  hoverCloseOnMouseLeave: boolean;
-}) {
-  const trail = usePopoverTrail<MathData>();
-  const floating = usePopoverFloating<MathData>();
-  const store = usePopoverStoreApi<MathData>();
-  const { updateOffset, bringToFront } = usePopoverActions<MathData>();
-
-  const handleDragStart = (event: DragStartEvent) => {
-    bringToFront(event.active.id as string);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, delta } = event;
-    const key = active.id as string;
-    const currentOffset = store.getState().offsets[key] || { x: 0, y: 0 };
-    updateOffset(key, currentOffset.x + delta.x, currentOffset.y + delta.y);
-  };
-
-  const activeEntries = [
-    ...floating.map((entry: TrailEntry<MathData>) => ({ entry, isPinned: true })),
-    ...trail.map((entry: TrailEntry<MathData>) => ({ entry, isPinned: false })),
-  ];
-
-  return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
-        {activeEntries.map(({ entry, isPinned }, idx) => (
-          <div key={entry.key} style={{ pointerEvents: 'auto' }}>
-            <PopoverCard
-              entry={entry}
-              index={isPinned ? idx : floating.length + trail.indexOf(entry)}
-              isPinned={isPinned}
-              hoverEnabled={hoverEnabled}
-              allowDragWhenUnpinned={allowDragWhenUnpinned}
-              hoverOpenDelay={hoverOpenDelay}
-              hoverCloseDelay={hoverCloseDelay}
-              hoverCloseOnMouseLeave={hoverCloseOnMouseLeave}
-            />
-          </div>
-        ))}
-      </div>
-    </DndContext>
-  );
-}
 
 interface MainContentProps {
   hoverEnabled: boolean;
@@ -669,7 +543,7 @@ function MainContent({
           Enable Hover Triggers
         </label>
 
-        {hoverEnabled && (
+        {hoverEnabled ? (
           <div
             style={{
               display: 'flex',
@@ -749,7 +623,7 @@ function MainContent({
               </label>
             </div>
           </div>
-        )}
+        ) : null}
         <label
           style={{
             display: 'flex',
@@ -889,7 +763,7 @@ function MainContent({
         </div>
       </div>
 
-      {totalActive > 0 && (
+      {totalActive > 0 ? (
         <button
           type="button"
           onClick={clear}
@@ -914,16 +788,23 @@ function MainContent({
           }}>
           Reset All Popovers
         </button>
-      )}
+      ) : null}
 
       <PopoverPortal>
-        <PopoverCanvas
-          hoverEnabled={hoverEnabled}
-          allowDragWhenUnpinned={allowDragWhenUnpinned}
-          hoverOpenDelay={hoverOpenDelay}
-          hoverCloseDelay={hoverCloseDelay}
-          hoverCloseOnMouseLeave={hoverCloseOnMouseLeave}
-        />
+        <PopoverCanvas<MathData>>
+          {({ entry, index, isPinned }) => (
+            <PopoverCard
+              entry={entry}
+              index={index}
+              isPinned={isPinned}
+              hoverEnabled={hoverEnabled}
+              allowDragWhenUnpinned={allowDragWhenUnpinned}
+              hoverOpenDelay={hoverOpenDelay}
+              hoverCloseDelay={hoverCloseDelay}
+              hoverCloseOnMouseLeave={hoverCloseOnMouseLeave}
+            />
+          )}
+        </PopoverCanvas>
       </PopoverPortal>
     </div>
   );

@@ -12,6 +12,7 @@ import {
 import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
+import { DndContext, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core';
 import { createPopoverStore } from './store';
 import type {
   PopoverStore,
@@ -500,23 +501,31 @@ export function usePopoverNestedTrigger(
   }, []);
 
   const onClick = useCallback(
-    (_e: React.MouseEvent<HTMLElement>) => {
+    (e: React.MouseEvent<HTMLElement>) => {
       if (optionsRef.current?.hover?.enabled) return;
-      void actions.openNestedWithResolver(key, sourceKey, optionsRef.current);
+      const rect = e.currentTarget.getBoundingClientRect();
+      void actions.openNestedWithResolver(key, sourceKey, {
+        ...optionsRef.current,
+        triggerRect: rect,
+      });
     },
     [actions, key, sourceKey],
   );
 
   const onMouseEnter = useCallback(
-    (_e: React.MouseEvent<HTMLElement>) => {
+    (e: React.MouseEvent<HTMLElement>) => {
       const hoverOpts = optionsRef.current?.hover;
       if (hoverOpts?.enabled) {
         if (openTimerRef.current) {
           clearTimeout(openTimerRef.current);
         }
+        const rect = e.currentTarget.getBoundingClientRect();
         const delay = hoverOpts.openDelay ?? 200;
         openTimerRef.current = setTimeout(() => {
-          void actions.openNestedWithResolver(key, sourceKey, optionsRef.current);
+          void actions.openNestedWithResolver(key, sourceKey, {
+            ...optionsRef.current,
+            triggerRect: rect,
+          });
         }, delay);
       }
     },
@@ -557,4 +566,65 @@ export function PopoverPortal({
 
   if (!mounted) return null;
   return createPortal(children, container ?? document.body);
+}
+
+/**
+ * Prop types for the `PopoverCanvas` component.
+ *
+ * @template TData - The resolved data payload type.
+ */
+export interface PopoverCanvasProps<TData> {
+  /** Render prop returning JSX content for a single popover card. */
+  children: (props: {
+    entry: TrailEntry<TData>;
+    index: number;
+    isPinned: boolean;
+  }) => ReactNode;
+}
+
+/**
+ * Reusable Canvas container that manages drag-and-drop context, coordinate offsets,
+ * and z-index ordering for all active floating and trailing popover cards.
+ *
+ * @template TData - The resolved data payload type.
+ * @param props - Component props containing the render prop children.
+ * @returns The DndContext wrapper structure.
+ */
+export function PopoverCanvas<TData = unknown>({ children }: PopoverCanvasProps<TData>) {
+  const trail = usePopoverTrail<TData>();
+  const floating = usePopoverFloating<TData>();
+  const store = usePopoverStoreApi<TData>();
+  const { updateOffset, bringToFront } = usePopoverActions<TData>();
+
+  const handleDragStart = (event: DragStartEvent) => {
+    bringToFront(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, delta } = event;
+    const key = active.id as string;
+    const currentOffset = store.getState().offsets[key] || { x: 0, y: 0 };
+    updateOffset(key, currentOffset.x + delta.x, currentOffset.y + delta.y);
+  };
+
+  const activeEntries = [
+    ...floating.map((entry) => ({ entry, isPinned: true })),
+    ...trail.map((entry) => ({ entry, isPinned: false })),
+  ];
+
+  return (
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+        {activeEntries.map(({ entry, isPinned }, idx) => (
+          <div key={entry.key} style={{ pointerEvents: 'auto' }}>
+            {children({
+              entry,
+              index: isPinned ? idx : floating.length + trail.indexOf(entry),
+              isPinned,
+            })}
+          </div>
+        ))}
+      </div>
+    </DndContext>
+  );
 }
