@@ -520,3 +520,37 @@ export interface OpenNestedOptions {
   /** Custom CSS animation class applied during mounted. */
   mountedClassName?: string;
 }
+
+/**
+ * Result object returned by the unified `usePopover` hook.
+ *
+ * @template TData - The resolved data payload type.
+ */
+export interface UsePopoverResult<TData> {
+  /** The full active trail entry data object, or undefined if not found. */
+  entry: TrailEntry<TData> | undefined;
+  /** True if the popover is currently open. */
+  isOpen: boolean;
+  /** True if the popover is pinned/floating. */
+  isPinned: boolean;
+  /** The 0-based depth z-index index of the popover. */
+  zIndex: number;
+  /** True if the popover is currently at the top of the z-index stack. */
+  isTop: boolean;
+  /** The viewport-relative coordinate offset of the popover. */
+  offset: { x: number; y: number };
+  /** True if the popover is currently resolving its data asynchronously. */
+  isLoading: boolean;
+  /** The successfully resolved data payload. */
+  data: TData | undefined;
+  /** Mapped error object if resolution failed. */
+  error: Error | null | undefined;
+  /** Closes this popover card. */
+  close: () => void;
+  /** Modelessly pins the card at its current trigger coordinates. */
+  pin: (rect: DOMRect) => void;
+  /** Brings the card to the front of the stacking context. */
+  bringToFront: () => void;
+  /** Sets custom coordinate dragging offsets on the card. */
+  updateOffset: (x: number, y: number) => void;
+}

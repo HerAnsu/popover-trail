@@ -5,6 +5,7 @@ import {
   usePopoverActions as coreUsePopoverActions,
   usePopoverContext as coreUsePopoverContext,
   PopoverTrigger as CorePopoverTrigger,
+  type UsePopoverResult,
 } from './index';
 import type { PopoverProviderProps } from './context';
 import type { PopoverTriggerProps } from './components/PopoverTrigger';
@@ -44,7 +45,7 @@ export function createPopoverTrail<TData = unknown, TContext = unknown>() {
    * @param key - The unique identifier key of the popover card.
    * @returns Unified data values and pre-bound action wrappers.
    */
-  function usePopover(key: string) {
+  function usePopover(key: string): UsePopoverResult<TData> {
     return coreUsePopover<TData, TContext>(key);
   }
 

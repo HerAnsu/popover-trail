@@ -6,6 +6,7 @@ export type {
   PopoverStore,
   PopoverPlacement,
   ClickOutsideConfig,
+  UsePopoverResult,
 } from './types';
 
 export { createPopoverStore } from './store';

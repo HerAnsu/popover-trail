@@ -22,6 +22,7 @@ import type {
   OpenRootOptions,
   OpenNestedOptions,
   TrailEntry,
+  UsePopoverResult,
 } from './types';
 
 /**
@@ -457,7 +458,7 @@ export function usePopoverActions<TData = unknown, TContext = unknown>() {
  * @param key - The unique identifier key of the popover.
  * @returns Unified data values and action wrappers.
  */
-export function usePopover<TData = unknown, TContext = unknown>(key: string) {
+export function usePopover<TData = unknown, TContext = unknown>(key: string): UsePopoverResult<TData> {
   const entry = usePopoverEntry<TData>(key);
   const isOpen = useIsPopoverOpen(key);
   const isPinned = useIsPopoverPinned(key);
