@@ -1,6 +1,6 @@
 /* eslint-disable react/only-export-components */
-import { useCallback, useRef, type ReactNode } from 'react';
-import { useDraggable, DndContext, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core';
+import { useCallback, useRef, useMemo, type ReactNode } from 'react';
+import { useDraggable, DndContext, type DragStartEvent, type DragEndEvent, type Modifier } from '@dnd-kit/core';
 import { usePopoverCard } from './hooks/usePopoverCard';
 import { usePopoverDragAndDrop } from './hooks/useDragAndDrop';
 import {
@@ -71,7 +71,7 @@ export function usePopoverDraggableCard({
   const friction = entry.tiltFriction ?? 0.95;
   const decay = entry.tiltDecay ?? 0.82;
 
-  const { rotation, dragX, dragY } = usePopoverDragAndDrop({
+  const { rotation, rotationX, rotationY, dragX, dragY } = usePopoverDragAndDrop({
     isDragging: isDragAllowed ? isDragging : false,
     transform: isDragAllowed ? transform : null,
     enableTilt: tiltEnabled,
@@ -93,6 +93,8 @@ export function usePopoverDraggableCard({
     dragX: isDragAllowed ? dragX : 0,
     dragY: isDragAllowed ? dragY : 0,
     rotation: isDragAllowed ? rotation : 0,
+    rotationX: isDragAllowed ? rotationX : 0,
+    rotationY: isDragAllowed ? rotationY : 0,
     zIndex: card.style.zIndex as number,
   });
 
@@ -144,6 +146,15 @@ export interface PopoverCanvasProps<TData> {
     index: number;
     isPinned: boolean;
   }) => ReactNode;
+
+  /** Optional custom DndContext modifiers. */
+  modifiers?: Modifier[];
+
+  /** Set true to lock dragging coordinates strictly to the window viewport edges. */
+  restrictToWindow?: boolean;
+
+  /** Set true to lock dragging coordinates strictly to this canvas container element boundaries. */
+  restrictToContainer?: boolean;
 }
 
 /**
@@ -154,11 +165,67 @@ export interface PopoverCanvasProps<TData> {
  * @param props - Component props containing the render prop children.
  * @returns The DndContext wrapper structure.
  */
-export function PopoverCanvas<TData = unknown>({ children }: PopoverCanvasProps<TData>) {
+export function PopoverCanvas<TData = unknown>({
+  children,
+  modifiers: customModifiers,
+  restrictToWindow = false,
+  restrictToContainer = false,
+}: PopoverCanvasProps<TData>) {
   const trail = usePopoverTrail<TData>();
   const floating = usePopoverFloating<TData>();
   const store = usePopoverStoreApi<TData>();
   const { updateOffset, bringToFront } = usePopoverActions<TData>();
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const computedModifiers = useMemo(() => {
+    const list: Modifier[] = [];
+
+    if (restrictToWindow) {
+      list.push(({ transform, activeNodeRect }) => {
+        if (!activeNodeRect) return transform;
+
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        const minX = -activeNodeRect.left;
+        const maxX = windowWidth - activeNodeRect.left - activeNodeRect.width;
+        const minY = -activeNodeRect.top;
+        const maxY = windowHeight - activeNodeRect.top - activeNodeRect.height;
+
+        return {
+          ...transform,
+          x: Math.max(minX, Math.min(maxX, transform.x)),
+          y: Math.max(minY, Math.min(maxY, transform.y)),
+        };
+      });
+    }
+
+    if (restrictToContainer) {
+      list.push(({ transform, activeNodeRect }) => {
+        if (!activeNodeRect || !containerRef.current) return transform;
+
+        const containerRect = containerRef.current.getBoundingClientRect();
+
+        const minX = containerRect.left - activeNodeRect.left;
+        const maxX = containerRect.right - activeNodeRect.left - activeNodeRect.width;
+        const minY = containerRect.top - activeNodeRect.top;
+        const maxY = containerRect.bottom - activeNodeRect.top - activeNodeRect.height;
+
+        return {
+          ...transform,
+          x: Math.max(minX, Math.min(maxX, transform.x)),
+          y: Math.max(minY, Math.min(maxY, transform.y)),
+        };
+      });
+    }
+
+    if (customModifiers) {
+      list.push(...customModifiers);
+    }
+
+    return list;
+  }, [restrictToWindow, restrictToContainer, customModifiers]);
 
   const handleDragStart = (event: DragStartEvent) => {
     bringToFront(event.active.id as string);
@@ -177,8 +244,8 @@ export function PopoverCanvas<TData = unknown>({ children }: PopoverCanvasProps<
   ];
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={computedModifiers}>
+      <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
         {activeEntries.map(({ entry, isPinned }, idx) => (
           <div key={entry.key} style={{ pointerEvents: 'auto' }}>
             {children({

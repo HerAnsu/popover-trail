@@ -110,6 +110,12 @@ export interface TrailEntry<TData = unknown> {
   tiltFriction?: number;
   /** Custom spring tilt inertia decay coefficient (default: 0.82). */
   tiltDecay?: number;
+  /** Custom CSS animation class applied during the mounting status. */
+  mountingClassName?: string;
+  /** Custom CSS animation class applied during the unmounting status. */
+  unmountingClassName?: string;
+  /** Custom CSS animation class applied during the mounted status. */
+  mountedClassName?: string;
 }
 
 /**
@@ -199,6 +205,12 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   defaultOffset: number;
   /** Base z-index offset applied to all popover layers (default: 1000). */
   baseZIndex: number;
+  /** Global default CSS animation class applied during mounting. */
+  mountingClassName: string;
+  /** Global default CSS animation class applied during unmounting. */
+  unmountingClassName: string;
+  /** Global default CSS animation class applied during mounted. */
+  mountedClassName: string;
 }
 
 /**
@@ -304,6 +316,9 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
 
   /** Sets the base z-index layering offset. */
   setBaseZIndex: (baseZIndex: number) => void;
+
+  /** Sets the global default CSS animation class names. */
+  setGlobalAnimationClassNames: (mounting: string, unmounting: string, mounted: string) => void;
 }
 
 /**
@@ -395,6 +410,8 @@ export interface CollisionConfig {
   flip?: boolean | object;
   /** Toggle or configure the Floating UI shift middleware (default: true). */
   shift?: boolean | object;
+  /** Toggle or configure the Floating UI size middleware (default: false). */
+  size?: boolean | object;
 }
 
 /**
@@ -439,6 +456,12 @@ export interface OpenRootOptions {
   tiltFriction?: number;
   /** Custom spring tilt inertia decay coefficient (default: 0.82). */
   tiltDecay?: number;
+  /** Custom CSS animation class applied during mounting. */
+  mountingClassName?: string;
+  /** Custom CSS animation class applied during unmounting. */
+  unmountingClassName?: string;
+  /** Custom CSS animation class applied during mounted. */
+  mountedClassName?: string;
 }
 
 /**
@@ -483,4 +506,10 @@ export interface OpenNestedOptions {
   tiltFriction?: number;
   /** Custom spring tilt inertia decay coefficient (default: 0.82). */
   tiltDecay?: number;
+  /** Custom CSS animation class applied during mounting. */
+  mountingClassName?: string;
+  /** Custom CSS animation class applied during unmounting. */
+  unmountingClassName?: string;
+  /** Custom CSS animation class applied during mounted. */
+  mountedClassName?: string;
 }

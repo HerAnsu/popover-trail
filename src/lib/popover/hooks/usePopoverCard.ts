@@ -105,6 +105,9 @@ export function usePopoverCard({
   const trail = usePopoverStore((state) => state.trail);
   const floating = usePopoverStore((state) => state.floating);
   const baseZIndex = usePopoverStore((state) => state.baseZIndex);
+  const globalMounting = usePopoverStore((state) => state.mountingClassName);
+  const globalUnmounting = usePopoverStore((state) => state.unmountingClassName);
+  const globalMounted = usePopoverStore((state) => state.mountedClassName);
 
   // Handle transition state automatically (mounting -> mounted) using requestAnimationFrame for frame-adaptive rendering
   useEffect(() => {
@@ -123,6 +126,19 @@ export function usePopoverCard({
       };
     }
   }, [entry.key, entry.transitionStatus, actions]);
+
+  const mountingClass = entry.mountingClassName ?? globalMounting;
+  const unmountingClass = entry.unmountingClassName ?? globalUnmounting;
+  const mountedClass = entry.mountedClassName ?? globalMounted;
+
+  let transitionClassName = '';
+  if (entry.transitionStatus === 'mounting') {
+    transitionClassName = mountingClass;
+  } else if (entry.transitionStatus === 'mounted') {
+    transitionClassName = mountedClass;
+  } else if (entry.transitionStatus === 'unmounting') {
+    transitionClassName = unmountingClass;
+  }
 
   // Compile styles using the compiler utility (static offsets only)
   const style = getPopoverStyles({
@@ -216,5 +232,6 @@ export function usePopoverCard({
     onMouseEnter,
     onMouseLeave,
     onKeyDown,
+    transitionClassName,
   };
 }

@@ -188,6 +188,7 @@ const PopoverCard = memo(
       onMouseEnter,
       onMouseLeave,
       onKeyDown,
+      transitionClassName,
     } = usePopoverDraggableCard({
       entry,
       index,
@@ -257,7 +258,7 @@ const PopoverCard = memo(
           'popover-card',
           isTop && 'topmost',
           isPinned && 'pinned',
-          entry.transitionStatus,
+          transitionClassName,
         )}
         onMouseDown={() => actions.bringToFront(entry.key)}
         onMouseEnter={onMouseEnter}
@@ -825,7 +826,7 @@ function MainContent({
       ) : null}
 
       <PopoverPortal>
-        <PopoverCanvas<MathData>>
+        <PopoverCanvas<MathData> restrictToWindow>
           {({ entry, index, isPinned }) => (
             <PopoverCard
               entry={entry}

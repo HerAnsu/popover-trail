@@ -85,6 +85,15 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
 
   /** Base z-index offset applied to all popover layers (default: 1000). */
   baseZIndex?: number;
+
+  /** Global default CSS animation class applied during mounting (default: 'mounting'). */
+  mountingClassName?: string;
+
+  /** Global default CSS animation class applied during unmounting (default: 'unmounting'). */
+  unmountingClassName?: string;
+
+  /** Global default CSS animation class applied during mounted (default: 'mounted'). */
+  mountedClassName?: string;
 }
 
 /**
@@ -116,6 +125,9 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   exitTransitionDuration = 0,
   defaultOffset = 8,
   baseZIndex = 1000,
+  mountingClassName = 'mounting',
+  unmountingClassName = 'unmounting',
+  mountedClassName = 'mounted',
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() =>
@@ -151,6 +163,15 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   useEffect(() => {
     store.getState().setBaseZIndex(Number(baseZIndex));
   }, [baseZIndex, store]);
+
+  // Synchronize animation class names reactively when the props change
+  useEffect(() => {
+    store.getState().setGlobalAnimationClassNames(
+      String(mountingClassName),
+      String(unmountingClassName),
+      String(mountedClassName),
+    );
+  }, [mountingClassName, unmountingClassName, mountedClassName, store]);
 
   // Synchronize context reactively when the prop changes
   useEffect(() => {

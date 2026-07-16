@@ -730,6 +730,9 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         dragAxis: options?.dragAxis,
         tiltFriction: options?.tiltFriction,
         tiltDecay: options?.tiltDecay,
+        mountingClassName: options?.mountingClassName,
+        unmountingClassName: options?.unmountingClassName,
+        mountedClassName: options?.mountedClassName,
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
@@ -1205,6 +1208,19 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           set({ baseZIndex });
         }
       },
+      setGlobalAnimationClassNames: (mounting, unmounting, mounted) => {
+        if (
+          get().mountingClassName !== mounting ||
+          get().unmountingClassName !== unmounting ||
+          get().mountedClassName !== mounted
+        ) {
+          set({
+            mountingClassName: mounting,
+            unmountingClassName: unmounting,
+            mountedClassName: mounted,
+          });
+        }
+      },
     };
 
     const remainingActions = { ...actions } as Record<string, unknown>;
@@ -1223,6 +1239,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       'setExitTransitionDuration',
       'setDefaultOffset',
       'setBaseZIndex',
+      'setGlobalAnimationClassNames',
     ];
     for (const key of internalKeys) {
       delete remainingActions[key];
@@ -1250,6 +1267,9 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       exitTransitionDuration: 0,
       defaultOffset: 8,
       baseZIndex: 1000,
+      mountingClassName: 'mounting',
+      unmountingClassName: 'unmounting',
+      mountedClassName: 'mounted',
 
       ...actions,
       actions: remainingActions as unknown as PopoverStore<TData, TContext>['actions'],
