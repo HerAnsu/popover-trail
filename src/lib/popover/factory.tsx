@@ -18,7 +18,7 @@ import type { PopoverTriggerProps } from './components/PopoverTrigger';
  */
 export function createPopoverTrail<TData = unknown, TContext = unknown>() {
   function PopoverProvider(props: PopoverProviderProps<TData, TContext>) {
-    return <CorePopoverProvider {...(props as any)} />;
+    return <CorePopoverProvider {...(props as unknown as PopoverProviderProps<unknown, unknown>)} />;
   }
 
   function PopoverTrigger(props: PopoverTriggerProps) {
