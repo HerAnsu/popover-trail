@@ -28,6 +28,7 @@ export {
   usePopoverTrigger,
   usePopoverNestedTrigger,
   useIsPopoverOpen,
+  usePopover,
 } from './context';
 
 export { usePopoverGeometry } from './hooks/useGeometry';

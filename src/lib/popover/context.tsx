@@ -440,6 +440,42 @@ export function usePopoverActions<TData = unknown, TContext = unknown>() {
   return store.getState().actions as PopoverStore<TData, TContext>['actions'];
 }
 
+/**
+ * A unified selector hook that provides all data, loading status, active states,
+ * and dispatch actions needed to interact with a specific popover card.
+ *
+ * @template TData - The resolved data payload type.
+ * @template TContext - The global shared context type.
+ *
+ * @param key - The unique identifier key of the popover.
+ * @returns Unified data values and action wrappers.
+ */
+export function usePopover<TData = unknown, TContext = unknown>(key: string) {
+  const entry = usePopoverEntry<TData>(key);
+  const isOpen = useIsPopoverOpen(key);
+  const isPinned = useIsPopoverPinned(key);
+  const zIndex = usePopoverZIndex(key);
+  const isTop = useIsPopoverTopMost(key);
+  const offset = usePopoverOffset(key);
+  const actions = usePopoverActions<TData, TContext>();
+
+  return {
+    entry,
+    isOpen,
+    isPinned,
+    zIndex,
+    isTop,
+    offset,
+    isLoading: entry?.isLoading ?? false,
+    data: entry?.data,
+    error: entry?.error,
+    close: useCallback(() => actions.closeByKey(key, { transition: true }), [actions, key]),
+    pin: useCallback((rect: DOMRect) => actions.togglePin(key, rect), [actions, key]),
+    bringToFront: useCallback(() => actions.bringToFront(key), [actions, key]),
+    updateOffset: useCallback((x: number, y: number) => actions.updateOffset(key, x, y), [actions, key]),
+  };
+}
+
 function usePopoverHoverHandlers(
   key: string,
   openTimerRef: { current: ReturnType<typeof setTimeout> | null },
