@@ -420,6 +420,12 @@ export function usePopoverContext<TContext = unknown>() {
 export function usePopoverCollisionConfig() {
   return usePopoverStore((state) => state.collisionConfig);
 }
+/**
+ * Hook to check if a specific popover key is currently open (exists in trail or floating lists).
+ *
+ * @param key - The unique identifier key of the popover.
+ * @returns True if the popover is active and open.
+ */
 export function useIsPopoverOpen(key: string): boolean {
   return usePopoverStore<unknown, unknown, boolean>(
     useCallback(
