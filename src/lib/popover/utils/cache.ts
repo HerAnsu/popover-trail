@@ -17,7 +17,7 @@ import type { PopoverCache } from '../types';
  * console.log(cache.get("5 + 5")); // returns { value: 10 }
  * ```
  */
-export class SimplePopoverCache<TData = any> implements PopoverCache<TData> {
+export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> {
   private cache = new Map<string, { data: TData; expiry: number }>();
   private ttl: number;
 
