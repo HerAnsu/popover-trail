@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, type CSSProperties, type HTMLAttributes, type KeyboardEvent } from 'react';
 import { usePopoverGeometry } from './useGeometry';
 import {
   usePopoverOffset,
@@ -25,6 +25,32 @@ interface UsePopoverCardOptions {
 }
 
 /**
+ * Result object returned by the `usePopoverCard` hook.
+ */
+export interface UsePopoverCardResult {
+  /** Combined reference setter to be attached to the popover's outer DOM element. */
+  ref: (node: HTMLDivElement | null) => void;
+  /** Compiled absolute layout CSS style properties. */
+  style: CSSProperties;
+  /** True if this popover card is currently topmost in the z-index stack. */
+  isTop: boolean;
+  /** Always false for static cards (overridden in draggable cards). */
+  isDragging: boolean;
+  /** Reference to the popover store dispatch actions. */
+  actions: ReturnType<typeof usePopoverActions>;
+  /** HTML attribute props to bind to the dragging handle element. */
+  dragHandleProps: HTMLAttributes<HTMLElement>;
+  /** Hover pointer enter callback handler. */
+  onMouseEnter: () => void;
+  /** Hover pointer leave callback handler. */
+  onMouseLeave: () => void;
+  /** Keyboard accessibility keydown event callback handler. */
+  onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+  /** Active transition CSS class name resolved from mounting/unmounting states. */
+  transitionClassName: string;
+}
+
+/**
  * A unified composite hook that encapsulates all layout positioning, keyboard/hover controls,
  * focus lock restoration, and actions into a single simple interface.
  * Independent of drag-and-drop libraries.
@@ -37,7 +63,7 @@ export function usePopoverCard({
   index,
   isPinned,
   placement = 'bottom',
-}: UsePopoverCardOptions) {
+}: UsePopoverCardOptions): UsePopoverCardResult {
   const ref = useRef<HTMLDivElement | null>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
