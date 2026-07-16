@@ -2,7 +2,7 @@
 import { useCallback, useRef, useMemo, type ReactNode } from 'react';
 import { useDraggable, DndContext, type DragStartEvent, type DragEndEvent, type Modifier } from '@dnd-kit/core';
 import FocusLock from 'react-focus-lock';
-import { usePopoverCard } from './hooks/usePopoverCard';
+import { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCard';
 import { usePopoverDragAndDrop } from './hooks/useDragAndDrop';
 import {
   usePopoverOffset,
@@ -38,6 +38,14 @@ export interface UsePopoverDraggableCardOptions {
 }
 
 /**
+ * Result object returned by the `usePopoverDraggableCard` hook.
+ */
+export interface UsePopoverDraggableCardResult extends UsePopoverCardResult {
+  /** Callback handler to toggle the pinned status of the card modelessly. */
+  handlePinToggle: () => void;
+}
+
+/**
  * An extended version of `usePopoverCard` that integrates `@dnd-kit/core` dragging features,
  * pointer listeners, and physical tilt physics.
  *
@@ -53,7 +61,7 @@ export function usePopoverDraggableCard({
   enableTilt = true,
   maxTiltAngle = 5,
   tiltSensitivity = 8,
-}: UsePopoverDraggableCardOptions) {
+}: UsePopoverDraggableCardOptions): UsePopoverDraggableCardResult {
   const card = usePopoverCard({ entry, index, isPinned, placement });
 
   const allowDragWhenUnpinned = entry.allowDragWhenUnpinned ?? false;
