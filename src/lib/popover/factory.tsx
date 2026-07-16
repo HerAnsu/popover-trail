@@ -15,24 +15,53 @@ import type { PopoverTriggerProps } from './components/PopoverTrigger';
  *
  * @template TData - The resolved data payload type.
  * @template TContext - The global shared context type.
+ * @returns An object containing the typed Provider, Trigger, and state hooks.
  */
 export function createPopoverTrail<TData = unknown, TContext = unknown>() {
+  /**
+   * Type-safe PopoverProvider component pre-bound to your data and context shapes.
+   *
+   * @param props - Provider configuration properties.
+   * @returns The provider element wrapping children.
+   */
   function PopoverProvider(props: PopoverProviderProps<TData, TContext>) {
     return <CorePopoverProvider {...(props as unknown as PopoverProviderProps<unknown, unknown>)} />;
   }
 
+  /**
+   * Type-safe PopoverTrigger component pre-bound to your popover keys.
+   *
+   * @param props - Trigger configuration properties.
+   * @returns The cloned React element with event handlers.
+   */
   function PopoverTrigger(props: PopoverTriggerProps) {
     return <CorePopoverTrigger {...props} />;
   }
 
+  /**
+   * Type-safe usePopover selector hook pre-bound to your data and context shapes.
+   *
+   * @param key - The unique identifier key of the popover card.
+   * @returns Unified data values and pre-bound action wrappers.
+   */
   function usePopover(key: string) {
     return coreUsePopover<TData, TContext>(key);
   }
 
+  /**
+   * Type-safe usePopoverActions hook pre-bound to your data and context shapes.
+   *
+   * @returns Object containing type-safe dispatch actions.
+   */
   function usePopoverActions() {
     return coreUsePopoverActions<TData, TContext>();
   }
 
+  /**
+   * Type-safe usePopoverContext hook pre-bound to your context shape.
+   *
+   * @returns The active context object.
+   */
   function usePopoverContext() {
     return coreUsePopoverContext<TContext>();
   }
