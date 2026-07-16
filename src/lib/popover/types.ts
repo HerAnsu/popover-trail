@@ -317,7 +317,13 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   /** Sets the base z-index layering offset. */
   setBaseZIndex: (baseZIndex: number) => void;
 
-  /** Sets the global default CSS animation class names. */
+  /**
+   * Sets the global default CSS animation class names applied during popover transition phases.
+   *
+   * @param mounting - Class name applied when popover is mounting (e.g., 'mounting').
+   * @param unmounting - Class name applied when popover is unmounting (e.g., 'unmounting').
+   * @param mounted - Class name applied when popover is fully mounted (e.g., 'mounted').
+   */
   setGlobalAnimationClassNames: (mounting: string, unmounting: string, mounted: string) => void;
 }
 
