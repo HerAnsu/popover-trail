@@ -24,6 +24,19 @@ interface UsePopoverGeometryOptions {
 }
 
 /**
+ * Result object returned by the `usePopoverGeometry` hook.
+ */
+export interface UsePopoverGeometryResult {
+  /** The final absolute coordinates (`top`, `left`) of the popover card. */
+  finalLayoutPos: {
+    top: number;
+    left: number;
+  };
+  /** Reference setter callback to attach to the floating card element. */
+  setFloating: (node: HTMLElement | null) => void;
+}
+
+/**
  * Custom hook to calculate and track absolute positioning coordinates.
  * Integrates with Floating UI and supports auto-position updates on viewport scroll or resize.
  *
@@ -44,7 +57,7 @@ export function usePopoverGeometry({
   isDragging,
   isPinned,
   entry,
-}: UsePopoverGeometryOptions) {
+}: UsePopoverGeometryOptions): UsePopoverGeometryResult {
   const globalCollision = usePopoverCollisionConfig();
   const cascadeOffsetStep = usePopoverStore((state) => state.cascadeOffsetStep);
   const defaultOffset = usePopoverStore((state) => state.defaultOffset);

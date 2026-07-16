@@ -33,7 +33,7 @@ export {
   PopoverCardContext,
 } from './context';
 
-export { usePopoverGeometry } from './hooks/useGeometry';
+export { usePopoverGeometry, type UsePopoverGeometryResult } from './hooks/useGeometry';
 export { usePopoverDragAndDrop } from './hooks/useDragAndDrop';
 export { usePopoverKeyboard } from './hooks/usePopoverKeyboard';
 export { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCard';
