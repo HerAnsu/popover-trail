@@ -346,6 +346,7 @@ export type PopoverStore<TData = unknown, TContext = unknown> = PopoverStateData
  * Valid relative placements supported by Floating UI.
  */
 export type PopoverPlacement =
+  | 'auto'
   | 'top'
   | 'bottom'
   | 'left'

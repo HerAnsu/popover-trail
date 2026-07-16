@@ -32,6 +32,13 @@ import type {
 export const PopoverStoreContext = createContext<StoreApi<PopoverStore> | null>(null);
 
 /**
+ * Context container holding the current Popover card's unique key ID.
+ * Used by `<PopoverTrigger>` components to detect if they are nested and resolve
+ * their parent popover key automatically.
+ */
+export const PopoverCardContext = createContext<string | null>(null);
+
+/**
  * Props for the {@link PopoverProvider} component.
  *
  * @template TData - The type of resolved data payloads.

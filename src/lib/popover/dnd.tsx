@@ -10,6 +10,7 @@ import {
   usePopoverFloating,
   usePopoverStoreApi,
   usePopoverActions,
+  PopoverCardContext,
 } from './context';
 import { getPopoverStyles } from './utils/styles';
 import type { TrailEntry, PopoverPlacement } from './types';
@@ -360,22 +361,24 @@ export function PopoverCard<TData = unknown>({
       onKeyDown={onKeyDown}
     >
       <FocusLock disabled={!enableFocusLock || !isTop || isPinned} returnFocus>
-        {entry.ariaDescribedby && (
-          <div id={`desc-${entry.key}`} style={{ display: 'none' }}>
-            {entry.ariaDescribedby}
-          </div>
-        )}
+        <PopoverCardContext.Provider value={entry.key}>
+          {entry.ariaDescribedby && (
+            <div id={`desc-${entry.key}`} style={{ display: 'none' }}>
+              {entry.ariaDescribedby}
+            </div>
+          )}
 
-        {dragHandle ? (
-          <>
-            {dragHandle(resolvedDragHandleProps)}
-            {children}
-          </>
-        ) : (
-          <div {...resolvedDragHandleProps} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {children}
-          </div>
-        )}
+          {dragHandle ? (
+            <>
+              {dragHandle(resolvedDragHandleProps)}
+              {children}
+            </>
+          ) : (
+            <div {...resolvedDragHandleProps} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+              {children}
+            </div>
+          )}
+        </PopoverCardContext.Provider>
       </FocusLock>
     </div>
   );

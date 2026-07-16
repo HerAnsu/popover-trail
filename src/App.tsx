@@ -2,14 +2,13 @@ import { useState, memo } from 'react';
 import FocusLock from 'react-focus-lock';
 import clsx from 'clsx';
 import {
-  PopoverProvider,
+  createPopoverTrail,
   usePopoverTrail,
   usePopoverFloating,
   usePopoverActions,
   PopoverPortal,
-  usePopoverTrigger,
   usePopoverNestedTrigger,
-  useIsPopoverOpen,
+  PopoverCardContext,
   type PopoverResolver,
   type TrailEntry,
 } from './lib/popover';
@@ -24,6 +23,8 @@ interface MathData {
   leftExpr?: string;
   rightExpr?: string;
 }
+
+const { PopoverProvider, PopoverTrigger } = createPopoverTrail<MathData, string>();
 
 // Helper parser to recursively dissect math expressions
 function parseExpression(expr: string): MathData {
@@ -196,35 +197,7 @@ const PopoverCard = memo(
       placement: 'bottom',
     });
 
-    const leftTrigger = usePopoverNestedTrigger(entry.data?.leftExpr ?? '', entry.key, {
-      placement: 'left',
-      offset: 16, // Custom gap override (16px instead of default 8px)
-      cascadeOffsetStep: 16, // Double step
-      cascadeOffsetDirection: 'top', // Cascade upwards!
-      maxTiltAngle: 15, // High swing tilt angle override
-      collision: { flip: false }, // Disable auto-flipping on collision override
-      hover: {
-        enabled: hoverEnabled,
-        openDelay: hoverOpenDelay,
-        closeDelay: hoverCloseDelay,
-        closeOnMouseLeave: hoverCloseOnMouseLeave,
-      },
-      allowDragWhenUnpinned,
-      ariaDescribedby: entry.data?.leftExpr ? `Evaluation details for left operand: ${entry.data.leftExpr}` : undefined,
-    });
 
-    const rightTrigger = usePopoverNestedTrigger(entry.data?.rightExpr ?? '', entry.key, {
-      placement: 'right',
-      exitTransitionDuration: 600, // Custom exit transition duration override (600ms instead of 300ms)
-      hover: {
-        enabled: hoverEnabled,
-        openDelay: hoverOpenDelay,
-        closeDelay: hoverCloseDelay,
-        closeOnMouseLeave: hoverCloseOnMouseLeave,
-      },
-      allowDragWhenUnpinned,
-      ariaDescribedby: entry.data?.rightExpr ? `Evaluation details for right operand: ${entry.data.rightExpr}` : undefined,
-    });
 
     const customTriggerProps = usePopoverNestedTrigger(branchInput.trim(), entry.key, {
       hover: {
@@ -265,7 +238,8 @@ const PopoverCard = memo(
         onMouseLeave={onMouseLeave}
         onKeyDown={onKeyDown}>
         <FocusLock disabled={!isTop || isPinned} returnFocus>
-          {entry.ariaDescribedby ? (
+          <PopoverCardContext.Provider value={entry.key}>
+            {entry.ariaDescribedby ? (
             <div id={`desc-${entry.key}`} className="sr-only">
               {entry.ariaDescribedby}
             </div>
@@ -353,20 +327,50 @@ const PopoverCard = memo(
                       Drill down operands:
                     </span>
                     {entry.data.leftExpr ? (
-                      <button
-                        type="button"
-                        className="btn-link"
-                        {...leftTrigger}>
-                        👈 Left: {entry.data.leftExpr}
-                      </button>
+                      <PopoverTrigger
+                        popoverKey={entry.data.leftExpr}
+                        placement="left"
+                        offset={16}
+                        options={{
+                          cascadeOffsetStep: 16,
+                          cascadeOffsetDirection: 'top',
+                          maxTiltAngle: 15,
+                          collision: { flip: false },
+                          hover: {
+                            enabled: hoverEnabled,
+                            openDelay: hoverOpenDelay,
+                            closeDelay: hoverCloseDelay,
+                            closeOnMouseLeave: hoverCloseOnMouseLeave,
+                          },
+                          allowDragWhenUnpinned,
+                          ariaDescribedby: `Evaluation details for left operand: ${entry.data.leftExpr}`,
+                        }}
+                      >
+                        <button type="button" className="btn-link">
+                          👈 Left: {entry.data.leftExpr}
+                        </button>
+                      </PopoverTrigger>
                     ) : null}
                     {entry.data.rightExpr ? (
-                      <button
-                        type="button"
-                        className="btn-link"
-                        {...rightTrigger}>
-                        👉 Right: {entry.data.rightExpr}
-                      </button>
+                      <PopoverTrigger
+                        popoverKey={entry.data.rightExpr}
+                        placement="right"
+                        options={{
+                          exitTransitionDuration: 600,
+                          hover: {
+                            enabled: hoverEnabled,
+                            openDelay: hoverOpenDelay,
+                            closeDelay: hoverCloseDelay,
+                            closeOnMouseLeave: hoverCloseOnMouseLeave,
+                          },
+                          allowDragWhenUnpinned,
+                          ariaDescribedby: `Evaluation details for right operand: ${entry.data.rightExpr}`,
+                        }}
+                      >
+                        <button type="button" className="btn-link">
+                          👉 Right: {entry.data.rightExpr}
+                        </button>
+                      </PopoverTrigger>
                     ) : null}
                   </div>
                 ) : null}
@@ -425,7 +429,8 @@ const PopoverCard = memo(
                 </div>
               </div>
             )}
-          </div>
+            </div>
+          </PopoverCardContext.Provider>
         </FocusLock>
       </div>
     );
@@ -483,25 +488,7 @@ function MainContent({
     closeOnMouseLeave: hoverCloseOnMouseLeave,
   };
 
-  const trig1 = usePopoverTrigger('2 * (3 + (15 / 5))', {
-    hover: hoverConfig,
-    allowDragWhenUnpinned,
-    ariaDescribedby: 'Mathematical evaluation details for 2 * (3 + (15 / 5))',
-  });
-  const trig2 = usePopoverTrigger('(4 ^ 2) - (2 * (5 + 1))', {
-    hover: hoverConfig,
-    allowDragWhenUnpinned,
-    ariaDescribedby: 'Mathematical evaluation details for (4 ^ 2) - (2 * (5 + 1))',
-  });
-  const trig3 = usePopoverTrigger('100 / (2 * (3 + (4 - 2)))', {
-    hover: hoverConfig,
-    allowDragWhenUnpinned,
-    ariaDescribedby: 'Mathematical evaluation details for 100 / (2 * (3 + (4 - 2)))',
-  });
 
-  const isTrig1Open = useIsPopoverOpen('2 * (3 + (15 / 5))');
-  const isTrig2Open = useIsPopoverOpen('(4 ^ 2) - (2 * (5 + 1))');
-  const isTrig3Open = useIsPopoverOpen('100 / (2 * (3 + (4 - 2)))');
 
   const handleOpenCustomRoot = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!customRoot.trim()) return;
@@ -734,27 +721,50 @@ function MainContent({
           width: '100%',
           maxWidth: '480px',
         }}>
-        <button
-          type="button"
-          className={clsx('btn-trigger', { active: isTrig1Open })}
-          {...trig1}
-          style={{ textAlign: 'left' }}>
-          🧮 Compute: 2 * (3 + (15 / 5))
-        </button>
-        <button
-          type="button"
-          className={clsx('btn-trigger', { active: isTrig2Open })}
-          {...trig2}
-          style={{ textAlign: 'left' }}>
-          🧮 Compute: (4 ^ 2) - (2 * (5 + 1))
-        </button>
-        <button
-          type="button"
-          className={clsx('btn-trigger', { active: isTrig3Open })}
-          {...trig3}
-          style={{ textAlign: 'left' }}>
-          🧮 Compute: 100 / (2 * (3 + (4 - 2)))
-        </button>
+        <PopoverTrigger
+          popoverKey="2 * (3 + (15 / 5))"
+          placement="auto"
+          activeClassName="active"
+          options={{
+            hover: hoverConfig,
+            allowDragWhenUnpinned,
+            ariaDescribedby: 'Mathematical evaluation details for 2 * (3 + (15 / 5))',
+          }}
+        >
+          <button type="button" className="btn-trigger" style={{ textAlign: 'left' }}>
+            🧮 Compute: 2 * (3 + (15 / 5))
+          </button>
+        </PopoverTrigger>
+
+        <PopoverTrigger
+          popoverKey="(4 ^ 2) - (2 * (5 + 1))"
+          placement="auto"
+          activeClassName="active"
+          options={{
+            hover: hoverConfig,
+            allowDragWhenUnpinned,
+            ariaDescribedby: 'Mathematical evaluation details for (4 ^ 2) - (2 * (5 + 1))',
+          }}
+        >
+          <button type="button" className="btn-trigger" style={{ textAlign: 'left' }}>
+            🧮 Compute: (4 ^ 2) - (2 * (5 + 1))
+          </button>
+        </PopoverTrigger>
+
+        <PopoverTrigger
+          popoverKey="100 / (2 * (3 + (4 - 2)))"
+          placement="auto"
+          activeClassName="active"
+          options={{
+            hover: hoverConfig,
+            allowDragWhenUnpinned,
+            ariaDescribedby: 'Mathematical evaluation details for 100 / (2 * (3 + (4 - 2)))',
+          }}
+        >
+          <button type="button" className="btn-trigger" style={{ textAlign: 'left' }}>
+            🧮 Compute: 100 / (2 * (3 + (4 - 2)))
+          </button>
+        </PopoverTrigger>
 
         <div
           className="custom-root-zone"

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/react';
+import { useFloating, offset, flip, shift, autoUpdate, size } from '@floating-ui/react';
 import type { TrailEntry, PopoverPlacement } from '../types';
 import { usePopoverCollisionConfig, usePopoverStore } from '../context';
 
@@ -55,6 +55,7 @@ export function usePopoverGeometry({
   const padding = localCollision?.padding ?? globalCollision?.padding;
   const flipOption = localCollision?.flip ?? globalCollision?.flip;
   const shiftOption = localCollision?.shift ?? globalCollision?.shift;
+  const sizeOption = localCollision?.size ?? globalCollision?.size;
 
   const [resolvedBoundary, setResolvedBoundary] = useState<
     'clippingAncestors' | HTMLElement | HTMLElement[] | undefined
@@ -111,11 +112,36 @@ export function usePopoverGeometry({
       );
     }
 
+    if (sizeOption) {
+      list.push(
+        size({
+          boundary: boundaryOption,
+          padding: padding ?? 12,
+          apply({ availableWidth, availableHeight, elements }) {
+            elements.floating.style.setProperty('--popover-max-width', `${availableWidth}px`);
+            elements.floating.style.setProperty('--popover-max-height', `${availableHeight}px`);
+          },
+          ...(typeof sizeOption === 'object' ? sizeOption : {}),
+        })
+      );
+    }
+
     return list;
-  }, [entry?.offset, defaultOffset, flipOption, shiftOption, boundaryOption, padding]);
+  }, [entry?.offset, defaultOffset, flipOption, shiftOption, sizeOption, boundaryOption, padding]);
+
+  // Resolve placement dynamically if set to 'auto' based on trigger screen coordinates
+  const resolvedAutoPlacement = useMemo(() => {
+    if (placement !== 'auto') return placement;
+    if (!anchorRect) return 'right';
+
+    const screenCenterX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500;
+    const anchorCenterX = anchorRect.left + anchorRect.width / 2;
+
+    return anchorCenterX > screenCenterX ? 'left' : 'right';
+  }, [placement, anchorRect]);
 
   const { refs, x, y, update, placement: resolvedPlacement } = useFloating({
-    placement: placement ?? 'bottom',
+    placement: resolvedAutoPlacement ?? 'bottom',
     whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
     middleware,
   });
@@ -130,7 +156,7 @@ export function usePopoverGeometry({
     if (!isPinned) {
       void update();
     }
-  }, [id, anchorRect, placement, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update]);
+  }, [id, anchorRect, resolvedAutoPlacement, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update]);
 
   // 5. Calculate the final coordinates
   const finalLayoutPos = useMemo(() => {

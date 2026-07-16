@@ -29,6 +29,7 @@ export {
   usePopoverNestedTrigger,
   useIsPopoverOpen,
   usePopover,
+  PopoverCardContext,
 } from './context';
 
 export { usePopoverGeometry } from './hooks/useGeometry';
@@ -37,3 +38,5 @@ export { usePopoverKeyboard } from './hooks/usePopoverKeyboard';
 export { usePopoverCard } from './hooks/usePopoverCard';
 export { getPopoverStyles } from './utils/styles';
 export { SimplePopoverCache } from './utils/cache';
+export { PopoverTrigger, type PopoverTriggerProps } from './components/PopoverTrigger';
+export { createPopoverTrail } from './factory';
