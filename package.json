@@ -27,7 +27,8 @@
     "lint": "oxlint",
     "format": "oxfmt --write src",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "knip": "knip"
   },
   "dependencies": {
     "fast-deep-equal": "^3.1.3"
