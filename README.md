@@ -11,6 +11,21 @@ Instead of treating popovers as isolated, temporary overlays, **Popover Trail** 
 
 ---
 
+## 🎮 Interactive Demo & Playground
+
+Experience the interactive math expression drill-down playground included in the repository:
+
+```bash
+git clone https://github.com/your-org/popover-trail.git
+cd popover-trail
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser to test live formula parsing, interactive pinning, physical 3D swing dragging, and keyboard navigation.
+
+---
+
 ## ⚙️ How it Works under the Hood (Architecture)
 
 To use the library effectively, it helps to understand its underlying state and layout architecture.
@@ -73,6 +88,19 @@ Traditional popover libraries (like Radix, Ariakit, or standard Floating UI) are
 *   **WAI-ARIA Out-of-the-Box**: Automatically manages `role="dialog"`, `aria-modal`, `aria-haspopup="dialog"`, `aria-expanded`, and `aria-controls` for accessibility compliance.
 *   **CSS Custom Properties Integration**: Exposes `--popover-translate-x`, `--popover-translate-y`, `--popover-rotate-x`, `--popover-rotate-y`, `--popover-rotate-z`, and `--popover-z-index` directly on style objects for external CSS animations.
 *   **Stale Response Protection**: Every nested path maintains a hydration counter. If a user clicks triggers rapidly, late-resolving promises are discarded if their hydration counter does not match the active state.
+
+---
+
+## ⌨️ Keyboard Shortcuts & Accessibility
+
+Popover Trail provides comprehensive keyboard navigation and focus management:
+
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| `Escape` | Dismiss active popover | Closes the topmost unpinned popover in the active trail stack. |
+| `ArrowLeft` | Focus previous layer | Navigates focus backward to the parent popover card in the trail. |
+| `ArrowRight` | Focus next layer | Navigates focus forward to the child popover card in the trail. |
+| `Tab` / `Shift+Tab` | Focus trap locking | When `FocusLock` is active on topmost cards, traps focus inside. |
 
 ---
 
@@ -243,6 +271,62 @@ export function WorkspaceCanvas() {
 
 ---
 
+## 💡 Advanced Recipes & Patterns
+
+### Pattern A: LRU Data Caching with `SimplePopoverCache`
+
+Pass the built-in `SimplePopoverCache` to `PopoverProvider` to enable automatic TTL expiration and maximum memory size bounds:
+
+```tsx
+import { PopoverProvider, SimplePopoverCache } from 'popover-trail';
+
+// 5-minute TTL, maximum 50 cached popovers (FIFO eviction)
+const popoverCache = new SimplePopoverCache(5 * 60 * 1000, 50);
+
+export function App() {
+  return (
+    <PopoverProvider resolveData={myResolver} cache={popoverCache}>
+      <MainApp />
+    </PopoverProvider>
+  );
+}
+```
+
+### Pattern B: Custom Viewport Clamping Boundaries
+
+Clamp cascading popovers to specific container elements (e.g. scrollable editor panes):
+
+```tsx
+<PopoverTrigger
+  popoverKey="sub-item"
+  options={{
+    collision: {
+      boundary: () => document.getElementById('editor-pane')!,
+      padding: 12,
+      flip: { fallbackPlacements: ['top', 'right'] },
+    },
+  }}>
+  <button>Open Clamped Popover</button>
+</PopoverTrigger>
+```
+
+### Pattern C: Custom CSS Animations via Custom Properties
+
+Customize keyframe animations using generated CSS Variables:
+
+```css
+.popover-card {
+  transform: translate(var(--popover-translate-x), var(--popover-translate-y))
+             rotateX(var(--popover-rotate-x))
+             rotateY(var(--popover-rotate-y))
+             rotateZ(var(--popover-rotate-z));
+  z-index: var(--popover-z-index);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+```
+
+---
+
 ## ⚙️ API Reference
 
 ### `PopoverProvider` Props
@@ -307,6 +391,25 @@ const { isLoading, error, reload } = usePopoverHydration(key);
 
 #### `getPopoverStyles(params)`
 Compiles layout coordinates, drag offsets, and rotation angles into a unified `CSSProperties` object containing CSS Custom Properties (`--popover-translate-x`, `--popover-rotate-z`, etc.).
+
+---
+
+## ❓ Frequently Asked Questions (FAQ)
+
+<details>
+<summary><strong>Q: How does Popover Trail prevent memory leaks during rapid navigation?</strong></summary>
+<p>Every asynchronous data resolution is bound to an internal <code>AbortController</code>. When a popover parent is unmounted or closed, its active request is immediately aborted, preventing trailing background fetches and unhandled promise rejections.</p>
+</details>
+
+<details>
+<summary><strong>Q: Can I use Tailwind CSS or CSS Modules instead of Vanilla CSS?</strong></summary>
+<p>Yes! Popover Trail is 100% headless. It provides layout coordinates and CSS Custom Properties, leaving class names and styling entirely to your framework of choice.</p>
+</details>
+
+<details>
+<summary><strong>Q: How does z-index depth stacking work for pinned cards?</strong></summary>
+<p>Clicking or dragging any pinned card automatically calls <code>actions.bringToFront(key)</code>, promoting it to the top of the internal <code>zIndexOrder</code> array and updating its CSS <code>zIndex</code> style.</p>
+</details>
 
 ---
 
