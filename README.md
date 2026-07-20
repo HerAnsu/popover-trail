@@ -23,6 +23,20 @@ Standard overlay components treat popovers as isolated dropdown menus. Complex w
 
 ---
 
+## Feature Comparison
+
+| Feature | Popover Trail | Radix UI Popover | Ariakit | Mantine Popover | Floating UI (Bare) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Hierarchical Cascade Trails** | **Built-in** | Manual | Manual | Manual | Manual |
+| **Modal-to-Modeless Pinning** | **Built-in** | No | No | No | No |
+| **Velocity 3D Spring Physics** | **Built-in** | No | No | No | No |
+| **BFS Cleansing & AbortController** | **Built-in** | No | No | No | No |
+| **Zero-Flicker Cache Skipping** | **Built-in** | No | No | No | No |
+| **Sub-Pixel Anti-Blur Rounding** | **Built-in** | No | No | No | No |
+| **Headless React 19 API** | **Yes** | Yes | Yes | Partial | Yes |
+
+---
+
 ## Architecture and Core Engine
 
 ```mermaid
@@ -371,6 +385,69 @@ Popover Trail manages WAI-ARIA accessibility attributes and keyboard navigation 
 
 ---
 
+## TypeScript Interfaces Reference
+
+### `TrailEntry<TData>`
+
+```typescript
+export interface TrailEntry<TData = unknown> {
+  readonly key: string;
+  readonly parentKey?: string;
+  readonly originalParentKey?: string;
+  readonly rect?: DOMRect;
+  readonly originalRect?: DOMRect;
+  readonly pinnedLayoutPos?: { readonly top: number; readonly left: number };
+  readonly data?: TData;
+  readonly isLoading?: boolean;
+  readonly error?: Error | null;
+  readonly placement?: PopoverPlacement;
+  readonly offset?: number;
+  readonly hover?: HoverConfig;
+  readonly collision?: CollisionConfig;
+  readonly exitTransitionDuration?: number;
+  readonly baseZIndex?: number;
+  readonly cascadeOffsetStep?: number;
+  readonly cascadeOffsetDirection?: CascadeOffsetDirection;
+  readonly enableTilt?: boolean;
+  readonly maxTiltAngle?: number;
+  readonly tiltSensitivity?: number;
+  readonly dragAxis?: DragAxis;
+  readonly tiltFriction?: number;
+  readonly tiltDecay?: number;
+  readonly mountingClassName?: string;
+  readonly unmountingClassName?: string;
+  readonly mountedClassName?: string;
+  readonly allowDragWhenUnpinned?: boolean;
+  readonly ariaDescribedby?: string;
+}
+```
+
+### `PopoverActions<TData, TContext, TPopoverKey>`
+
+```typescript
+export interface PopoverActions<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
+  openRoot(ownerId: string, entry: TrailEntry<TData>): void;
+  openRootWithResolver(keyOrName: TPopoverKey, anchorEvent: AnchorEventLike, options?: OpenRootOptions): Promise<void>;
+  pushNested(index: number, entry: TrailEntry<TData>): void;
+  pushNestedWithResolver(keyOrName: TPopoverKey, parentKey: TPopoverKey, options?: OpenNestedOptions): Promise<void>;
+  togglePin(key: TPopoverKey, rect?: DOMRect): void;
+  closeFrom(index: number, options?: { transition?: boolean }): void;
+  closeByKey(key: TPopoverKey): void;
+  clear(): void;
+  bringToFront(key: TPopoverKey): void;
+  updateOffset(key: TPopoverKey, dragX: number, dragY: number): void;
+  retryPopover(key: TPopoverKey): Promise<void>;
+  setClosePinnedDescendants(enabled: boolean): void;
+  setCascadeOffsetStep(step: number): void;
+}
+```
+
+---
+
 ## API Reference
 
 ### `PopoverProvider` Props
@@ -435,6 +512,19 @@ const { isLoading, error, reload } = usePopoverHydration(key);
 
 #### `getPopoverStyles(params)`
 Compiles coordinates, offsets, and tilt angles into a unified `CSSProperties` object containing CSS Custom Properties (`--popover-translate-x`, `--popover-rotate-z`, etc.).
+
+---
+
+## Development Scripts
+
+| Command | Action |
+| :--- | :--- |
+| `npm run dev` | Launch local interactive Vite development playground. |
+| `npm run build` | Compile TypeScript types (`tsc -b`) and build production client bundle. |
+| `npm run build:lib` | Build library distribution bundles (`dist/index.js`, `dist/index.cjs`, `.d.ts`). |
+| `npm run lint` | Run strict Oxlint audit across all source files. |
+| `npm run test` | Execute Vitest unit test suite. |
+| `npm run knip` | Execute Knip unused code and export audit. |
 
 ---
 
