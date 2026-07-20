@@ -436,7 +436,7 @@ export function usePopoverActions<
   if (!store) {
     throw new Error('usePopoverActions must be used within a PopoverProvider');
   }
-  return store.getState().actions as Readonly<
+  return store.getState().actions as unknown as Readonly<
     PopoverStore<TData, TContext, TPopoverKey>['actions']
   >;
 }
@@ -457,12 +457,31 @@ export function usePopover<
   TContext = unknown,
   TPopoverKey extends string = string,
 >(key: TPopoverKey): UsePopoverResult<TData> {
-  const entry = usePopoverEntry<TData>(key);
-  const isOpen = useIsPopoverOpen(key);
-  const isPinned = useIsPopoverPinned(key);
-  const zIndex = usePopoverZIndex(key);
-  const isTop = useIsPopoverTopMost(key);
-  const offset = usePopoverOffset(key);
+  const slice = usePopoverStore(
+    useCallback(
+      (state: PopoverStore<TData, TContext>) => {
+        const entry =
+          state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key);
+        const isOpen = entry !== undefined;
+        const isPinned = state.pinnedStates[key] ?? false;
+        const zIndex = state.zIndexOrder.indexOf(key);
+        const isTop =
+          state.zIndexOrder.length > 0 && state.zIndexOrder[state.zIndexOrder.length - 1] === key;
+        const offset = state.offsets[key] ?? DEFAULT_OFFSET;
+
+        return {
+          entry,
+          isOpen,
+          isPinned,
+          zIndex,
+          isTop,
+          offset,
+        };
+      },
+      [key],
+    ),
+  );
+
   const actions = usePopoverActions<TData, TContext>();
 
   const close = useCallback(() => actions.closeByKey(key, { transition: true }), [actions, key]);
@@ -475,21 +494,21 @@ export function usePopover<
 
   return useMemo(
     (): UsePopoverResult<TData> => ({
-      entry,
-      isOpen,
-      isPinned,
-      zIndex,
-      isTop,
-      offset,
-      isLoading: entry?.isLoading ?? false,
-      data: entry?.data,
-      error: entry?.error,
+      entry: slice.entry,
+      isOpen: slice.isOpen,
+      isPinned: slice.isPinned,
+      zIndex: slice.zIndex,
+      isTop: slice.isTop,
+      offset: slice.offset,
+      isLoading: slice.entry?.isLoading ?? false,
+      data: slice.entry?.data,
+      error: slice.entry?.error,
       close,
       pin,
       bringToFront,
       updateOffset,
     }),
-    [entry, isOpen, isPinned, zIndex, isTop, offset, close, pin, bringToFront, updateOffset],
+    [slice, close, pin, bringToFront, updateOffset],
   );
 }
 

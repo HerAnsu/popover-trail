@@ -23,10 +23,7 @@ export function isPromise<T>(value: unknown): value is Promise<T> {
  * @param allowedKeys - The set of keys to preserve.
  * @returns The filtered record copy, or the original record.
  */
-function filterRecord<T>(
-  record: Record<string, T>,
-  allowedKeys: Set<string>,
-): Record<string, T> {
+function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
   const nextRecord: Record<string, T> = {};
   let changed = false;
   for (const key of Object.keys(record)) {
@@ -149,8 +146,11 @@ function buildChildrenMap<TData>(
 ): Map<string, TrailEntry<TData>[]> {
   const childrenMap = new Map<string, TrailEntry<TData>[]>();
   const mapEntry = (entry: TrailEntry<TData>) => {
-    const pKey = useOriginalParent ? (entry.parentKey ?? entry.originalParentKey) : entry.parentKey;
-    if (pKey) {
+    const parentKeys = new Set<string>();
+    if (entry.parentKey) parentKeys.add(entry.parentKey);
+    if (useOriginalParent && entry.originalParentKey) parentKeys.add(entry.originalParentKey);
+
+    for (const pKey of parentKeys) {
       let list = childrenMap.get(pKey);
       if (!list) {
         list = [];
@@ -218,8 +218,8 @@ function getDescendants<TData>(
   trail: readonly TrailEntry<TData>[],
 ): TrailEntry<TData>[] {
   return traverseDescendants([parentKey], floating, trail, {
-    useOriginalParent: false,
-    ignoreFloating: true,
+    useOriginalParent: true,
+    ignoreFloating: false,
   });
 }
 
@@ -254,25 +254,25 @@ export function updateEntryInLists<TData>(
   trail: readonly TrailEntry<TData>[],
   key: string,
   updatedFields: Partial<TrailEntry<TData>>,
-): { floating: TrailEntry<TData>[]; trail: TrailEntry<TData>[] } {
+): { floating: readonly TrailEntry<TData>[]; trail: readonly TrailEntry<TData>[] } {
   const update = (e: TrailEntry<TData>) => (e.key === key ? { ...e, ...updatedFields } : e);
   const inFloating = floating.some((e) => e.key === key);
   if (inFloating) {
     return {
       floating: floating.map(update),
-      trail: trail as TrailEntry<TData>[], // Preserve reference!
+      trail,
     };
   }
   const inTrail = trail.some((e) => e.key === key);
   if (inTrail) {
     return {
-      floating: floating as TrailEntry<TData>[], // Preserve reference!
+      floating,
       trail: trail.map(update),
     };
   }
   return {
-    floating: floating as TrailEntry<TData>[],
-    trail: trail as TrailEntry<TData>[],
+    floating,
+    trail,
   };
 }
 
@@ -285,7 +285,7 @@ export function bringToFrontPatch<TData, TContext>(
   key: string,
 ): Partial<PopoverStateData<TData, TContext>> {
   const descendantEntries = getDescendants(key, state.floating, state.trail);
-  const keysToMove = [...descendantEntries.map((e) => e.key), key];
+  const keysToMove = [key, ...descendantEntries.map((e) => e.key)];
   const keysToMoveSet = new Set(keysToMove);
   const nextZIndexOrder = [
     ...state.zIndexOrder.filter((k) => !keysToMoveSet.has(k)),
@@ -370,7 +370,8 @@ export function openRootState<TData, TContext>(
     originalRect: entry.originalRect ?? entry.rect,
   };
   const isSameOwner = state.ownerId === ownerId;
-  const nextTrail = isSameOwner ? [...state.trail, nextEntry] : [nextEntry];
+  const filteredTrail = state.trail.filter((e) => e.key !== entry.key);
+  const nextTrail = isSameOwner ? [...filteredTrail, nextEntry] : [nextEntry];
 
   const activeKeys = getActiveKeys(state.floating, nextTrail);
 
@@ -414,7 +415,8 @@ export function pushNestedState<TData, TContext>(
     if (finalEntry.parentKey === finalEntry.key) {
       finalEntry.parentKey = undefined;
     }
-    nextTrail = state.trail.slice(0, trailIndex + 1).concat(finalEntry);
+    const baseTrail = state.trail.slice(0, trailIndex + 1).filter((e) => e.key !== entry.key);
+    nextTrail = [...baseTrail, finalEntry];
   }
 
   const activeKeys = getActiveKeys(state.floating, nextTrail);

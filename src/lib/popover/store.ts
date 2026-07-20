@@ -50,13 +50,66 @@ export function createPopoverStore<
   cache?: PopoverCache<TData>,
 ) {
   const activeControllers = new Map<string, AbortController>();
+  const inFlightPromises = new Map<string, Promise<TData>>();
   const hoverCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const transitionTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  const eventListeners = new Set<(event: import('./types').PopoverStoreEvent<TData>) => void>();
+  const middlewares = new Set<import('./types').PopoverMiddleware<TData, TContext, TPopoverKey>>();
+  let isBatching = false;
+  let batchedStatePatch: Partial<PopoverStore<TData, TContext, TPopoverKey>> = {};
+
+  type HistorySnapshot = {
+    trail: readonly TrailEntry<TData>[];
+    floating: readonly TrailEntry<TData>[];
+    offsets: Readonly<Record<string, Readonly<{ x: number; y: number }>>>;
+    pinnedStates: Readonly<Record<string, boolean>>;
+    zIndexOrder: readonly string[];
+    ownerId: string | null;
+  };
+
+  const undoStack: HistorySnapshot[] = [];
+  const redoStack: HistorySnapshot[] = [];
+  const MAX_HISTORY = 30;
+
+  const pushSnapshot = (state: PopoverStore<TData, TContext, TPopoverKey>) => {
+    if (undoStack.length >= MAX_HISTORY) {
+      undoStack.shift();
+    }
+    undoStack.push({
+      trail: state.trail,
+      floating: state.floating,
+      offsets: state.offsets,
+      pinnedStates: state.pinnedStates,
+      zIndexOrder: state.zIndexOrder,
+      ownerId: state.ownerId,
+    });
+    redoStack.length = 0;
+  };
+
+  const emitEvent = (event: import('./types').PopoverStoreEvent<TData>) => {
+    for (const listener of eventListeners) {
+      try {
+        listener(event);
+      } catch {
+        // Prevent event listener errors from disrupting store operations
+      }
+    }
+  };
 
   const clearHoverTimer = (key: string) => {
     const timer = hoverCloseTimers.get(key);
     if (timer) {
       clearTimeout(timer);
       hoverCloseTimers.delete(key);
+    }
+  };
+
+  const clearTransitionTimer = (key: string) => {
+    const timer = transitionTimers.get(key);
+    if (timer) {
+      clearTimeout(timer);
+      transitionTimers.delete(key);
     }
   };
 
@@ -67,29 +120,55 @@ export function createPopoverStore<
         controller.abort();
         activeControllers.delete(key);
       }
+      inFlightPromises.delete(key);
       clearHoverTimer(key);
+      clearTransitionTimer(key);
     }
   };
 
   return createStore<PopoverStore<TData, TContext, TPopoverKey>>((rawSet, get) => {
+    const getCurrentState = () =>
+      isBatching
+        ? ({ ...get(), ...batchedStatePatch } as PopoverStore<TData, TContext, TPopoverKey>)
+        : get();
+
     const set = (
       patchOrFn:
-        | Partial<PopoverStore<TData, TContext>>
-        | ((state: PopoverStore<TData, TContext>) => Partial<PopoverStore<TData, TContext>>),
+        | Partial<PopoverStore<TData, TContext, TPopoverKey>>
+        | ((
+            state: PopoverStore<TData, TContext, TPopoverKey>,
+          ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>),
     ) => {
-      const debug = get()?.debug;
-      rawSet((state: PopoverStore<TData, TContext>) => {
-        const patch = typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
+      const currentState = getCurrentState();
+      let patch = typeof patchOrFn === 'function' ? patchOrFn(currentState) : patchOrFn;
+
+      for (const mw of middlewares) {
+        const res = mw(patch, currentState);
+        if (res === false) return;
+        if (res && typeof res === 'object') {
+          patch = res;
+        }
+      }
+
+      const debug = currentState?.debug;
+      if (isBatching) {
+        batchedStatePatch = { ...batchedStatePatch, ...patch };
+        return;
+      }
+      rawSet((state: PopoverStore<TData, TContext, TPopoverKey>) => {
         if (debug) {
           console.group(`Popover Store Update [${new Date().toLocaleTimeString()}]`);
           console.log('State Patch:', patch);
         }
-        const nextState = { ...state, ...patch };
+        const nextState = {
+          ...state,
+          ...patch,
+        };
         if (debug) {
           console.log('Next State:', nextState);
           console.groupEnd();
         }
-        return patch;
+        return nextState;
       });
     };
 
@@ -98,11 +177,17 @@ export function createPopoverStore<
         controller.abort();
       }
       activeControllers.clear();
+      inFlightPromises.clear();
 
       for (const timer of hoverCloseTimers.values()) {
         clearTimeout(timer);
       }
       hoverCloseTimers.clear();
+
+      for (const timer of transitionTimers.values()) {
+        clearTimeout(timer);
+      }
+      transitionTimers.clear();
 
       set({
         ownerId: null,
@@ -141,6 +226,12 @@ export function createPopoverStore<
     const isNestedStale = (parentKey: string, startedCounter: number) =>
       get().nestedHydrationRequestCounters[parentKey] !== startedCounter;
 
+    const findEntryByKey = (key: string): TrailEntry<TData> | undefined => {
+      const { floating, trail } = get();
+      const idx = findEntryIndex(floating, trail, key);
+      return idx !== -1 ? getEntryAtIndex(floating, trail, idx) : undefined;
+    };
+
     const resolvePopoverEntry = async (
       key: string,
       parentKey: string | undefined,
@@ -153,35 +244,38 @@ export function createPopoverStore<
       insertStatePatch: (
         entry: TrailEntry<TData>,
       ) =>
-        | Partial<PopoverStore<TData, TContext>>
-        | ((state: PopoverStore<TData, TContext>) => Partial<PopoverStore<TData, TContext>>),
+        | Partial<PopoverStore<TData, TContext, TPopoverKey>>
+        | ((
+            state: PopoverStore<TData, TContext, TPopoverKey>,
+          ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>),
     ): Promise<void> => {
-      abortControllersForKeys([controllerKey]);
-      const controller = new AbortController();
-      activeControllers.set(controllerKey, controller);
+      const { floating, trail } = get();
+      const existingIdx = findEntryIndex(floating, trail, key);
+      const existingEntry =
+        existingIdx !== -1 ? getEntryAtIndex(floating, trail, existingIdx) : undefined;
 
       const localCollision = options?.collision;
       const { cache: storeCache, context } = get();
 
       const buildEntry = (
         data?: TData,
-        error?: Error | null,
+        error: Error | null = null,
         isLoading = false,
       ): TrailEntry<TData> => ({
         key,
         parentKey,
-        originalParentKey: parentKey,
-        rect: rect ?? undefined,
-        originalRect: rect ?? undefined,
+        originalParentKey: parentKey ?? existingEntry?.originalParentKey,
+        rect: rect ?? existingEntry?.rect,
+        originalRect: rect ?? existingEntry?.originalRect,
         data,
         error,
         isLoading,
         collision: localCollision,
+        transitionStatus: 'mounting',
         hover: options?.hover,
         ariaDescribedby: options?.ariaDescribedby,
         allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
         placement: options?.placement,
-        transitionStatus: 'mounting',
         offset: options?.offset,
         exitTransitionDuration: options?.exitTransitionDuration,
         baseZIndex: options?.baseZIndex,
@@ -202,24 +296,50 @@ export function createPopoverStore<
         set((state) => updateEntryInLists(state.floating, state.trail, key, patch));
       };
 
-      const cached = storeCache?.get(key);
-      if (cached !== undefined && !isPromise<TData>(cached)) {
-        set(insertStatePatch(buildEntry(cached as TData)));
+      let cachedVal: TData | undefined = undefined;
+      if (storeCache) {
+        try {
+          const rawCached = storeCache.get(key);
+          cachedVal = isPromise(rawCached) ? await rawCached : rawCached;
+        } catch {
+          // Ignore cache errors
+        }
+      }
+
+      if (cachedVal !== undefined) {
+        set(insertStatePatch(buildEntry(cachedVal)));
         activeControllers.delete(controllerKey);
+        inFlightPromises.delete(key);
         return;
       }
 
-      let resultOrPromise: Promise<TData> | TData | undefined;
-      try {
-        resultOrPromise =
-          cached !== undefined
-            ? cached
-            : get().resolveData(key, parentData, context ?? undefined, controller.signal);
-      } catch (err) {
-        const errorObj = err instanceof Error ? err : new Error(String(err));
-        set(insertStatePatch(buildEntry(undefined, errorObj)));
-        activeControllers.delete(controllerKey);
-        return;
+      let resultOrPromise: TData | Promise<TData> | undefined = inFlightPromises.get(key);
+      let controller: AbortController;
+
+      if (!resultOrPromise) {
+        abortControllersForKeys([controllerKey]);
+        controller = new AbortController();
+        activeControllers.set(controllerKey, controller);
+
+        try {
+          resultOrPromise = get().resolveData(
+            key,
+            parentData,
+            context ?? undefined,
+            controller.signal,
+          );
+          if (isPromise<TData>(resultOrPromise)) {
+            inFlightPromises.set(key, resultOrPromise);
+          }
+        } catch (err) {
+          const errorObj = err instanceof Error ? err : new Error(String(err));
+          set(insertStatePatch(buildEntry(undefined, errorObj)));
+          activeControllers.delete(controllerKey);
+          inFlightPromises.delete(key);
+          return;
+        }
+      } else {
+        controller = activeControllers.get(controllerKey) ?? new AbortController();
       }
 
       if (!isPromise<TData>(resultOrPromise)) {
@@ -228,6 +348,7 @@ export function createPopoverStore<
           void storeCache.set(key, resultOrPromise);
         }
         activeControllers.delete(controllerKey);
+        inFlightPromises.delete(key);
         return;
       }
 
@@ -252,6 +373,7 @@ export function createPopoverStore<
         if (activeControllers.get(controllerKey) === controller) {
           activeControllers.delete(controllerKey);
         }
+        inFlightPromises.delete(key);
       }
     };
 
@@ -263,7 +385,14 @@ export function createPopoverStore<
       },
 
       setResolveData: (newResolver) => {
-        set({ resolveData: newResolver });
+        if (get().resolveData !== newResolver) {
+          for (const controller of activeControllers.values()) {
+            controller.abort();
+          }
+          activeControllers.clear();
+          inFlightPromises.clear();
+          set({ resolveData: newResolver });
+        }
       },
 
       setOwnerId: (ownerId) => {
@@ -273,20 +402,39 @@ export function createPopoverStore<
       },
 
       openRoot: (ownerId, entry) => {
+        const current = getCurrentState();
+        pushSnapshot(current);
+        abortControllersForKeys(current.trail.map((e) => e.key));
+        emitEvent({ type: 'open_root', key: entry.key, ownerId });
         set((state) => openRootState(state, ownerId, entry));
       },
 
       pushNested: (index, entry) => {
+        const current = getCurrentState();
+        pushSnapshot(current);
+        const { trail, floating } = current;
+        const isFloating = index < floating.length;
+        if (!isFloating) {
+          const trailIndex = index - floating.length;
+          const truncatedKeys = trail.slice(trailIndex + 1).map((e) => e.key);
+          abortControllersForKeys(truncatedKeys);
+        }
+        emitEvent({ type: 'push_nested', key: entry.key, parentKey: entry.parentKey });
         set((state) => pushNestedState(state, index, entry));
       },
 
       togglePin: (key, rect) => {
+        pushSnapshot(getCurrentState());
+        clearHoverTimer(key);
         set((state) => togglePinState(state, key, rect));
       },
 
       bringToFront: (key) => {
         set((state) => {
           if (!hasEntryWithKey(state.floating, state.trail, key)) return {};
+          const entry =
+            state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key);
+          if (entry?.transitionStatus === 'unmounting') return {};
           return bringToFrontPatch(state, key);
         });
       },
@@ -294,89 +442,70 @@ export function createPopoverStore<
       closeFrom: (index, options) => {
         const { floating, trail, closePinnedDescendants } = get();
         const totalCount = floating.length + trail.length;
-        if (index >= 0 && index < totalCount) {
-          const isFloating = index < floating.length;
-          let directClosedKeys: string[];
-          if (isFloating) {
-            const entry = floating[index];
-            if (!entry) return;
-            directClosedKeys = [entry.key];
-          } else {
-            const trailIndex = index - floating.length;
-            directClosedKeys = trail.slice(trailIndex).map((e) => e.key);
-          }
-          let descendants = getAllDescendants(directClosedKeys, floating, trail);
-          if (!closePinnedDescendants) {
-            const floatingKeys = new Set(floating.map((e) => e.key));
-            descendants = new Set([...descendants].filter((key) => !floatingKeys.has(key)));
-          }
-          const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
+        if (index < 0 || index >= totalCount) return;
 
-          // 1. Abort controllers and clear hover timers immediately
-          abortControllersForKeys(removedKeys);
+        const isFloating = index < floating.length;
+        let directClosedKeys: string[];
+        if (isFloating) {
+          const entry = floating[index];
+          if (!entry) return;
+          directClosedKeys = [entry.key];
+        } else {
+          const trailIndex = index - floating.length;
+          directClosedKeys = trail.slice(trailIndex).map((e) => e.key);
+        }
 
-          const { exitTransitionDuration: globalDuration } = get();
-          let maxDuration = globalDuration;
-          const durationLookup = new Map<string, number | undefined>();
-          for (const e of floating) durationLookup.set(e.key, e.exitTransitionDuration);
-          for (const e of trail) durationLookup.set(e.key, e.exitTransitionDuration);
+        let descendants = getAllDescendants(directClosedKeys, floating, trail);
+        if (!closePinnedDescendants) {
+          const floatingKeys = new Set(floating.map((e) => e.key));
+          descendants = new Set([...descendants].filter((key) => !floatingKeys.has(key)));
+        }
+        const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
+
+        pushSnapshot(getCurrentState());
+
+        // 1. Abort controllers and clear hover/transition timers immediately
+        abortControllersForKeys(removedKeys);
+
+        const { exitTransitionDuration: globalDuration } = get();
+        let maxDuration = globalDuration;
+        for (const key of removedKeys) {
+          const entry = findEntryByKey(key);
+          if (entry?.exitTransitionDuration !== undefined) {
+            maxDuration = Math.max(maxDuration, entry.exitTransitionDuration);
+          }
+        }
+
+        if (options?.transition && maxDuration > 0) {
+          // 2. Mark entries as unmounting in the state
+          set((state) => {
+            const update = (e: TrailEntry<TData>) =>
+              removedKeys.has(e.key) ? { ...e, transitionStatus: 'unmounting' as const } : e;
+            return {
+              trail: state.trail.map(update),
+              floating: state.floating.map(update),
+            };
+          });
+
+          // 3. Defer actual array removal to let exit transition finish
           for (const key of removedKeys) {
-            const duration = durationLookup.get(key);
-            if (duration !== undefined) {
-              maxDuration = Math.max(maxDuration, duration);
-            }
+            clearTransitionTimer(key);
           }
-
-          if (options?.transition && maxDuration > 0) {
-            // 2. Mark entries as unmounting in the state
+          const exitTimer = setTimeout(() => {
             set((state) => {
-              const update = (e: TrailEntry<TData>) =>
-                removedKeys.has(e.key) ? { ...e, transitionStatus: 'unmounting' as const } : e;
-              return {
-                trail: state.trail.map(update),
-                floating: state.floating.map(update),
-              };
-            });
-
-            // 3. Defer actual array removal to let exit transition finish
-            setTimeout(() => {
-              set((state) => {
-                const nextFloating = state.floating.filter(
-                  (e) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting',
-                );
-                const nextTrail = state.trail.filter(
-                  (e) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting',
-                );
-                const nextPinnedStates = { ...state.pinnedStates };
-                for (const k of removedKeys) {
-                  const exists =
-                    nextFloating.some((e) => e.key === k) || nextTrail.some((e) => e.key === k);
-                  if (!exists) {
-                    nextPinnedStates[k] = false;
-                  }
-                }
-                return {
-                  floating: nextFloating,
-                  trail: nextTrail,
-                  ...getCleanupStatePatch<TData, TContext>(
-                    nextFloating,
-                    nextTrail,
-                    state.offsets,
-                    state.zIndexOrder,
-                    nextPinnedStates,
-                    state.nestedHydrationRequestCounters,
-                  ),
-                };
-              });
-            }, maxDuration); // exit transition window
-          } else {
-            // Instant synchronous close
-            set((state) => {
-              const nextFloating = state.floating.filter((e) => !removedKeys.has(e.key));
-              const nextTrail = state.trail.filter((e) => !removedKeys.has(e.key));
+              const nextFloating = state.floating.filter(
+                (e) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting',
+              );
+              const nextTrail = state.trail.filter(
+                (e) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting',
+              );
               const nextPinnedStates = { ...state.pinnedStates };
               for (const k of removedKeys) {
-                nextPinnedStates[k] = false;
+                const exists =
+                  nextFloating.some((e) => e.key === k) || nextTrail.some((e) => e.key === k);
+                if (!exists) {
+                  nextPinnedStates[k] = false;
+                }
               }
               return {
                 floating: nextFloating,
@@ -391,11 +520,41 @@ export function createPopoverStore<
                 ),
               };
             });
+            for (const key of removedKeys) {
+              transitionTimers.delete(key);
+            }
+          }, maxDuration);
+
+          for (const key of removedKeys) {
+            transitionTimers.set(key, exitTimer);
           }
+        } else {
+          // Instant synchronous close
+          set((state) => {
+            const nextFloating = state.floating.filter((e) => !removedKeys.has(e.key));
+            const nextTrail = state.trail.filter((e) => !removedKeys.has(e.key));
+            const nextPinnedStates = { ...state.pinnedStates };
+            for (const k of removedKeys) {
+              nextPinnedStates[k] = false;
+            }
+            return {
+              floating: nextFloating,
+              trail: nextTrail,
+              ...getCleanupStatePatch<TData, TContext>(
+                nextFloating,
+                nextTrail,
+                state.offsets,
+                state.zIndexOrder,
+                nextPinnedStates,
+                state.nestedHydrationRequestCounters,
+              ),
+            };
+          });
         }
       },
 
       updateOffset: (key, x, y) => {
+        if (Number.isNaN(x) || Number.isNaN(y)) return;
         const current = get().offsets[key];
         if (current && current.x === x && current.y === y) return;
         set((state) => ({
@@ -478,7 +637,12 @@ export function createPopoverStore<
         const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
 
         // Check if already open as root of active trail
-        if (trail.length > 0 && trail[0]?.key === keyOrName && get().ownerId === finalOwnerId) {
+        if (
+          trail.length > 0 &&
+          trail[0]?.key === keyOrName &&
+          trail[0]?.transitionStatus !== 'unmounting' &&
+          get().ownerId === finalOwnerId
+        ) {
           return;
         }
 
@@ -489,7 +653,14 @@ export function createPopoverStore<
             : 'getBoundingClientRect' in anchorEvent
               ? anchorEvent.getBoundingClientRect()
               : new DOMRect(0, 0, 0, 0);
-        const anchorRect = new DOMRect(rawRect.x, rawRect.y, rawRect.width, rawRect.height);
+
+        const sanitizeNum = (n: number) => (Number.isFinite(n) ? n : 0);
+        const anchorRect = new DOMRect(
+          sanitizeNum(rawRect.x),
+          sanitizeNum(rawRect.y),
+          sanitizeNum(rawRect.width),
+          sanitizeNum(rawRect.height),
+        );
 
         // Save anchor details immediately
         set({ anchorElement, anchorRect });
@@ -516,13 +687,18 @@ export function createPopoverStore<
         const existingIndex = findEntryIndex(floating, trail, keyOrName);
         if (existingIndex !== -1) {
           const existingEntry = getEntryAtIndex(floating, trail, existingIndex);
-          if (existingEntry && existingEntry.parentKey === sourceKey) {
+          if (
+            existingEntry &&
+            existingEntry.transitionStatus !== 'unmounting' &&
+            (existingEntry.parentKey === sourceKey || existingEntry.originalParentKey === sourceKey)
+          ) {
+            actions.bringToFront(keyOrName);
             return;
           }
         }
 
         const sourceEntry = getEntryAtIndex(floating, trail, sourceIndex);
-        if (!sourceEntry) return;
+        if (!sourceEntry || sourceEntry.transitionStatus === 'unmounting') return;
 
         const triggerRect = options?.triggerRect;
         const rect = triggerRect ?? sourceEntry.rect;
@@ -548,9 +724,10 @@ export function createPopoverStore<
         const entry = getEntryAtIndex(floating, trail, index);
         if (!entry) return;
 
+        const effectiveParentKey = entry.parentKey ?? entry.originalParentKey;
         let parentData: TData | undefined = undefined;
-        if (entry.parentKey) {
-          const pIndex = findEntryIndex(floating, trail, entry.parentKey);
+        if (effectiveParentKey) {
+          const pIndex = findEntryIndex(floating, trail, effectiveParentKey);
           if (pIndex !== -1) {
             parentData = getEntryAtIndex(floating, trail, pIndex)?.data;
           }
@@ -578,16 +755,16 @@ export function createPopoverStore<
           mountedClassName: entry.mountedClassName,
         };
 
-        if (entry.parentKey) {
+        if (effectiveParentKey) {
           await resolvePopoverEntry(
             key,
-            entry.parentKey,
+            effectiveParentKey,
             entry.rect ?? null,
             parentData,
             options,
             key,
-            () => incrementNestedCounter(entry.parentKey!),
-            (startedCounter) => isNestedStale(entry.parentKey!, startedCounter),
+            () => incrementNestedCounter(effectiveParentKey),
+            (startedCounter) => isNestedStale(effectiveParentKey, startedCounter),
             (updatedEntry) => (state) =>
               updateEntryInLists(state.floating, state.trail, key, updatedEntry),
           );
@@ -622,9 +799,12 @@ export function createPopoverStore<
       closeByKey: (key, options) => {
         const { floating, trail } = get();
         const index = findEntryIndex(floating, trail, key);
-        if (index !== -1) {
-          actions.closeFrom(index, options);
-        }
+        if (index === -1) return;
+
+        const entry = getEntryAtIndex(floating, trail, index);
+        if (entry?.transitionStatus === 'unmounting' && options?.transition) return;
+
+        actions.closeFrom(index, options);
       },
       setEnableArrowNavigation: (enableArrowNavigation) => {
         if (get().enableArrowNavigation !== enableArrowNavigation) {
@@ -637,22 +817,11 @@ export function createPopoverStore<
         }
       },
       hoverEnter: (key) => {
-        clearHoverTimer(key);
-        const { trail, floating } = get();
-        // Build a fast lookup Map for parent keys to make climbing tree O(1) per step
-        const parentMap = new Map<string, string | undefined>();
-        floating.forEach((e) => parentMap.set(e.key, e.parentKey));
-        trail.forEach((e) => parentMap.set(e.key, e.parentKey));
-
         let currentKey: string | undefined = key;
         while (currentKey) {
-          const parentKey = parentMap.get(currentKey);
-          if (parentKey) {
-            clearHoverTimer(parentKey);
-            currentKey = parentKey;
-          } else {
-            break;
-          }
+          clearHoverTimer(currentKey);
+          const entry = findEntryByKey(currentKey);
+          currentKey = entry?.parentKey ?? entry?.originalParentKey;
         }
       },
       hoverLeave: (key, delay = 300) => {
@@ -669,6 +838,9 @@ export function createPopoverStore<
         }
       },
       setTransitionStatus: (key, status) => {
+        const entry = findEntryByKey(key);
+        if (entry?.transitionStatus === status) return;
+
         set((state) =>
           updateEntryInLists(state.floating, state.trail, key, { transitionStatus: status }),
         );
@@ -701,27 +873,169 @@ export function createPopoverStore<
           });
         }
       },
-    };
+      subscribeEvent: (listener) => {
+        eventListeners.add(listener);
+        return () => {
+          eventListeners.delete(listener);
+        };
+      },
+      batchUpdates: (fn) => {
+        if (isBatching) {
+          fn(actions);
+          return;
+        }
+        isBatching = true;
+        batchedStatePatch = {};
+        try {
+          fn(actions);
+        } finally {
+          isBatching = false;
+          if (Object.keys(batchedStatePatch).length > 0) {
+            const finalPatch = batchedStatePatch;
+            batchedStatePatch = {};
+            set(finalPatch);
+          }
+        }
+      },
+      useMiddleware: (middleware) => {
+        middlewares.add(middleware);
+        return () => {
+          middlewares.delete(middleware);
+        };
+      },
+      canUndo: () => undoStack.length > 0,
+      canRedo: () => redoStack.length > 0,
+      undo: () => {
+        if (undoStack.length === 0) return;
+        const current = get();
+        const prev = undoStack.pop()!;
+        redoStack.push({
+          trail: current.trail,
+          floating: current.floating,
+          offsets: current.offsets,
+          pinnedStates: current.pinnedStates,
+          zIndexOrder: current.zIndexOrder,
+          ownerId: current.ownerId,
+        });
+        set({
+          trail: prev.trail,
+          floating: prev.floating,
+          offsets: prev.offsets,
+          pinnedStates: prev.pinnedStates,
+          zIndexOrder: prev.zIndexOrder,
+          ownerId: prev.ownerId,
+        });
+      },
+      redo: () => {
+        if (redoStack.length === 0) return;
+        const current = get();
+        const next = redoStack.pop()!;
+        undoStack.push({
+          trail: current.trail,
+          floating: current.floating,
+          offsets: current.offsets,
+          pinnedStates: current.pinnedStates,
+          zIndexOrder: current.zIndexOrder,
+          ownerId: current.ownerId,
+        });
+        set({
+          trail: next.trail,
+          floating: next.floating,
+          offsets: next.offsets,
+          pinnedStates: next.pinnedStates,
+          zIndexOrder: next.zIndexOrder,
+          ownerId: next.ownerId,
+        });
+      },
+      transaction: async (fn) => {
+        const snapshotState = getCurrentState();
+        const snapshotControllers = new Set(activeControllers.keys());
+        try {
+          await fn(actions);
+          return true;
+        } catch (err) {
+          if (getCurrentState().debug) {
+            console.error('Popover Transaction Rollback:', err);
+          }
+          for (const key of activeControllers.keys()) {
+            if (!snapshotControllers.has(key)) {
+              const controller = activeControllers.get(key);
+              if (controller) controller.abort();
+              activeControllers.delete(key);
+            }
+          }
+          set({
+            trail: snapshotState.trail,
+            floating: snapshotState.floating,
+            offsets: snapshotState.offsets,
+            pinnedStates: snapshotState.pinnedStates,
+            zIndexOrder: snapshotState.zIndexOrder,
+            ownerId: snapshotState.ownerId,
+            anchorElement: snapshotState.anchorElement,
+            anchorRect: snapshotState.anchorRect,
+          });
+          return false;
+        }
+      },
+      persistState: async (config) => {
+        const storageKey = config?.key ?? 'popover_store_state';
+        const engine =
+          config?.storage ??
+          (typeof window !== 'undefined' && window.localStorage ? window.localStorage : null);
+        if (!engine) return;
 
-    // Clean destructuring of remaining public actions without unsafe casts or mutating delete
-    const {
-      setContext: _setContext,
-      setResolveData: _setResolveData,
-      setOwnerId: _setOwnerId,
-      openRoot: _openRoot,
-      pushNested: _pushNested,
-      destroy: _destroy,
-      setClosePinnedDescendants: _setClosePinnedDescendants,
-      setCollisionConfig: _setCollisionConfig,
-      setEnableArrowNavigation: _setEnableArrowNavigation,
-      setDebug: _setDebug,
-      setCascadeOffsetStep: _setCascadeOffsetStep,
-      setExitTransitionDuration: _setExitTransitionDuration,
-      setDefaultOffset: _setDefaultOffset,
-      setBaseZIndex: _setBaseZIndex,
-      setGlobalAnimationClassNames: _setGlobalAnimationClassNames,
-      ...publicActions
-    } = actions;
+        const { floating, pinnedStates, offsets, zIndexOrder } = getCurrentState();
+        const filterFn = config?.filter;
+
+        const filteredFloating = filterFn ? floating.filter((e) => filterFn(e.key)) : floating;
+        const keysToSave = new Set(filteredFloating.map((e) => e.key));
+
+        const savedOffsets: Record<string, { x: number; y: number }> = {};
+        const savedPinnedStates: Record<string, boolean> = {};
+
+        for (const k of keysToSave) {
+          if (offsets[k]) savedOffsets[k] = offsets[k]!;
+          if (pinnedStates[k] !== undefined) savedPinnedStates[k] = pinnedStates[k]!;
+        }
+
+        const payload = JSON.stringify({
+          floating: filteredFloating,
+          offsets: savedOffsets,
+          pinnedStates: savedPinnedStates,
+          zIndexOrder: zIndexOrder.filter((k) => keysToSave.has(k)),
+        });
+
+        await engine.setItem(storageKey, payload);
+      },
+
+      rehydrateState: async (config) => {
+        const storageKey = config?.key ?? 'popover_store_state';
+        const engine =
+          config?.storage ??
+          (typeof window !== 'undefined' && window.localStorage ? window.localStorage : null);
+        if (!engine) return false;
+
+        try {
+          const raw = await engine.getItem(storageKey);
+          if (!raw) return false;
+          const parsed = JSON.parse(raw);
+          if (!parsed || !Array.isArray(parsed.floating)) return false;
+
+          const current = getCurrentState();
+          set({
+            floating: parsed.floating,
+            offsets: { ...current.offsets, ...parsed.offsets },
+            pinnedStates: { ...current.pinnedStates, ...parsed.pinnedStates },
+            zIndexOrder: Array.from(
+              new Set([...current.zIndexOrder, ...(parsed.zIndexOrder ?? [])]),
+            ),
+          });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+    };
 
     return {
       ownerId: null,
@@ -750,7 +1064,7 @@ export function createPopoverStore<
       mountedClassName: 'mounted',
 
       ...actions,
-      actions: publicActions,
+      actions,
     };
   });
 }

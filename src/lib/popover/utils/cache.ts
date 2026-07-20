@@ -43,15 +43,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @returns True if a valid (non-expired) entry exists.
    */
   has(key: string): boolean {
-    const entry = this.cache.get(key);
-    if (!entry) return false;
-
-    if (Date.now() > entry.expiry) {
-      this.cache.delete(key);
-      return false;
-    }
-
-    return true;
+    return this.get(key) !== undefined;
   }
 
   /**
@@ -78,14 +70,17 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
 
   /**
    * Saves data in the cache, stamping it with the configured TTL expiration threshold.
-   * If the cache exceeds `maxSize`, the oldest entry is evicted (FIFO).
+   * If the cache exceeds `maxSize`, the oldest entry is evicted (FIFO/LRU).
    *
    * @param key - The unique cache key.
    * @param data - The data payload to cache.
    */
   set(key: string, data: TData): void {
-    // Evict oldest entry if at capacity (and not updating an existing key)
-    if (!this.cache.has(key) && this.cache.size >= this.maxSize) {
+    // If key exists, delete it first so re-insertion updates Map key order
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxSize) {
+      // Evict oldest entry if at capacity
       const oldestKey = this.cache.keys().next().value;
       if (oldestKey !== undefined) {
         this.cache.delete(oldestKey);
@@ -105,6 +100,25 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    */
   delete(key: string): void {
     this.cache.delete(key);
+  }
+
+  /**
+   * Proactively sweeps and purges all expired entries from the cache map.
+   */
+  pruneExpired(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now > entry.expiry) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Returns the current number of active cached items (including any un-pruned expired items).
+   */
+  get size(): number {
+    return this.cache.size;
   }
 
   /**

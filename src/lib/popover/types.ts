@@ -175,6 +175,7 @@ export type AnchorEventLike =
  *
  * @template TData - The type of data resolved by the callback.
  * @template TContext - The type of external global context passed to the resolver.
+ * @template TPopoverKey - Union of valid popover keys.
  *
  * @param keyOrName - The unique key or expression to resolve.
  * @param parentData - Resolved data payload of the parent popover (if nested).
@@ -196,6 +197,7 @@ export type PopoverResolver<TData = unknown, TContext = unknown> = (
  *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
+ * @template TPopoverKey - Union of valid popover keys.
  */
 export interface PopoverStateData<TData = unknown, TContext = unknown> {
   /** The stack of active popovers in the current trail path. */
@@ -264,6 +266,22 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   /** Global default CSS animation class applied during mounted. */
   readonly mountedClassName: string;
 }
+
+/**
+ * Middleware function intercepting state updates before commit.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Valid popover key union.
+ */
+export type PopoverMiddleware<
+  TData = unknown,
+  TContext = unknown,
+  _TPopoverKey extends string = string,
+> = (
+  patch: Partial<PopoverStateData<TData, TContext>>,
+  state: PopoverStateData<TData, TContext>,
+) => Partial<PopoverStateData<TData, TContext>> | false | void;
 
 /**
  * The dispatch and lifecycle actions exposed by the popover store.
@@ -371,7 +389,71 @@ export interface PopoverActions<
 
   /** Set global animation class names dynamically. */
   setGlobalAnimationClassNames: (mounting: string, unmounting: string, mounted: string) => void;
+
+  /** Subscribes an event listener to real-time store lifecycle events. */
+  subscribeEvent: (listener: (event: PopoverStoreEvent<TData>) => void) => () => void;
+
+  /** Batches multiple action mutations into a single atomic state update commit. */
+  batchUpdates: (fn: (actions: PopoverActions<TData, TContext, TPopoverKey>) => void) => void;
+
+  /** Registers a middleware function to intercept or transform state patches before commit. */
+  useMiddleware: (middleware: PopoverMiddleware<TData, TContext, TPopoverKey>) => () => void;
+
+  /** Restores the previous popover state snapshot from history stack. */
+  undo: () => void;
+
+  /** Replays the undone popover state snapshot from history stack. */
+  redo: () => void;
+
+  /** Returns true if undo history is available. */
+  canUndo: () => boolean;
+
+  /** Returns true if redo history is available. */
+  canRedo: () => boolean;
+
+  /** Executes an isolated transaction block. Automatically rolls back all state changes if any action fails. */
+  transaction: (
+    fn: (actions: PopoverActions<TData, TContext, TPopoverKey>) => Promise<void> | void,
+  ) => Promise<boolean>;
+
+  /** Serializes and persists active pinned popover cards and layout offsets to storage. */
+  persistState: (config?: PopoverPersistConfig) => Promise<void>;
+
+  /** Rehydrates persisted popover cards and layout offsets from storage. */
+  rehydrateState: (config?: PopoverPersistConfig) => Promise<boolean>;
 }
+
+/**
+ * Configuration options for state persistence and auto-rehydration.
+ */
+export interface PopoverPersistConfig {
+  /** Storage key ID (default: 'popover_store_state'). */
+  key?: string;
+  /** Storage adapter engine (default: window.localStorage). */
+  storage?: {
+    getItem: (key: string) => string | null | Promise<string | null>;
+    setItem: (key: string, value: string) => void | Promise<void>;
+    removeItem: (key: string) => void | Promise<void>;
+  };
+  /** Optional filter function selecting which keys to persist. */
+  filter?: (key: string) => boolean;
+}
+
+/**
+ * Event objects emitted by store action lifecycles for monitoring, analytics, and debugging.
+ *
+ * @template TData - Resolved data payload type.
+ */
+export type PopoverStoreEvent<TData = unknown> =
+  | { type: 'open_root'; key: string; ownerId: string }
+  | { type: 'push_nested'; key: string; parentKey?: string }
+  | { type: 'close'; keys: string[] }
+  | { type: 'pin'; key: string }
+  | { type: 'unpin'; key: string }
+  | { type: 'resolve_start'; key: string }
+  | { type: 'resolve_success'; key: string; data: TData }
+  | { type: 'resolve_error'; key: string; error: Error }
+  | { type: 'clear' };
 
 /**
  * Complete representation of the Popover Zustand store state and actions.
@@ -386,24 +468,7 @@ export type PopoverStore<
   TPopoverKey extends string = string,
 > = PopoverStateData<TData, TContext> &
   PopoverActions<TData, TContext, TPopoverKey> & {
-    actions: Omit<
-      PopoverActions<TData, TContext, TPopoverKey>,
-      | 'setContext'
-      | 'setResolveData'
-      | 'setOwnerId'
-      | 'openRoot'
-      | 'pushNested'
-      | 'destroy'
-      | 'setClosePinnedDescendants'
-      | 'setCollisionConfig'
-      | 'setEnableArrowNavigation'
-      | 'setDebug'
-      | 'setCascadeOffsetStep'
-      | 'setExitTransitionDuration'
-      | 'setDefaultOffset'
-      | 'setBaseZIndex'
-      | 'setGlobalAnimationClassNames'
-    >;
+    actions: PopoverActions<TData, TContext, TPopoverKey>;
   };
 
 /**
@@ -427,22 +492,28 @@ export interface ClickOutsideConfig {
 
 /**
  * Interface definition for a generic synchronous/asynchronous cache provider.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TPopoverKey - Union of valid popover keys.
  */
-export interface PopoverCache<TData = unknown> {
+export interface PopoverCache<TData = unknown, TPopoverKey extends string = string> {
   /** Retrieves a cached entry. Can return the value directly or a Promise. */
-  get: (key: string) => Promise<TData | undefined> | TData | undefined;
+  get: (key: TPopoverKey) => Promise<TData | undefined> | TData | undefined;
 
   /** Saves data in the cache. */
-  set: (key: string, data: TData) => Promise<void> | void;
+  set: (key: TPopoverKey, data: TData) => Promise<void> | void;
 
   /** Removes a specific item from the cache. */
-  delete: (key: string) => Promise<void> | void;
+  delete: (key: TPopoverKey) => Promise<void> | void;
 
   /** Clears the cache completely. */
   clear: () => Promise<void> | void;
 
   /** Checks if a non-expired cached entry exists for key. */
-  has?: (key: string) => Promise<boolean> | boolean;
+  has?: (key: TPopoverKey) => Promise<boolean> | boolean;
+
+  /** Sweeps and purges expired records. */
+  pruneExpired?: () => Promise<void> | void;
 }
 
 /**

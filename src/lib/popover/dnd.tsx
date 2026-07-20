@@ -47,6 +47,8 @@ export interface UsePopoverDraggableCardOptions {
  * Result object returned by the `usePopoverDraggableCard` hook.
  */
 export interface UsePopoverDraggableCardResult extends UsePopoverCardResult {
+  /** True if dragging is currently permitted for this card. */
+  isDragAllowed: boolean;
   /** Callback handler to toggle the pinned status of the card modelessly. */
   handlePinToggle: () => void;
 }
@@ -139,6 +141,7 @@ export function usePopoverDraggableCard({
     ref: setCombinedRef,
     style,
     isDragging: isDragAllowed ? isDragging : false,
+    isDragAllowed,
     dragHandleProps: isDragAllowed
       ? {
           ...attributes,
@@ -338,6 +341,7 @@ function PopoverCardInner<TData = unknown>({
     style,
     isTop,
     isDragging,
+    isDragAllowed,
     actions,
     dragHandleProps,
     onMouseEnter,
@@ -367,7 +371,7 @@ function PopoverCardInner<TData = unknown>({
     .filter(Boolean)
     .join(' ');
 
-  const resolvedDragHandleProps = isPinned ? {} : dragHandleProps;
+  const resolvedDragHandleProps = isDragAllowed ? dragHandleProps : {};
 
   return (
     <div
