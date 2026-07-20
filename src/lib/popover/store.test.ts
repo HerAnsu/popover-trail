@@ -39,7 +39,7 @@ const createMockAnchor = (x = 10, y = 20, width = 100, height = 200): AnchorEven
 });
 
 describe('createPopoverStore', () => {
-  const dummyResolver = vi.fn<(key: string) => { title: string; value: number }>().mockImplementation((key) => {
+  const dummyResolver = vi.fn<(key: string) => unknown>().mockImplementation((key) => {
     return { title: `Resolved ${key}`, value: 42 };
   });
 
@@ -66,7 +66,7 @@ describe('createPopoverStore', () => {
     const state = store.getState();
     expect(state.ownerId).toBe('owner-1');
     expect(state.trail).toHaveLength(1);
-    expect(state.trail[0].key).toBe('root-item');
+    expect(state.trail[0]?.key).toBe('root-item');
     expect(state.zIndexOrder).toEqual(['root-item']);
   });
 
@@ -80,8 +80,8 @@ describe('createPopoverStore', () => {
 
     const state = store.getState();
     expect(state.trail).toHaveLength(2);
-    expect(state.trail[0].key).toBe('root-item');
-    expect(state.trail[1].key).toBe('child-item');
+    expect(state.trail[0]?.key).toBe('root-item');
+    expect(state.trail[1]?.key).toBe('child-item');
     expect(state.zIndexOrder).toEqual(['root-item', 'child-item']);
   });
 
@@ -98,7 +98,7 @@ describe('createPopoverStore', () => {
 
     const state = store.getState();
     expect(state.trail).toHaveLength(1);
-    expect(state.trail[0].key).toBe('root-item');
+    expect(state.trail[0]?.key).toBe('root-item');
     expect(state.zIndexOrder).toEqual(['root-item']);
   });
 
@@ -114,16 +114,16 @@ describe('createPopoverStore', () => {
     const state = store.getState();
     expect(state.trail).toHaveLength(0);
     expect(state.floating).toHaveLength(1);
-    expect(state.floating[0].key).toBe('root-item');
+    expect(state.floating[0]?.key).toBe('root-item');
     expect(state.pinnedStates['root-item']).toBe(true);
-    expect(state.floating[0].pinnedLayoutPos).toEqual({ top: 20, left: 10 });
+    expect(state.floating[0]?.pinnedLayoutPos).toEqual({ top: 20, left: 10 });
 
     // Unpin root popover
     store.getState().togglePin('root-item');
     const nextState = store.getState();
     expect(nextState.floating).toHaveLength(0);
     expect(nextState.trail).toHaveLength(1);
-    expect(nextState.trail[0].key).toBe('root-item');
+    expect(nextState.trail[0]?.key).toBe('root-item');
     expect(nextState.pinnedStates['root-item']).toBe(false);
   });
 
@@ -163,8 +163,8 @@ describe('createPopoverStore', () => {
 
     const state = store.getState();
     expect(state.trail).toHaveLength(1);
-    expect(state.trail[0].key).toBe('item-b');
-    expect(state.trail[0].data?.title).toBe('Resolved Call 2');
+    expect(state.trail[0]?.key).toBe('item-b');
+    expect(state.trail[0]?.data?.title).toBe('Resolved Call 2');
   });
 
   it('should ignore stale nested hydration responses', async () => {
@@ -190,8 +190,8 @@ describe('createPopoverStore', () => {
 
     const state = store.getState();
     expect(state.trail).toHaveLength(2);
-    expect(state.trail[1].key).toBe('child-b');
-    expect(state.trail[1].data?.title).toBe('Nested Call 2');
+    expect(state.trail[1]?.key).toBe('child-b');
+    expect(state.trail[1]?.data?.title).toBe('Nested Call 2');
   });
 
   it('should support retrying failed popover data resolution', async () => {
@@ -211,17 +211,17 @@ describe('createPopoverStore', () => {
     await store.getState().openRootWithResolver('item-a', mockButton);
 
     let state = store.getState();
-    expect(state.trail[0].error).toBeDefined();
-    expect(state.trail[0].error?.message).toBe('Network failure');
-    expect(state.trail[0].data).toBeUndefined();
+    expect(state.trail[0]?.error).toBeDefined();
+    expect(state.trail[0]?.error?.message).toBe('Network failure');
+    expect(state.trail[0]?.data).toBeUndefined();
 
     // Retry resolves successfully
     await store.getState().retryPopover('item-a');
 
     state = store.getState();
-    expect(state.trail[0].error).toBeNull();
-    expect(state.trail[0].data?.title).toBe('Success resolved data');
-    expect(state.trail[0].isLoading).toBe(false);
+    expect(state.trail[0]?.error).toBeNull();
+    expect(state.trail[0]?.data?.title).toBe('Success resolved data');
+    expect(state.trail[0]?.isLoading).toBe(false);
   });
 
   it('should pass and abort AbortSignal on overlapping requests', async () => {
@@ -251,8 +251,8 @@ describe('createPopoverStore', () => {
     await Promise.all([p1, p2]);
 
     expect(signals).toHaveLength(2);
-    expect(signals[0].aborted).toBe(true);
-    expect(signals[1].aborted).toBe(false);
+    expect(signals[0]?.aborted).toBe(true);
+    expect(signals[1]?.aborted).toBe(false);
   });
 
   it('should preserve and restore originalParentKey and originalRect when pinning and unpinning', () => {
@@ -274,9 +274,9 @@ describe('createPopoverStore', () => {
 
     // Verify parentKey and rect are present
     let state = store.getState();
-    expect(state.trail[1].key).toBe('child-item');
-    expect(state.trail[1].parentKey).toBe('root-item');
-    expect(state.trail[1].rect?.top).toBe(40);
+    expect(state.trail[1]?.key).toBe('child-item');
+    expect(state.trail[1]?.parentKey).toBe('root-item');
+    expect(state.trail[1]?.rect?.top).toBe(40);
 
     // Pin the child popover
     store.getState().togglePin('child-item', new DOMRect(500, 600, 150, 250));
@@ -361,17 +361,17 @@ describe('createPopoverStore', () => {
     // Ensure it resolves immediately in the same callstack before awaiting anything
     let state = store.getState();
     expect(state.trail).toHaveLength(1);
-    expect(state.trail[0].key).toBe('item-sync');
-    expect(state.trail[0].isLoading).toBe(false); // No loading state!
-    expect(state.trail[0].data).toEqual({ title: 'Sync Data for item-sync' });
+    expect(state.trail[0]?.key).toBe('item-sync');
+    expect(state.trail[0]?.isLoading).toBe(false); // No loading state!
+    expect(state.trail[0]?.data).toEqual({ title: 'Sync Data for item-sync' });
 
     // Open nested popover
     const nestedPromise = store.getState().openNestedWithResolver('item-nested', 'item-sync');
     state = store.getState();
     expect(state.trail).toHaveLength(2);
-    expect(state.trail[1].key).toBe('item-nested');
-    expect(state.trail[1].isLoading).toBe(false); // No loading state!
-    expect(state.trail[1].data).toEqual({ title: 'Sync Data for item-nested' });
+    expect(state.trail[1]?.key).toBe('item-nested');
+    expect(state.trail[1]?.isLoading).toBe(false); // No loading state!
+    expect(state.trail[1]?.data).toEqual({ title: 'Sync Data for item-nested' });
 
     // Await promises to satisfy linting/async calls
     await promise;
@@ -409,8 +409,8 @@ describe('createPopoverStore', () => {
     const promise1 = store.getState().openRootWithResolver('root-cached', mockButton);
     let state = store.getState();
     expect(state.trail).toHaveLength(1);
-    expect(state.trail[0].isLoading).toBe(false); // Instantly loaded from cache!
-    expect(state.trail[0].data).toEqual({ data: 'Pre-resolved cache payload' });
+    expect(state.trail[0]?.isLoading).toBe(false); // Instantly loaded from cache!
+    expect(state.trail[0]?.data).toEqual({ data: 'Pre-resolved cache payload' });
     expect(resolverCalls).toBe(0); // Resolver was never called!
 
     // Clear the store to reset trail for next root popover test
@@ -420,8 +420,8 @@ describe('createPopoverStore', () => {
     const promise2 = store.getState().openRootWithResolver('root-uncached', mockButton);
     state = store.getState();
     expect(state.trail).toHaveLength(1);
-    expect(state.trail[0].key).toBe('root-uncached');
-    expect(state.trail[0].data).toEqual({ data: 'Resolved payload for root-uncached' });
+    expect(state.trail[0]?.key).toBe('root-uncached');
+    expect(state.trail[0]?.data).toEqual({ data: 'Resolved payload for root-uncached' });
     expect(resolverCalls).toBe(1); // Resolver called once!
 
     // Verify cache has been populated with the new resolved value
@@ -444,7 +444,7 @@ describe('createPopoverStore', () => {
 
     const state = store.getState();
     expect(state.trail).toHaveLength(1);
-    expect(state.trail[0].collision).toEqual(localCollision);
+    expect(state.trail[0]?.collision).toEqual(localCollision);
   });
 
   it('should close popover by key and clean up descendants without closing unrelated siblings', () => {
@@ -486,7 +486,7 @@ describe('createPopoverStore', () => {
     expect(state.floating).toHaveLength(0);
     // child-2 remains in the trail completely untouched!
     expect(state.trail).toHaveLength(1);
-    expect(state.trail[0].key).toBe('child-2');
+    expect(state.trail[0]?.key).toBe('child-2');
   });
 
   it('should support TTL expiration and cleanup in SimplePopoverCache', async () => {
@@ -523,7 +523,7 @@ describe('createPopoverStore', () => {
     // Verify it is loading in the trail
     let state = store.getState();
     expect(state.trail).toHaveLength(1);
-    expect(state.trail[0].isLoading).toBe(true);
+    expect(state.trail[0]?.isLoading).toBe(true);
 
     // Pin it immediately while loading is in progress
     store.getState().togglePin('async-popover', new DOMRect(50, 50, 100, 100));
@@ -532,7 +532,7 @@ describe('createPopoverStore', () => {
     state = store.getState();
     expect(state.trail).toHaveLength(0);
     expect(state.floating).toHaveLength(1);
-    expect(state.floating[0].isLoading).toBe(true);
+    expect(state.floating[0]?.isLoading).toBe(true);
 
     // Finish resolving the data
     resolvePromise('Async Loaded Data');
@@ -541,8 +541,8 @@ describe('createPopoverStore', () => {
     // Verify the pinned/floating element got resolved successfully!
     state = store.getState();
     expect(state.floating).toHaveLength(1);
-    expect(state.floating[0].isLoading).toBe(false);
-    expect(state.floating[0].data).toBe('async payload');
+    expect(state.floating[0]?.isLoading).toBe(false);
+    expect(state.floating[0]?.data).toBe('async payload');
   });
 
   it('should support hover timers, buffers, and clear parent timers on child hoverEnter', async () => {
@@ -608,8 +608,8 @@ describe('createPopoverStore', () => {
     );
 
     const entry = store.getState().trail[0];
-    expect(entry.allowDragWhenUnpinned).toBe(true);
-    expect(entry.ariaDescribedby).toBe('Descriptor text');
+    expect(entry?.allowDragWhenUnpinned).toBe(true);
+    expect(entry?.ariaDescribedby).toBe('Descriptor text');
   });
 
   it('should support hover options including delays and closeOnMouseLeave', async () => {
@@ -630,10 +630,10 @@ describe('createPopoverStore', () => {
     );
 
     const entry = store.getState().trail[0];
-    expect(entry.hover?.enabled).toBe(true);
-    expect(entry.hover?.openDelay).toBe(150);
-    expect(entry.hover?.closeDelay).toBe(250);
-    expect(entry.hover?.closeOnMouseLeave).toBe(false);
+    expect(entry?.hover?.enabled).toBe(true);
+    expect(entry?.hover?.openDelay).toBe(150);
+    expect(entry?.hover?.closeDelay).toBe(250);
+    expect(entry?.hover?.closeOnMouseLeave).toBe(false);
   });
 
   it('should preserve all display options when retrying a popover', async () => {
@@ -671,32 +671,32 @@ describe('createPopoverStore', () => {
 
     await store.getState().openRootWithResolver('retry-item', mockElement, fullOptions);
 
-    expect(store.getState().trail[0].error).not.toBeNull();
-    expect(store.getState().trail[0].placement).toBe('top-start');
+    expect(store.getState().trail[0]?.error).not.toBeNull();
+    expect(store.getState().trail[0]?.placement).toBe('top-start');
 
     // Retry popover resolution
     await store.getState().retryPopover('retry-item');
 
     const retriedEntry = store.getState().trail[0];
-    expect(retriedEntry.error).toBeNull();
-    expect(retriedEntry.data).toEqual({ title: 'Success' });
-    expect(retriedEntry.placement).toBe('top-start');
-    expect(retriedEntry.offset).toBe(12);
-    expect(retriedEntry.exitTransitionDuration).toBe(300);
-    expect(retriedEntry.baseZIndex).toBe(2000);
-    expect(retriedEntry.cascadeOffsetStep).toBe(16);
-    expect(retriedEntry.cascadeOffsetDirection).toBe('right');
-    expect(retriedEntry.enableTilt).toBe(true);
-    expect(retriedEntry.maxTiltAngle).toBe(15);
-    expect(retriedEntry.tiltSensitivity).toBe(2);
-    expect(retriedEntry.dragAxis).toBe('x');
-    expect(retriedEntry.tiltFriction).toBe(0.9);
-    expect(retriedEntry.tiltDecay).toBe(0.8);
-    expect(retriedEntry.mountingClassName).toBe('custom-mount');
-    expect(retriedEntry.unmountingClassName).toBe('custom-unmount');
-    expect(retriedEntry.mountedClassName).toBe('custom-mounted');
-    expect(retriedEntry.allowDragWhenUnpinned).toBe(true);
-    expect(retriedEntry.ariaDescribedby).toBe('desc-id');
+    expect(retriedEntry?.error).toBeNull();
+    expect(retriedEntry?.data).toEqual({ title: 'Success' });
+    expect(retriedEntry?.placement).toBe('top-start');
+    expect(retriedEntry?.offset).toBe(12);
+    expect(retriedEntry?.exitTransitionDuration).toBe(300);
+    expect(retriedEntry?.baseZIndex).toBe(2000);
+    expect(retriedEntry?.cascadeOffsetStep).toBe(16);
+    expect(retriedEntry?.cascadeOffsetDirection).toBe('right');
+    expect(retriedEntry?.enableTilt).toBe(true);
+    expect(retriedEntry?.maxTiltAngle).toBe(15);
+    expect(retriedEntry?.tiltSensitivity).toBe(2);
+    expect(retriedEntry?.dragAxis).toBe('x');
+    expect(retriedEntry?.tiltFriction).toBe(0.9);
+    expect(retriedEntry?.tiltDecay).toBe(0.8);
+    expect(retriedEntry?.mountingClassName).toBe('custom-mount');
+    expect(retriedEntry?.unmountingClassName).toBe('custom-unmount');
+    expect(retriedEntry?.mountedClassName).toBe('custom-mounted');
+    expect(retriedEntry?.allowDragWhenUnpinned).toBe(true);
+    expect(retriedEntry?.ariaDescribedby).toBe('desc-id');
   });
 
   describe('SimplePopoverCache enhancements', () => {

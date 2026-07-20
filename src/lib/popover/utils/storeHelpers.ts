@@ -26,8 +26,9 @@ export function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<stri
   const nextRecord: Record<string, T> = {};
   let changed = false;
   for (const key of Object.keys(record)) {
-    if (allowedKeys.has(key)) {
-      nextRecord[key] = record[key];
+    const val = record[key];
+    if (allowedKeys.has(key) && val !== undefined) {
+      nextRecord[key] = val;
     } else {
       changed = true;
     }
@@ -188,11 +189,12 @@ export function traverseDescendants<TData>(
   let head = 0;
   while (head < queue.length) {
     const current = queue[head++];
+    if (!current) continue;
     const children = childrenMap.get(current);
     if (children) {
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
-        if (!visited.has(child.key)) {
+        if (child && !visited.has(child.key)) {
           if (floatingKeys && floatingKeys.has(child.key)) {
             continue;
           }
@@ -293,9 +295,10 @@ export function bringToFrontPatch<TData, TContext>(
     const floatingKeySet = new Set(state.floating.map((f) => f.key));
     const floatingDescendants = descendantEntries.filter((e) => floatingKeySet.has(e.key));
     const floatingKeysToMove = new Set<string>([key, ...floatingDescendants.map((d) => d.key)]);
+    const clickedSlice: readonly TrailEntry<TData>[] = clickedEntry ? [clickedEntry] : [];
     nextFloating = [
       ...state.floating.filter((e) => !floatingKeysToMove.has(e.key)),
-      clickedEntry,
+      ...clickedSlice,
       ...floatingDescendants,
     ];
   }
@@ -325,7 +328,11 @@ export function getCleanupStatePatch<TData, TContext>(
   const nextPinnedStates = filterRecord(pinnedStates, activeKeys);
   const nextNestedCounters = filterRecord(nestedHydrationRequestCounters, activeKeys);
 
-  const patch: Partial<PopoverStateData<TData, TContext>> = {
+  type WritablePatch = {
+    -readonly [P in keyof PopoverStateData<TData, TContext>]?: PopoverStateData<TData, TContext>[P];
+  };
+
+  const patch: WritablePatch = {
     offsets: nextOffsets,
     zIndexOrder: nextZIndexOrder,
     pinnedStates: nextPinnedStates,
@@ -339,7 +346,7 @@ export function getCleanupStatePatch<TData, TContext>(
     patch.zIndexOrder = [];
     patch.ownerId = null;
   }
-  return patch;
+  return patch as Partial<PopoverStateData<TData, TContext>>;
 }
 
 /**
@@ -394,12 +401,12 @@ export function pushNestedState<TData, TContext>(
 
   if (isFloating) {
     const floatingEntry = state.floating[index];
-    if (floatingEntry.key === entry.key) return {};
+    if (!floatingEntry || floatingEntry.key === entry.key) return {};
     nextTrail = [finalEntry];
   } else {
     const trailIndex = index - state.floating.length;
     const parentEntry = state.trail[trailIndex];
-    if (parentEntry.key === entry.key) return {};
+    if (!parentEntry || parentEntry.key === entry.key) return {};
     if (finalEntry.parentKey === finalEntry.key) {
       finalEntry.parentKey = undefined;
     }
@@ -435,6 +442,7 @@ export function togglePinState<TData, TContext>(
     const trailIndex = state.trail.findIndex((e) => e.key === key);
     if (trailIndex !== -1) {
       const entry = state.trail[trailIndex];
+      if (!entry) return {};
       const updatedEntry = {
         ...entry,
         rect: rect ?? entry.rect,
@@ -493,6 +501,7 @@ export function closeFromState<TData, TContext>(
   let directClosedKeys: string[];
   if (isFloating) {
     const entry = state.floating[index];
+    if (!entry) return {};
     directClosedKeys = [entry.key];
   } else {
     const trailIndex = index - state.floating.length;

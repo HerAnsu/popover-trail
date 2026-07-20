@@ -519,10 +519,12 @@ function usePopoverHoverHandlers(
       'aria-expanded': isOpen,
       'aria-controls': `popover-card-${key}`,
     };
-    if (hoverEnabled) {
-      return { ...ariaProps, onMouseEnter, onMouseLeave };
-    }
-    return { ...ariaProps, onClick };
+    return {
+      ...ariaProps,
+      onMouseEnter: hoverEnabled ? onMouseEnter : undefined,
+      onMouseLeave: hoverEnabled ? onMouseLeave : undefined,
+      onClick,
+    };
   }, [onClick, onMouseEnter, onMouseLeave, hoverEnabled, isOpen, key]);
 }
 

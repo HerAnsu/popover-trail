@@ -6,7 +6,8 @@ import {
   usePopoverTrail,
   usePopoverFloating,
   usePopoverActions,
-  PopoverPortal,
+  isResolvedEntry,
+  usePopoverHydration,
   usePopoverNestedTrigger,
   PopoverCardContext,
   type PopoverResolver,
@@ -178,6 +179,7 @@ const PopoverCard = memo(
     hoverCloseOnMouseLeave,
   }: PopoverCardProps) => {
     const [branchInput, setBranchInput] = useState('');
+    const { isLoading, error, reload } = usePopoverHydration<MathData>(entry.key);
 
     const {
       ref,
@@ -217,6 +219,7 @@ const PopoverCard = memo(
 
     return (
       <div
+        id={`popover-card-${entry.key}`}
         ref={ref}
         style={{
           ...style,
@@ -225,6 +228,7 @@ const PopoverCard = memo(
             : {}),
         }}
         role="dialog"
+        aria-modal={!isPinned}
         aria-labelledby={`title-${entry.key}`}
         aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
         className={clsx(
@@ -246,7 +250,7 @@ const PopoverCard = memo(
             ) : null}
             <div className="popover-header" {...dragHandleProps}>
               <span id={`title-${entry.key}`} className="popover-title">
-                {entry.isLoading ? 'Evaluating...' : entry.data?.title}
+                {isLoading ? 'Evaluating...' : entry.data?.title}
               </span>
               <div className="popover-actions">
                 <button
@@ -271,12 +275,12 @@ const PopoverCard = memo(
             </div>
 
             <div className="popover-body">
-              {entry.isLoading ? (
+              {isLoading ? (
                 <div className="spinner-container">
                   <div className="spinner" />
                   <span>Parsing expression...</span>
                 </div>
-              ) : entry.error ? (
+              ) : error ? (
                 <div
                   style={{
                     color: '#ef4444',
@@ -285,12 +289,12 @@ const PopoverCard = memo(
                     gap: '0.5rem',
                   }}>
                   <div>
-                    <strong>Error:</strong> {entry.error.message}
+                    <strong>Error:</strong> {error.message}
                   </div>
                   <button
                     type="button"
                     className="btn-retry"
-                    onClick={() => actions.retryPopover(entry.key)}
+                    onClick={reload}
                     style={{
                       alignSelf: 'flex-start',
                       padding: '0.2rem 0.6rem',
@@ -304,17 +308,17 @@ const PopoverCard = memo(
                     Retry
                   </button>
                 </div>
-              ) : (
+              ) : isResolvedEntry(entry) ? (
                 <div>
                   <div className="math-expression-display" style={{ marginBottom: '0.8rem' }}>
                     <span className="math-label">Expression:</span>
-                    <code className="math-code">{entry.data?.expression}</code>
+                    <code className="math-code">{entry.data.expression}</code>
                     <div className="math-result" style={{ marginTop: '0.4rem', fontWeight: 700 }}>
-                      Result = <span className="math-value">{entry.data?.value}</span>
+                      Result = <span className="math-value">{entry.data.value}</span>
                     </div>
                   </div>
 
-                  {entry.data?.operator ? (
+                  {entry.data.operator ? (
                     <div
                       className="popover-links"
                       style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -426,7 +430,7 @@ const PopoverCard = memo(
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           </PopoverCardContext.Provider>
         </FocusLock>
@@ -490,10 +494,7 @@ function MainContent({
     if (!customRoot.trim()) return;
     void openRootWithResolver(
       customRoot.trim(),
-      {
-        currentTarget: e.currentTarget,
-        stopPropagation: () => {},
-      },
+      e,
       {
         hover: hoverConfig,
         allowDragWhenUnpinned,
@@ -548,120 +549,50 @@ function MainContent({
           />
           Enable Hover Triggers
         </label>
-
-        {hoverEnabled ? (
+        {hoverEnabled && (
           <div
             style={{
+              paddingLeft: '1.2rem',
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.6rem',
-              paddingLeft: '1.2rem',
-              borderLeft: '2px solid rgba(255, 255, 255, 0.1)',
-              marginTop: '-0.2rem',
-              marginBottom: '0.2rem',
-              pointerEvents: 'auto',
+              gap: '0.5rem',
+              fontSize: '0.8rem',
             }}>
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer',
-                fontSize: '0.8rem',
-                color: 'var(--text-secondary)',
-              }}>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Open Delay ({hoverOpenDelay}ms):</span>
+              <input
+                type="range"
+                min="0"
+                max="1000"
+                step="50"
+                value={hoverOpenDelay}
+                onChange={(e) => setHoverOpenDelay(Number(e.target.value))}
+                style={{ width: '120px' }}
+              />
+            </label>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Close Delay ({hoverCloseDelay}ms):</span>
+              <input
+                type="range"
+                min="0"
+                max="1000"
+                step="50"
+                value={hoverCloseDelay}
+                onChange={(e) => setHoverCloseDelay(Number(e.target.value))}
+                style={{ width: '120px' }}
+              />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={hoverCloseOnMouseLeave}
                 onChange={(e) => setHoverCloseOnMouseLeave(e.target.checked)}
               />
-              Close popover when cursor leaves popover card
+              Close when cursor leaves popover card
             </label>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-                fontSize: '0.8rem',
-                color: 'var(--text-secondary)',
-              }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                Open delay:
-                <input
-                  type="number"
-                  min={0}
-                  max={2000}
-                  step={50}
-                  value={hoverOpenDelay}
-                  onChange={(e) => setHoverOpenDelay(Math.max(0, Number(e.target.value)))}
-                  style={{
-                    background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '4px',
-                    color: '#fff',
-                    padding: '2px 6px',
-                    width: '60px',
-                    pointerEvents: 'auto',
-                  }}
-                />
-                ms
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                Close delay:
-                <input
-                  type="number"
-                  min={0}
-                  max={2000}
-                  step={50}
-                  value={hoverCloseDelay}
-                  onChange={(e) => setHoverCloseDelay(Math.max(0, Number(e.target.value)))}
-                  style={{
-                    background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '4px',
-                    color: '#fff',
-                    padding: '2px 6px',
-                    width: '60px',
-                    pointerEvents: 'auto',
-                  }}
-                />
-                ms
-              </label>
-            </div>
           </div>
-        ) : null}
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-            color: 'var(--text-secondary)',
-          }}>
-          <input
-            type="checkbox"
-            checked={arrowNavEnabled}
-            onChange={(e) => setArrowNavEnabled(e.target.checked)}
-          />
-          Enable Keyboard Arrow Navigation (WAI-ARIA)
-        </label>
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-            color: 'var(--text-secondary)',
-          }}>
-          <input
-            type="checkbox"
-            checked={debugEnabled}
-            onChange={(e) => setDebugEnabled(e.target.checked)}
-          />
-          Enable Console Debug Logger (see browser developer tools)
-        </label>
+        )}
+
         <label
           style={{
             display: 'flex',
@@ -676,8 +607,9 @@ function MainContent({
             checked={allowDragWhenUnpinned}
             onChange={(e) => setAllowDragWhenUnpinned(e.target.checked)}
           />
-          Allow Dragging Unpinned/Trailing Cards
+          Allow Dragging Unpinned Popovers
         </label>
+
         <label
           style={{
             display: 'flex',
@@ -687,163 +619,126 @@ function MainContent({
             fontSize: '0.85rem',
             color: 'var(--text-secondary)',
           }}>
-          Cascade Offset Step:
-          <select
+          <input
+            type="checkbox"
+            checked={arrowNavEnabled}
+            onChange={(e) => setArrowNavEnabled(e.target.checked)}
+          />
+          Enable Keyboard Arrow Navigation (←/→)
+        </label>
+
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            color: 'var(--text-secondary)',
+          }}>
+          <input
+            type="checkbox"
+            checked={debugEnabled}
+            onChange={(e) => setDebugEnabled(e.target.checked)}
+          />
+          Enable Debug Console Logs
+        </label>
+
+        <label
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '0.85rem',
+            color: 'var(--text-secondary)',
+          }}>
+          <span>Cascade Offset Step ({cascadeOffsetStep}px):</span>
+          <input
+            type="range"
+            min="0"
+            max="40"
+            step="4"
             value={cascadeOffsetStep}
             onChange={(e) => setCascadeOffsetStep(Number(e.target.value))}
-            style={{
-              background: 'rgba(0, 0, 0, 0.3)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '4px',
-              color: '#fff',
-              fontSize: '0.8rem',
-              padding: '2px 4px',
-              pointerEvents: 'auto',
-            }}>
-            <option value={0}>0px (Stacked)</option>
-            <option value={8}>8px (Default)</option>
-            <option value={15}>15px (Wide)</option>
-            <option value={30}>30px (Extra Wide)</option>
-          </select>
+            style={{ width: '120px' }}
+          />
         </label>
       </div>
 
-      <div
-        className="trigger-zone"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.8rem',
-          width: '100%',
-          maxWidth: '480px',
-        }}>
-        <PopoverTrigger
-          popoverKey="2 * (3 + (15 / 5))"
-          placement="auto"
-          activeClassName="active"
-          options={{
-            hover: hoverConfig,
-            allowDragWhenUnpinned,
-            ariaDescribedby: 'Mathematical evaluation details for 2 * (3 + (15 / 5))',
-          }}>
-          <button type="button" className="btn-trigger" style={{ textAlign: 'left' }}>
-            🧮 Compute: 2 * (3 + (15 / 5))
-          </button>
-        </PopoverTrigger>
-
-        <PopoverTrigger
-          popoverKey="(4 ^ 2) - (2 * (5 + 1))"
-          placement="auto"
-          activeClassName="active"
-          options={{
-            hover: hoverConfig,
-            allowDragWhenUnpinned,
-            ariaDescribedby: 'Mathematical evaluation details for (4 ^ 2) - (2 * (5 + 1))',
-          }}>
-          <button type="button" className="btn-trigger" style={{ textAlign: 'left' }}>
-            🧮 Compute: (4 ^ 2) - (2 * (5 + 1))
-          </button>
-        </PopoverTrigger>
-
-        <PopoverTrigger
-          popoverKey="100 / (2 * (3 + (4 - 2)))"
-          placement="auto"
-          activeClassName="active"
-          options={{
-            hover: hoverConfig,
-            allowDragWhenUnpinned,
-            ariaDescribedby: 'Mathematical evaluation details for 100 / (2 * (3 + (4 - 2)))',
-          }}>
-          <button type="button" className="btn-trigger" style={{ textAlign: 'left' }}>
-            🧮 Compute: 100 / (2 * (3 + (4 - 2)))
-          </button>
-        </PopoverTrigger>
-
-        <div
-          className="custom-root-zone"
-          style={{
-            display: 'flex',
-            gap: '0.5rem',
-            width: '100%',
-            marginTop: '0.4rem',
-          }}>
+      <div className="custom-input-card">
+        <div className="card-label">Custom Math Expression</div>
+        <div className="input-group">
           <input
             type="text"
+            className="expression-input"
             value={customRoot}
             onChange={(e) => setCustomRoot(e.target.value)}
-            placeholder="Type custom math formula..."
-            style={{
-              flex: 1,
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              borderRadius: '8px',
-              color: '#fff',
-              padding: '0.6rem 0.8rem',
-              fontSize: '0.9rem',
-            }}
+            placeholder="Type expression e.g. (1 + 2) * 3"
           />
-          <button
-            type="button"
-            onClick={handleOpenCustomRoot}
-            disabled={!customRoot.trim()}
-            style={{
-              background: 'indigo',
-              border: 'none',
-              borderRadius: '8px',
-              color: '#fff',
-              padding: '0.6rem 1.2rem',
-              fontSize: '0.9rem',
-              cursor: customRoot.trim() ? 'pointer' : 'not-allowed',
-              fontWeight: 600,
-            }}>
-            Compute
+          <button type="button" className="btn-primary" onClick={handleOpenCustomRoot}>
+            Evaluate Expression
           </button>
         </div>
       </div>
 
-      {totalActive > 0 ? (
-        <button
-          type="button"
-          onClick={clear}
-          style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#ef4444',
-            padding: '0.6rem 1.2rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            transition: 'all 0.2s',
-            marginTop: '1rem',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#ef4444';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-            e.currentTarget.style.color = '#ef4444';
-          }}>
-          Reset All Popovers
-        </button>
-      ) : null}
+      <div className="preset-triggers">
+        <div className="card-label">Presets</div>
+        <div className="trigger-buttons">
+          <PopoverTrigger
+            popoverKey="(10 + 20) * 3"
+            placement="bottom"
+            options={{
+              cascadeOffsetStep,
+              hover: hoverConfig,
+              allowDragWhenUnpinned,
+              ariaDescribedby: 'Evaluation details for preset: (10 + 20) * 3',
+            }}>
+            <button type="button" className="btn-preset">
+              📊 (10 + 20) * 3
+            </button>
+          </PopoverTrigger>
 
-      <PopoverPortal>
-        <PopoverCanvas<MathData> restrictToWindow>
-          {({ entry, index, isPinned }) => (
-            <PopoverCard
-              entry={entry}
-              index={index}
-              isPinned={isPinned}
-              hoverEnabled={hoverEnabled}
-              allowDragWhenUnpinned={allowDragWhenUnpinned}
-              hoverOpenDelay={hoverOpenDelay}
-              hoverCloseDelay={hoverCloseDelay}
-              hoverCloseOnMouseLeave={hoverCloseOnMouseLeave}
-            />
-          )}
-        </PopoverCanvas>
-      </PopoverPortal>
+          <PopoverTrigger
+            popoverKey="100 / (5 - 3)"
+            placement="bottom"
+            options={{
+              cascadeOffsetStep,
+              hover: hoverConfig,
+              allowDragWhenUnpinned,
+              ariaDescribedby: 'Evaluation details for preset: 100 / (5 - 3)',
+            }}>
+            <button type="button" className="btn-preset">
+              ⚡ 100 / (5 - 3)
+            </button>
+          </PopoverTrigger>
+
+          <PopoverTrigger
+            popoverKey="(2 ^ 3) + (4 * 5)"
+            placement="bottom"
+            options={{
+              cascadeOffsetStep,
+              hover: hoverConfig,
+              allowDragWhenUnpinned,
+              ariaDescribedby: 'Evaluation details for preset: (2 ^ 3) + (4 * 5)',
+            }}>
+            <button type="button" className="btn-preset">
+              🚀 (2 ^ 3) + (4 * 5)
+            </button>
+          </PopoverTrigger>
+        </div>
+      </div>
+
+      {totalActive > 0 && (
+        <div className="global-controls">
+          <div className="active-count">
+            Active popovers: <strong>{totalActive}</strong> (Trail: {trail.length}, Pinned:{' '}
+            {floating.length})
+          </div>
+          <button type="button" className="btn-clear" onClick={() => clear()}>
+            Clear All Popovers
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -851,9 +746,9 @@ function MainContent({
 export default function App() {
   const [hoverEnabled, setHoverEnabled] = useState(false);
   const [arrowNavEnabled, setArrowNavEnabled] = useState(true);
-  const [debugEnabled, setDebugEnabled] = useState(true);
-  const [allowDragWhenUnpinned, setAllowDragWhenUnpinned] = useState(false);
-  const [cascadeOffsetStep, setCascadeOffsetStep] = useState(8);
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [allowDragWhenUnpinned, setAllowDragWhenUnpinned] = useState(true);
+  const [cascadeOffsetStep, setCascadeOffsetStep] = useState(16);
   const [hoverOpenDelay, setHoverOpenDelay] = useState(200);
   const [hoverCloseDelay, setHoverCloseDelay] = useState(300);
   const [hoverCloseOnMouseLeave, setHoverCloseOnMouseLeave] = useState(true);
@@ -861,12 +756,12 @@ export default function App() {
   return (
     <PopoverProvider
       resolveData={mathResolver}
-      initialContext="math-client"
-      clickOutside={{ enabled: true, ignoreClass: 'btn-trigger' }}
+      clickOutside={{ enabled: true }}
+      enableKeyboardClose
+      closePinnedDescendants
       enableArrowNavigation={arrowNavEnabled}
       debug={debugEnabled}
-      cascadeOffsetStep={cascadeOffsetStep}
-      exitTransitionDuration={300}>
+      cascadeOffsetStep={cascadeOffsetStep}>
       <MainContent
         hoverEnabled={hoverEnabled}
         setHoverEnabled={setHoverEnabled}
@@ -885,6 +780,21 @@ export default function App() {
         hoverCloseOnMouseLeave={hoverCloseOnMouseLeave}
         setHoverCloseOnMouseLeave={setHoverCloseOnMouseLeave}
       />
+      <PopoverCanvas<MathData>>
+        {({ entry, index, isPinned }) => (
+          <PopoverCard
+            key={entry.key}
+            entry={entry}
+            index={index}
+            isPinned={isPinned}
+            hoverEnabled={hoverEnabled}
+            allowDragWhenUnpinned={allowDragWhenUnpinned}
+            hoverOpenDelay={hoverOpenDelay}
+            hoverCloseDelay={hoverCloseDelay}
+            hoverCloseOnMouseLeave={hoverCloseOnMouseLeave}
+          />
+        )}
+      </PopoverCanvas>
     </PopoverProvider>
   );
 }
