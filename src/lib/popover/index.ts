@@ -5,7 +5,10 @@ export type {
   PopoverActions,
   PopoverStore,
   PopoverPlacement,
+  PopoverDisplayOptions,
+  CollisionConfig,
   ClickOutsideConfig,
+  AnchorEventLike,
   UsePopoverResult,
 } from './types';
 
@@ -35,7 +38,6 @@ export {
 
 export { usePopoverGeometry, type UsePopoverGeometryResult } from './hooks/useGeometry';
 export { usePopoverDragAndDrop, type UsePopoverDragAndDropResult } from './hooks/useDragAndDrop';
-export { usePopoverKeyboard } from './hooks/usePopoverKeyboard';
 export { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCard';
 export { getPopoverStyles } from './utils/styles';
 export { SimplePopoverCache } from './utils/cache';

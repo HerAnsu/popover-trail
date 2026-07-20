@@ -3,558 +3,26 @@ import type {
   PopoverStore,
   PopoverResolver,
   TrailEntry,
-  PopoverStateData,
   PopoverActions,
   PopoverCache,
   OpenRootOptions,
   OpenNestedOptions,
 } from './types';
 import equal from 'fast-deep-equal';
-
-/**
- * Type guard to determine if a value is a Promise or a thenable object.
- *
- * @template T - The resolved value type of the promise.
- * @param value - The value to inspect.
- * @returns True if the value is a promise-like object.
- */
-function isPromise<T>(value: unknown): value is Promise<T> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as Record<string, unknown>).then === 'function'
-  );
-}
-
-/**
- * Filters a Record object, retaining only the keys present in the specified Set.
- * Returns the original record reference if no keys were deleted to optimize rendering comparison.
- *
- * @template T - The record value type.
- * @param record - The source record to filter.
- * @param allowedKeys - The set of keys to preserve.
- * @returns The filtered record copy, or the original record.
- */
-function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
-  const nextRecord: Record<string, T> = {};
-  let changed = false;
-  for (const key of Object.keys(record)) {
-    if (allowedKeys.has(key)) {
-      nextRecord[key] = record[key];
-    } else {
-      changed = true;
-    }
-  }
-  return changed ? nextRecord : record;
-}
-
-/**
- * Retrieves a popover entry safely using a virtual index that merges
- * the floating and trailing lists.
- *
- * @template TData - The resolved data payload type.
- * @param floating - The array of floating popovers.
- * @param trail - The array of trailing popovers.
- * @param index - The virtual index to query.
- * @returns The matching TrailEntry, or undefined if the index is out of bounds.
- */
-function getEntryAtIndex<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-  index: number,
-): TrailEntry<TData> | undefined {
-  return [...floating, ...trail][index];
-}
-
-/**
- * Finds the virtual index of a popover entry by its unique key ID,
- * combining the floating and trailing array ranges.
- *
- * @template TData - The resolved data payload type.
- * @param floating - The array of floating popovers.
- * @param trail - The array of trailing popovers.
- * @param key - The unique key of the popover card.
- * @returns The virtual index, or -1 if the key is not active.
- */
-function findEntryIndex<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-  key: string,
-): number {
-  return [...floating, ...trail].findIndex((e) => e.key === key);
-}
-
-/**
- * Verifies if a popover with the given key is currently active
- * in either the floating or trailing arrays.
- *
- * @template TData - The resolved data payload type.
- * @param floating - The array of floating popovers.
- * @param trail - The array of trailing popovers.
- * @param key - The unique key of the popover card.
- * @returns True if the popover is active.
- */
-function hasEntryWithKey<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-  key: string,
-): boolean {
-  return [...floating, ...trail].some((e) => e.key === key);
-}
-
-/**
- * Calculates the updated z-index depth order list, moving the specified key to the top (end)
- * and filtering out any obsolete keys.
- *
- * @param zIndexOrder - The current z-index depth order list.
- * @param activeKeys - The set of currently active popover keys.
- * @param newKey - The key to bring to the topmost stack depth.
- * @returns The updated z-index order array.
- */
-function getNextZIndexOrder(
-  zIndexOrder: readonly string[],
-  activeKeys: Set<string>,
-  newKey: string,
-): string[] {
-  return [...zIndexOrder.filter((k) => activeKeys.has(k) && k !== newKey), newKey];
-}
-
-/**
- * Helper to collect all active popover keys from floating and trail arrays.
- *
- * @template TData - The resolved data payload type.
- * @param floating - The array of floating popovers.
- * @param trail - The array of trailing popovers.
- * @returns A Set containing all active popover keys.
- */
-function getActiveKeys<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-): Set<string> {
-  const activeKeys = new Set<string>();
-  floating.forEach((e) => activeKeys.add(e.key));
-  trail.forEach((e) => activeKeys.add(e.key));
-  return activeKeys;
-}
-
-/**
- * Builds a Map grouping popovers by their parent key IDs.
- *
- * @template TData - The resolved data payload type.
- * @param floating - The array of floating popovers.
- * @param trail - The array of trailing popovers.
- * @param useOriginalParent - Optional flag to group by originalParentKey fallback.
- * @returns A Map mapping parent keys to arrays of child entries.
- */
-function buildChildrenMap<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-  useOriginalParent = false,
-): Map<string, TrailEntry<TData>[]> {
-  const childrenMap = new Map<string, TrailEntry<TData>[]>();
-  const mapEntry = (entry: TrailEntry<TData>) => {
-    const pKey = useOriginalParent ? (entry.parentKey ?? entry.originalParentKey) : entry.parentKey;
-    if (pKey) {
-      let list = childrenMap.get(pKey);
-      if (!list) {
-        list = [];
-        childrenMap.set(pKey, list);
-      }
-      list.push(entry);
-    }
-  };
-  floating.forEach(mapEntry);
-  trail.forEach(mapEntry);
-  return childrenMap;
-}
-
-/**
- * Unified pointer-based BFS descendants traverser.
- *
- * @template TData - The resolved data payload type.
- * @param startKeys - The start keys for BFS traversal.
- * @param floating - The array of floating popovers.
- * @param trail - The array of trailing popovers.
- * @param options - Traversal options (useOriginalParent / ignoreFloating).
- * @returns Array of found descendant popovers.
- */
-function traverseDescendants<TData>(
-  startKeys: readonly string[],
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-  options: {
-    useOriginalParent?: boolean;
-    ignoreFloating?: boolean;
-  } = {},
-): TrailEntry<TData>[] {
-  const { useOriginalParent = false, ignoreFloating = false } = options;
-  const childrenMap = buildChildrenMap(floating, trail, useOriginalParent);
-  const descendants: TrailEntry<TData>[] = [];
-  const queue = [...startKeys];
-  const visited = new Set<string>(startKeys);
-  const floatingKeys = ignoreFloating ? new Set(floating.map((e) => e.key)) : null;
-
-  let head = 0;
-  while (head < queue.length) {
-    const current = queue[head++];
-    const children = childrenMap.get(current);
-    if (children) {
-      for (let i = 0; i < children.length; i++) {
-        const child = children[i];
-        if (!visited.has(child.key)) {
-          if (floatingKeys && floatingKeys.has(child.key)) {
-            continue;
-          }
-          visited.add(child.key);
-          descendants.push(child);
-          queue.push(child.key);
-        }
-      }
-    }
-  }
-  return descendants;
-}
-
-function getDescendants<TData>(
-  parentKey: string,
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-): TrailEntry<TData>[] {
-  return traverseDescendants([parentKey], floating, trail, {
-    useOriginalParent: false,
-    ignoreFloating: true,
-  });
-}
-
-/**
- * Recursively retrieves all descendant keys (both trailing and floating) spawned by a parent popover key.
- * Traverses parent-child linkages via both current parentKey and originalParentKey.
- *
- * @template TData - The resolved data payload type.
- * @param parentKeys - The parent key(s) to start the descendant traversal.
- * @param floating - The array of floating popovers.
- * @param trail - The array of trailing popovers.
- * @returns A Set containing all descendant popover key IDs.
- */
-function getAllDescendants<TData>(
-  parentKeys: string[],
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-): Set<string> {
-  const descendants = traverseDescendants(parentKeys, floating, trail, {
-    useOriginalParent: true,
-    ignoreFloating: false,
-  });
-  return new Set(descendants.map((d) => d.key));
-}
-
-/**
- * Returns a state patch that brings the targeted popover card and all of its trail descendants
- * to the top of the z-index depth stack.
- *
- * @template TData - The resolved data payload type.
- * @template TContext - The shared context type.
- * @param state - The current popover state data.
- * @param key - The target popover key.
- * @returns State patch updating zIndexOrder and floating arrays.
- */
-function bringToFrontPatch<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-  key: string,
-): Partial<PopoverStateData<TData, TContext>> {
-  const descendantEntries = getDescendants(key, state.floating, state.trail);
-  const keysToMove = [...descendantEntries.map((e) => e.key), key];
-  const keysToMoveSet = new Set(keysToMove);
-  const nextZIndexOrder = [
-    ...state.zIndexOrder.filter((k) => !keysToMoveSet.has(k)),
-    ...keysToMove,
-  ];
-  const index = state.floating.findIndex((e) => e.key === key);
-  let nextFloating = state.floating;
-
-  if (index !== -1) {
-    const clickedEntry = state.floating[index];
-    const floatingKeySet = new Set(state.floating.map((f) => f.key));
-    const floatingDescendants = descendantEntries.filter((e) => floatingKeySet.has(e.key));
-    const floatingKeysToMove = new Set<string>([key, ...floatingDescendants.map((d) => d.key)]);
-    nextFloating = [
-      ...state.floating.filter((e) => !floatingKeysToMove.has(e.key)),
-      clickedEntry,
-      ...floatingDescendants,
-    ];
-  }
-  return {
-    zIndexOrder: nextZIndexOrder,
-    floating: nextFloating,
-  };
-}
-
-/**
- * Builds a clean state patch pruning coordinate offsets, z-index orders,
- * pinned states, and pending request counters for any obsolete keys.
- * Also immediately clears root trigger anchors if the active trail becomes empty.
- *
- * @template TData - The resolved data payload type.
- * @template TContext - The shared context type.
- * @param floating - The list of floating popovers.
- * @param trail - The active trail stack.
- * @param offsets - Current drag coordinate offsets record.
- * @param zIndexOrder - Current depth stacking list.
- * @param pinnedStates - Current pinning flags record.
- * @param nestedHydrationRequestCounters - Stale-resolver request counters.
- * @returns State patch updating tracking records.
- */
-function getCleanupStatePatch<TData, TContext>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-  offsets: Record<string, { x: number; y: number }>,
-  zIndexOrder: string[],
-  pinnedStates: Record<string, boolean>,
-  nestedHydrationRequestCounters: Record<string, number>,
-): Partial<PopoverStateData<TData, TContext>> {
-  const activeKeys = getActiveKeys(floating, trail);
-
-  const nextOffsets = filterRecord(offsets, activeKeys);
-  const nextZIndexOrder = zIndexOrder.filter((k) => activeKeys.has(k));
-  const nextPinnedStates = filterRecord(pinnedStates, activeKeys);
-  const nextNestedCounters = filterRecord(nestedHydrationRequestCounters, activeKeys);
-
-  const patch: Partial<PopoverStateData<TData, TContext>> = {
-    offsets: nextOffsets,
-    zIndexOrder: nextZIndexOrder,
-    pinnedStates: nextPinnedStates,
-    nestedHydrationRequestCounters: nextNestedCounters,
-  };
-  if (trail.length === 0) {
-    patch.anchorElement = null;
-    patch.anchorRect = null;
-  }
-  if (floating.length === 0 && trail.length === 0) {
-    patch.zIndexOrder = [];
-    patch.ownerId = null;
-  }
-  return patch;
-}
-
-/**
- * Pure state updater for spawning or opening a new root popover.
- * Resets the active trail if ownerId changes, otherwise appends it.
- *
- * @template TData - The resolved data payload type.
- * @template TContext - The shared context type.
- * @param state - The current Zustand store state.
- * @param ownerId - The owner identifier claiming the new root.
- * @param entry - The root TrailEntry to insert.
- * @returns State patch spawning the root.
- */
-function openRootState<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-  ownerId: string,
-  entry: TrailEntry<TData>,
-): Partial<PopoverStateData<TData, TContext>> {
-  const hasFloating = state.floating.some((e) => e.key === entry.key);
-  if (hasFloating) {
-    return bringToFrontPatch(state, entry.key);
-  }
-  const nextEntry = {
-    ...entry,
-    originalRect: entry.originalRect ?? entry.rect,
-  };
-  const isSameOwner = state.ownerId === ownerId;
-  const nextTrail = isSameOwner ? [...state.trail, nextEntry] : [nextEntry];
-
-  const activeKeys = getActiveKeys(state.floating, nextTrail);
-
-  return {
-    ownerId,
-    trail: nextTrail,
-    offsets: filterRecord(state.offsets, activeKeys),
-    zIndexOrder: getNextZIndexOrder(state.zIndexOrder, activeKeys, entry.key),
-  };
-}
-
-/**
- * Pure state updater for pushing or appending a nested popover into the active path.
- * Resolves child insertions next to their parent indices and slices any downstream trail branches.
- *
- * @template TData - The resolved data payload type.
- * @template TContext - The shared context type.
- * @param state - The current Zustand store state.
- * @param index - The parent popover's virtual index.
- * @param entry - The nested TrailEntry to insert.
- * @returns State patch appending the child card.
- */
-function pushNestedState<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-  index: number,
-  entry: TrailEntry<TData>,
-): Partial<PopoverStateData<TData, TContext>> {
-  const hasFloating = state.floating.some((e) => e.key === entry.key);
-  if (hasFloating) {
-    return bringToFrontPatch(state, entry.key);
-  }
-
-  const isFloating = index < state.floating.length;
-  let nextTrail: TrailEntry<TData>[];
-  const finalEntry = {
-    ...entry,
-    originalParentKey: entry.originalParentKey ?? entry.parentKey,
-    originalRect: entry.originalRect ?? entry.rect,
-  };
-
-  if (isFloating) {
-    const floatingEntry = state.floating[index];
-    if (floatingEntry.key === entry.key) return {};
-    nextTrail = [finalEntry];
-  } else {
-    const trailIndex = index - state.floating.length;
-    const parentEntry = state.trail[trailIndex];
-    if (parentEntry.key === entry.key) return {};
-    if (finalEntry.parentKey === finalEntry.key) {
-      finalEntry.parentKey = undefined;
-    }
-    // insert trail entry after the specified index in the trail
-    nextTrail = state.trail.slice(0, trailIndex + 1).concat(finalEntry);
-  }
-
-  const activeKeys = getActiveKeys(state.floating, nextTrail);
-
-  return {
-    trail: nextTrail,
-    offsets: filterRecord(state.offsets, activeKeys),
-    zIndexOrder: getNextZIndexOrder(state.zIndexOrder, activeKeys, entry.key),
-  };
-}
-
-/**
- * Pure state updater for toggling a popover's modeless pinned/floating vs trailing status.
- *
- * @template TData - The resolved data payload type.
- * @template TContext - The shared context type.
- * @param state - The current Zustand store state.
- * @param key - The target popover card key.
- * @param rect - The immediate viewport-relative bounding box of the card.
- * @returns State patch toggling pinned status.
- */
-function togglePinState<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-  key: string,
-  rect?: DOMRect,
-): Partial<PopoverStateData<TData, TContext>> {
-  const floatingIndex = state.floating.findIndex((e) => e.key === key);
-  const wasPinned = floatingIndex !== -1;
-  const nextFloating = [...state.floating];
-  const nextTrail = [...state.trail];
-  const nextPinnedStates = { ...state.pinnedStates };
-  const nextOffsets = { ...state.offsets };
-  let nextZIndexOrder = [...state.zIndexOrder];
-
-  if (!wasPinned) {
-    const trailIndex = state.trail.findIndex((e) => e.key === key);
-    if (trailIndex !== -1) {
-      const entry = state.trail[trailIndex];
-      const updatedEntry = {
-        ...entry,
-        rect: rect ?? entry.rect,
-        pinnedLayoutPos: rect ? { top: rect.top, left: rect.left } : undefined,
-        parentKey: undefined,
-      };
-      nextTrail.splice(trailIndex, 1);
-      nextFloating.push(updatedEntry);
-      nextOffsets[key] = { x: 0, y: 0 };
-      nextPinnedStates[key] = true;
-      nextZIndexOrder = [...nextZIndexOrder.filter((k) => k !== key), key];
-    }
-  } else {
-    const entry = nextFloating[floatingIndex];
-    nextFloating.splice(floatingIndex, 1);
-    nextPinnedStates[key] = false;
-    if (entry) {
-      nextTrail.push({
-        ...entry,
-        rect: entry.originalRect ?? entry.rect,
-        parentKey: entry.originalParentKey ?? entry.parentKey,
-        pinnedLayoutPos: undefined,
-      });
-    }
-  }
-
-  const cleanupPatch = getCleanupStatePatch<TData, TContext>(
-    nextFloating,
-    nextTrail,
-    nextOffsets,
-    nextZIndexOrder,
-    nextPinnedStates,
-    state.nestedHydrationRequestCounters,
-  );
-
-  return {
-    floating: nextFloating,
-    trail: nextTrail,
-    ...cleanupPatch,
-  };
-}
-
-/**
- * Pure state updater for closing popovers starting at a target virtual index,
- * recursively cleaning up descendant branches based on provider configurations.
- *
- * @template TData - The resolved data payload type.
- * @template TContext - The shared context type.
- * @param state - The current Zustand store state.
- * @param index - The virtual index starting the closure range.
- * @returns State patch cleaning up closed keys.
- */
-function closeFromState<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-  index: number,
-): Partial<PopoverStateData<TData, TContext>> {
-  const totalCount = state.floating.length + state.trail.length;
-  if (index < 0 || index >= totalCount) return {};
-
-  const isFloating = index < state.floating.length;
-  const nextPinnedStates = { ...state.pinnedStates };
-
-  let directClosedKeys: string[];
-  if (isFloating) {
-    const entry = state.floating[index];
-    directClosedKeys = [entry.key];
-  } else {
-    const trailIndex = index - state.floating.length;
-    directClosedKeys = state.trail.slice(trailIndex).map((e) => e.key);
-  }
-
-  // Find all descendants recursively (both pinned and unpinned)
-  let descendants = getAllDescendants(directClosedKeys, state.floating, state.trail);
-  if (!state.closePinnedDescendants) {
-    const floatingKeys = new Set(state.floating.map((e) => e.key));
-    descendants = new Set([...descendants].filter((key) => !floatingKeys.has(key)));
-  }
-  const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
-
-  // Clean arrays by filtering out removed keys
-  const nextFloating = state.floating.filter((e) => !removedKeys.has(e.key));
-  const nextTrail = state.trail.filter((e) => !removedKeys.has(e.key));
-
-  for (const key of removedKeys) {
-    nextPinnedStates[key] = false;
-  }
-
-  const cleanupPatch = getCleanupStatePatch<TData, TContext>(
-    nextFloating,
-    nextTrail,
-    state.offsets,
-    state.zIndexOrder,
-    nextPinnedStates,
-    state.nestedHydrationRequestCounters,
-  );
-
-  return {
-    floating: nextFloating,
-    trail: nextTrail,
-    ...cleanupPatch,
-  };
-}
+import {
+  isPromise,
+  getEntryAtIndex,
+  findEntryIndex,
+  hasEntryWithKey,
+  getAllDescendants,
+  bringToFrontPatch,
+  getCleanupStatePatch,
+  openRootState,
+  pushNestedState,
+  togglePinState,
+  closeFromState,
+  updateEntryInLists,
+} from './utils/storeHelpers';
 
 /**
  * Instantiates and returns a generic Zustand vanilla StoreApi instance.
@@ -580,6 +48,14 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
   const activeControllers = new Map<string, AbortController>();
   const hoverCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+  const clearHoverTimer = (key: string) => {
+    const timer = hoverCloseTimers.get(key);
+    if (timer) {
+      clearTimeout(timer);
+      hoverCloseTimers.delete(key);
+    }
+  };
+
   const abortControllersForKeys = (keys: Iterable<string>) => {
     for (const key of keys) {
       const controller = activeControllers.get(key);
@@ -587,14 +63,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         controller.abort();
         activeControllers.delete(key);
       }
-    }
-  };
-
-  const clearHoverTimer = (key: string) => {
-    const timer = hoverCloseTimers.get(key);
-    if (timer) {
-      clearTimeout(timer);
-      hoverCloseTimers.delete(key);
+      clearHoverTimer(key);
     }
   };
 
@@ -668,16 +137,6 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
     const isNestedStale = (parentKey: string, startedCounter: number) =>
       get().nestedHydrationRequestCounters[parentKey] !== startedCounter;
 
-    const getUpdateEntryStatePatch =
-      (key: string, updatedFields: Partial<TrailEntry<TData>>) =>
-      (state: PopoverStateData<TData, TContext>) => {
-        const update = (e: TrailEntry<TData>) => (e.key === key ? { ...e, ...updatedFields } : e);
-        return {
-          trail: state.trail.map(update),
-          floating: state.floating.map(update),
-        };
-      };
-
     const resolvePopoverEntry = async (
       key: string,
       parentKey: string | undefined,
@@ -736,18 +195,12 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
-        set((state) => {
-          const update = (e: TrailEntry<TData>) => (e.key === key ? { ...e, ...patch } : e);
-          return {
-            trail: state.trail.map(update),
-            floating: state.floating.map(update),
-          };
-        });
+        set((state) => updateEntryInLists(state.floating, state.trail, key, patch));
       };
 
       const cached = storeCache?.get(key);
       if (cached !== undefined && !isPromise<TData>(cached)) {
-        set(insertStatePatch(buildEntry(cached as TData | undefined)));
+        set(insertStatePatch(buildEntry(cached as TData)));
         activeControllers.delete(controllerKey);
         return;
       }
@@ -756,7 +209,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       try {
         resultOrPromise =
           cached !== undefined
-            ? (cached as Promise<TData> | TData)
+            ? cached
             : get().resolveData(key, parentData, context ?? undefined, controller.signal);
       } catch (err) {
         const errorObj = err instanceof Error ? err : new Error(String(err));
@@ -853,15 +306,18 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           }
           const removedKeys = new Set<string>([...directClosedKeys, ...descendants]);
 
-          // 1. Abort controllers immediately
+          // 1. Abort controllers and clear hover timers immediately
           abortControllersForKeys(removedKeys);
 
           const { exitTransitionDuration: globalDuration } = get();
           let maxDuration = globalDuration;
+          const durationLookup = new Map<string, number | undefined>();
+          for (const e of floating) durationLookup.set(e.key, e.exitTransitionDuration);
+          for (const e of trail) durationLookup.set(e.key, e.exitTransitionDuration);
           for (const key of removedKeys) {
-            const entry = [...floating, ...trail].find((e) => e.key === key);
-            if (entry?.exitTransitionDuration !== undefined) {
-              maxDuration = Math.max(maxDuration, entry.exitTransitionDuration);
+            const duration = durationLookup.get(key);
+            if (duration !== undefined) {
+              maxDuration = Math.max(maxDuration, duration);
             }
           }
 
@@ -1017,14 +473,13 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           return;
         }
 
-        const anchorElement =
-          'currentTarget' in anchorEvent ? anchorEvent.currentTarget : null;
+        const anchorElement = 'currentTarget' in anchorEvent ? anchorEvent.currentTarget : null;
         const anchorRect =
           'currentTarget' in anchorEvent && anchorEvent.currentTarget
             ? anchorEvent.currentTarget.getBoundingClientRect()
             : 'getBoundingClientRect' in anchorEvent
-            ? anchorEvent.getBoundingClientRect()
-            : new DOMRect(0, 0, 0, 0);
+              ? anchorEvent.getBoundingClientRect()
+              : new DOMRect(0, 0, 0, 0);
 
         // Save anchor details immediately
         set({ anchorElement, anchorRect });
@@ -1096,6 +551,21 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           hover: entry.hover,
           ariaDescribedby: entry.ariaDescribedby,
           allowDragWhenUnpinned: entry.allowDragWhenUnpinned,
+          placement: entry.placement,
+          offset: entry.offset,
+          exitTransitionDuration: entry.exitTransitionDuration,
+          baseZIndex: entry.baseZIndex,
+          cascadeOffsetStep: entry.cascadeOffsetStep,
+          cascadeOffsetDirection: entry.cascadeOffsetDirection,
+          enableTilt: entry.enableTilt,
+          maxTiltAngle: entry.maxTiltAngle,
+          tiltSensitivity: entry.tiltSensitivity,
+          dragAxis: entry.dragAxis,
+          tiltFriction: entry.tiltFriction,
+          tiltDecay: entry.tiltDecay,
+          mountingClassName: entry.mountingClassName,
+          unmountingClassName: entry.unmountingClassName,
+          mountedClassName: entry.mountedClassName,
         };
 
         if (entry.parentKey) {
@@ -1108,7 +578,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
             key,
             () => incrementNestedCounter(entry.parentKey!),
             (startedCounter) => isNestedStale(entry.parentKey!, startedCounter),
-            (updatedEntry) => getUpdateEntryStatePatch(key, updatedEntry),
+            (updatedEntry) => (state) => updateEntryInLists(state.floating, state.trail, key, updatedEntry),
           );
         } else {
           await resolvePopoverEntry(
@@ -1120,7 +590,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
             '__root__',
             incrementRootCounter,
             isRootStale,
-            (updatedEntry) => getUpdateEntryStatePatch(key, updatedEntry),
+            (updatedEntry) => (state) => updateEntryInLists(state.floating, state.trail, key, updatedEntry),
           );
         }
       },
@@ -1157,14 +627,17 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       hoverEnter: (key) => {
         clearHoverTimer(key);
         const { trail, floating } = get();
+        // Build a fast lookup Map for parent keys to make climbing tree O(1) per step
+        const parentMap = new Map<string, string | undefined>();
+        floating.forEach((e) => parentMap.set(e.key, e.parentKey));
+        trail.forEach((e) => parentMap.set(e.key, e.parentKey));
+
         let currentKey: string | undefined = key;
         while (currentKey) {
-          const entryIndex: number = findEntryIndex(floating, trail, currentKey);
-          if (entryIndex === -1) break;
-          const entry: TrailEntry<TData> | undefined = getEntryAtIndex(floating, trail, entryIndex);
-          if (entry && entry.parentKey) {
-            clearHoverTimer(entry.parentKey);
-            currentKey = entry.parentKey;
+          const parentKey = parentMap.get(currentKey);
+          if (parentKey) {
+            clearHoverTimer(parentKey);
+            currentKey = parentKey;
           } else {
             break;
           }
@@ -1184,14 +657,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         }
       },
       setTransitionStatus: (key, status) => {
-        set((state) => {
-          const update = (e: TrailEntry<TData>) =>
-            e.key === key ? { ...e, transitionStatus: status } : e;
-          return {
-            trail: state.trail.map(update),
-            floating: state.floating.map(update),
-          };
-        });
+        set((state) => updateEntryInLists(state.floating, state.trail, key, { transitionStatus: status }));
       },
       setExitTransitionDuration: (exitTransitionDuration) => {
         if (get().exitTransitionDuration !== exitTransitionDuration) {
@@ -1223,27 +689,25 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       },
     };
 
-    const remainingActions = { ...actions } as Record<string, unknown>;
-    const internalKeys = [
-      'setContext',
-      'setResolveData',
-      'setOwnerId',
-      'openRoot',
-      'pushNested',
-      'destroy',
-      'setClosePinnedDescendants',
-      'setCollisionConfig',
-      'setEnableArrowNavigation',
-      'setDebug',
-      'setCascadeOffsetStep',
-      'setExitTransitionDuration',
-      'setDefaultOffset',
-      'setBaseZIndex',
-      'setGlobalAnimationClassNames',
-    ];
-    for (const key of internalKeys) {
-      delete remainingActions[key];
-    }
+    // Clean destructuring of remaining public actions without unsafe casts or mutating delete
+    const {
+      setContext: _setContext,
+      setResolveData: _setResolveData,
+      setOwnerId: _setOwnerId,
+      openRoot: _openRoot,
+      pushNested: _pushNested,
+      destroy: _destroy,
+      setClosePinnedDescendants: _setClosePinnedDescendants,
+      setCollisionConfig: _setCollisionConfig,
+      setEnableArrowNavigation: _setEnableArrowNavigation,
+      setDebug: _setDebug,
+      setCascadeOffsetStep: _setCascadeOffsetStep,
+      setExitTransitionDuration: _setExitTransitionDuration,
+      setDefaultOffset: _setDefaultOffset,
+      setBaseZIndex: _setBaseZIndex,
+      setGlobalAnimationClassNames: _setGlobalAnimationClassNames,
+      ...publicActions
+    } = actions;
 
     return {
       ownerId: null,
@@ -1272,7 +736,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
       mountedClassName: 'mounted',
 
       ...actions,
-      actions: remainingActions as unknown as PopoverStore<TData, TContext>['actions'],
+      actions: publicActions,
     };
   });
 }

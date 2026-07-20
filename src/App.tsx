@@ -197,8 +197,6 @@ const PopoverCard = memo(
       placement: 'bottom',
     });
 
-
-
     const customTriggerProps = usePopoverNestedTrigger(branchInput.trim(), entry.key, {
       hover: {
         enabled: hoverEnabled,
@@ -207,7 +205,9 @@ const PopoverCard = memo(
         closeOnMouseLeave: hoverCloseOnMouseLeave,
       },
       allowDragWhenUnpinned,
-      ariaDescribedby: branchInput.trim() ? `Evaluation details for custom expression: ${branchInput.trim()}` : undefined,
+      ariaDescribedby: branchInput.trim()
+        ? `Evaluation details for custom expression: ${branchInput.trim()}`
+        : undefined,
     });
 
     const handleCustomClick = (e: React.MouseEvent<HTMLElement>) => {
@@ -240,195 +240,193 @@ const PopoverCard = memo(
         <FocusLock disabled={!isTop || isPinned} returnFocus>
           <PopoverCardContext.Provider value={entry.key}>
             {entry.ariaDescribedby ? (
-            <div id={`desc-${entry.key}`} className="sr-only">
-              {entry.ariaDescribedby}
-            </div>
-          ) : null}
-          <div className="popover-header" {...dragHandleProps}>
-            <span id={`title-${entry.key}`} className="popover-title">
-              {entry.isLoading ? 'Evaluating...' : entry.data?.title}
-            </span>
-            <div className="popover-actions">
-              <button
-                type="button"
-                onClick={handlePinToggle}
-                onPointerDown={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-                className="btn-action"
-                title={isPinned ? 'Unpin popover' : 'Pin popover'}>
-                {isPinned ? '📌' : '📍'}
-              </button>
-              <button
-                type="button"
-                onClick={() => actions.closeFrom(index, { transition: true })}
-                onPointerDown={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-                className="btn-action"
-                title="Close">
-                ✕
-              </button>
-            </div>
-          </div>
-
-          <div className="popover-body">
-            {entry.isLoading ? (
-              <div className="spinner-container">
-                <div className="spinner" />
-                <span>Parsing expression...</span>
+              <div id={`desc-${entry.key}`} className="sr-only">
+                {entry.ariaDescribedby}
               </div>
-            ) : entry.error ? (
-              <div
-                style={{
-                  color: '#ef4444',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem',
-                }}>
-                <div>
-                  <strong>Error:</strong> {entry.error.message}
-                </div>
+            ) : null}
+            <div className="popover-header" {...dragHandleProps}>
+              <span id={`title-${entry.key}`} className="popover-title">
+                {entry.isLoading ? 'Evaluating...' : entry.data?.title}
+              </span>
+              <div className="popover-actions">
                 <button
                   type="button"
-                  className="btn-retry"
-                  onClick={() => actions.retryPopover(entry.key)}
-                  style={{
-                    alignSelf: 'flex-start',
-                    padding: '0.2rem 0.6rem',
-                    fontSize: '0.8rem',
-                    borderRadius: '4px',
-                    background: 'rgba(239, 68, 68, 0.2)',
-                    border: '1px solid #ef4444',
-                    color: '#f87171',
-                    cursor: 'pointer',
-                  }}>
-                  Retry
+                  onClick={handlePinToggle}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="btn-action"
+                  title={isPinned ? 'Unpin popover' : 'Pin popover'}>
+                  {isPinned ? '📌' : '📍'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => actions.closeFrom(index, { transition: true })}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="btn-action"
+                  title="Close">
+                  ✕
                 </button>
               </div>
-            ) : (
-              <div>
-                <div className="math-expression-display" style={{ marginBottom: '0.8rem' }}>
-                  <span className="math-label">Expression:</span>
-                  <code className="math-code">{entry.data?.expression}</code>
-                  <div className="math-result" style={{ marginTop: '0.4rem', fontWeight: 700 }}>
-                    Result = <span className="math-value">{entry.data?.value}</span>
-                  </div>
-                </div>
+            </div>
 
-                {entry.data?.operator ? (
+            <div className="popover-body">
+              {entry.isLoading ? (
+                <div className="spinner-container">
+                  <div className="spinner" />
+                  <span>Parsing expression...</span>
+                </div>
+              ) : entry.error ? (
+                <div
+                  style={{
+                    color: '#ef4444',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem',
+                  }}>
+                  <div>
+                    <strong>Error:</strong> {entry.error.message}
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-retry"
+                    onClick={() => actions.retryPopover(entry.key)}
+                    style={{
+                      alignSelf: 'flex-start',
+                      padding: '0.2rem 0.6rem',
+                      fontSize: '0.8rem',
+                      borderRadius: '4px',
+                      background: 'rgba(239, 68, 68, 0.2)',
+                      border: '1px solid #ef4444',
+                      color: '#f87171',
+                      cursor: 'pointer',
+                    }}>
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div className="math-expression-display" style={{ marginBottom: '0.8rem' }}>
+                    <span className="math-label">Expression:</span>
+                    <code className="math-code">{entry.data?.expression}</code>
+                    <div className="math-result" style={{ marginTop: '0.4rem', fontWeight: 700 }}>
+                      Result = <span className="math-value">{entry.data?.value}</span>
+                    </div>
+                  </div>
+
+                  {entry.data?.operator ? (
+                    <div
+                      className="popover-links"
+                      style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                        }}>
+                        Drill down operands:
+                      </span>
+                      {entry.data.leftExpr ? (
+                        <PopoverTrigger
+                          popoverKey={entry.data.leftExpr}
+                          placement="left"
+                          offset={16}
+                          options={{
+                            cascadeOffsetStep: 16,
+                            cascadeOffsetDirection: 'top',
+                            maxTiltAngle: 15,
+                            collision: { flip: false },
+                            hover: {
+                              enabled: hoverEnabled,
+                              openDelay: hoverOpenDelay,
+                              closeDelay: hoverCloseDelay,
+                              closeOnMouseLeave: hoverCloseOnMouseLeave,
+                            },
+                            allowDragWhenUnpinned,
+                            ariaDescribedby: `Evaluation details for left operand: ${entry.data.leftExpr}`,
+                          }}>
+                          <button type="button" className="btn-link">
+                            👈 Left: {entry.data.leftExpr}
+                          </button>
+                        </PopoverTrigger>
+                      ) : null}
+                      {entry.data.rightExpr ? (
+                        <PopoverTrigger
+                          popoverKey={entry.data.rightExpr}
+                          placement="right"
+                          options={{
+                            exitTransitionDuration: 600,
+                            hover: {
+                              enabled: hoverEnabled,
+                              openDelay: hoverOpenDelay,
+                              closeDelay: hoverCloseDelay,
+                              closeOnMouseLeave: hoverCloseOnMouseLeave,
+                            },
+                            allowDragWhenUnpinned,
+                            ariaDescribedby: `Evaluation details for right operand: ${entry.data.rightExpr}`,
+                          }}>
+                          <button type="button" className="btn-link">
+                            👉 Right: {entry.data.rightExpr}
+                          </button>
+                        </PopoverTrigger>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   <div
-                    className="popover-links"
-                    style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    className="custom-branch-zone"
+                    style={{
+                      marginTop: '1rem',
+                      paddingTop: '0.8rem',
+                      borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}>
                     <span
                       style={{
-                        fontSize: '0.75rem',
+                        fontSize: '0.7rem',
                         fontWeight: 600,
-                        color: 'var(--text-primary)',
+                        color: 'var(--text-secondary)',
+                        display: 'block',
+                        marginBottom: '0.3rem',
                       }}>
-                      Drill down operands:
+                      Extend with custom formula:
                     </span>
-                    {entry.data.leftExpr ? (
-                      <PopoverTrigger
-                        popoverKey={entry.data.leftExpr}
-                        placement="left"
-                        offset={16}
-                        options={{
-                          cascadeOffsetStep: 16,
-                          cascadeOffsetDirection: 'top',
-                          maxTiltAngle: 15,
-                          collision: { flip: false },
-                          hover: {
-                            enabled: hoverEnabled,
-                            openDelay: hoverOpenDelay,
-                            closeDelay: hoverCloseDelay,
-                            closeOnMouseLeave: hoverCloseOnMouseLeave,
-                          },
-                          allowDragWhenUnpinned,
-                          ariaDescribedby: `Evaluation details for left operand: ${entry.data.leftExpr}`,
+                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                      <input
+                        type="text"
+                        placeholder="e.g. 5 * (2 + 1)"
+                        value={branchInput}
+                        onChange={(e) => setBranchInput(e.target.value)}
+                        style={{
+                          flex: 1,
+                          background: 'rgba(0, 0, 0, 0.3)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          padding: '0.3rem 0.5rem',
+                          fontSize: '0.75rem',
                         }}
-                      >
-                        <button type="button" className="btn-link">
-                          👈 Left: {entry.data.leftExpr}
-                        </button>
-                      </PopoverTrigger>
-                    ) : null}
-                    {entry.data.rightExpr ? (
-                      <PopoverTrigger
-                        popoverKey={entry.data.rightExpr}
-                        placement="right"
-                        options={{
-                          exitTransitionDuration: 600,
-                          hover: {
-                            enabled: hoverEnabled,
-                            openDelay: hoverOpenDelay,
-                            closeDelay: hoverCloseDelay,
-                            closeOnMouseLeave: hoverCloseOnMouseLeave,
-                          },
-                          allowDragWhenUnpinned,
-                          ariaDescribedby: `Evaluation details for right operand: ${entry.data.rightExpr}`,
+                      />
+                      <button
+                        type="button"
+                        disabled={!branchInput.trim()}
+                        style={{
+                          background: 'rgba(99, 102, 241, 0.2)',
+                          border: '1px solid rgba(99, 102, 241, 0.4)',
+                          borderRadius: '4px',
+                          color: '#fff',
+                          padding: '0.3rem 0.6rem',
+                          fontSize: '0.75rem',
+                          cursor: branchInput.trim() ? 'pointer' : 'not-allowed',
+                          fontWeight: 600,
                         }}
-                      >
-                        <button type="button" className="btn-link">
-                          👉 Right: {entry.data.rightExpr}
-                        </button>
-                      </PopoverTrigger>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                <div
-                  className="custom-branch-zone"
-                  style={{
-                    marginTop: '1rem',
-                    paddingTop: '0.8rem',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                  }}>
-                  <span
-                    style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      color: 'var(--text-secondary)',
-                      display: 'block',
-                      marginBottom: '0.3rem',
-                     }}>
-                    Extend with custom formula:
-                  </span>
-                  <div style={{ display: 'flex', gap: '0.3rem' }}>
-                    <input
-                      type="text"
-                      placeholder="e.g. 5 * (2 + 1)"
-                      value={branchInput}
-                      onChange={(e) => setBranchInput(e.target.value)}
-                      style={{
-                        flex: 1,
-                        background: 'rgba(0, 0, 0, 0.3)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        borderRadius: '4px',
-                        color: '#fff',
-                        padding: '0.3rem 0.5rem',
-                        fontSize: '0.75rem',
-                      }}
-                    />
-                    <button
-                      type="button"
-                      disabled={!branchInput.trim()}
-                      style={{
-                        background: 'rgba(99, 102, 241, 0.2)',
-                        border: '1px solid rgba(99, 102, 241, 0.4)',
-                        borderRadius: '4px',
-                        color: '#fff',
-                        padding: '0.3rem 0.6rem',
-                        fontSize: '0.75rem',
-                        cursor: branchInput.trim() ? 'pointer' : 'not-allowed',
-                        fontWeight: 600,
-                      }}
-                      {...customTriggerProps}
-                      onClick={handleCustomClick}>
-                      Branch
-                    </button>
+                        {...customTriggerProps}
+                        onClick={handleCustomClick}>
+                        Branch
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           </PopoverCardContext.Provider>
         </FocusLock>
@@ -487,8 +485,6 @@ function MainContent({
     closeDelay: hoverCloseDelay,
     closeOnMouseLeave: hoverCloseOnMouseLeave,
   };
-
-
 
   const handleOpenCustomRoot = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!customRoot.trim()) return;
@@ -729,8 +725,7 @@ function MainContent({
             hover: hoverConfig,
             allowDragWhenUnpinned,
             ariaDescribedby: 'Mathematical evaluation details for 2 * (3 + (15 / 5))',
-          }}
-        >
+          }}>
           <button type="button" className="btn-trigger" style={{ textAlign: 'left' }}>
             🧮 Compute: 2 * (3 + (15 / 5))
           </button>
@@ -744,8 +739,7 @@ function MainContent({
             hover: hoverConfig,
             allowDragWhenUnpinned,
             ariaDescribedby: 'Mathematical evaluation details for (4 ^ 2) - (2 * (5 + 1))',
-          }}
-        >
+          }}>
           <button type="button" className="btn-trigger" style={{ textAlign: 'left' }}>
             🧮 Compute: (4 ^ 2) - (2 * (5 + 1))
           </button>
@@ -759,8 +753,7 @@ function MainContent({
             hover: hoverConfig,
             allowDragWhenUnpinned,
             ariaDescribedby: 'Mathematical evaluation details for 100 / (2 * (3 + (4 - 2)))',
-          }}
-        >
+          }}>
           <button type="button" className="btn-trigger" style={{ textAlign: 'left' }}>
             🧮 Compute: 100 / (2 * (3 + (4 - 2)))
           </button>

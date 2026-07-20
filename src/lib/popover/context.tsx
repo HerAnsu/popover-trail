@@ -19,10 +19,12 @@ import type {
   ClickOutsideConfig,
   PopoverCache,
   CollisionConfig,
+  PopoverDisplayOptions,
   OpenRootOptions,
   OpenNestedOptions,
   TrailEntry,
   UsePopoverResult,
+  AnchorEventLike,
 } from './types';
 
 /**
@@ -142,64 +144,41 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     createPopoverStore<TData, TContext>(resolveData, initialContext, cache),
   );
 
-  // Synchronize enableArrowNavigation reactively when the prop changes
+  // Synchronize all provider props to the store in a single effect to avoid
+  // 10 separate render cycles when multiple props change simultaneously
   useEffect(() => {
-    store.getState().setEnableArrowNavigation(Boolean(enableArrowNavigation));
-  }, [enableArrowNavigation, store]);
-
-  // Synchronize debug reactively when the prop changes
-  useEffect(() => {
-    store.getState().setDebug(Boolean(debug));
-  }, [debug, store]);
-
-  // Synchronize cascadeOffsetStep reactively when the prop changes
-  useEffect(() => {
-    store.getState().setCascadeOffsetStep(Number(cascadeOffsetStep));
-  }, [cascadeOffsetStep, store]);
-
-  // Synchronize exitTransitionDuration reactively when the prop changes
-  useEffect(() => {
-    store.getState().setExitTransitionDuration(Number(exitTransitionDuration));
-  }, [exitTransitionDuration, store]);
-
-  // Synchronize defaultOffset reactively when the prop changes
-  useEffect(() => {
-    store.getState().setDefaultOffset(Number(defaultOffset));
-  }, [defaultOffset, store]);
-
-  // Synchronize baseZIndex reactively when the prop changes
-  useEffect(() => {
-    store.getState().setBaseZIndex(Number(baseZIndex));
-  }, [baseZIndex, store]);
-
-  // Synchronize animation class names reactively when the props change
-  useEffect(() => {
-    store.getState().setGlobalAnimationClassNames(
+    const state = store.getState();
+    state.setEnableArrowNavigation(Boolean(enableArrowNavigation));
+    state.setDebug(Boolean(debug));
+    state.setCascadeOffsetStep(Number(cascadeOffsetStep));
+    state.setExitTransitionDuration(Number(exitTransitionDuration));
+    state.setDefaultOffset(Number(defaultOffset));
+    state.setBaseZIndex(Number(baseZIndex));
+    state.setGlobalAnimationClassNames(
       String(mountingClassName),
       String(unmountingClassName),
       String(mountedClassName),
     );
-  }, [mountingClassName, unmountingClassName, mountedClassName, store]);
-
-  // Synchronize context reactively when the prop changes
-  useEffect(() => {
-    store.getState().setContext(initialContext as TContext);
-  }, [initialContext, store]);
-
-  // Synchronize resolveData reactively when the prop changes to prevent stale closures
-  useEffect(() => {
-    store.getState().setResolveData(resolveData);
-  }, [resolveData, store]);
-
-  // Synchronize closePinnedDescendants reactively when the prop changes
-  useEffect(() => {
-    store.getState().setClosePinnedDescendants(Boolean(closePinnedDescendants));
-  }, [closePinnedDescendants, store]);
-
-  // Synchronize collisionConfig reactively when the prop changes
-  useEffect(() => {
-    store.getState().setCollisionConfig(collision ?? null);
-  }, [collision, store]);
+    state.setContext(initialContext as TContext);
+    state.setResolveData(resolveData);
+    state.setClosePinnedDescendants(Boolean(closePinnedDescendants));
+    state.setCollisionConfig(collision ?? null);
+  }, [
+    enableArrowNavigation,
+    debug,
+    cascadeOffsetStep,
+    exitTransitionDuration,
+    defaultOffset,
+    baseZIndex,
+    mountingClassName,
+    unmountingClassName,
+    mountedClassName,
+    initialContext,
+    resolveData,
+    closePinnedDescendants,
+    collision,
+    store,
+  ]);
 
   // Cleanup on Provider unmount: abort all in-flight requests and reset state
   useEffect(() => {
@@ -234,6 +213,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   useEffect(() => {
     if (!enabled) return;
 
+    const escapedIgnoreClass = ignoreClass ? `.${CSS.escape(ignoreClass)}` : null;
+
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const state = store.getState();
@@ -246,7 +227,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
         if (el instanceof HTMLElement) {
           try {
             if (el.matches(popoverSelector)) return true;
-            if (ignoreClass && el.matches(`.${CSS.escape(ignoreClass)}`)) return true;
+            if (escapedIgnoreClass && el.matches(escapedIgnoreClass)) return true;
           } catch {
             if (ignoreClass && el.classList.contains(ignoreClass)) return true;
           }
@@ -430,8 +411,7 @@ export function useIsPopoverOpen(key: string): boolean {
   return usePopoverStore<unknown, unknown, boolean>(
     useCallback(
       (state) =>
-        state.trail.some((e) => e.key === key) ||
-        state.floating.some((e) => e.key === key),
+        state.trail.some((e) => e.key === key) || state.floating.some((e) => e.key === key),
       [key],
     ),
   );
@@ -464,7 +444,9 @@ export function usePopoverActions<TData = unknown, TContext = unknown>() {
  * @param key - The unique identifier key of the popover.
  * @returns Unified data values and action wrappers.
  */
-export function usePopover<TData = unknown, TContext = unknown>(key: string): UsePopoverResult<TData> {
+export function usePopover<TData = unknown, TContext = unknown>(
+  key: string,
+): UsePopoverResult<TData> {
   const entry = usePopoverEntry<TData>(key);
   const isOpen = useIsPopoverOpen(key);
   const isPinned = useIsPopoverPinned(key);
@@ -473,27 +455,38 @@ export function usePopover<TData = unknown, TContext = unknown>(key: string): Us
   const offset = usePopoverOffset(key);
   const actions = usePopoverActions<TData, TContext>();
 
-  return {
-    entry,
-    isOpen,
-    isPinned,
-    zIndex,
-    isTop,
-    offset,
-    isLoading: entry?.isLoading ?? false,
-    data: entry?.data,
-    error: entry?.error,
-    close: useCallback(() => actions.closeByKey(key, { transition: true }), [actions, key]),
-    pin: useCallback((rect: DOMRect) => actions.togglePin(key, rect), [actions, key]),
-    bringToFront: useCallback(() => actions.bringToFront(key), [actions, key]),
-    updateOffset: useCallback((x: number, y: number) => actions.updateOffset(key, x, y), [actions, key]),
-  };
+  const close = useCallback(() => actions.closeByKey(key, { transition: true }), [actions, key]);
+  const pin = useCallback((rect: DOMRect) => actions.togglePin(key, rect), [actions, key]);
+  const bringToFront = useCallback(() => actions.bringToFront(key), [actions, key]);
+  const updateOffset = useCallback(
+    (x: number, y: number) => actions.updateOffset(key, x, y),
+    [actions, key],
+  );
+
+  return useMemo(
+    (): UsePopoverResult<TData> => ({
+      entry,
+      isOpen,
+      isPinned,
+      zIndex,
+      isTop,
+      offset,
+      isLoading: entry?.isLoading ?? false,
+      data: entry?.data,
+      error: entry?.error,
+      close,
+      pin,
+      bringToFront,
+      updateOffset,
+    }),
+    [entry, isOpen, isPinned, zIndex, isTop, offset, close, pin, bringToFront, updateOffset],
+  );
 }
 
 function usePopoverHoverHandlers(
   key: string,
   openTimerRef: { current: ReturnType<typeof setTimeout> | null },
-  optionsRef: { current: OpenRootOptions | undefined },
+  optionsRef: { current: PopoverDisplayOptions | undefined },
   onMouseEnter: (e: React.MouseEvent<HTMLElement>) => void,
   onClick: (e: React.MouseEvent<HTMLElement>) => void,
   hoverEnabled: boolean,
@@ -555,8 +548,8 @@ export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
           clearTimeout(openTimerRef.current);
         }
         const currentTarget = e.currentTarget;
-        const fakeEvent: { currentTarget: HTMLElement; stopPropagation: () => void } = {
-          currentTarget: currentTarget as HTMLElement,
+        const fakeEvent: AnchorEventLike = {
+          currentTarget,
           stopPropagation: () => {
             e.stopPropagation();
           },
@@ -641,7 +634,7 @@ export function usePopoverNestedTrigger(
   return usePopoverHoverHandlers(
     key,
     openTimerRef,
-    optionsRef as unknown as { current: OpenRootOptions | undefined },
+    optionsRef,
     onMouseEnter,
     onClick,
     Boolean(options?.hover?.enabled),

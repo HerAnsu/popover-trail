@@ -1,6 +1,12 @@
 /* eslint-disable react/only-export-components */
-import { useCallback, useRef, useMemo, type ReactNode } from 'react';
-import { useDraggable, DndContext, type DragStartEvent, type DragEndEvent, type Modifier } from '@dnd-kit/core';
+import { memo, useCallback, useRef, useMemo, type ReactNode } from 'react';
+import {
+  useDraggable,
+  DndContext,
+  type DragStartEvent,
+  type DragEndEvent,
+  type Modifier,
+} from '@dnd-kit/core';
 import FocusLock from 'react-focus-lock';
 import { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCard';
 import { usePopoverDragAndDrop } from './hooks/useDragAndDrop';
@@ -151,11 +157,7 @@ export function usePopoverDraggableCard({
  */
 export interface PopoverCanvasProps<TData> {
   /** Render prop returning JSX content for a single popover card. */
-  children: (props: {
-    entry: TrailEntry<TData>;
-    index: number;
-    isPinned: boolean;
-  }) => ReactNode;
+  children: (props: { entry: TrailEntry<TData>; index: number; isPinned: boolean }) => ReactNode;
 
   /** Optional custom DndContext modifiers. */
   modifiers?: Modifier[];
@@ -238,29 +240,35 @@ export function PopoverCanvas<TData = unknown>({
   }, [restrictToWindow, restrictToContainer, customModifiers]);
 
   const handleDragStart = (event: DragStartEvent) => {
-    bringToFront(event.active.id as string);
+    bringToFront(String(event.active.id));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
-    const key = active.id as string;
+    const key = String(active.id);
     const currentOffset = store.getState().offsets[key] || { x: 0, y: 0 };
     updateOffset(key, currentOffset.x + delta.x, currentOffset.y + delta.y);
   };
 
-  const activeEntries = [
-    ...floating.map((entry) => ({ entry, isPinned: true })),
-    ...trail.map((entry) => ({ entry, isPinned: false })),
-  ];
+  const activeEntries = useMemo(
+    () => [
+      ...floating.map((entry, idx) => ({ entry, isPinned: true, index: idx })),
+      ...trail.map((entry, idx) => ({ entry, isPinned: false, index: floating.length + idx })),
+    ],
+    [floating, trail],
+  );
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={computedModifiers}>
+    <DndContext
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      modifiers={computedModifiers}>
       <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
-        {activeEntries.map(({ entry, isPinned }, idx) => (
+        {activeEntries.map(({ entry, isPinned, index: entryIndex }) => (
           <div key={entry.key} style={{ pointerEvents: 'auto' }}>
             {children({
               entry,
-              index: isPinned ? idx : floating.length + trail.indexOf(entry),
+              index: entryIndex,
               isPinned,
             })}
           </div>
@@ -304,7 +312,7 @@ export interface PopoverCardProps<TData> {
  *
  * @template TData - The resolved data payload type.
  */
-export function PopoverCard<TData = unknown>({
+function PopoverCardInner<TData = unknown>({
   entry,
   index,
   isPinned,
@@ -337,6 +345,10 @@ export function PopoverCard<TData = unknown>({
     enableTilt,
   });
 
+  const handleMouseDown = useCallback(() => {
+    actions.bringToFront(entry.key);
+  }, [actions, entry.key]);
+
   const combinedClassName = [
     className,
     isTop ? 'topmost' : '',
@@ -363,11 +375,10 @@ export function PopoverCard<TData = unknown>({
       aria-labelledby={`title-${entry.key}`}
       aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
       className={combinedClassName}
-      onMouseDown={() => actions.bringToFront(entry.key)}
+      onMouseDown={handleMouseDown}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      onKeyDown={onKeyDown}
-    >
+      onKeyDown={onKeyDown}>
       <FocusLock disabled={!enableFocusLock || !isTop || isPinned} returnFocus>
         <PopoverCardContext.Provider value={entry.key}>
           {entry.ariaDescribedby && (
@@ -382,7 +393,9 @@ export function PopoverCard<TData = unknown>({
               {children}
             </>
           ) : (
-            <div {...resolvedDragHandleProps} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div
+              {...resolvedDragHandleProps}
+              style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
               {children}
             </div>
           )}
@@ -391,3 +404,5 @@ export function PopoverCard<TData = unknown>({
     </div>
   );
 }
+
+export const PopoverCard = memo(PopoverCardInner) as typeof PopoverCardInner;

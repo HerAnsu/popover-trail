@@ -111,7 +111,7 @@ export function usePopoverGeometry({
           boundary: boundaryOption,
           padding: padding ?? undefined,
           ...(typeof flipOption === 'object' ? flipOption : {}),
-        })
+        }),
       );
     }
 
@@ -121,7 +121,7 @@ export function usePopoverGeometry({
           boundary: boundaryOption,
           padding: padding ?? 12,
           ...(typeof shiftOption === 'object' ? shiftOption : {}),
-        })
+        }),
       );
     }
 
@@ -135,7 +135,7 @@ export function usePopoverGeometry({
             elements.floating.style.setProperty('--popover-max-height', `${availableHeight}px`);
           },
           ...(typeof sizeOption === 'object' ? sizeOption : {}),
-        })
+        }),
       );
     }
 
@@ -153,7 +153,13 @@ export function usePopoverGeometry({
     return anchorCenterX > screenCenterX ? 'left' : 'right';
   }, [placement, anchorRect]);
 
-  const { refs, x, y, update, placement: resolvedPlacement } = useFloating({
+  const {
+    refs,
+    x,
+    y,
+    update,
+    placement: resolvedPlacement,
+  } = useFloating({
     placement: resolvedAutoPlacement ?? 'bottom',
     whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
     middleware,
@@ -164,12 +170,21 @@ export function usePopoverGeometry({
     refs.setReference(virtualElement);
   }, [virtualElement, refs]);
 
-  // 4. Force updates when specific inputs change (disabled when pinned)
+  // 4. Force updates when specific inputs change (disabled when pinned or dragging)
   useEffect(() => {
-    if (!isPinned) {
+    if (!isPinned && !isDragging) {
       void update();
     }
-  }, [id, anchorRect, resolvedAutoPlacement, zIndex, isDragging, isPinned, entry?.pinnedLayoutPos, update]);
+  }, [
+    id,
+    anchorRect,
+    resolvedAutoPlacement,
+    zIndex,
+    isDragging,
+    isPinned,
+    entry?.pinnedLayoutPos,
+    update,
+  ]);
 
   // 5. Calculate the final coordinates
   const finalLayoutPos = useMemo(() => {
@@ -179,8 +194,7 @@ export function usePopoverGeometry({
     // Calculate horizontal/vertical offsets dynamically based on nesting level and custom direction overrides
     const step = entry?.cascadeOffsetStep ?? cascadeOffsetStep;
     const direction =
-      entry?.cascadeOffsetDirection ??
-      (resolvedPlacement.startsWith('left') ? 'left' : 'right');
+      entry?.cascadeOffsetDirection ?? (resolvedPlacement.startsWith('left') ? 'left' : 'right');
     const offsetVal = zIndex * step;
 
     let topOffset = 0;
@@ -199,7 +213,17 @@ export function usePopoverGeometry({
       top: (y ?? 0) + topOffset,
       left: (x ?? 0) + leftOffset,
     };
-  }, [isPinned, entry?.pinnedLayoutPos, x, y, zIndex, cascadeOffsetStep, resolvedPlacement, entry?.cascadeOffsetStep, entry?.cascadeOffsetDirection]);
+  }, [
+    isPinned,
+    entry?.pinnedLayoutPos,
+    x,
+    y,
+    zIndex,
+    cascadeOffsetStep,
+    resolvedPlacement,
+    entry?.cascadeOffsetStep,
+    entry?.cascadeOffsetDirection,
+  ]);
 
   return {
     finalLayoutPos,

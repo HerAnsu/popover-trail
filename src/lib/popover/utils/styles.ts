@@ -12,8 +12,12 @@ interface GetPopoverStylesParams {
   dragX?: number;
   /** Temporary, immediate drag translation coordinates from active drag actions. */
   dragY?: number;
-  /** Physics-based spring rotation angle in degrees. */
+  /** Physics-based spring rotation angle in degrees (rotateZ). */
   rotation?: number;
+  /** Physics-based spring 3D tilt rotation around the horizontal X-axis (rotateX). */
+  rotationX?: number;
+  /** Physics-based spring 3D tilt rotation around the vertical Y-axis (rotateY). */
+  rotationY?: number;
   /** Layer depth index to stack topmost/pinned items. */
   zIndex?: number;
 }
@@ -37,6 +41,8 @@ export function getPopoverStyles({
   dragX = 0,
   dragY = 0,
   rotation = 0,
+  rotationX = 0,
+  rotationY = 0,
   zIndex = 1000,
 }: GetPopoverStylesParams): CSSProperties {
   const translateX = Math.round(dragX + offset.x);
@@ -46,7 +52,7 @@ export function getPopoverStyles({
     position: 'absolute',
     top: Math.round(finalLayoutPos.top),
     left: Math.round(finalLayoutPos.left),
-    transform: `translate(${translateX}px, ${translateY}px) rotate(${rotation}deg)`,
+    transform: `translate(${translateX}px, ${translateY}px) rotateX(${rotationX}deg) rotateY(${rotationY}deg) rotateZ(${rotation}deg)`,
     willChange: 'transform',
     zIndex,
   };

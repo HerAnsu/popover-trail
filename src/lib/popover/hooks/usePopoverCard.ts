@@ -1,4 +1,11 @@
-import { useRef, useCallback, useEffect, type CSSProperties, type HTMLAttributes, type KeyboardEvent } from 'react';
+import {
+  useRef,
+  useCallback,
+  useEffect,
+  type CSSProperties,
+  type HTMLAttributes,
+  type KeyboardEvent,
+} from 'react';
 import { usePopoverGeometry } from './useGeometry';
 import {
   usePopoverOffset,
@@ -72,6 +79,8 @@ export function usePopoverCard({
     if (typeof document !== 'undefined') {
       previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
     }
+    // Capture ref.current at setup time — it may be null by the time cleanup runs
+    const cardElement = ref.current;
 
     return () => {
       const elementToFocus = previouslyFocusedElementRef.current;
@@ -80,7 +89,7 @@ export function usePopoverCard({
       if (isStillInDom && typeof elementToFocus?.focus === 'function') {
         const activeEl = document.activeElement;
         const isFocusInside =
-          ref.current?.contains(activeEl) || activeEl === document.body || !activeEl;
+          cardElement?.contains(activeEl) || activeEl === document.body || !activeEl;
         if (isFocusInside) {
           elementToFocus.focus();
         }

@@ -17,7 +17,7 @@ export interface HoverConfig {
  *
  * @template TData - The type of resolved data payload associated with this popover.
  */
-export interface TrailEntry<TData = unknown> {
+export interface TrailEntry<TData = unknown> extends PopoverDisplayOptions {
   /**
    * Unique identifier for this popover instance.
    * Typically derived from the expression, name, or key of the resolved entity.
@@ -71,52 +71,18 @@ export interface TrailEntry<TData = unknown> {
    */
   originalRect?: DOMRect;
 
-  /**
-   * Local overrides for boundary collision settings and safety padding.
-   */
-  collision?: CollisionConfig;
-
-  /** Hover-trigger options configuration stored for this entry. */
-  hover?: HoverConfig;
-
-  /** Accessibility description text linked via aria-describedby. */
-  ariaDescribedby?: string;
-
-  /** True to allow dragging even when the popover is unpinned/trailing. */
-  allowDragWhenUnpinned?: boolean;
-  /** Preferred layout placement direction relative to trigger. */
-  placement?: PopoverPlacement;
   /** Transition lifecycle state for animating mount/exit states. */
   transitionStatus?: 'mounting' | 'mounted' | 'unmounting';
-  /** Custom distance gap offset from the trigger in pixels. */
-  offset?: number;
-  /** Custom exit transition duration override in milliseconds. */
-  exitTransitionDuration?: number;
-  /** Custom base z-index layering override. */
-  baseZIndex?: number;
-  /** Custom horizontal/vertical cascade offset step override. */
-  cascadeOffsetStep?: number;
-  /** Custom cascade stacking offset shift direction override. */
-  cascadeOffsetDirection?: 'left' | 'right' | 'top' | 'bottom' | 'none';
-  /** Custom spring tilt effect toggle override. */
-  enableTilt?: boolean;
-  /** Custom max spring tilt angle override. */
-  maxTiltAngle?: number;
-  /** Custom spring tilt speed sensitivity override. */
-  tiltSensitivity?: number;
-  /** Custom lock axis constraints for dragging ('x' | 'y' | 'both'). */
-  dragAxis?: 'x' | 'y' | 'both';
-  /** Custom spring tilt friction coefficient (default: 0.95). */
-  tiltFriction?: number;
-  /** Custom spring tilt inertia decay coefficient (default: 0.82). */
-  tiltDecay?: number;
-  /** Custom CSS animation class applied during the mounting status. */
-  mountingClassName?: string;
-  /** Custom CSS animation class applied during the unmounting status. */
-  unmountingClassName?: string;
-  /** Custom CSS animation class applied during the mounted status. */
-  mountedClassName?: string;
 }
+
+/**
+ * A minimal event-like or element-like object accepted by `openRootWithResolver`
+ * as the anchor source. Supports either a React-style event (with `currentTarget`)
+ * or a raw DOM element (with `getBoundingClientRect`).
+ */
+export type AnchorEventLike =
+  | { currentTarget: HTMLElement; stopPropagation?: () => void }
+  | { getBoundingClientRect: () => DOMRect; stopPropagation?: () => void };
 
 /**
  * Resolver callback type for lazy-loading/hydrating data for a popover card.
@@ -259,9 +225,7 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   /** Resolves data and opens a root popover. */
   openRootWithResolver: (
     keyOrName: string,
-    anchorEvent:
-      | { currentTarget: HTMLElement; stopPropagation?: () => void }
-      | { getBoundingClientRect: () => DOMRect; stopPropagation?: () => void },
+    anchorEvent: AnchorEventLike,
     options?: OpenRootOptions,
   ) => Promise<void>;
 
@@ -303,10 +267,7 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   setCascadeOffsetStep: (step: number) => void;
 
   /** Sets the transition lifecycle status of a specific popover card. */
-  setTransitionStatus: (
-    key: string,
-    status: 'mounting' | 'mounted' | 'unmounting',
-  ) => void;
+  setTransitionStatus: (key: string, status: 'mounting' | 'mounted' | 'unmounting') => void;
 
   /** Sets the exit transition duration. */
   setExitTransitionDuration: (duration: number) => void;
@@ -345,6 +306,10 @@ export type PopoverStore<TData = unknown, TContext = unknown> = PopoverStateData
       | 'setEnableArrowNavigation'
       | 'setDebug'
       | 'setCascadeOffsetStep'
+      | 'setExitTransitionDuration'
+      | 'setDefaultOffset'
+      | 'setBaseZIndex'
+      | 'setGlobalAnimationClassNames'
     >;
   };
 
@@ -414,111 +379,73 @@ export interface CollisionConfig {
   /** Safety padding margin around the boundary (default: 12 for shift, 0 for flip). */
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
   /** Toggle or configure the Floating UI flip middleware (default: true). */
-  flip?: boolean | object;
+  flip?: boolean | Record<string, unknown>;
   /** Toggle or configure the Floating UI shift middleware (default: true). */
-  shift?: boolean | object;
+  shift?: boolean | Record<string, unknown>;
   /** Toggle or configure the Floating UI size middleware (default: false). */
-  size?: boolean | object;
+  size?: boolean | Record<string, unknown>;
+}
+
+/**
+ * Shared display configuration options common to trail entries and open option types.
+ * Extracted to eliminate property duplication across `TrailEntry`, `OpenRootOptions`,
+ * and `OpenNestedOptions`.
+ */
+export interface PopoverDisplayOptions {
+  /** Custom boundary collision overrides. */
+  collision?: CollisionConfig;
+  /** Hover-trigger options configuration overrides. */
+  hover?: HoverConfig;
+  /** Accessibility description text linked via aria-describedby. */
+  ariaDescribedby?: string;
+  /** True to allow dragging even when the popover is unpinned/trailing. */
+  allowDragWhenUnpinned?: boolean;
+  /** Preferred layout placement direction relative to trigger. */
+  placement?: PopoverPlacement;
+  /** Custom distance gap offset override from trigger in pixels. */
+  offset?: number;
+  /** Custom exit transition duration override in milliseconds. */
+  exitTransitionDuration?: number;
+  /** Custom base z-index layering override. */
+  baseZIndex?: number;
+  /** Custom horizontal/vertical cascade offset step override. */
+  cascadeOffsetStep?: number;
+  /** Custom cascade stacking offset shift direction override. */
+  cascadeOffsetDirection?: 'left' | 'right' | 'top' | 'bottom' | 'none';
+  /** Custom spring tilt effect toggle override. */
+  enableTilt?: boolean;
+  /** Custom max spring tilt angle override. */
+  maxTiltAngle?: number;
+  /** Custom spring tilt speed sensitivity override. */
+  tiltSensitivity?: number;
+  /** Custom lock axis constraints for dragging ('x' | 'y' | 'both'). */
+  dragAxis?: 'x' | 'y' | 'both';
+  /** Custom spring tilt friction coefficient (default: 0.95). */
+  tiltFriction?: number;
+  /** Custom spring tilt inertia decay coefficient (default: 0.82). */
+  tiltDecay?: number;
+  /** Custom CSS animation class applied during mounting. */
+  mountingClassName?: string;
+  /** Custom CSS animation class applied during unmounting. */
+  unmountingClassName?: string;
+  /** Custom CSS animation class applied during mounted. */
+  mountedClassName?: string;
 }
 
 /**
  * Options configuration for spawning root popovers.
  */
-export interface OpenRootOptions {
+export interface OpenRootOptions extends PopoverDisplayOptions {
   /** Optional custom owner identifier claiming the trail. */
   ownerId?: string;
-
-  /** Custom boundary collision overrides. */
-  collision?: CollisionConfig;
-
-  /** Hover-trigger options configuration overrides. */
-  hover?: HoverConfig;
-
-  /** Accessibility description text linked via aria-describedby. */
-  ariaDescribedby?: string;
-
-  /** True to allow dragging even when the popover is unpinned/trailing. */
-  allowDragWhenUnpinned?: boolean;
-  /** Preferred layout placement direction relative to trigger. */
-  placement?: PopoverPlacement;
-  /** Custom distance gap offset override from trigger in pixels. */
-  offset?: number;
-  /** Custom exit transition duration override in milliseconds. */
-  exitTransitionDuration?: number;
-  /** Custom base z-index layering override. */
-  baseZIndex?: number;
-  /** Custom horizontal/vertical cascade offset step override. */
-  cascadeOffsetStep?: number;
-  /** Custom cascade stacking offset shift direction override. */
-  cascadeOffsetDirection?: 'left' | 'right' | 'top' | 'bottom' | 'none';
-  /** Custom spring tilt effect toggle override. */
-  enableTilt?: boolean;
-  /** Custom max spring tilt angle override. */
-  maxTiltAngle?: number;
-  /** Custom spring tilt speed sensitivity override. */
-  tiltSensitivity?: number;
-  /** Custom lock axis constraints for dragging ('x' | 'y' | 'both'). */
-  dragAxis?: 'x' | 'y' | 'both';
-  /** Custom spring tilt friction coefficient (default: 0.95). */
-  tiltFriction?: number;
-  /** Custom spring tilt inertia decay coefficient (default: 0.82). */
-  tiltDecay?: number;
-  /** Custom CSS animation class applied during mounting. */
-  mountingClassName?: string;
-  /** Custom CSS animation class applied during unmounting. */
-  unmountingClassName?: string;
-  /** Custom CSS animation class applied during mounted. */
-  mountedClassName?: string;
 }
 
 /**
  * Options configuration for spawning nested popovers.
  */
-export interface OpenNestedOptions {
+export interface OpenNestedOptions extends PopoverDisplayOptions {
   /** Bounding box of the nested trigger element. */
   triggerRect?: DOMRect;
-
-  /** Custom boundary collision overrides. */
-  collision?: CollisionConfig;
-
-  /** Hover-trigger options configuration overrides. */
-  hover?: HoverConfig;
-
-  /** Accessibility description text linked via aria-describedby. */
-  ariaDescribedby?: string;
-
-  /** True to allow dragging even when the popover is unpinned/trailing. */
-  allowDragWhenUnpinned?: boolean;
-  /** Preferred layout placement direction relative to trigger. */
-  placement?: PopoverPlacement;
-  /** Custom distance gap offset override from trigger in pixels. */
-  offset?: number;
-  /** Custom exit transition duration override in milliseconds. */
-  exitTransitionDuration?: number;
-  /** Custom base z-index layering override. */
-  baseZIndex?: number;
-  /** Custom horizontal/vertical cascade offset step override. */
-  cascadeOffsetStep?: number;
-  /** Custom cascade stacking offset shift direction override. */
-  cascadeOffsetDirection?: 'left' | 'right' | 'top' | 'bottom' | 'none';
-  /** Custom spring tilt effect toggle override. */
-  enableTilt?: boolean;
-  /** Custom max spring tilt angle override. */
-  maxTiltAngle?: number;
-  /** Custom spring tilt speed sensitivity override. */
-  tiltSensitivity?: number;
-  /** Custom lock axis constraints for dragging ('x' | 'y' | 'both'). */
-  dragAxis?: 'x' | 'y' | 'both';
-  /** Custom spring tilt friction coefficient (default: 0.95). */
-  tiltFriction?: number;
-  /** Custom spring tilt inertia decay coefficient (default: 0.82). */
-  tiltDecay?: number;
-  /** Custom CSS animation class applied during mounting. */
-  mountingClassName?: string;
-  /** Custom CSS animation class applied during unmounting. */
-  unmountingClassName?: string;
-  /** Custom CSS animation class applied during mounted. */
-  mountedClassName?: string;
 }
 
 /**

@@ -26,8 +26,11 @@ export function createPopoverTrail<TData = unknown, TContext = unknown>() {
    * @returns The provider element wrapping children.
    */
   function PopoverProvider(props: PopoverProviderProps<TData, TContext>) {
-    return <CorePopoverProvider {...(props as unknown as PopoverProviderProps<unknown, unknown>)} />;
+    return (
+      <CorePopoverProvider {...(props as unknown as PopoverProviderProps)} />
+    );
   }
+  PopoverProvider.displayName = 'PopoverProvider';
 
   /**
    * Type-safe PopoverTrigger component pre-bound to your popover keys.
@@ -38,41 +41,31 @@ export function createPopoverTrail<TData = unknown, TContext = unknown>() {
   function PopoverTrigger(props: PopoverTriggerProps) {
     return <CorePopoverTrigger {...props} />;
   }
-
-  /**
-   * Type-safe usePopover selector hook pre-bound to your data and context shapes.
-   *
-   * @param key - The unique identifier key of the popover card.
-   * @returns Unified data values and pre-bound action wrappers.
-   */
-  function usePopover(key: string): UsePopoverResult<TData> {
-    return coreUsePopover<TData, TContext>(key);
-  }
-
-  /**
-   * Type-safe usePopoverActions hook pre-bound to your data and context shapes.
-   *
-   * @returns Object containing type-safe dispatch actions.
-   */
-  function usePopoverActions() {
-    return coreUsePopoverActions<TData, TContext>();
-  }
-
-  /**
-   * Type-safe usePopoverContext hook pre-bound to your context shape.
-   *
-   * @returns The active context object.
-   */
-  function usePopoverContext() {
-    return coreUsePopoverContext<TContext>();
-  }
+  PopoverTrigger.displayName = 'PopoverTrigger';
 
   return {
     PopoverProvider,
     PopoverPortal: CorePopoverPortal,
     PopoverTrigger,
-    usePopover,
-    usePopoverActions,
-    usePopoverContext,
+    /**
+     * Type-safe usePopover selector hook pre-bound to your data and context shapes.
+     *
+     * @param key - The unique identifier key of the popover card.
+     * @returns Unified data values and pre-bound action wrappers.
+     */
+    usePopover: (key: string): UsePopoverResult<TData> =>
+      coreUsePopover<TData, TContext>(key),
+    /**
+     * Type-safe usePopoverActions hook pre-bound to your data and context shapes.
+     *
+     * @returns Object containing type-safe dispatch actions.
+     */
+    usePopoverActions: () => coreUsePopoverActions<TData, TContext>(),
+    /**
+     * Type-safe usePopoverContext hook pre-bound to your context shape.
+     *
+     * @returns The active context object.
+     */
+    usePopoverContext: () => coreUsePopoverContext<TContext>(),
   };
 }

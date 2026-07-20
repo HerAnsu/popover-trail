@@ -684,4 +684,91 @@ describe('createPopoverStore', () => {
     expect(entry.hover?.closeDelay).toBe(250);
     expect(entry.hover?.closeOnMouseLeave).toBe(false);
   });
+
+  it('should preserve all display options when retrying a popover', async () => {
+    let failFirst = true;
+    const failingResolver = vi.fn().mockImplementation(async (key: string) => {
+      if (failFirst) {
+        failFirst = false;
+        throw new Error('Resolver failed');
+      }
+      return { title: 'Success' };
+    });
+
+    const store = createPopoverStore(failingResolver);
+    const mockElement = { getBoundingClientRect: () => new DOMRect(0, 0, 100, 40) } as any;
+
+    const fullOptions = {
+      placement: 'top-start' as const,
+      offset: 12,
+      exitTransitionDuration: 300,
+      baseZIndex: 2000,
+      cascadeOffsetStep: 16,
+      cascadeOffsetDirection: 'right' as const,
+      enableTilt: true,
+      maxTiltAngle: 15,
+      tiltSensitivity: 2,
+      dragAxis: 'x' as const,
+      tiltFriction: 0.9,
+      tiltDecay: 0.8,
+      mountingClassName: 'custom-mount',
+      unmountingClassName: 'custom-unmount',
+      mountedClassName: 'custom-mounted',
+      allowDragWhenUnpinned: true,
+      ariaDescribedby: 'desc-id',
+    };
+
+    await store.getState().openRootWithResolver('retry-item', { currentTarget: mockElement }, fullOptions);
+
+    expect(store.getState().trail[0].error).not.toBeNull();
+    expect(store.getState().trail[0].placement).toBe('top-start');
+
+    // Retry popover resolution
+    await store.getState().retryPopover('retry-item');
+
+    const retriedEntry = store.getState().trail[0];
+    expect(retriedEntry.error).toBeNull();
+    expect(retriedEntry.data).toEqual({ title: 'Success' });
+    expect(retriedEntry.placement).toBe('top-start');
+    expect(retriedEntry.offset).toBe(12);
+    expect(retriedEntry.exitTransitionDuration).toBe(300);
+    expect(retriedEntry.baseZIndex).toBe(2000);
+    expect(retriedEntry.cascadeOffsetStep).toBe(16);
+    expect(retriedEntry.cascadeOffsetDirection).toBe('right');
+    expect(retriedEntry.enableTilt).toBe(true);
+    expect(retriedEntry.maxTiltAngle).toBe(15);
+    expect(retriedEntry.tiltSensitivity).toBe(2);
+    expect(retriedEntry.dragAxis).toBe('x');
+    expect(retriedEntry.tiltFriction).toBe(0.9);
+    expect(retriedEntry.tiltDecay).toBe(0.8);
+    expect(retriedEntry.mountingClassName).toBe('custom-mount');
+    expect(retriedEntry.unmountingClassName).toBe('custom-unmount');
+    expect(retriedEntry.mountedClassName).toBe('custom-mounted');
+    expect(retriedEntry.allowDragWhenUnpinned).toBe(true);
+    expect(retriedEntry.ariaDescribedby).toBe('desc-id');
+  });
+
+  describe('SimplePopoverCache enhancements', () => {
+    it('should evict oldest item when exceeding maxSize', () => {
+      const cache = new SimplePopoverCache<number>(10000, 2);
+      cache.set('key1', 1);
+      cache.set('key2', 2);
+      expect(cache.has('key1')).toBe(true);
+      expect(cache.has('key2')).toBe(true);
+
+      // Third insertion should evict key1 (FIFO)
+      cache.set('key3', 3);
+      expect(cache.has('key1')).toBe(false);
+      expect(cache.get('key1')).toBeUndefined();
+      expect(cache.has('key2')).toBe(true);
+      expect(cache.has('key3')).toBe(true);
+    });
+
+    it('should correctly support has() without deleting non-expired entries', () => {
+      const cache = new SimplePopoverCache<string>(1000);
+      cache.set('valid', 'value');
+      expect(cache.has('valid')).toBe(true);
+      expect(cache.get('valid')).toBe('value');
+    });
+  });
 });

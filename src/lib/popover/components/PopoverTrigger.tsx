@@ -1,5 +1,10 @@
 import React, { useContext, type ReactNode } from 'react';
-import { PopoverCardContext, usePopoverTrigger, usePopoverNestedTrigger, useIsPopoverOpen } from '../context';
+import {
+  PopoverCardContext,
+  usePopoverTrigger,
+  usePopoverNestedTrigger,
+  useIsPopoverOpen,
+} from '../context';
 import type { OpenRootOptions, OpenNestedOptions, PopoverPlacement } from '../types';
 
 /**
@@ -18,6 +23,104 @@ export interface PopoverTriggerProps {
   activeClassName?: string;
   /** Exactly one React element child to wrap. */
   children: ReactNode;
+}
+
+/**
+ * Shared rendering logic for trigger components. Clones the child element
+ * with the merged trigger props, className, and event handlers.
+ */
+function TriggerRenderer({
+  triggerProps,
+  isOpen,
+  activeClassName,
+  children,
+}: {
+  triggerProps: Record<string, unknown>;
+  isOpen: boolean;
+  activeClassName?: string;
+  children: ReactNode;
+}) {
+  const child = React.Children.only(children) as React.ReactElement<Record<string, unknown>>;
+
+  const combinedClassName = [child.props.className, isOpen ? activeClassName : '']
+    .filter(Boolean)
+    .join(' ');
+
+  return React.cloneElement(child, {
+    ...triggerProps,
+    ...child.props,
+    className: combinedClassName || undefined,
+    onClick: (e: React.MouseEvent<HTMLElement>) => {
+      (triggerProps.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined)?.(e);
+      if (typeof child.props.onClick === 'function') {
+        child.props.onClick(e);
+      }
+    },
+    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
+      (triggerProps.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined)?.(e);
+      if (typeof child.props.onMouseEnter === 'function') {
+        child.props.onMouseEnter(e);
+      }
+    },
+    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
+      (triggerProps.onMouseLeave as (() => void) | undefined)?.();
+      if (typeof child.props.onMouseLeave === 'function') {
+        child.props.onMouseLeave(e);
+      }
+    },
+  });
+}
+
+/**
+ * Internal component for root-level triggers. Calls `usePopoverTrigger`
+ * unconditionally to comply with the Rules of Hooks.
+ */
+function RootTriggerInner({
+  popoverKey,
+  mergedOptions,
+  isOpen,
+  activeClassName,
+  children,
+}: {
+  popoverKey: string;
+  mergedOptions: OpenRootOptions;
+  isOpen: boolean;
+  activeClassName?: string;
+  children: ReactNode;
+}) {
+  const triggerProps = usePopoverTrigger(popoverKey, mergedOptions);
+  return (
+    <TriggerRenderer triggerProps={triggerProps} isOpen={isOpen} activeClassName={activeClassName}>
+      {children}
+    </TriggerRenderer>
+  );
+}
+
+/**
+ * Internal component for nested triggers inside an active popover card.
+ * Calls `usePopoverNestedTrigger` unconditionally to comply with the Rules of Hooks.
+ */
+function NestedTriggerInner({
+  popoverKey,
+  parentKey,
+  mergedOptions,
+  isOpen,
+  activeClassName,
+  children,
+}: {
+  popoverKey: string;
+  parentKey: string;
+  mergedOptions: OpenNestedOptions;
+  isOpen: boolean;
+  activeClassName?: string;
+  children: ReactNode;
+}) {
+  const triggerProps = usePopoverNestedTrigger(popoverKey, parentKey, mergedOptions);
+  return (
+    <TriggerRenderer triggerProps={triggerProps} isOpen={isOpen} activeClassName={activeClassName}>
+      {children}
+    </TriggerRenderer>
+  );
 }
 
 /**
@@ -42,41 +145,27 @@ export function PopoverTrigger({
     ...options,
   };
 
-  // If we are inside an active Popover card context, we are a nested trigger.
-  const triggerProps = parentKey
-    ? usePopoverNestedTrigger(popoverKey, parentKey, mergedOptions as OpenNestedOptions)
-    : usePopoverTrigger(popoverKey, mergedOptions as OpenRootOptions);
+  // Delegate to separate sub-components so each hook is called unconditionally (Rules of Hooks).
+  if (parentKey) {
+    return (
+      <NestedTriggerInner
+        popoverKey={popoverKey}
+        parentKey={parentKey}
+        mergedOptions={mergedOptions as OpenNestedOptions}
+        isOpen={isOpen}
+        activeClassName={activeClassName}>
+        {children}
+      </NestedTriggerInner>
+    );
+  }
 
-  const child = React.Children.only(children) as React.ReactElement<Record<string, unknown>>;
-
-  const combinedClassName = [
-    child.props.className,
-    isOpen ? activeClassName : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  return React.cloneElement(child, {
-    ...triggerProps,
-    ...child.props,
-    className: combinedClassName || undefined,
-    onClick: (e: React.MouseEvent<HTMLElement>) => {
-      triggerProps.onClick?.(e);
-      if (typeof child.props.onClick === 'function') {
-        child.props.onClick(e);
-      }
-    },
-    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-      triggerProps.onMouseEnter?.(e);
-      if (typeof child.props.onMouseEnter === 'function') {
-        child.props.onMouseEnter(e);
-      }
-    },
-    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-      triggerProps.onMouseLeave?.();
-      if (typeof child.props.onMouseLeave === 'function') {
-        child.props.onMouseLeave(e);
-      }
-    },
-  });
+  return (
+    <RootTriggerInner
+      popoverKey={popoverKey}
+      mergedOptions={mergedOptions as OpenRootOptions}
+      isOpen={isOpen}
+      activeClassName={activeClassName}>
+      {children}
+    </RootTriggerInner>
+  );
 }
