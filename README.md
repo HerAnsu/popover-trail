@@ -41,39 +41,65 @@ Open `http://localhost:5173` to explore live nested expression parsing, drag-to-
 
 ```mermaid
 flowchart TD
-    classDef triggerStyle fill:#6366f1,stroke:#4f46e5,color:#fff,stroke-width:2px;
-    classDef cacheStyle fill:#0ea5e9,stroke:#0284c7,color:#fff,stroke-width:2px;
-    classDef stateStyle fill:#8b5cf6,stroke:#7c3aed,color:#fff,stroke-width:2px;
-    classDef physicsStyle fill:#f59e0b,stroke:#d97706,color:#fff,stroke-width:2px;
-    classDef cleanupStyle fill:#f43f5e,stroke:#e11d48,color:#fff,stroke-width:2px;
+    subgraph Phase1 [1. Activation & Hydration Engine]
+        UserAction[User Event: Click or Hover]
+        ResolverCheck{Cache Check: TTL & Memory}
+        InstantRender[Instant Mount: isLoading false]
+        AsyncFetch[Async Fetch & AbortSignal]
+        ResolveSuccess[Resolve Payload & Hydrate Data]
 
-    subgraph Phase1 ["⚡ 1. Activation & Hydration Engine"]
-        UserAction(["User Event: Click / Hover"]) :::triggerStyle
-        UserAction --> ResolverCheck{"Cache Check (TTL & Memory)"} :::cacheStyle
-        ResolverCheck -- "Sync Hit" --> InstantRender["Instant Mount (isLoading: false)"] :::cacheStyle
-        ResolverCheck -- "Cache Miss" --> AsyncFetch["Async Fetch & AbortSignal"] :::cacheStyle
-        AsyncFetch --> ResolveSuccess["Resolve Payload & Hydrate Data"] :::cacheStyle
+        UserAction --> ResolverCheck
+        ResolverCheck -- Sync Hit --> InstantRender
+        ResolverCheck -- Cache Miss --> AsyncFetch
+        AsyncFetch --> ResolveSuccess
     end
 
-    subgraph Phase2 ["📚 2. Dual-Stack State Machine"]
-        InstantRender --> TrailStack["Trail Stack (Cascading Path)"] :::stateStyle
+    subgraph Phase2 [2. Dual-Stack State Machine]
+        TrailStack[Trail Stack: Cascading Path]
+        FloatingList[Floating Array: Modeless Windows]
+
+        InstantRender --> TrailStack
         ResolveSuccess --> TrailStack
-        
-        TrailStack -- "Pin Action (togglePin)" --> FloatingList["Floating Array (Modeless Windows)"] :::stateStyle
-        FloatingList -- "Unpin Action" --> TrailStack
+        TrailStack -- Pin Action --> FloatingList
+        FloatingList -- Unpin Action --> TrailStack
     end
 
-    subgraph Phase3 ["🎨 3. Spatial Canvas & Inertia Physics"]
-        FloatingList -- "Mouse Drag" --> VelocityCalc["Measure Drag Velocity (dx/dt, dy/dt)"] :::physicsStyle
-        VelocityCalc --> RAFSpring["RAF 3D Tilt Loop (rotateX, rotateY, rotateZ)"] :::physicsStyle
-        RAFSpring --> ViewportConstrain["Anti-Blur Coordinate Compiling (Math.round)"] :::physicsStyle
+    subgraph Phase3 [3. Spatial Canvas & Inertia Physics]
+        VelocityCalc[Measure Drag Velocity]
+        RAFSpring[RAF 3D Tilt Loop]
+        ViewportConstrain[Anti-Blur Coordinate Compiling]
+
+        FloatingList -- Mouse Drag --> VelocityCalc
+        VelocityCalc --> RAFSpring
+        RAFSpring --> ViewportConstrain
     end
 
-    subgraph Phase4 ["🧹 4. Automatic Tree Cleansing & Memory Management"]
-        TrailStack -- "Close Parent / Escape" --> BFSQueue["Pointer-based BFS Queue Traversal"] :::cleanupStyle
-        BFSQueue --> AbortReqs["Abort Controllers (Abort In-Flight Fetches)"] :::cleanupStyle
-        BFSQueue --> PurgeOrphans["Purge Unpinned Descendant Nodes & Offsets"] :::cleanupStyle
+    subgraph Phase4 [4. Automatic Tree Cleansing & Memory Management]
+        BFSQueue[Pointer-based BFS Queue Traversal]
+        AbortReqs[Abort Controllers: Cancel Fetches]
+        PurgeOrphans[Purge Unpinned Descendants]
+
+        TrailStack -- Close Parent or Escape --> BFSQueue
+        BFSQueue --> AbortReqs
+        BFSQueue --> PurgeOrphans
     end
+
+    style UserAction fill:#6366f1,stroke:#4f46e5,color:#fff
+    style ResolverCheck fill:#0ea5e9,stroke:#0284c7,color:#fff
+    style InstantRender fill:#0ea5e9,stroke:#0284c7,color:#fff
+    style AsyncFetch fill:#0ea5e9,stroke:#0284c7,color:#fff
+    style ResolveSuccess fill:#0ea5e9,stroke:#0284c7,color:#fff
+
+    style TrailStack fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style FloatingList fill:#8b5cf6,stroke:#7c3aed,color:#fff
+
+    style VelocityCalc fill:#f59e0b,stroke:#d97706,color:#fff
+    style RAFSpring fill:#f59e0b,stroke:#d97706,color:#fff
+    style ViewportConstrain fill:#f59e0b,stroke:#d97706,color:#fff
+
+    style BFSQueue fill:#f43f5e,stroke:#e11d48,color:#fff
+    style AbortReqs fill:#f43f5e,stroke:#e11d48,color:#fff
+    style PurgeOrphans fill:#f43f5e,stroke:#e11d48,color:#fff
 ```
 
 ### 1. Dual-Stack State Engine
