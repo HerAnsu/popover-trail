@@ -631,13 +631,15 @@ describe('createPopoverStore', () => {
 
   it('should preserve all display options when retrying a popover', async () => {
     let failFirst = true;
-    const failingResolver = vi.fn<(key: string) => Promise<{ title: string }>>().mockImplementation(async (_key: string) => {
-      if (failFirst) {
-        failFirst = false;
-        throw new Error('Resolver failed');
-      }
-      return { title: 'Success' };
-    });
+    const failingResolver = vi
+      .fn<(key: string) => Promise<{ title: string }>>()
+      .mockImplementation(async (_key: string) => {
+        if (failFirst) {
+          failFirst = false;
+          throw new Error('Resolver failed');
+        }
+        return { title: 'Success' };
+      });
 
     const store = createPopoverStore(failingResolver);
     const mockElement = createMockAnchor(0, 0, 100, 40);
@@ -1156,6 +1158,35 @@ describe('createPopoverStore', () => {
       expect(rehydrated).toBe(true);
       expect(store2.getState().floating[0]?.key).toBe('pinned-card-1');
       expect(store2.getState().offsets['pinned-card-1']).toEqual({ x: 45, y: 90 });
+    });
+
+    it('should support setButtonControls and toggleButtonControl to customize user action buttons', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      // Open root-1
+      store.getState().openRoot('owner-1', { key: 'card-1' });
+
+      // Initially buttonControls is undefined
+      expect(store.getState().trail[0]?.buttonControls).toBeUndefined();
+
+      // Configure buttonControls
+      store.getState().setButtonControls('card-1', {
+        enablePin: true,
+        enableClose: false,
+        enableDrag: true,
+        customButtons: [{ id: 'action-1', label: 'Custom Action' }],
+      });
+
+      expect(store.getState().trail[0]?.buttonControls?.enableClose).toBe(false);
+      expect(store.getState().trail[0]?.buttonControls?.customButtons).toHaveLength(1);
+
+      // Dynamically toggle pin button off
+      store.getState().toggleButtonControl('card-1', 'enablePin', false);
+      expect(store.getState().trail[0]?.buttonControls?.enablePin).toBe(false);
+
+      // Toggle enablePin without 3rd parameter (toggles back to true)
+      store.getState().toggleButtonControl('card-1', 'enablePin');
+      expect(store.getState().trail[0]?.buttonControls?.enablePin).toBe(true);
     });
   });
 });

@@ -1,6 +1,7 @@
 import {
   useRef,
   useCallback,
+  useMemo,
   useEffect,
   type CSSProperties,
   type HTMLAttributes,
@@ -55,6 +56,19 @@ export interface UsePopoverCardResult {
   readonly onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
   /** Active transition CSS class name resolved from mounting/unmounting states. */
   readonly transitionClassName: string;
+  /** Resolved button controls and action toggles configuration state. */
+  readonly buttonControls: Readonly<{
+    enablePin: boolean;
+    enableClose: boolean;
+    enableDrag: boolean;
+    customButtons: ReadonlyArray<{
+      id: string;
+      label: string;
+      icon?: string;
+      disabled?: boolean;
+      onClick?: (key: string) => void;
+    }>;
+  }>;
 }
 
 /**
@@ -258,6 +272,16 @@ export function usePopoverCard({
     [enableArrowNavigation, isPinned, trail, floating.length, entry.key, actions],
   );
 
+  const buttonControls = useMemo(
+    () => ({
+      enablePin: entry.buttonControls?.enablePin ?? true,
+      enableClose: entry.buttonControls?.enableClose ?? true,
+      enableDrag: entry.buttonControls?.enableDrag ?? true,
+      customButtons: entry.buttonControls?.customButtons ?? [],
+    }),
+    [entry.buttonControls],
+  );
+
   return {
     ref: setCombinedRef,
     style,
@@ -269,5 +293,6 @@ export function usePopoverCard({
     onMouseLeave,
     onKeyDown,
     transitionClassName,
+    buttonControls,
   };
 }

@@ -80,6 +80,28 @@ export interface PopoverDisplayOptions {
   unmountingClassName?: string;
   /** Custom CSS animation class applied during mounted. */
   mountedClassName?: string;
+  /** Custom button controls and action toggles configuration settings. */
+  buttonControls?: ButtonControlConfig;
+}
+
+/**
+ * Configuration options for customizable action controls and button toggles per popover card.
+ */
+export interface ButtonControlConfig {
+  /** If false, disables or hides the pin/unpin action toggle button (default: true). */
+  enablePin?: boolean;
+  /** If false, disables or hides the close action button (default: true). */
+  enableClose?: boolean;
+  /** If false, disables or hides the drag handle control button (default: true). */
+  enableDrag?: boolean;
+  /** Custom action buttons configuration array. */
+  customButtons?: ReadonlyArray<{
+    id: string;
+    label: string;
+    icon?: string;
+    disabled?: boolean;
+    onClick?: (key: string) => void;
+  }>;
 }
 
 /**
@@ -421,6 +443,16 @@ export interface PopoverActions<
 
   /** Rehydrates persisted popover cards and layout offsets from storage. */
   rehydrateState: (config?: PopoverPersistConfig) => Promise<boolean>;
+
+  /** Configures action button controls and toggle visibility for a specific popover card. */
+  setButtonControls: (key: TPopoverKey, controls: ButtonControlConfig) => void;
+
+  /** Toggles individual action control buttons (enablePin | enableClose | enableDrag) for a popover card. */
+  toggleButtonControl: (
+    key: TPopoverKey,
+    control: 'enablePin' | 'enableClose' | 'enableDrag',
+    enabled?: boolean,
+  ) => void;
 }
 
 /**

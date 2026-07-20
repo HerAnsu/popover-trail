@@ -290,6 +290,7 @@ export function createPopoverStore<
         mountingClassName: options?.mountingClassName,
         unmountingClassName: options?.unmountingClassName,
         mountedClassName: options?.mountedClassName,
+        buttonControls: options?.buttonControls ?? existingEntry?.buttonControls,
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
@@ -1034,6 +1035,27 @@ export function createPopoverStore<
         } catch {
           return false;
         }
+      },
+      setButtonControls: (key, controls) => {
+        set((state) =>
+          updateEntryInLists(state.floating, state.trail, key, { buttonControls: controls }),
+        );
+      },
+      toggleButtonControl: (key, control, enabled) => {
+        const entry = findEntryByKey(key);
+        if (!entry) return;
+
+        const currentControls = entry.buttonControls ?? {};
+        const nextValue = enabled ?? !(currentControls[control] ?? true);
+
+        set((state) =>
+          updateEntryInLists(state.floating, state.trail, key, {
+            buttonControls: {
+              ...currentControls,
+              [control]: nextValue,
+            },
+          }),
+        );
       },
     };
 
