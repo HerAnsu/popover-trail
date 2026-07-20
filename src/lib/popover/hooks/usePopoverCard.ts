@@ -36,25 +36,25 @@ interface UsePopoverCardOptions {
  */
 export interface UsePopoverCardResult {
   /** Combined reference setter to be attached to the popover's outer DOM element. */
-  ref: (node: HTMLDivElement | null) => void;
+  readonly ref: (node: HTMLDivElement | null) => void;
   /** Compiled absolute layout CSS style properties. */
-  style: CSSProperties;
+  readonly style: Readonly<CSSProperties>;
   /** True if this popover card is currently topmost in the z-index stack. */
-  isTop: boolean;
+  readonly isTop: boolean;
   /** Always false for static cards (overridden in draggable cards). */
-  isDragging: boolean;
+  readonly isDragging: boolean;
   /** Reference to the popover store dispatch actions. */
-  actions: ReturnType<typeof usePopoverActions>;
+  readonly actions: ReturnType<typeof usePopoverActions>;
   /** HTML attribute props to bind to the dragging handle element. */
-  dragHandleProps: HTMLAttributes<HTMLElement>;
+  readonly dragHandleProps: HTMLAttributes<HTMLElement>;
   /** Hover pointer enter callback handler. */
-  onMouseEnter: () => void;
+  readonly onMouseEnter: () => void;
   /** Hover pointer leave callback handler. */
-  onMouseLeave: () => void;
+  readonly onMouseLeave: () => void;
   /** Keyboard accessibility keydown event callback handler. */
-  onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+  readonly onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
   /** Active transition CSS class name resolved from mounting/unmounting states. */
-  transitionClassName: string;
+  readonly transitionClassName: string;
 }
 
 /**

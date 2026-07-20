@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { DragAxis } from '../types';
 
 /**
  * Options parameters for the `usePopoverDragAndDrop` hook.
@@ -15,7 +16,7 @@ interface UsePopoverDragAndDropOptions {
   /** Factor scaling tilt response to drag velocity (default: 8). */
   tiltSensitivity?: number;
   /** Lock dragging axis to 'x', 'y', or allow 'both' (default: 'both'). */
-  dragAxis?: 'x' | 'y' | 'both';
+  dragAxis?: DragAxis;
   /** Spring friction dampening ratio when dragging (default: 0.95). */
   tiltFriction?: number;
   /** Spring inertia decay ratio when drag stops (default: 0.82). */
