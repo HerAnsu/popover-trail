@@ -25,7 +25,7 @@ graph TD
 ```
 
 ### Dual-stack state management
-The core store (built with Zustand) uses two arrays:
+The core store (built with Zustand) uses two primary arrays:
 * `trail`: A linear stack for the active cascading path. Only one unpinned trail branch exists at a time.
 * `floating`: An array of pinned popovers detached from the active trail stack.
 
@@ -90,7 +90,7 @@ const dataResolver = async (key: string, parentData?: unknown, context?: unknown
   return res.json();
 };
 
-const cache = new SimplePopoverCache();
+const cache = new SimplePopoverCache(300000, 50); // 5-minute TTL, 50 items max
 
 export function App() {
   return (
@@ -102,57 +102,162 @@ export function App() {
 ```
 
 ### 2. Attach triggers
-Use `usePopoverTrigger` for root popovers and `usePopoverNestedTrigger` for child popovers inside an existing card:
+You can attach triggers using hooks (`usePopoverTrigger`, `usePopoverNestedTrigger`) or using the declarative `<PopoverTrigger>` component:
 
 ```tsx
-import { usePopoverTrigger, usePopoverNestedTrigger } from 'popover-trail';
+import { usePopoverTrigger, usePopoverNestedTrigger, PopoverTrigger } from 'popover-trail';
 
-export function RootTrigger() {
+// Hook trigger for root entry
+export function HookRootTrigger() {
   const triggerProps = usePopoverTrigger('item-101');
   return <button {...triggerProps}>Inspect Item</button>;
 }
 
+// Declarative trigger wrapper
+export function DeclarativeTrigger() {
+  return (
+    <PopoverTrigger popoverKey="item-102" placement="right-start">
+      <button>Inspect Item 102</button>
+    </PopoverTrigger>
+  );
+}
+
+// Nested trigger inside a card
 export function NestedTrigger({ parentKey }: { parentKey: string }) {
   const triggerProps = usePopoverNestedTrigger('item-101-details', parentKey);
   return <button {...triggerProps}>View Details</button>;
 }
 ```
 
-### 3. Render cards with usePopoverCard
-Use `usePopoverCard` to get positioning styles, ref bindings, and drag handle props:
+### 3. Hover triggers
+Pass `hover` options to enable hover-driven opening and closing:
 
 ```tsx
-import { usePopoverCard, usePopoverActions, type TrailEntry } from 'popover-trail';
+const triggerProps = usePopoverTrigger('preview-card', {
+  hover: {
+    enabled: true,
+    openDelay: 150,
+    closeDelay: 250,
+    closeOnMouseLeave: true,
+  },
+});
+```
+
+### 4. Render cards with usePopoverCard and isResolvedEntry
+Use `usePopoverCard` to get positioning styles and `isResolvedEntry` for type-safe data rendering:
+
+```tsx
+import { usePopoverCard, usePopoverActions, isResolvedEntry, type TrailEntry } from 'popover-trail';
 
 interface CardProps {
-  entry: TrailEntry;
+  entry: TrailEntry<{ title: string; description: string }>;
   index: number;
   isPinned: boolean;
 }
 
 export function PopoverCard({ entry, index, isPinned }: CardProps) {
-  const { closeByKey } = usePopoverActions();
+  const { closeByKey, retryPopover } = usePopoverActions();
   const { ref, style, dragHandleProps, handlePinToggle } = usePopoverCard({
     entry,
     index,
     isPinned,
-    placement: 'bottom-start'
+    placement: 'bottom-start',
   });
 
   return (
     <div ref={ref} style={style} className="popover-card">
       <div className="drag-handle" {...dragHandleProps}>
-        <span>{entry.data ? (entry.data as { title: string }).title : 'Loading...'}</span>
+        <span>{entry.key}</span>
         <button onClick={handlePinToggle}>{isPinned ? 'Unpin' : 'Pin'}</button>
         <button onClick={() => closeByKey(entry.key)}>Close</button>
       </div>
-      <div className="content">
-        {entry.data ? (entry.data as { description: string }).description : null}
-      </div>
+
+      {entry.isLoading && <div className="spinner">Loading...</div>}
+
+      {entry.error && (
+        <div className="error-box">
+          <p>Failed to load data.</p>
+          <button onClick={() => retryPopover(entry.key)}>Retry</button>
+        </div>
+      )}
+
+      {isResolvedEntry(entry) && (
+        <div className="content">
+          <h4>{entry.data.title}</h4>
+          <p>{entry.data.description}</p>
+        </div>
+      )}
     </div>
   );
 }
 ```
+
+## Custom Caching
+
+The library exports `SimplePopoverCache`, an in-memory cache supporting TTL expiration and maximum capacity eviction:
+
+```typescript
+import { SimplePopoverCache } from 'popover-trail';
+
+// TTL in ms (default: infinity), maxSize (default: 100)
+const cache = new SimplePopoverCache<unknown>(60000, 20);
+```
+
+You can also implement a custom cache by adhering to the `PopoverCache` interface:
+
+```typescript
+export interface PopoverCache<TData = unknown> {
+  get(key: string): TData | undefined;
+  set(key: string, data: TData): void;
+  has(key: string): boolean;
+  delete(key: string): void;
+  clear(): void;
+}
+```
+
+## Isolated Context Factory
+
+If your application requires multiple independent popover trees, create scoped instances using `createPopoverTrail`:
+
+```tsx
+import { createPopoverTrail } from 'popover-trail';
+
+interface CustomData {
+  id: string;
+  label: string;
+}
+
+export const ScopeTrail = createPopoverTrail<CustomData>();
+
+// Usage in components
+export function ScopedApp() {
+  return (
+    <ScopeTrail.PopoverProvider resolveData={async (key) => ({ id: key, label: 'Custom' })}>
+      <ScopeTrail.PopoverTrigger popoverKey="scoped-1">
+        <button>Open Scoped</button>
+      </ScopeTrail.PopoverTrigger>
+    </ScopeTrail.PopoverProvider>
+  );
+}
+```
+
+## Stacking and Accessibility
+
+### Layering and z-index management
+Popovers automatically calculate z-index depth based on stacking index and base z-index settings. Use helper hooks inside cards for custom overlay logic:
+
+```tsx
+import { usePopoverZIndex, useIsPopoverTopMost } from 'popover-trail';
+
+const zIndex = usePopoverZIndex(index, isPinned, 1000);
+const isTopMost = useIsPopoverTopMost(entry.key);
+```
+
+### ARIA compliance
+Trigger hooks automatically attach accessibility attributes:
+* `aria-expanded`: Set to `true` when the popover is open.
+* `aria-haspopup`: Set to `"dialog"`.
+* `aria-describedby`: Linked when `ariaDescribedby` option is specified.
 
 ## API Reference
 
@@ -169,6 +274,17 @@ export function PopoverCard({ entry, index, isPinned }: CardProps) {
 | `maxTiltAngle` | `number` | `5` | Maximum tilt angle in degrees. |
 | `tiltSensitivity` | `number` | `8` | Velocity to rotation scaling factor. |
 
+### usePopoverActions actions
+
+| Action | Parameters | Description |
+| :--- | :--- | :--- |
+| `closeByKey` | `(key: string)` | Closes the specified popover and its child branch. |
+| `togglePin` | `(key: string)` | Toggles pinned state between trail stack and floating array. |
+| `retryPopover` | `(key: string)` | Retries data resolution for a failed popover entry. |
+| `closeAll` | `()` | Closes all open popovers (trail and floating). |
+| `openRootWithResolver` | `(key: string, anchor, options?)` | Opens a root popover programmatically. |
+| `openNestedWithResolver`| `(key: string, parentKey, anchor, options?)` | Opens a child popover programmatically. |
+
 ### CollisionConfig interface
 
 ```typescript
@@ -179,6 +295,31 @@ interface CollisionConfig {
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
 }
 ```
+
+### HoverConfig interface
+
+```typescript
+interface HoverConfig {
+  /** Enables hover trigger behavior */
+  enabled: boolean;
+  /** Delay before opening in milliseconds (default: 200) */
+  openDelay?: number;
+  /** Delay before closing in milliseconds (default: 300) */
+  closeDelay?: number;
+  /** Set false to keep popover open when cursor leaves card (default: true) */
+  closeOnMouseLeave?: boolean;
+}
+```
+
+## Development and Scripts
+
+| Command | Description |
+| :--- | :--- |
+| `npm run dev` | Starts Vite dev server with example workspace application. |
+| `npm run build:lib` | Builds library distribution formats (ESM, CJS, d.ts) via Tsup. |
+| `npm run test` | Runs unit test suite using Vitest. |
+| `npm run lint` | Runs code quality checks using Oxlint. |
+| `npm run format` | Formats codebase using Oxfmt. |
 
 ## License
 MIT
