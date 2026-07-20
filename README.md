@@ -1,4 +1,4 @@
-# Popover Trail 🪄
+# Popover Trail
 
 [![npm version](https://img.shields.io/npm/v/popover-trail.svg?style=flat-square)](https://www.npmjs.com/package/popover-trail)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/popover-trail?style=flat-square)](https://bundlephobia.com/package/popover-trail)
@@ -9,11 +9,11 @@ A headless, ultra-performant React 19 engine for declarative cascading popover t
 
 ---
 
-## 💡 Why Popover Trail?
+## Why Popover Trail?
 
-Standard overlay components treat popovers as isolated, temporary dropdowns. But complex workspace interfaces — such as graph inspectors, multi-level formula builders, nested code drill-downs, or CAD hierarchy viewers — require users to explore multi-layered trees of data without losing context.
+Standard overlay components treat popovers as isolated dropdown menus. Complex workspace applications — such as data graph inspectors, multi-level formula builders, nested code drill-downs, or CAD hierarchy viewers — require users to explore multi-layered trees of data without losing spatial context.
 
-**Popover Trail** models popovers as nodes in an active hierarchy tree, solving the core challenges of spatial workspace UIs:
+**Popover Trail** models popovers as nodes in a hierarchical tree, addressing key spatial UI requirements:
 
 1. **Cascading Trails**: Drill down into data recursively. Each child popover attaches relative to its parent trigger node.
 2. **Modal-to-Modeless Pinning**: Pin any popover card to detach it from the relative trail stack and turn it into an independent, modeless floating window anywhere on the canvas.
@@ -23,7 +23,7 @@ Standard overlay components treat popovers as isolated, temporary dropdowns. But
 
 ---
 
-## ⚙️ Deep-Dive Architecture & Core Engine
+## Architecture and Core Engine
 
 ```mermaid
 flowchart TD
@@ -99,9 +99,9 @@ Once the tilt angle drops below $0.05^\circ$, frame updates automatically halt t
 
 ---
 
-## 🎮 Interactive Demo
+## Interactive Demo
 
-Clone the repo to launch the live interactive math expression drill-down playground:
+Clone the repository to launch the live interactive math expression drill-down playground:
 
 ```bash
 git clone https://github.com/HerAnsu/popover-trail.git
@@ -114,7 +114,7 @@ Open `http://localhost:5173` to test live formula parsing, interactive pinning, 
 
 ---
 
-## 📦 Installation
+## Installation
 
 ```bash
 npm install popover-trail @floating-ui/react
@@ -122,9 +122,9 @@ npm install popover-trail @floating-ui/react
 
 ---
 
-## 🚀 Complete Step-by-Step Integration Guide
+## Integration Guide and Core Patterns
 
-### Step 1: Define Typed Factory & Data Resolver
+### 1. Define Typed Factory & Data Resolver
 
 Use `createPopoverTrail<TData, TContext, TPopoverKey>()` to create strongly-typed components bound to your domain data:
 
@@ -149,8 +149,14 @@ export interface AppContext {
 export type NodeKey = string;
 
 // 4. Create pre-typed components and hooks
-export const { PopoverProvider, PopoverTrigger, usePopover } = 
-  createPopoverTrail<NodeData, AppContext, NodeKey>();
+export const {
+  PopoverProvider,
+  PopoverTrigger,
+  PopoverPortal,
+  usePopover,
+  usePopoverActions,
+  usePopoverContext,
+} = createPopoverTrail<NodeData, AppContext, NodeKey>();
 
 // 5. Define data fetch resolver with AbortSignal support
 export const nodeResolver: PopoverResolver<NodeData, AppContext> = async (
@@ -165,7 +171,7 @@ export const nodeResolver: PopoverResolver<NodeData, AppContext> = async (
 };
 ```
 
-### Step 2: Wrap Application with Provider
+### 2. Wrap Application with Provider
 
 ```tsx
 import React from 'react';
@@ -187,7 +193,7 @@ export default function App() {
 }
 ```
 
-### Step 3: Add Root and Nested Triggers
+### 3. Add Root and Nested Triggers
 
 Use `<PopoverTrigger>` for root elements, or `usePopoverNestedTrigger` for nested cascades inside popover cards:
 
@@ -211,7 +217,7 @@ export function Toolbar() {
 }
 ```
 
-### Step 4: Render Spatial Canvas & Draggable Cards
+### 4. Render Spatial Canvas & Draggable Cards
 
 Combine `PopoverCanvas`, `usePopoverDraggableCard`, `isResolvedEntry`, and `usePopoverHydration`:
 
@@ -292,9 +298,9 @@ export function SpatialWorkspace() {
 
 ---
 
-## 💡 Advanced Production Patterns
+## Production Patterns
 
-### Pattern A: LRU Data Caching with `SimplePopoverCache`
+### 1. LRU Data Caching with `SimplePopoverCache`
 
 Pass `SimplePopoverCache` to `PopoverProvider` to enable TTL expiration and maximum memory bounds (FIFO/LRU eviction):
 
@@ -313,7 +319,7 @@ export function App() {
 }
 ```
 
-### Pattern B: Custom Viewport Clamping Boundaries
+### 2. Custom Viewport Clamping Boundaries
 
 Clamp popovers within specific DOM elements (e.g., scrollable canvas panes) via `CollisionConfig`:
 
@@ -331,9 +337,9 @@ Clamp popovers within specific DOM elements (e.g., scrollable canvas panes) via 
 </PopoverTrigger>
 ```
 
-### Pattern C: Custom Animations via CSS Custom Properties
+### 3. CSS Custom Properties Integration
 
-Popover Trail automatically outputs CSS Variables directly on element styles:
+Popover Trail outputs CSS Custom Properties directly on style objects for external CSS keyframe and transition overrides:
 
 ```css
 .popover-card {
@@ -349,9 +355,9 @@ Popover Trail automatically outputs CSS Variables directly on element styles:
 
 ---
 
-## ⌨️ Accessibility & Shortcuts
+## Accessibility and Keyboard Navigation
 
-Popover Trail manages WAI-ARIA accessibility attributes and keyboard shortcuts automatically:
+Popover Trail manages WAI-ARIA accessibility attributes and keyboard navigation automatically:
 
 | Shortcut | Action | Description |
 | :--- | :--- | :--- |
@@ -365,7 +371,7 @@ Popover Trail manages WAI-ARIA accessibility attributes and keyboard shortcuts a
 
 ---
 
-## ⚙️ Exhaustive API Reference
+## API Reference
 
 ### `PopoverProvider` Props
 
@@ -393,7 +399,7 @@ Popover Trail manages WAI-ARIA accessibility attributes and keyboard shortcuts a
 | `enableTilt` | `boolean` | `true` | Enables 3D spring tilt physics during drag operations. |
 | `maxTiltAngle` | `number` | `5` | Maximum tilt swing angle in degrees. |
 | `tiltSensitivity` | `number` | `8` | Velocity scaling multiplier for tilt response. |
-| `dragAxis` | `'x' \| 'y' \| 'both'` | `'both'` | Locks dragging coordinates to specific axes. |
+| `dragAxis` | `DragAxis` (`'x' \| 'y' \| 'both'`) | `'both'` | Locks dragging coordinates to specific axes. |
 
 ---
 
@@ -411,7 +417,7 @@ interface CollisionConfig {
 
 ---
 
-### Helper Utilities & Hooks
+### Helper Utilities and Hooks
 
 #### `isResolvedEntry(entry)`
 Type guard function narrowing `entry.data` from `TData | undefined` to `TData` safely when `isLoading` is false and `error` is null:
@@ -432,7 +438,7 @@ Compiles coordinates, offsets, and tilt angles into a unified `CSSProperties` ob
 
 ---
 
-## ❓ Technical FAQ
+## Technical FAQ
 
 <details>
 <summary><strong>Q: How does Popover Trail prevent memory leaks when users rapidly click triggers?</strong></summary>
@@ -451,6 +457,6 @@ Compiles coordinates, offsets, and tilt angles into a unified `CSSProperties` ob
 
 ---
 
-## 📄 License
+## License
 
 MIT License © 2026. Free for open-source and commercial applications.
