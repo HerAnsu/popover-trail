@@ -40,19 +40,40 @@ Open `http://localhost:5173` to explore live nested expression parsing, drag-to-
 ## ⚙️ How it Works under the Hood
 
 ```mermaid
-graph TD
-    Trigger[Trigger Action] --> CacheCheck{Cache Hit?}
-    CacheCheck -- Yes --> Instant[Render Data Instantly]
-    CacheCheck -- No --> Loading[Show Loader & Fetch]
-    Loading --> Loaded[Update Data]
-    
-    Instant --> Trail[Trail Stack]
-    Loaded --> Trail
-    
-    Trail -- Pin --> Floating[Floating Windows]
-    Floating -- Drag --> Physics[Spring Physics]
-    
-    Trail -- Close Parent --> BFS[Clean Up Descendants]
+flowchart TD
+    classDef triggerStyle fill:#6366f1,stroke:#4f46e5,color:#fff,stroke-width:2px;
+    classDef cacheStyle fill:#0ea5e9,stroke:#0284c7,color:#fff,stroke-width:2px;
+    classDef stateStyle fill:#8b5cf6,stroke:#7c3aed,color:#fff,stroke-width:2px;
+    classDef physicsStyle fill:#f59e0b,stroke:#d97706,color:#fff,stroke-width:2px;
+    classDef cleanupStyle fill:#f43f5e,stroke:#e11d48,color:#fff,stroke-width:2px;
+
+    subgraph Phase1 ["⚡ 1. Activation & Hydration Engine"]
+        UserAction(["User Event: Click / Hover"]) :::triggerStyle
+        UserAction --> ResolverCheck{"Cache Check (TTL & Memory)"} :::cacheStyle
+        ResolverCheck -- "Sync Hit" --> InstantRender["Instant Mount (isLoading: false)"] :::cacheStyle
+        ResolverCheck -- "Cache Miss" --> AsyncFetch["Async Fetch & AbortSignal"] :::cacheStyle
+        AsyncFetch --> ResolveSuccess["Resolve Payload & Hydrate Data"] :::cacheStyle
+    end
+
+    subgraph Phase2 ["📚 2. Dual-Stack State Machine"]
+        InstantRender --> TrailStack["Trail Stack (Cascading Path)"] :::stateStyle
+        ResolveSuccess --> TrailStack
+        
+        TrailStack -- "Pin Action (togglePin)" --> FloatingList["Floating Array (Modeless Windows)"] :::stateStyle
+        FloatingList -- "Unpin Action" --> TrailStack
+    end
+
+    subgraph Phase3 ["🎨 3. Spatial Canvas & Inertia Physics"]
+        FloatingList -- "Mouse Drag" --> VelocityCalc["Measure Drag Velocity (dx/dt, dy/dt)"] :::physicsStyle
+        VelocityCalc --> RAFSpring["RAF 3D Tilt Loop (rotateX, rotateY, rotateZ)"] :::physicsStyle
+        RAFSpring --> ViewportConstrain["Anti-Blur Coordinate Compiling (Math.round)"] :::physicsStyle
+    end
+
+    subgraph Phase4 ["🧹 4. Automatic Tree Cleansing & Memory Management"]
+        TrailStack -- "Close Parent / Escape" --> BFSQueue["Pointer-based BFS Queue Traversal"] :::cleanupStyle
+        BFSQueue --> AbortReqs["Abort Controllers (Abort In-Flight Fetches)"] :::cleanupStyle
+        BFSQueue --> PurgeOrphans["Purge Unpinned Descendant Nodes & Offsets"] :::cleanupStyle
+    end
 ```
 
 ### 1. Dual-Stack State Engine
