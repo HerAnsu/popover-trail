@@ -41,65 +41,39 @@ Open `http://localhost:5173` to explore live nested expression parsing, drag-to-
 
 ```mermaid
 flowchart TD
-    subgraph Phase1 [1. Activation & Hydration Engine]
-        UserAction[User Event: Click or Hover]
-        ResolverCheck{Cache Check: TTL & Memory}
-        InstantRender[Instant Mount: isLoading false]
-        AsyncFetch[Async Fetch & AbortSignal]
-        ResolveSuccess[Resolve Payload & Hydrate Data]
+    A[User Event: Click or Hover] --> B{Cache Check}
+    
+    B -- Sync Hit --> C[Instant Mount: isLoading false]
+    B -- Cache Miss --> D[Async Fetch & AbortSignal]
+    D --> E[Resolve Payload & Hydrate Data]
+    
+    C --> F[Trail Stack: Cascading Path]
+    E --> F
+    
+    F -- Pin Action --> G[Floating Array: Modeless Windows]
+    G -- Unpin Action --> F
+    
+    G -- Mouse Drag --> H[Measure Drag Velocity]
+    H --> I[RAF 3D Spring Tilt Loop]
+    I --> J[Anti-Blur Coordinate Compiling]
+    
+    F -- Close Parent or Escape --> K[Pointer-based BFS Queue Traversal]
+    K --> L[Abort Controllers: Cancel In-flight Fetches]
+    K --> M[Purge Unpinned Descendants]
 
-        UserAction --> ResolverCheck
-        ResolverCheck -- Sync Hit --> InstantRender
-        ResolverCheck -- Cache Miss --> AsyncFetch
-        AsyncFetch --> ResolveSuccess
-    end
-
-    subgraph Phase2 [2. Dual-Stack State Machine]
-        TrailStack[Trail Stack: Cascading Path]
-        FloatingList[Floating Array: Modeless Windows]
-
-        InstantRender --> TrailStack
-        ResolveSuccess --> TrailStack
-        TrailStack -- Pin Action --> FloatingList
-        FloatingList -- Unpin Action --> TrailStack
-    end
-
-    subgraph Phase3 [3. Spatial Canvas & Inertia Physics]
-        VelocityCalc[Measure Drag Velocity]
-        RAFSpring[RAF 3D Tilt Loop]
-        ViewportConstrain[Anti-Blur Coordinate Compiling]
-
-        FloatingList -- Mouse Drag --> VelocityCalc
-        VelocityCalc --> RAFSpring
-        RAFSpring --> ViewportConstrain
-    end
-
-    subgraph Phase4 [4. Automatic Tree Cleansing & Memory Management]
-        BFSQueue[Pointer-based BFS Queue Traversal]
-        AbortReqs[Abort Controllers: Cancel Fetches]
-        PurgeOrphans[Purge Unpinned Descendants]
-
-        TrailStack -- Close Parent or Escape --> BFSQueue
-        BFSQueue --> AbortReqs
-        BFSQueue --> PurgeOrphans
-    end
-
-    style UserAction fill:#6366f1,stroke:#4f46e5,color:#fff
-    style ResolverCheck fill:#0ea5e9,stroke:#0284c7,color:#fff
-    style InstantRender fill:#0ea5e9,stroke:#0284c7,color:#fff
-    style AsyncFetch fill:#0ea5e9,stroke:#0284c7,color:#fff
-    style ResolveSuccess fill:#0ea5e9,stroke:#0284c7,color:#fff
-
-    style TrailStack fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style FloatingList fill:#8b5cf6,stroke:#7c3aed,color:#fff
-
-    style VelocityCalc fill:#f59e0b,stroke:#d97706,color:#fff
-    style RAFSpring fill:#f59e0b,stroke:#d97706,color:#fff
-    style ViewportConstrain fill:#f59e0b,stroke:#d97706,color:#fff
-
-    style BFSQueue fill:#f43f5e,stroke:#e11d48,color:#fff
-    style AbortReqs fill:#f43f5e,stroke:#e11d48,color:#fff
-    style PurgeOrphans fill:#f43f5e,stroke:#e11d48,color:#fff
+    style A fill:#1e293b,stroke:#475569,color:#f8fafc
+    style B fill:#0f172a,stroke:#334155,color:#f8fafc
+    style C fill:#1e293b,stroke:#475569,color:#f8fafc
+    style D fill:#1e293b,stroke:#475569,color:#f8fafc
+    style E fill:#1e293b,stroke:#475569,color:#f8fafc
+    style F fill:#334155,stroke:#64748b,color:#f8fafc
+    style G fill:#334155,stroke:#64748b,color:#f8fafc
+    style H fill:#1e293b,stroke:#475569,color:#f8fafc
+    style I fill:#1e293b,stroke:#475569,color:#f8fafc
+    style J fill:#1e293b,stroke:#475569,color:#f8fafc
+    style K fill:#1e293b,stroke:#475569,color:#f8fafc
+    style L fill:#1e293b,stroke:#475569,color:#f8fafc
+    style M fill:#1e293b,stroke:#475569,color:#f8fafc
 ```
 
 ### 1. Dual-Stack State Engine
