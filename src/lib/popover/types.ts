@@ -48,7 +48,9 @@ export interface PopoverDisplayOptions {
   hover?: HoverConfig;
   /** Accessibility description text linked via aria-describedby. */
   ariaDescribedby?: string;
-  /** True to allow dragging even when the popover is unpinned/trailing. */
+  /** True to allow dragging when the popover card is pinned/floating (default: true). */
+  allowDragWhenPinned?: boolean;
+  /** True to allow dragging when the popover card is unpinned/trailing (default: true). */
   allowDragWhenUnpinned?: boolean;
   /** Preferred layout placement direction relative to trigger. */
   placement?: PopoverPlacement;

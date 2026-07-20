@@ -1245,5 +1245,18 @@ describe('createPopoverStore', () => {
       const customResolver = createPopoverResolver((key) => ({ resolvedKey: key }));
       expect(customResolver('test')).toEqual({ resolvedKey: 'test' });
     });
+
+    it('should support allowDragWhenPinned and allowDragWhenUnpinned options on popover entries', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', {
+        key: 'drag-card-1',
+        allowDragWhenPinned: false,
+        allowDragWhenUnpinned: true,
+      });
+
+      expect(store.getState().trail[0]?.allowDragWhenPinned).toBe(false);
+      expect(store.getState().trail[0]?.allowDragWhenUnpinned).toBe(true);
+    });
   });
 });

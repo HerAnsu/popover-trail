@@ -72,8 +72,12 @@ export function usePopoverDraggableCard({
 }: UsePopoverDraggableCardOptions): UsePopoverDraggableCardResult {
   const card = usePopoverCard({ entry, index, isPinned, placement });
 
-  const allowDragWhenUnpinned = entry.allowDragWhenUnpinned ?? false;
-  const isDragAllowed = enableDrag && (isPinned || allowDragWhenUnpinned);
+  const allowDragWhenPinned = entry.allowDragWhenPinned ?? true;
+  const allowDragWhenUnpinned = entry.allowDragWhenUnpinned ?? true;
+  const isButtonDragEnabled = card.buttonControls.enableDrag;
+
+  const isDragAllowed =
+    enableDrag && isButtonDragEnabled && (isPinned ? allowDragWhenPinned : allowDragWhenUnpinned);
 
   // 1. Set up dnd-kit dragging
   const { setNodeRef, transform, isDragging, attributes, listeners } = useDraggable({

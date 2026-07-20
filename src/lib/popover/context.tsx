@@ -81,6 +81,12 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
   /** If true, enables keyboard arrow key navigation (default: true). */
   enableArrowNavigation?: boolean;
 
+  /** True to allow dragging when popover card is pinned/floating (default: true). */
+  allowDragWhenPinned?: boolean;
+
+  /** True to allow dragging when popover card is unpinned/trailing (default: true). */
+  allowDragWhenUnpinned?: boolean;
+
   /** If true, prints Zustand state updates to the console (default: false). */
   debug?: boolean;
 

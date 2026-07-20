@@ -274,6 +274,7 @@ export function createPopoverStore<
         transitionStatus: 'mounting',
         hover: options?.hover,
         ariaDescribedby: options?.ariaDescribedby,
+        allowDragWhenPinned: options?.allowDragWhenPinned,
         allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
         placement: options?.placement,
         offset: options?.offset,
