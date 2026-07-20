@@ -184,6 +184,86 @@ export function isResolvedEntry<TData>(
 }
 
 /**
+ * Type Guard checking if a TrailEntry is currently performing data resolution.
+ *
+ * @template TData - The resolved data payload type.
+ * @param entry - The TrailEntry to inspect.
+ * @returns True if entry is loading.
+ */
+export function isLoadingEntry<TData>(
+  entry: TrailEntry<TData> | undefined,
+): entry is TrailEntry<TData> & { isLoading: true } {
+  return entry !== undefined && entry.isLoading === true;
+}
+
+/**
+ * Type Guard checking if a TrailEntry encountered a resolution error.
+ *
+ * @template TData - The resolved data payload type.
+ * @param entry - The TrailEntry to inspect.
+ * @returns True if entry has a non-null Error.
+ */
+export function isErrorEntry<TData>(
+  entry: TrailEntry<TData> | undefined,
+): entry is TrailEntry<TData> & { error: Error } {
+  return entry !== undefined && entry.error instanceof Error;
+}
+
+/**
+ * Discriminated union representation of a TrailEntry's asynchronous resolution state.
+ *
+ * @template TData - The resolved data payload type.
+ */
+export type PopoverEntryDiscriminatedState<TData = unknown> =
+  | { status: 'loading'; isLoading: true; data: undefined; error: null }
+  | { status: 'error'; isLoading: false; data: undefined; error: Error }
+  | { status: 'success'; isLoading: false; data: TData; error: null };
+
+/**
+ * Extracts a discriminated state object from a TrailEntry for pattern matching (`switch (state.status)`).
+ *
+ * @template TData - The resolved data payload type.
+ * @param entry - The TrailEntry to inspect.
+ * @returns Discriminated union state object.
+ */
+export function getEntryState<TData>(
+  entry: TrailEntry<TData>,
+): PopoverEntryDiscriminatedState<TData> {
+  if (entry.isLoading) {
+    return { status: 'loading', isLoading: true, data: undefined, error: null };
+  }
+  if (entry.error) {
+    return { status: 'error', isLoading: false, data: undefined, error: entry.error };
+  }
+  return { status: 'success', isLoading: false, data: entry.data as TData, error: null };
+}
+
+/**
+ * Utility constructor for creating branded PopoverKey string instances.
+ *
+ * @template T - The string key type.
+ * @param key - The string key value.
+ * @returns A branded PopoverKey value.
+ */
+export function createPopoverKey<T extends string>(key: T): PopoverKey<T> {
+  return key as PopoverKey<T>;
+}
+
+/**
+ * Helper function providing automatic type inference when creating custom PopoverResolver functions.
+ *
+ * @template TData - The resolved data payload type.
+ * @template TContext - The external context type.
+ * @param resolver - The resolver callback function.
+ * @returns The typed PopoverResolver callback.
+ */
+export function createPopoverResolver<TData = unknown, TContext = unknown>(
+  resolver: PopoverResolver<TData, TContext>,
+): PopoverResolver<TData, TContext> {
+  return resolver;
+}
+
+/**
  * A minimal event-like or element-like object accepted by `openRootWithResolver`
  * as the anchor source. Supports Floating UI VirtualElement, React synthetic events, or raw DOM elements.
  */

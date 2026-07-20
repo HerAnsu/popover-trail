@@ -1,7 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createPopoverStore } from './store';
 import type { TrailEntry, AnchorEventLike } from './types';
-import { isResolvedEntry } from './types';
+import {
+  isResolvedEntry,
+  isLoadingEntry,
+  isErrorEntry,
+  getEntryState,
+  createPopoverKey,
+  createPopoverResolver,
+} from './types';
 import { SimplePopoverCache } from './utils/cache';
 
 // Mock DOMRect for the Node environment
@@ -1187,6 +1194,56 @@ describe('createPopoverStore', () => {
       // Toggle enablePin without 3rd parameter (toggles back to true)
       store.getState().toggleButtonControl('card-1', 'enablePin');
       expect(store.getState().trail[0]?.buttonControls?.enablePin).toBe(true);
+    });
+
+    it('should validate isLoadingEntry, isErrorEntry, getEntryState, createPopoverKey, and createPopoverResolver helpers', () => {
+      const loadingEntry: TrailEntry<{ name: string }> = {
+        key: 'k1',
+        isLoading: true,
+        error: null,
+      };
+      const errorEntry: TrailEntry<{ name: string }> = {
+        key: 'k2',
+        isLoading: false,
+        error: new Error('Failed to resolve'),
+      };
+      const successEntry: TrailEntry<{ name: string }> = {
+        key: 'k3',
+        isLoading: false,
+        data: { name: 'Item' },
+        error: null,
+      };
+
+      expect(isLoadingEntry(loadingEntry)).toBe(true);
+      expect(isLoadingEntry(successEntry)).toBe(false);
+
+      expect(isErrorEntry(errorEntry)).toBe(true);
+      expect(isErrorEntry(loadingEntry)).toBe(false);
+
+      expect(getEntryState(loadingEntry)).toEqual({
+        status: 'loading',
+        isLoading: true,
+        data: undefined,
+        error: null,
+      });
+      expect(getEntryState(errorEntry)).toEqual({
+        status: 'error',
+        isLoading: false,
+        data: undefined,
+        error: errorEntry.error,
+      });
+      expect(getEntryState(successEntry)).toEqual({
+        status: 'success',
+        isLoading: false,
+        data: { name: 'Item' },
+        error: null,
+      });
+
+      const brandedKey = createPopoverKey('custom-key');
+      expect(brandedKey).toBe('custom-key');
+
+      const customResolver = createPopoverResolver((key) => ({ resolvedKey: key }));
+      expect(customResolver('test')).toEqual({ resolvedKey: 'test' });
     });
   });
 });
