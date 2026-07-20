@@ -32,7 +32,7 @@ import type {
  *
  * @internal
  */
-export const PopoverStoreContext = createContext<StoreApi<PopoverStore> | null>(null);
+const PopoverStoreContext = createContext<StoreApi<PopoverStore> | null>(null);
 
 /**
  * Context container holding the current Popover card's unique key ID.

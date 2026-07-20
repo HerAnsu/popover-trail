@@ -23,7 +23,7 @@ export function isPromise<T>(value: unknown): value is Promise<T> {
  * @param allowedKeys - The set of keys to preserve.
  * @returns The filtered record copy, or the original record.
  */
-export function filterRecord<T>(
+function filterRecord<T>(
   record: Record<string, T>,
   allowedKeys: Set<string>,
 ): Record<string, T> {
@@ -107,7 +107,7 @@ export function hasEntryWithKey<TData>(
  * @param newKey - The key to bring to the topmost stack depth.
  * @returns The updated z-index order array.
  */
-export function getNextZIndexOrder(
+function getNextZIndexOrder(
   zIndexOrder: readonly string[],
   activeKeys: Set<string>,
   newKey: string,
@@ -123,7 +123,7 @@ export function getNextZIndexOrder(
  * @param trail - The array of trailing popovers.
  * @returns A Set containing all active popover keys.
  */
-export function getActiveKeys<TData>(
+function getActiveKeys<TData>(
   floating: readonly TrailEntry<TData>[],
   trail: readonly TrailEntry<TData>[],
 ): Set<string> {
@@ -142,7 +142,7 @@ export function getActiveKeys<TData>(
  * @param useOriginalParent - Optional flag to group by originalParentKey fallback.
  * @returns A Map mapping parent keys to arrays of child entries.
  */
-export function buildChildrenMap<TData>(
+function buildChildrenMap<TData>(
   floating: readonly TrailEntry<TData>[],
   trail: readonly TrailEntry<TData>[],
   useOriginalParent = false,
@@ -174,7 +174,7 @@ export function buildChildrenMap<TData>(
  * @param options - Traversal options (useOriginalParent / ignoreFloating).
  * @returns Array of found descendant popovers.
  */
-export function traverseDescendants<TData>(
+function traverseDescendants<TData>(
   startKeys: readonly string[],
   floating: readonly TrailEntry<TData>[],
   trail: readonly TrailEntry<TData>[],
@@ -212,7 +212,7 @@ export function traverseDescendants<TData>(
   return descendants;
 }
 
-export function getDescendants<TData>(
+function getDescendants<TData>(
   parentKey: string,
   floating: readonly TrailEntry<TData>[],
   trail: readonly TrailEntry<TData>[],

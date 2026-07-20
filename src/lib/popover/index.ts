@@ -32,6 +32,7 @@ export type {
   PopoverDisplayOptions,
   CollisionConfig,
   ClickOutsideConfig,
+  HoverConfig,
   AnchorEventLike,
   UsePopoverResult,
   PopoverTransitionStatus,
