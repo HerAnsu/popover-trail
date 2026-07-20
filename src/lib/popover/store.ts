@@ -258,8 +258,8 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         }
       },
 
-      setResolveData: (resolveData) => {
-        set({ resolveData });
+      setResolveData: (newResolver) => {
+        set({ resolveData: newResolver });
       },
 
       setOwnerId: (ownerId) => {
@@ -294,7 +294,9 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
           const isFloating = index < floating.length;
           let directClosedKeys: string[];
           if (isFloating) {
-            directClosedKeys = [floating[index].key];
+            const entry = floating[index];
+            if (!entry) return;
+            directClosedKeys = [entry.key];
           } else {
             const trailIndex = index - floating.length;
             directClosedKeys = trail.slice(trailIndex).map((e) => e.key);
@@ -456,6 +458,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         const { zIndexOrder, floating, trail } = get();
         if (zIndexOrder.length === 0) return;
         const topKey = zIndexOrder[zIndexOrder.length - 1];
+        if (!topKey) return;
         const idx = findEntryIndex(floating, trail, topKey);
         if (idx !== -1) {
           set((state) => closeFromState(state, idx));
@@ -469,7 +472,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
 
         // Check if already open as root of active trail
-        if (trail.length > 0 && trail[0].key === keyOrName && get().ownerId === finalOwnerId) {
+        if (trail.length > 0 && trail[0]?.key === keyOrName && get().ownerId === finalOwnerId) {
           return;
         }
 

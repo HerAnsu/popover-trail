@@ -314,7 +314,7 @@ export function getCleanupStatePatch<TData, TContext>(
   floating: readonly TrailEntry<TData>[],
   trail: readonly TrailEntry<TData>[],
   offsets: Record<string, { x: number; y: number }>,
-  zIndexOrder: string[],
+  zIndexOrder: readonly string[],
   pinnedStates: Record<string, boolean>,
   nestedHydrationRequestCounters: Record<string, number>,
 ): Partial<PopoverStateData<TData, TContext>> {

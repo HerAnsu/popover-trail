@@ -268,7 +268,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
  * @returns The reactive value slice.
  * @throws {Error} If called outside a PopoverProvider.
  */
-export function usePopoverStore<TData = unknown, TContext = unknown, TSelected = unknown>(
+export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
   selector: (state: PopoverStore<TData, TContext>) => TSelected,
 ): TSelected {
   const store = useContext(PopoverStoreContext);
@@ -302,8 +302,8 @@ export function usePopoverStoreApi<TData = unknown, TContext = unknown>() {
  * @template TData - The type of resolved data payloads.
  * @returns Array of active trailing popover entries.
  */
-export function usePopoverTrail<TData = unknown>() {
-  return usePopoverStore<TData, unknown, TrailEntry<TData>[]>((state) => state.trail);
+export function usePopoverTrail<TData = unknown>(): readonly TrailEntry<TData>[] {
+  return usePopoverStore((state: PopoverStore<TData>) => state.trail);
 }
 
 /**
@@ -312,8 +312,8 @@ export function usePopoverTrail<TData = unknown>() {
  * @template TData - The type of resolved data payloads.
  * @returns Array of floating popover entries.
  */
-export function usePopoverFloating<TData = unknown>() {
-  return usePopoverStore<TData, unknown, TrailEntry<TData>[]>((state) => state.floating);
+export function usePopoverFloating<TData = unknown>(): readonly TrailEntry<TData>[] {
+  return usePopoverStore((state: PopoverStore<TData>) => state.floating);
 }
 
 /**
@@ -342,9 +342,10 @@ export function useIsPopoverPinned(key: string) {
  * @param key - The unique identifier key of the popover.
  * @returns The matching TrailEntry or undefined if not found.
  */
-export function usePopoverEntry<TData = unknown>(key: string) {
-  return usePopoverStore<TData, unknown, TrailEntry<TData> | undefined>(
-    (state) => state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key),
+export function usePopoverEntry<TData = unknown>(key: string): TrailEntry<TData> | undefined {
+  return usePopoverStore(
+    (state: PopoverStore<TData>) =>
+      state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key),
   );
 }
 
@@ -390,7 +391,7 @@ export function usePopoverOffset(key: string) {
  * @returns The active context object.
  */
 export function usePopoverContext<TContext = unknown>() {
-  return usePopoverStore<unknown, TContext, TContext | null>((state) => state.context);
+  return usePopoverStore((state: PopoverStore<unknown, TContext>) => state.context);
 }
 
 /**
@@ -408,9 +409,9 @@ export function usePopoverCollisionConfig() {
  * @returns True if the popover is active and open.
  */
 export function useIsPopoverOpen(key: string): boolean {
-  return usePopoverStore<unknown, unknown, boolean>(
+  return usePopoverStore(
     useCallback(
-      (state) =>
+      (state: PopoverStore) =>
         state.trail.some((e) => e.key === key) || state.floating.some((e) => e.key === key),
       [key],
     ),

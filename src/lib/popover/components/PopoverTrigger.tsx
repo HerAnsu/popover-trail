@@ -1,4 +1,4 @@
-import React, { useContext, type ReactNode } from 'react';
+import React, { useContext } from 'react';
 import {
   PopoverCardContext,
   usePopoverTrigger,
@@ -9,10 +9,12 @@ import type { OpenRootOptions, OpenNestedOptions, PopoverPlacement } from '../ty
 
 /**
  * Prop types for the `<PopoverTrigger>` component.
+ *
+ * @template TPopoverKey - Union of valid popover keys.
  */
-export interface PopoverTriggerProps {
+export interface PopoverTriggerProps<TPopoverKey extends string = string> {
   /** The unique key of the popover card that this trigger opens. */
-  popoverKey: string;
+  popoverKey: TPopoverKey;
   /** Layout placement direction preference relative to the trigger. */
   placement?: PopoverPlacement;
   /** Custom distance gap offset override from trigger in pixels. */
@@ -22,7 +24,7 @@ export interface PopoverTriggerProps {
   /** CSS class to apply to the child element when the popover is active. */
   activeClassName?: string;
   /** Exactly one React element child to wrap. */
-  children: ReactNode;
+  children: React.ReactElement;
 }
 
 /**
@@ -38,7 +40,7 @@ function TriggerRenderer({
   triggerProps: Record<string, unknown>;
   isOpen: boolean;
   activeClassName?: string;
-  children: ReactNode;
+  children: React.ReactElement;
 }) {
   const child = React.Children.only(children) as React.ReactElement<Record<string, unknown>>;
 
@@ -86,7 +88,7 @@ function RootTriggerInner({
   mergedOptions: OpenRootOptions;
   isOpen: boolean;
   activeClassName?: string;
-  children: ReactNode;
+  children: React.ReactElement;
 }) {
   const triggerProps = usePopoverTrigger(popoverKey, mergedOptions);
   return (
@@ -113,7 +115,7 @@ function NestedTriggerInner({
   mergedOptions: OpenNestedOptions;
   isOpen: boolean;
   activeClassName?: string;
-  children: ReactNode;
+  children: React.ReactElement;
 }) {
   const triggerProps = usePopoverNestedTrigger(popoverKey, parentKey, mergedOptions);
   return (
@@ -127,15 +129,17 @@ function NestedTriggerInner({
  * Component-based trigger wrapper that declutters layout code.
  * Detects context automatically to bind either root or nested triggers,
  * and manages active class name injection.
+ *
+ * @template TPopoverKey - Union of valid popover keys.
  */
-export function PopoverTrigger({
+export function PopoverTrigger<TPopoverKey extends string = string>({
   popoverKey,
   placement,
   offset,
   options,
   activeClassName,
   children,
-}: PopoverTriggerProps) {
+}: PopoverTriggerProps<TPopoverKey>) {
   const parentKey = useContext(PopoverCardContext);
   const isOpen = useIsPopoverOpen(popoverKey);
 

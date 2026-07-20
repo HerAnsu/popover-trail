@@ -279,6 +279,14 @@ export function PopoverCanvas<TData = unknown>({
 }
 
 /**
+ * Event and attribute props passed to custom drag handle render callbacks.
+ */
+export interface PopoverDragHandleProps extends React.HTMLAttributes<HTMLElement> {
+  ref?: React.Ref<HTMLElement>;
+  style?: React.CSSProperties;
+}
+
+/**
  * Prop types for the high-level `PopoverCard` component.
  */
 export interface PopoverCardProps<TData> {
@@ -303,7 +311,7 @@ export interface PopoverCardProps<TData> {
   /** Set true to enable React Focus Lock when this card is topmost (default: true). */
   enableFocusLock?: boolean;
   /** Custom drag handle trigger element. If not specified, the entire card is draggable. */
-  dragHandle?: (props: React.HTMLAttributes<HTMLElement>) => ReactNode;
+  dragHandle?: (props: PopoverDragHandleProps) => ReactNode;
 }
 
 /**

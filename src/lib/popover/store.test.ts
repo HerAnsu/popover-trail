@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createPopoverStore } from './store';
-import type { TrailEntry } from './types';
+import type { TrailEntry, AnchorEventLike } from './types';
 import { SimplePopoverCache } from './utils/cache';
 
 // Mock DOMRect for the Node environment
@@ -25,14 +25,21 @@ if (typeof globalThis.DOMRect === 'undefined') {
       this.left = x;
       this.right = x + width;
     }
-    static fromRect(other?: any) {
+    static fromRect(other?: { x?: number; y?: number; width?: number; height?: number }) {
       return new DOMRect(other?.x, other?.y, other?.width, other?.height);
     }
-  } as any;
+  } as unknown as typeof globalThis.DOMRect;
 }
 
+const createMockAnchor = (x = 10, y = 20, width = 100, height = 200): AnchorEventLike => ({
+  currentTarget: {
+    getBoundingClientRect: () => new DOMRect(x, y, width, height),
+  } as HTMLElement,
+  stopPropagation: () => {},
+});
+
 describe('createPopoverStore', () => {
-  const dummyResolver = vi.fn<(key: string) => any>().mockImplementation((key) => {
+  const dummyResolver = vi.fn<(key: string) => { title: string; value: number }>().mockImplementation((key) => {
     return { title: `Resolved ${key}`, value: 42 };
   });
 
@@ -144,18 +151,8 @@ describe('createPopoverStore', () => {
     };
 
     const store = createPopoverStore(delayResolver);
-    const mockButton1 = {
-      currentTarget: {
-        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200),
-      } as any,
-      stopPropagation: () => {},
-    };
-    const mockButton2 = {
-      currentTarget: {
-        getBoundingClientRect: () => new DOMRect(30, 40, 100, 200),
-      } as any,
-      stopPropagation: () => {},
-    };
+    const mockButton1 = createMockAnchor(10, 20, 100, 200);
+    const mockButton2 = createMockAnchor(30, 40, 100, 200);
 
     // Trigger first slow request
     const p1 = store.getState().openRootWithResolver('item-a', mockButton1, { ownerId: 'owner-1' });
@@ -208,12 +205,7 @@ describe('createPopoverStore', () => {
     };
 
     const store = createPopoverStore(flakyResolver);
-    const mockButton = {
-      currentTarget: {
-        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200),
-      } as any,
-      stopPropagation: () => {},
-    };
+    const mockButton = createMockAnchor(10, 20, 100, 200);
 
     // First attempt fails
     await store.getState().openRootWithResolver('item-a', mockButton);
@@ -236,8 +228,8 @@ describe('createPopoverStore', () => {
     const signals: AbortSignal[] = [];
     const resolver = async (
       _key: string,
-      _parentData?: any,
-      _context?: any,
+      _parentData?: unknown,
+      _context?: unknown,
       signal?: AbortSignal,
     ) => {
       if (signal) {
@@ -250,18 +242,8 @@ describe('createPopoverStore', () => {
     };
 
     const store = createPopoverStore(resolver);
-    const mockButton1 = {
-      currentTarget: {
-        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200),
-      } as any,
-      stopPropagation: () => {},
-    };
-    const mockButton2 = {
-      currentTarget: {
-        getBoundingClientRect: () => new DOMRect(30, 40, 100, 200),
-      } as any,
-      stopPropagation: () => {},
-    };
+    const mockButton1 = createMockAnchor(10, 20, 100, 200);
+    const mockButton2 = createMockAnchor(30, 40, 100, 200);
 
     const p1 = store.getState().openRootWithResolver('item-a', mockButton1);
     const p2 = store.getState().openRootWithResolver('item-b', mockButton2);
@@ -370,12 +352,7 @@ describe('createPopoverStore', () => {
     };
 
     const store = createPopoverStore(syncResolver);
-    const mockButton = {
-      currentTarget: {
-        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200),
-      } as any,
-      stopPropagation: () => {},
-    };
+    const mockButton = createMockAnchor(10, 20, 100, 200);
 
     // Open root popover
     const promise = store
@@ -403,10 +380,10 @@ describe('createPopoverStore', () => {
 
   it('should integrate with cache provider and retrieve synchronous/asynchronous values', async () => {
     // 1. Setup a custom synchronous cache using Map
-    const cacheMap = new Map<string, any>();
+    const cacheMap = new Map<string, unknown>();
     const syncCache = {
       get: (key: string) => cacheMap.get(key),
-      set: (key: string, val: any) => {
+      set: (key: string, val: unknown) => {
         cacheMap.set(key, val);
       },
       delete: (key: string) => {
@@ -426,12 +403,7 @@ describe('createPopoverStore', () => {
     };
 
     const store = createPopoverStore(resolver, undefined, syncCache);
-    const mockButton = {
-      currentTarget: {
-        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200),
-      } as any,
-      stopPropagation: () => {},
-    };
+    const mockButton = createMockAnchor(10, 20, 100, 200);
 
     // Open popover using cached data
     const promise1 = store.getState().openRootWithResolver('root-cached', mockButton);
@@ -461,12 +433,7 @@ describe('createPopoverStore', () => {
 
   it('should preserve collision configurations on TrailEntry and support merging them', () => {
     const store = createPopoverStore(dummyResolver);
-    const mockButton = {
-      currentTarget: {
-        getBoundingClientRect: () => new DOMRect(10, 20, 100, 200),
-      } as any,
-      stopPropagation: () => {},
-    };
+    const mockButton = createMockAnchor(10, 20, 100, 200);
 
     const localCollision = { padding: 45 };
 
@@ -537,7 +504,7 @@ describe('createPopoverStore', () => {
   });
 
   it('should successfully resolve data when a popover is pinned while loading', async () => {
-    let resolvePromise!: (val: any) => void;
+    let resolvePromise!: (val: unknown) => void;
     const asyncPromise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
@@ -548,12 +515,7 @@ describe('createPopoverStore', () => {
     };
 
     const store = createPopoverStore(resolver);
-    const mockButton = {
-      currentTarget: {
-        getBoundingClientRect: () => new DOMRect(0, 0, 100, 100),
-      } as any,
-      stopPropagation: () => {},
-    };
+    const mockButton = createMockAnchor(0, 0, 100, 100);
 
     // Trigger root loading
     const loadPromise = store.getState().openRootWithResolver('async-popover', mockButton);
@@ -634,17 +596,11 @@ describe('createPopoverStore', () => {
     expect(store.getState().cascadeOffsetStep).toBe(15);
 
     // Trigger open with allowDragWhenUnpinned and ariaDescribedby
-    const dummyRect = new DOMRect(0, 0, 100, 40);
-    const mockElement = {
-      getBoundingClientRect: () => dummyRect,
-    } as any;
+    const mockElement = createMockAnchor(0, 0, 100, 40);
 
     await store.getState().openRootWithResolver(
       'item-1',
-      {
-        currentTarget: mockElement,
-        stopPropagation: () => {},
-      },
+      mockElement,
       {
         allowDragWhenUnpinned: true,
         ariaDescribedby: 'Descriptor text',
@@ -658,16 +614,11 @@ describe('createPopoverStore', () => {
 
   it('should support hover options including delays and closeOnMouseLeave', async () => {
     const store = createPopoverStore(dummyResolver);
-    const mockElement = {
-      getBoundingClientRect: () => new DOMRect(0, 0, 100, 40),
-    } as any;
+    const mockElement = createMockAnchor(0, 0, 100, 40);
 
     await store.getState().openRootWithResolver(
       'item-1',
-      {
-        currentTarget: mockElement,
-        stopPropagation: () => {},
-      },
+      mockElement,
       {
         hover: {
           enabled: true,
@@ -687,7 +638,7 @@ describe('createPopoverStore', () => {
 
   it('should preserve all display options when retrying a popover', async () => {
     let failFirst = true;
-    const failingResolver = vi.fn().mockImplementation(async (key: string) => {
+    const failingResolver = vi.fn().mockImplementation(async (_key: string) => {
       if (failFirst) {
         failFirst = false;
         throw new Error('Resolver failed');
@@ -696,7 +647,7 @@ describe('createPopoverStore', () => {
     });
 
     const store = createPopoverStore(failingResolver);
-    const mockElement = { getBoundingClientRect: () => new DOMRect(0, 0, 100, 40) } as any;
+    const mockElement = createMockAnchor(0, 0, 100, 40);
 
     const fullOptions = {
       placement: 'top-start' as const,
@@ -718,7 +669,7 @@ describe('createPopoverStore', () => {
       ariaDescribedby: 'desc-id',
     };
 
-    await store.getState().openRootWithResolver('retry-item', { currentTarget: mockElement }, fullOptions);
+    await store.getState().openRootWithResolver('retry-item', mockElement, fullOptions);
 
     expect(store.getState().trail[0].error).not.toBeNull();
     expect(store.getState().trail[0].placement).toBe('top-start');

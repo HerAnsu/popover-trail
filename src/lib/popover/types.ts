@@ -1,3 +1,5 @@
+import type { Placement, Boundary } from '@floating-ui/react';
+
 /**
  * Configuration options for hover triggers and delay buffers.
  */
@@ -113,70 +115,70 @@ export type PopoverResolver<TData = unknown, TContext = unknown> = (
  */
 export interface PopoverStateData<TData = unknown, TContext = unknown> {
   /** The stack of active popovers in the current trail path. */
-  trail: TrailEntry<TData>[];
+  readonly trail: readonly TrailEntry<TData>[];
 
   /** Pinned/floating modeless popovers currently placed in the viewport. */
-  floating: TrailEntry<TData>[];
+  readonly floating: readonly TrailEntry<TData>[];
 
   /** Current owner claiming the active trail path. Used to coordinate multiple providers. */
-  ownerId: string | null;
+  readonly ownerId: string | null;
 
   /** Drag-and-drop coordinate offsets relative to initial position, mapped by popover key. */
-  offsets: Record<string, { x: number; y: number }>;
+  readonly offsets: Record<string, { x: number; y: number }>;
 
   /** Pinned/floating status mapped by popover key. */
-  pinnedStates: Record<string, boolean>;
+  readonly pinnedStates: Record<string, boolean>;
 
   /** z-index depth order list of keys (highest/topmost is last). */
-  zIndexOrder: string[];
+  readonly zIndexOrder: readonly string[];
 
   /** Counter tracking root-level hydration requests to avoid race conditions. */
-  rootHydrationRequestCounter: number;
+  readonly rootHydrationRequestCounter: number;
 
   /** Counters tracking nested hydration requests mapped by parent key. */
-  nestedHydrationRequestCounters: Record<string, number>;
+  readonly nestedHydrationRequestCounters: Record<string, number>;
 
   /** The HTML anchor element triggering the root popover. Retained for boundary references. */
-  anchorElement: HTMLElement | null;
+  readonly anchorElement: HTMLElement | null;
 
   /** Bound box rect of the root anchor element. */
-  anchorRect: DOMRect | null;
+  readonly anchorRect: DOMRect | null;
 
   /** Current external global context values. */
-  context: TContext | null;
+  readonly context: TContext | null;
 
   /** Whether to recursively close pinned descendants when parent closes. */
-  closePinnedDescendants: boolean;
+  readonly closePinnedDescendants: boolean;
 
   /** Global collision settings default. */
-  collisionConfig: CollisionConfig | null;
+  readonly collisionConfig: CollisionConfig | null;
 
   /** Custom data cache provider. */
-  cache: PopoverCache<TData> | null;
+  readonly cache: PopoverCache<TData> | null;
 
   /** Active resolver callback. */
-  resolveData: PopoverResolver<TData, TContext>;
+  readonly resolveData: PopoverResolver<TData, TContext>;
 
   /** Whether keyboard arrow navigation is enabled. */
-  enableArrowNavigation: boolean;
+  readonly enableArrowNavigation: boolean;
 
   /** Whether debug logging is enabled. */
-  debug: boolean;
+  readonly debug: boolean;
 
   /** Horizontal offset step applied per level of the cascade trail (default: 8px). */
-  cascadeOffsetStep: number;
+  readonly cascadeOffsetStep: number;
   /** Duration in milliseconds of the card exit animation before it is removed from DOM (default: 0). */
-  exitTransitionDuration: number;
+  readonly exitTransitionDuration: number;
   /** Default distance gap offset from the trigger in pixels (default: 8px). */
-  defaultOffset: number;
+  readonly defaultOffset: number;
   /** Base z-index offset applied to all popover layers (default: 1000). */
-  baseZIndex: number;
+  readonly baseZIndex: number;
   /** Global default CSS animation class applied during mounting. */
-  mountingClassName: string;
+  readonly mountingClassName: string;
   /** Global default CSS animation class applied during unmounting. */
-  unmountingClassName: string;
+  readonly unmountingClassName: string;
   /** Global default CSS animation class applied during mounted. */
-  mountedClassName: string;
+  readonly mountedClassName: string;
 }
 
 /**
@@ -226,14 +228,14 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   openRootWithResolver: (
     keyOrName: string,
     anchorEvent: AnchorEventLike,
-    options?: OpenRootOptions,
+    options?: Readonly<OpenRootOptions>,
   ) => Promise<void>;
 
   /** Resolves data and opens a nested popover from a source parent popover key. */
   openNestedWithResolver: (
     keyOrName: string,
     sourceKey: string,
-    options?: OpenNestedOptions,
+    options?: Readonly<OpenNestedOptions>,
   ) => Promise<void>;
 
   /** Retries resolving data for an active popover that previously failed to load. */
@@ -248,43 +250,37 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   /** Updates the global collision config dynamically. */
   setCollisionConfig: (config: CollisionConfig | null) => void;
 
-  /** Closes exactly the popover matching the specified key along with all its descendants. */
+  /** Closes a popover by key and cleans up all of its descendants. */
   closeByKey: (key: string, options?: { transition?: boolean }) => void;
 
-  /** Sets whether keyboard arrow navigation is enabled. */
+  /** Set enableArrowNavigation configuration dynamically. */
   setEnableArrowNavigation: (enable: boolean) => void;
 
-  /** Sets whether debug logging is enabled. */
+  /** Set debug configuration dynamically. */
   setDebug: (debug: boolean) => void;
 
-  /** Clears the close timer for the given key and its ancestors. */
+  /** Handles mouse hover enter events on popovers. */
   hoverEnter: (key: string) => void;
 
-  /** Starts a close timer for the given key. */
+  /** Handles mouse hover leave events on popovers. */
   hoverLeave: (key: string, delay?: number) => void;
 
-  /** Sets the horizontal stepping shift per nesting level. */
+  /** Set cascadeOffsetStep configuration dynamically. */
   setCascadeOffsetStep: (step: number) => void;
 
-  /** Sets the transition lifecycle status of a specific popover card. */
+  /** Updates entry transition status ('mounting' | 'mounted' | 'unmounting'). */
   setTransitionStatus: (key: string, status: 'mounting' | 'mounted' | 'unmounting') => void;
 
-  /** Sets the exit transition duration. */
+  /** Set exitTransitionDuration configuration dynamically. */
   setExitTransitionDuration: (duration: number) => void;
 
-  /** Sets the default distance gap offset. */
+  /** Set defaultOffset configuration dynamically. */
   setDefaultOffset: (offset: number) => void;
 
-  /** Sets the base z-index layering offset. */
+  /** Set baseZIndex configuration dynamically. */
   setBaseZIndex: (baseZIndex: number) => void;
 
-  /**
-   * Sets the global default CSS animation class names applied during popover transition phases.
-   *
-   * @param mounting - Class name applied when popover is mounting (e.g., 'mounting').
-   * @param unmounting - Class name applied when popover is unmounting (e.g., 'unmounting').
-   * @param mounted - Class name applied when popover is fully mounted (e.g., 'mounted').
-   */
+  /** Set global animation class names dynamically. */
   setGlobalAnimationClassNames: (mounting: string, unmounting: string, mounted: string) => void;
 }
 
@@ -316,20 +312,7 @@ export type PopoverStore<TData = unknown, TContext = unknown> = PopoverStateData
 /**
  * Valid relative placements supported by Floating UI.
  */
-export type PopoverPlacement =
-  | 'auto'
-  | 'top'
-  | 'bottom'
-  | 'left'
-  | 'right'
-  | 'top-start'
-  | 'top-end'
-  | 'bottom-start'
-  | 'bottom-end'
-  | 'right-start'
-  | 'right-end'
-  | 'left-start'
-  | 'left-end';
+export type PopoverPlacement = 'auto' | Placement;
 
 /**
  * Configuration options for custom click outside behaviors.
@@ -360,6 +343,9 @@ export interface PopoverCache<TData = unknown> {
 
   /** Clears the cache completely. */
   clear: () => Promise<void> | void;
+
+  /** Checks if a non-expired cached entry exists for key. */
+  has?: (key: string) => Promise<boolean> | boolean;
 }
 
 /**
@@ -370,11 +356,7 @@ export interface CollisionConfig {
    * DOM element(s) to constrain the popover within (default: 'clippingAncestors').
    * Can be a function returned at runtime (lazy resolution).
    */
-  boundary?:
-    | 'clippingAncestors'
-    | HTMLElement
-    | HTMLElement[]
-    | (() => HTMLElement | HTMLElement[] | null);
+  boundary?: Boundary | (() => Boundary | null);
 
   /** Safety padding margin around the boundary (default: 12 for shift, 0 for flip). */
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
@@ -388,8 +370,6 @@ export interface CollisionConfig {
 
 /**
  * Shared display configuration options common to trail entries and open option types.
- * Extracted to eliminate property duplication across `TrailEntry`, `OpenRootOptions`,
- * and `OpenNestedOptions`.
  */
 export interface PopoverDisplayOptions {
   /** Custom boundary collision overrides. */

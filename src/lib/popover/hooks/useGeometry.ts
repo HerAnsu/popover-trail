@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useFloating, offset, flip, shift, autoUpdate, size } from '@floating-ui/react';
+import { useFloating, offset, flip, shift, autoUpdate, size, type Boundary } from '@floating-ui/react';
 import type { TrailEntry, PopoverPlacement } from '../types';
 import { usePopoverCollisionConfig, usePopoverStore } from '../context';
 
@@ -70,9 +70,9 @@ export function usePopoverGeometry({
   const shiftOption = localCollision?.shift ?? globalCollision?.shift;
   const sizeOption = localCollision?.size ?? globalCollision?.size;
 
-  const [resolvedBoundary, setResolvedBoundary] = useState<
-    'clippingAncestors' | HTMLElement | HTMLElement[] | undefined
-  >(typeof boundary === 'string' ? boundary : undefined);
+  const [resolvedBoundary, setResolvedBoundary] = useState<Boundary | undefined>(
+    typeof boundary === 'string' ? boundary : undefined,
+  );
 
   useEffect(() => {
     if (typeof boundary === 'function') {

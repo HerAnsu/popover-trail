@@ -160,6 +160,7 @@ export function usePopoverCard({
         }
       };
     }
+    return undefined;
   }, [entry.key, entry.transitionStatus, actions]);
 
   const mountingClass = entry.mountingClassName ?? globalMounting;

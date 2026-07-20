@@ -5,21 +5,21 @@ import type { CSSProperties } from 'react';
  */
 interface GetPopoverStylesParams {
   /** Viewport relative absolute base layout position returned by Floating UI. */
-  finalLayoutPos: { top: number; left: number };
+  readonly finalLayoutPos: { readonly top: number; readonly left: number };
   /** Retained cumulative coordinate drag offset stored inside the Zustand state. */
-  offset?: { x: number; y: number };
+  readonly offset?: { readonly x: number; readonly y: number };
   /** Temporary, immediate drag translation coordinates from active drag actions. */
-  dragX?: number;
+  readonly dragX?: number;
   /** Temporary, immediate drag translation coordinates from active drag actions. */
-  dragY?: number;
+  readonly dragY?: number;
   /** Physics-based spring rotation angle in degrees (rotateZ). */
-  rotation?: number;
+  readonly rotation?: number;
   /** Physics-based spring 3D tilt rotation around the horizontal X-axis (rotateX). */
-  rotationX?: number;
+  readonly rotationX?: number;
   /** Physics-based spring 3D tilt rotation around the vertical Y-axis (rotateY). */
-  rotationY?: number;
+  readonly rotationY?: number;
   /** Layer depth index to stack topmost/pinned items. */
-  zIndex?: number;
+  readonly zIndex?: number;
 }
 
 /**
