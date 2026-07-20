@@ -37,6 +37,30 @@ Standard overlay components treat popovers as isolated dropdown menus. Complex w
 
 ---
 
+## Codebase Architecture and Directory Map
+
+```
+src/lib/popover/
+├── index.ts              # Public API barrel re-exports & JSDoc examples
+├── dnd.tsx                # Drag-and-drop spatial canvas & PopoverCard components
+├── factory.tsx            # Pre-typed createPopoverTrail<TData, TContext, TPopoverKey>()
+├── context.tsx            # PopoverProvider, Context selectors, and WAI-ARIA handlers
+├── store.ts              # Vanilla Zustand store engine & AbortController lifecycle
+├── types.ts              # Strict TypeScript definitions & CollisionConfig interfaces
+├── components/
+│   └── PopoverTrigger.tsx # Headless trigger component wrapper with ARIA bindings
+├── hooks/
+│   ├── useDragAndDrop.ts  # Velocity 3D spring tilt physics (rotateX/Y/Z)
+│   ├── useGeometry.ts     # Dynamic Floating UI layout middleware calculation
+│   └── usePopoverCard.ts  # Unified popover card layout, style, and event hook
+└── utils/
+    ├── cache.ts           # SimplePopoverCache (TTL & max-size LRU/FIFO eviction)
+    ├── storeHelpers.ts    # BFS queue traversers & pure immutable state patches
+    └── styles.ts          # Sub-pixel Math.round layout compiler & CSS variables
+```
+
+---
+
 ## Architecture and Core Engine
 
 ```mermaid
@@ -528,21 +552,21 @@ Compiles coordinates, offsets, and tilt angles into a unified `CSSProperties` ob
 
 ---
 
-## Technical FAQ
+## Troubleshooting and Edge Cases
 
 <details>
-<summary><strong>Q: How does Popover Trail prevent memory leaks when users rapidly click triggers?</strong></summary>
-<p>Every asynchronous resolver invocation is tied to an internal <code>AbortController</code> and an incremental hydration counter. Unmounting a popover triggers <code>controller.abort()</code> immediately, and stale promise responses whose counter tick has passed are automatically discarded.</p>
+<summary><strong>Q: How do I prevent popovers from being clipped inside overflow:hidden containers?</strong></summary>
+<p>By default, popovers compute coordinates relative to the viewport. Wrap your popover card list inside <code>PopoverCanvas</code> or <code>PopoverPortal</code>, which mounts popover cards to a top-level workspace portal layer.</p>
 </details>
 
 <details>
-<summary><strong>Q: How does z-index promotion work for pinned windows?</strong></summary>
-<p>Clicking or dragging any pinned card automatically dispatches <code>actions.bringToFront(key)</code>. This promotes the card to the end of the <code>zIndexOrder</code> array and updates its CSS <code>zIndex</code> style dynamically.</p>
+<summary><strong>Q: How do I handle rapid cursor movement across hover triggers?</strong></summary>
+<p>Configure <code>hover.openDelay</code> (e.g., <code>150ms</code>) and <code>hover.closeDelay</code> (e.g., <code>200ms</code>) in your trigger options. Hovering over a child popover card automatically clears the parent's close timer, preserving trail continuity.</p>
 </details>
 
 <details>
-<summary><strong>Q: Is Popover Trail tied to any CSS framework?</strong></summary>
-<p>No. Popover Trail is 100% headless. It outputs layout coordinates, inline style objects, and CSS Custom Properties, leaving styling completely to Vanilla CSS, Tailwind CSS, CSS Modules, or Emotion.</p>
+<summary><strong>Q: How do I override z-index stacking depth for pinned cards?</strong></summary>
+<p>Each trigger accepts a <code>baseZIndex</code> option. Additionally, clicking or dragging any pinned card automatically promotes it to the top of the z-index depth stack via <code>actions.bringToFront(key)</code>.</p>
 </details>
 
 ---
