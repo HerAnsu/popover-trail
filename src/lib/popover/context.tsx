@@ -436,7 +436,9 @@ export function usePopoverActions<
   if (!store) {
     throw new Error('usePopoverActions must be used within a PopoverProvider');
   }
-  return store.getState().actions as Readonly<PopoverStore<TData, TContext, TPopoverKey>['actions']>;
+  return store.getState().actions as Readonly<
+    PopoverStore<TData, TContext, TPopoverKey>['actions']
+  >;
 }
 
 /**

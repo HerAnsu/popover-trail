@@ -31,9 +31,7 @@ export function createPopoverTrail<
    * @returns The provider element wrapping children.
    */
   function PopoverProvider(props: PopoverProviderProps<TData, TContext>) {
-    return (
-      <CorePopoverProvider {...(props as unknown as PopoverProviderProps)} />
-    );
+    return <CorePopoverProvider {...(props as unknown as PopoverProviderProps)} />;
   }
   PopoverProvider.displayName = 'PopoverProvider';
 
@@ -58,8 +56,7 @@ export function createPopoverTrail<
      * @param key - The unique identifier key of the popover card.
      * @returns Unified data values and pre-bound action wrappers.
      */
-    usePopover: (key: TPopoverKey): UsePopoverResult<TData> =>
-      coreUsePopover<TData, TContext>(key),
+    usePopover: (key: TPopoverKey): UsePopoverResult<TData> => coreUsePopover<TData, TContext>(key),
     /**
      * Type-safe usePopoverActions hook pre-bound to your data and context shapes.
      *

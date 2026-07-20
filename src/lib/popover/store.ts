@@ -588,7 +588,8 @@ export function createPopoverStore<
             key,
             () => incrementNestedCounter(entry.parentKey!),
             (startedCounter) => isNestedStale(entry.parentKey!, startedCounter),
-            (updatedEntry) => (state) => updateEntryInLists(state.floating, state.trail, key, updatedEntry),
+            (updatedEntry) => (state) =>
+              updateEntryInLists(state.floating, state.trail, key, updatedEntry),
           );
         } else {
           await resolvePopoverEntry(
@@ -600,7 +601,8 @@ export function createPopoverStore<
             '__root__',
             incrementRootCounter,
             isRootStale,
-            (updatedEntry) => (state) => updateEntryInLists(state.floating, state.trail, key, updatedEntry),
+            (updatedEntry) => (state) =>
+              updateEntryInLists(state.floating, state.trail, key, updatedEntry),
           );
         }
       },
@@ -667,7 +669,9 @@ export function createPopoverStore<
         }
       },
       setTransitionStatus: (key, status) => {
-        set((state) => updateEntryInLists(state.floating, state.trail, key, { transitionStatus: status }));
+        set((state) =>
+          updateEntryInLists(state.floating, state.trail, key, { transitionStatus: status }),
+        );
       },
       setExitTransitionDuration: (exitTransitionDuration) => {
         if (get().exitTransitionDuration !== exitTransitionDuration) {

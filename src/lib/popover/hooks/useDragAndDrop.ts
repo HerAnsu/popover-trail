@@ -100,15 +100,18 @@ export function usePopoverDragAndDrop({
         const curr = rotationRef.current;
 
         // rotateY is affected by horizontal velocity X
-        const nextY = curr.y * tiltFriction + velocityX * tiltSensitivity * (1 - tiltFriction) * 1.5;
+        const nextY =
+          curr.y * tiltFriction + velocityX * tiltSensitivity * (1 - tiltFriction) * 1.5;
         const boundedY = Math.max(-maxTiltAngle, Math.min(maxTiltAngle, nextY));
 
         // rotateX is affected by vertical velocity Y
-        const nextX = curr.x * tiltFriction - velocityY * tiltSensitivity * (1 - tiltFriction) * 1.5;
+        const nextX =
+          curr.x * tiltFriction - velocityY * tiltSensitivity * (1 - tiltFriction) * 1.5;
         const boundedX = Math.max(-maxTiltAngle, Math.min(maxTiltAngle, nextX));
 
         // rotateZ is a slight flat tilt based on X velocity
-        const nextZ = curr.z * tiltFriction + velocityX * (tiltSensitivity / 2) * (1 - tiltFriction);
+        const nextZ =
+          curr.z * tiltFriction + velocityX * (tiltSensitivity / 2) * (1 - tiltFriction);
         const boundedZ = Math.max(-maxTiltAngle / 2, Math.min(maxTiltAngle / 2, nextZ));
 
         const nextTilt = { rotation: boundedZ, rotationX: boundedX, rotationY: boundedY };

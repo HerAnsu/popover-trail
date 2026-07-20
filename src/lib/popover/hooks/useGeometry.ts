@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useFloating, offset, flip, shift, autoUpdate, size, type Boundary } from '@floating-ui/react';
+import {
+  useFloating,
+  offset,
+  flip,
+  shift,
+  autoUpdate,
+  size,
+  type Boundary,
+} from '@floating-ui/react';
 import type { TrailEntry, PopoverPlacement } from '../types';
 import { usePopoverCollisionConfig, usePopoverStore } from '../context';
 

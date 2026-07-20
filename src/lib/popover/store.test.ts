@@ -598,14 +598,10 @@ describe('createPopoverStore', () => {
     // Trigger open with allowDragWhenUnpinned and ariaDescribedby
     const mockElement = createMockAnchor(0, 0, 100, 40);
 
-    await store.getState().openRootWithResolver(
-      'item-1',
-      mockElement,
-      {
-        allowDragWhenUnpinned: true,
-        ariaDescribedby: 'Descriptor text',
-      },
-    );
+    await store.getState().openRootWithResolver('item-1', mockElement, {
+      allowDragWhenUnpinned: true,
+      ariaDescribedby: 'Descriptor text',
+    });
 
     const entry = store.getState().trail[0];
     expect(entry?.allowDragWhenUnpinned).toBe(true);
@@ -616,18 +612,14 @@ describe('createPopoverStore', () => {
     const store = createPopoverStore(dummyResolver);
     const mockElement = createMockAnchor(0, 0, 100, 40);
 
-    await store.getState().openRootWithResolver(
-      'item-1',
-      mockElement,
-      {
-        hover: {
-          enabled: true,
-          openDelay: 150,
-          closeDelay: 250,
-          closeOnMouseLeave: false,
-        },
+    await store.getState().openRootWithResolver('item-1', mockElement, {
+      hover: {
+        enabled: true,
+        openDelay: 150,
+        closeDelay: 250,
+        closeOnMouseLeave: false,
       },
-    );
+    });
 
     const entry = store.getState().trail[0];
     expect(entry?.hover?.enabled).toBe(true);

@@ -9,8 +9,9 @@ import type { TrailEntry, PopoverStateData } from '../types';
  */
 export function isPromise<T>(value: unknown): value is Promise<T> {
   return (
-    (typeof value === 'object' && value !== null) || typeof value === 'function'
-  ) && typeof (value as Record<string, unknown>).then === 'function';
+    ((typeof value === 'object' && value !== null) || typeof value === 'function') &&
+    typeof (value as Record<string, unknown>).then === 'function'
+  );
 }
 
 /**
@@ -22,7 +23,10 @@ export function isPromise<T>(value: unknown): value is Promise<T> {
  * @param allowedKeys - The set of keys to preserve.
  * @returns The filtered record copy, or the original record.
  */
-export function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
+export function filterRecord<T>(
+  record: Record<string, T>,
+  allowedKeys: Set<string>,
+): Record<string, T> {
   const nextRecord: Record<string, T> = {};
   let changed = false;
   for (const key of Object.keys(record)) {

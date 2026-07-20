@@ -492,15 +492,11 @@ function MainContent({
 
   const handleOpenCustomRoot = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!customRoot.trim()) return;
-    void openRootWithResolver(
-      customRoot.trim(),
-      e,
-      {
-        hover: hoverConfig,
-        allowDragWhenUnpinned,
-        ariaDescribedby: `Mathematical evaluation details for custom expression: ${customRoot.trim()}`,
-      },
-    );
+    void openRootWithResolver(customRoot.trim(), e, {
+      hover: hoverConfig,
+      allowDragWhenUnpinned,
+      ariaDescribedby: `Mathematical evaluation details for custom expression: ${customRoot.trim()}`,
+    });
   };
 
   const totalActive = trail.length + floating.length;
@@ -558,7 +554,8 @@ function MainContent({
               gap: '0.5rem',
               fontSize: '0.8rem',
             }}>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <label
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Open Delay ({hoverOpenDelay}ms):</span>
               <input
                 type="range"
@@ -570,7 +567,8 @@ function MainContent({
                 style={{ width: '120px' }}
               />
             </label>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <label
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Close Delay ({hoverCloseDelay}ms):</span>
               <input
                 type="range"
@@ -582,7 +580,8 @@ function MainContent({
                 style={{ width: '120px' }}
               />
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+            <label
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={hoverCloseOnMouseLeave}

@@ -20,7 +20,9 @@ export type DragAxis = 'x' | 'y' | 'both';
  *
  * @template T - The string key union.
  */
-export type PopoverKey<T extends string = string> = T & { readonly __popoverKeyBrand?: unique symbol };
+export type PopoverKey<T extends string = string> = T & {
+  readonly __popoverKeyBrand?: unique symbol;
+};
 
 /**
  * Configuration options for hover triggers and delay buffers.
@@ -155,10 +157,7 @@ export function isResolvedEntry<TData>(
   entry: TrailEntry<TData> | undefined,
 ): entry is TrailEntry<TData> & { data: TData; isLoading: false; error: null } {
   return (
-    entry !== undefined &&
-    !entry.isLoading &&
-    entry.error === null &&
-    entry.data !== undefined
+    entry !== undefined && !entry.isLoading && entry.error === null && entry.data !== undefined
   );
 }
 
