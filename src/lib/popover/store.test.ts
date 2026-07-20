@@ -630,7 +630,7 @@ describe('createPopoverStore', () => {
 
   it('should preserve all display options when retrying a popover', async () => {
     let failFirst = true;
-    const failingResolver = vi.fn().mockImplementation(async (_key: string) => {
+    const failingResolver = vi.fn<(key: string) => Promise<{ title: string }>>().mockImplementation(async (_key: string) => {
       if (failFirst) {
         failFirst = false;
         throw new Error('Resolver failed');
@@ -691,7 +691,7 @@ describe('createPopoverStore', () => {
     expect(retriedEntry?.ariaDescribedby).toBe('desc-id');
   });
 
-  describe('SimplePopoverCache enhancements', () => {
+  describe('simplePopoverCache enhancements', () => {
     it('should evict oldest item when exceeding maxSize', () => {
       const cache = new SimplePopoverCache<number>(10000, 2);
       cache.set('key1', 1);

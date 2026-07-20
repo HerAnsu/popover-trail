@@ -1,576 +1,184 @@
 # Popover Trail
 
-[![npm version](https://img.shields.io/npm/v/popover-trail.svg?style=flat-square)](https://www.npmjs.com/package/popover-trail)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/popover-trail?style=flat-square)](https://bundlephobia.com/package/popover-trail)
-[![license](https://img.shields.io/npm/l/popover-trail.svg?style=flat-square)](./LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Strict_100%25-blue?style=flat-square)](https://www.typescriptlang.org/)
+A headless React library for managing cascading popover paths, draggable pinned windows, and async data hydration.
 
-A headless, ultra-performant React 19 engine for declarative cascading popover trails, modal-to-modeless spatial window transitions, velocity-based 3D spring tilt physics, and hybrid data caching.
+Instead of rendering isolated dropdowns, Popover Trail structures popovers as nodes in a tree hierarchy. Unpinned popovers form a single linear path. Any popover can be pinned to float independently on the viewport canvas with physics-based drag interactions.
 
----
-
-## Why Popover Trail?
-
-Standard overlay components treat popovers as isolated dropdown menus. Complex workspace applications — such as data graph inspectors, multi-level formula builders, nested code drill-downs, or CAD hierarchy viewers — require users to explore multi-layered trees of data without losing spatial context.
-
-**Popover Trail** models popovers as nodes in a hierarchical tree, addressing key spatial UI requirements:
-
-1. **Cascading Trails**: Drill down into data recursively. Each child popover attaches relative to its parent trigger node.
-2. **Modal-to-Modeless Pinning**: Pin any popover card to detach it from the relative trail stack and turn it into an independent, modeless floating window anywhere on the canvas.
-3. **Velocity-Sensitive 3D Spring Physics**: Dragged cards swing naturally with real-time 3D tilt Euler physics ($\text{rotateX}$, $\text{rotateY}$, $\text{rotateZ}$).
-4. **Automated Tree Cleansing & Request Cancellation**: Closing a parent node unmounts its active descendant trail and instantly aborts pending network fetches via `AbortController`.
-5. **Zero-Flicker Caching**: Synchronously resolved cache hits bypass loading states entirely, eliminating 1-frame loading spinner flicker.
-
----
-
-## Feature Comparison
-
-| Feature | Popover Trail | Radix UI Popover | Ariakit | Mantine Popover | Floating UI (Bare) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Hierarchical Cascade Trails** | **Built-in** | Manual | Manual | Manual | Manual |
-| **Modal-to-Modeless Pinning** | **Built-in** | No | No | No | No |
-| **Velocity 3D Spring Physics** | **Built-in** | No | No | No | No |
-| **BFS Cleansing & AbortController** | **Built-in** | No | No | No | No |
-| **Zero-Flicker Cache Skipping** | **Built-in** | No | No | No | No |
-| **Sub-Pixel Anti-Blur Rounding** | **Built-in** | No | No | No | No |
-| **Headless React 19 API** | **Yes** | Yes | Yes | Partial | Yes |
-
----
-
-## Codebase Architecture and Directory Map
-
-```
-src/lib/popover/
-├── index.ts              # Public API barrel re-exports & JSDoc examples
-├── dnd.tsx                # Drag-and-drop spatial canvas & PopoverCard components
-├── factory.tsx            # Pre-typed createPopoverTrail<TData, TContext, TPopoverKey>()
-├── context.tsx            # PopoverProvider, Context selectors, and WAI-ARIA handlers
-├── store.ts              # Vanilla Zustand store engine & AbortController lifecycle
-├── types.ts              # Strict TypeScript definitions & CollisionConfig interfaces
-├── components/
-│   └── PopoverTrigger.tsx # Headless trigger component wrapper with ARIA bindings
-├── hooks/
-│   ├── useDragAndDrop.ts  # Velocity 3D spring tilt physics (rotateX/Y/Z)
-│   ├── useGeometry.ts     # Dynamic Floating UI layout middleware calculation
-│   └── usePopoverCard.ts  # Unified popover card layout, style, and event hook
-└── utils/
-    ├── cache.ts           # SimplePopoverCache (TTL & max-size LRU/FIFO eviction)
-    ├── storeHelpers.ts    # BFS queue traversers & pure immutable state patches
-    └── styles.ts          # Sub-pixel Math.round layout compiler & CSS variables
-```
-
----
-
-## Architecture and Core Engine
+## Architecture
 
 ```mermaid
-flowchart TD
-    A[User Event: Click or Hover] --> B{Cache Check}
+graph TD
+    Trigger[Trigger Click] --> ResolverCheck{Cache Check}
+    ResolverCheck -- Sync Hit --> InstantMount[Render with Data, isLoading: false]
+    ResolverCheck -- Miss/Async --> LoadingMount[Render Loading State, isLoading: true]
+    LoadingMount --> Fetch[Await Resolver Promise]
+    Fetch --> DataLoaded[Update TrailEntry Data]
     
-    B -- Sync Hit --> C[Instant Mount: isLoading false]
-    B -- Cache Miss --> D[Async Fetch & AbortSignal]
-    D --> E[Resolve Payload & Hydrate Data]
+    InstantMount --> ActiveTrail[Trail Stack]
+    DataLoaded --> ActiveTrail
     
-    C --> F[Trail Stack: Cascading Path]
-    E --> F
+    ActiveTrail -- Pin Action --> PinnedList[Floating Array]
+    PinnedList -- Dragging --> Physics[RAF Spring Rotation]
     
-    F -- Pin Action --> G[Floating Array: Modeless Windows]
-    G -- Unpin Action --> F
-    
-    G -- Mouse Drag --> H[Measure Drag Velocity]
-    H --> I[RAF 3D Spring Tilt Loop]
-    I --> J[Anti-Blur Coordinate Compiling]
-    
-    F -- Close Parent or Escape --> K[Pointer-based BFS Queue Traversal]
-    K --> L[Abort Controllers: Cancel In-flight Fetches]
-    K --> M[Purge Unpinned Descendants]
-
-    style A fill:#1e293b,stroke:#475569,color:#f8fafc
-    style B fill:#0f172a,stroke:#334155,color:#f8fafc
-    style C fill:#1e293b,stroke:#475569,color:#f8fafc
-    style D fill:#1e293b,stroke:#475569,color:#f8fafc
-    style E fill:#1e293b,stroke:#475569,color:#f8fafc
-    style F fill:#334155,stroke:#64748b,color:#f8fafc
-    style G fill:#334155,stroke:#64748b,color:#f8fafc
-    style H fill:#1e293b,stroke:#475569,color:#f8fafc
-    style I fill:#1e293b,stroke:#475569,color:#f8fafc
-    style J fill:#1e293b,stroke:#475569,color:#f8fafc
-    style K fill:#1e293b,stroke:#475569,color:#f8fafc
-    style L fill:#1e293b,stroke:#475569,color:#f8fafc
-    style M fill:#1e293b,stroke:#475569,color:#f8fafc
+    ActiveTrail -- Close Parent --> BFS[BFS Tree Traversal]
+    BFS --> CleanState[Aborted Signals & Purged Keys]
 ```
 
-### 1. Dual-Stack State Machine
-The core engine is driven by a vanilla Zustand store managing two primary arrays:
-- **`trail`**: A linear, ordered stack representing the active cascading path of unpinned popovers. Only one active trail path exists at a time.
-- **`floating`**: An unordered list of pinned, modeless popover cards floating independently on the spatial canvas.
+### Dual-stack state management
+The core store (built with Zustand) uses two arrays:
+* `trail`: A linear stack for the active cascading path. Only one unpinned trail branch exists at a time.
+* `floating`: An array of pinned popovers detached from the active trail stack.
 
-Toggling a card's pinned state (`togglePin(key)`) splices it from `trail` into `floating` (or vice-versa), preserving its original parent relationship (`originalParentKey`) and layout coordinates.
+Clicking a trigger resolves data and pushes a `TrailEntry` onto `trail`. Pinning a popover removes it from `trail` and appends it to `floating`. Unpinning moves it back to the `trail` stack at its original hierarchical position.
 
-### 2. Sub-Pixel Layout Compiling & Sub-pixel Anti-Blurring
-Popover Trail computes absolute viewport coordinates for every popover card by combining Floating UI positioning with internal cascade steps and drag translations:
+### Tree traversal and cleanup
+Each `TrailEntry` tracks `parentKey` and `originalParentKey`.
+* **Branch unmounting**: Closing a parent popover runs a breadth-first search (BFS) over `trail` and `floating` to unmount all recursive child popovers.
+* **Request cancellation**: Active async requests for unmounted popovers are cancelled immediately through their associated `AbortController` signals.
+* **Pinned child handling**: By default (`closePinnedDescendants: false`), pinned cards remain open when their parent closes. When `closePinnedDescendants: true`, closing a parent also closes its pinned descendants.
 
-$$\text{Final Position} = \text{Floating UI Placement} + \text{Cascade Step} + \text{Drag Offset} + \text{Drag Translation}$$
+### Positioning and pixel rounding
+Popover Trail handles position calculations while leaving DOM rendering to your components.
+* **Virtual anchors**: Trigger bounding rects (`DOMRect`) are captured on click and converted into Floating UI virtual elements.
+* **Coordinate formula**: `Final Position = Floating UI Placement + Drag Offset + Drag Translation`.
+* **Sub-pixel rounding**: All coordinates are rounded with `Math.round()` prior to applying CSS transforms or position styles to avoid blurry text on standard-DPI screens.
 
-To prevent browser compositor sub-pixel anti-aliasing (which causes text and fine border lines to look blurry on non-retina displays), the layout engine explicitly rounds coordinate values using `Math.round()` before outputting CSS styles.
-
-### 3. Real-Time 3D Inertia Velocity Physics
-When dragging a pinned card, the `usePopoverDragAndDrop` hook tracks mouse movement velocity across consecutive animation frames:
-
-$$\text{Velocity}_X = \frac{\Delta x}{\Delta t}, \quad \text{Velocity}_Y = \frac{\Delta y}{\Delta t}$$
-
-A hardware-accelerated `requestAnimationFrame` loop calculates Euler 3D tilt angles:
-- Horizontal drag velocity ($\text{Velocity}_X$) drives vertical axis rotation ($\text{rotateY}$).
-- Vertical drag velocity ($\text{Velocity}_Y$) drives horizontal axis rotation ($\text{rotateX}$).
-- Secondary velocity drives flat roll rotation ($\text{rotateZ}$).
-
-When released, rotations decay exponentially back to $0^\circ$ using spring dampening:
+### Drag inertia physics
+When dragging a pinned card, `usePopoverDragAndDrop` tracks horizontal velocity ($\Delta x / \Delta t$). A `requestAnimationFrame` loop calculates a spring rotation angle scaled to velocity. When released, rotation decays back to zero:
 
 $$\text{Angle}_{t} = \text{Angle}_{t-1} \times 0.82$$
 
-Once the tilt angle drops below $0.05^\circ$, frame updates automatically halt to prevent idle CPU cycles.
+The animation loop stops automatically once rotation drops below $0.05^\circ$.
 
-### 4. Hierarchical BFS Tree Cleansing & Hydration Counters
-- **Pointer-Based BFS Unmounting**: Closing an ancestor popover triggers a Breadth-First Search (BFS) queue traversal over child linkage maps, unmounting all unpinned descendants in a single state patch.
-- **`AbortController` Cancellation**: Every pending resolver request is assigned a dedicated `AbortController`. If a node closes while fetching, its `abort()` signal fires immediately, preventing memory leaks and orphaned network responses.
-- **Hydration Counters**: Overlapping trigger clicks increment an internal node counter (`nestedHydrationRequestCounters`). Stale promises whose counter does not match the active state tick are discarded automatically.
+## Core Concepts
 
----
-
-## Interactive Demo
-
-Clone the repository to launch the live interactive math expression drill-down playground:
-
-```bash
-git clone https://github.com/HerAnsu/popover-trail.git
-cd popover-trail
-npm install
-npm run dev
-```
-
-Open `http://localhost:5173` to test live formula parsing, interactive pinning, 3D inertia drag physics, and keyboard navigation.
-
----
+* **Draggable pinning**: Popovers move between relative alignment (anchored to trigger buttons) and absolute viewport positions (draggable cards).
+* **Synchronous cache resolution**: If data is cached synchronously, the component mounts immediately in the same render frame with `isLoading: false`, avoiding loading state flicker.
+* **Viewport collision boundaries**: Boundary options merge global viewport settings with per-trigger overrides. A custom DOM getter (`() => HTMLElement`) can constrain cards inside specific scrollable panels.
+* **Request hydration tracking**: Each nested path maintains a hydration counter. Rapid clicks discard responses from out-of-order promises if their counter does not match current state.
 
 ## Installation
 
 ```bash
-npm install popover-trail @floating-ui/react
+npm install popover-trail
 ```
 
----
+### Peer Dependencies
 
-## Integration Guide and Core Patterns
-
-### 1. Define Typed Factory & Data Resolver
-
-Use `createPopoverTrail<TData, TContext, TPopoverKey>()` to create strongly-typed components bound to your domain data:
-
-```tsx
-import { createPopoverTrail, type PopoverResolver } from 'popover-trail';
-
-// 1. Define data payload shape
-export interface NodeData {
-  title: string;
-  expression: string;
-  value: number;
-  leftExpr?: string;
-  rightExpr?: string;
-}
-
-// 2. Define global context shape
-export interface AppContext {
-  theme: 'dark' | 'light';
-}
-
-// 3. Define valid popover keys
-export type NodeKey = string;
-
-// 4. Create pre-typed components and hooks
-export const {
-  PopoverProvider,
-  PopoverTrigger,
-  PopoverPortal,
-  usePopover,
-  usePopoverActions,
-  usePopoverContext,
-} = createPopoverTrail<NodeData, AppContext, NodeKey>();
-
-// 5. Define data fetch resolver with AbortSignal support
-export const nodeResolver: PopoverResolver<NodeData, AppContext> = async (
-  key,
-  parentData,
-  context,
-  signal
-) => {
-  const res = await fetch(`/api/nodes/${encodeURIComponent(key)}`, { signal });
-  if (!res.ok) throw new Error(`Failed to resolve node: ${key}`);
-  return res.json();
-};
-```
-
-### 2. Wrap Application with Provider
-
-```tsx
-import React from 'react';
-import { PopoverProvider, nodeResolver } from './popoverConfig';
-import { SpatialWorkspace } from './SpatialWorkspace';
-
-export default function App() {
-  return (
-    <PopoverProvider
-      resolveData={nodeResolver}
-      initialContext={{ theme: 'dark' }}
-      clickOutside={{ enabled: true }}
-      enableKeyboardClose
-      closePinnedDescendants={false}
-      cascadeOffsetStep={16}>
-      <SpatialWorkspace />
-    </PopoverProvider>
-  );
+```json
+{
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.0",
+    "@floating-ui/react": "^0.27.0",
+    "@dnd-kit/core": "^6.3.0"
+  }
 }
 ```
 
-### 3. Add Root and Nested Triggers
+## Usage
 
-Use `<PopoverTrigger>` for root elements, or `usePopoverNestedTrigger` for nested cascades inside popover cards:
-
-```tsx
-import React from 'react';
-import { PopoverTrigger } from './popoverConfig';
-
-export function Toolbar() {
-  return (
-    <PopoverTrigger
-      popoverKey="(10 + 20) * 3"
-      placement="bottom"
-      options={{
-        allowDragWhenUnpinned: true,
-        hover: { enabled: true, openDelay: 150, closeDelay: 200 },
-        ariaDescribedby: 'Evaluation details for formula',
-      }}>
-      <button className="btn-primary">Inspect Formula</button>
-    </PopoverTrigger>
-  );
-}
-```
-
-### 4. Render Spatial Canvas & Draggable Cards
-
-Combine `PopoverCanvas`, `usePopoverDraggableCard`, `isResolvedEntry`, and `usePopoverHydration`:
-
-```tsx
-import React from 'react';
-import { isResolvedEntry, usePopoverHydration, type TrailEntry } from 'popover-trail';
-import { PopoverCanvas, usePopoverDraggableCard } from 'popover-trail/dnd';
-import type { NodeData } from './popoverConfig';
-
-interface CardProps {
-  entry: TrailEntry<NodeData>;
-  index: number;
-  isPinned: boolean;
-}
-
-function NodeCard({ entry, index, isPinned }: CardProps) {
-  // Access hydration state (isLoading, error, reload)
-  const { isLoading, error, reload } = usePopoverHydration<NodeData>(entry.key);
-
-  // Access layout ref, spring transform styles, and dnd handles
-  const { ref, style, isTop, dragHandleProps, handlePinToggle, actions } = 
-    usePopoverDraggableCard({ entry, index, isPinned, placement: 'bottom' });
-
-  return (
-    <div
-      ref={ref}
-      style={style}
-      role="dialog"
-      aria-modal={!isPinned}
-      aria-labelledby={`title-${entry.key}`}
-      className={`popover-card ${isTop ? 'topmost' : ''} ${isPinned ? 'pinned' : ''}`}>
-      
-      {/* Header with Drag Handle */}
-      <div className="card-header" {...dragHandleProps}>
-        <span id={`title-${entry.key}`} className="card-title">
-          {isLoading ? 'Evaluating...' : entry.data?.title}
-        </span>
-        <div className="card-actions">
-          <button type="button" onClick={handlePinToggle} title={isPinned ? 'Unpin' : 'Pin'}>
-            {isPinned ? '📌' : '📍'}
-          </button>
-          <button type="button" onClick={() => actions.closeFrom(index)} title="Close">
-            ✕
-          </button>
-        </div>
-      </div>
-
-      {/* Card Body */}
-      <div className="card-body">
-        {isLoading ? (
-          <div className="spinner">Parsing node payload...</div>
-        ) : error ? (
-          <div className="error-state">
-            <p>Error: {error.message}</p>
-            <button type="button" onClick={reload}>Retry</button>
-          </div>
-        ) : isResolvedEntry(entry) ? (
-          <div className="content">
-            <code>{entry.data.expression}</code>
-            <p>Calculated Result: <strong>{entry.data.value}</strong></p>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-export function SpatialWorkspace() {
-  return (
-    <PopoverCanvas<NodeData>>
-      {({ entry, index, isPinned }) => (
-        <NodeCard key={entry.key} entry={entry} index={index} isPinned={isPinned} />
-      )}
-    </PopoverCanvas>
-  );
-}
-```
-
----
-
-## Production Patterns
-
-### 1. LRU Data Caching with `SimplePopoverCache`
-
-Pass `SimplePopoverCache` to `PopoverProvider` to enable TTL expiration and maximum memory bounds (FIFO/LRU eviction):
+### 1. Configure PopoverProvider
+Wrap your component tree and supply a data resolver function:
 
 ```tsx
 import { PopoverProvider, SimplePopoverCache } from 'popover-trail';
 
-// 5-minute TTL expiration, maximum 100 cached entries
-const memoryCache = new SimplePopoverCache(5 * 60 * 1000, 100);
+const dataResolver = async (key: string, parentData?: unknown, context?: unknown, signal?: AbortSignal) => {
+  const res = await fetch(`/api/items/${key}`, { signal });
+  return res.json();
+};
+
+const cache = new SimplePopoverCache();
 
 export function App() {
   return (
-    <PopoverProvider resolveData={myResolver} cache={memoryCache}>
-      <MainWorkspace />
+    <PopoverProvider resolveData={dataResolver} cache={cache}>
+      <Workspace />
     </PopoverProvider>
   );
 }
 ```
 
-### 2. Custom Viewport Clamping Boundaries
-
-Clamp popovers within specific DOM elements (e.g., scrollable canvas panes) via `CollisionConfig`:
+### 2. Attach triggers
+Use `usePopoverTrigger` for root popovers and `usePopoverNestedTrigger` for child popovers inside an existing card:
 
 ```tsx
-<PopoverTrigger
-  popoverKey="sub-detail"
-  options={{
-    collision: {
-      boundary: () => document.getElementById('workspace-container')!,
-      padding: 16,
-      flip: { fallbackPlacements: ['top', 'right'] },
-    },
-  }}>
-  <button>Open Clamped Card</button>
-</PopoverTrigger>
-```
+import { usePopoverTrigger, usePopoverNestedTrigger } from 'popover-trail';
 
-### 3. CSS Custom Properties Integration
+export function RootTrigger() {
+  const triggerProps = usePopoverTrigger('item-101');
+  return <button {...triggerProps}>Inspect Item</button>;
+}
 
-Popover Trail outputs CSS Custom Properties directly on style objects for external CSS keyframe and transition overrides:
-
-```css
-.popover-card {
-  transform: translate(var(--popover-translate-x), var(--popover-translate-y))
-             rotateX(var(--popover-rotate-x))
-             rotateY(var(--popover-rotate-y))
-             rotateZ(var(--popover-rotate-z));
-  z-index: var(--popover-z-index);
-  will-change: transform;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+export function NestedTrigger({ parentKey }: { parentKey: string }) {
+  const triggerProps = usePopoverNestedTrigger('item-101-details', parentKey);
+  return <button {...triggerProps}>View Details</button>;
 }
 ```
 
----
+### 3. Render cards with usePopoverCard
+Use `usePopoverCard` to get positioning styles, ref bindings, and drag handle props:
 
-## Accessibility and Keyboard Navigation
+```tsx
+import { usePopoverCard, usePopoverActions, type TrailEntry } from 'popover-trail';
 
-Popover Trail manages WAI-ARIA accessibility attributes and keyboard navigation automatically:
+interface CardProps {
+  entry: TrailEntry;
+  index: number;
+  isPinned: boolean;
+}
 
-| Shortcut | Action | Description |
-| :--- | :--- | :--- |
-| `Escape` | Dismiss popover | Closes the topmost unpinned popover card in the active trail. |
-| `ArrowLeft` | Focus parent | Moves focus backward to the parent popover card in the trail. |
-| `ArrowRight` | Focus child | Moves focus forward to the child popover card in the trail. |
+export function PopoverCard({ entry, index, isPinned }: CardProps) {
+  const { closeByKey } = usePopoverActions();
+  const { ref, style, dragHandleProps, handlePinToggle } = usePopoverCard({
+    entry,
+    index,
+    isPinned,
+    placement: 'bottom-start'
+  });
 
-### Managed WAI-ARIA Attributes
-- **Triggers**: `aria-haspopup="dialog"`, `aria-expanded={isOpen}`, `aria-controls={`popover-card-${key}`}`.
-- **Cards**: `role="dialog"`, `aria-modal={!isPinned}`, `id={`popover-card-${key}`}`, `aria-labelledby`, `aria-describedby`.
-
----
-
-## TypeScript Interfaces Reference
-
-### `TrailEntry<TData>`
-
-```typescript
-export interface TrailEntry<TData = unknown> {
-  readonly key: string;
-  readonly parentKey?: string;
-  readonly originalParentKey?: string;
-  readonly rect?: DOMRect;
-  readonly originalRect?: DOMRect;
-  readonly pinnedLayoutPos?: { readonly top: number; readonly left: number };
-  readonly data?: TData;
-  readonly isLoading?: boolean;
-  readonly error?: Error | null;
-  readonly placement?: PopoverPlacement;
-  readonly offset?: number;
-  readonly hover?: HoverConfig;
-  readonly collision?: CollisionConfig;
-  readonly exitTransitionDuration?: number;
-  readonly baseZIndex?: number;
-  readonly cascadeOffsetStep?: number;
-  readonly cascadeOffsetDirection?: CascadeOffsetDirection;
-  readonly enableTilt?: boolean;
-  readonly maxTiltAngle?: number;
-  readonly tiltSensitivity?: number;
-  readonly dragAxis?: DragAxis;
-  readonly tiltFriction?: number;
-  readonly tiltDecay?: number;
-  readonly mountingClassName?: string;
-  readonly unmountingClassName?: string;
-  readonly mountedClassName?: string;
-  readonly allowDragWhenUnpinned?: boolean;
-  readonly ariaDescribedby?: string;
+  return (
+    <div ref={ref} style={style} className="popover-card">
+      <div className="drag-handle" {...dragHandleProps}>
+        <span>{entry.data ? (entry.data as { title: string }).title : 'Loading...'}</span>
+        <button onClick={handlePinToggle}>{isPinned ? 'Unpin' : 'Pin'}</button>
+        <button onClick={() => closeByKey(entry.key)}>Close</button>
+      </div>
+      <div className="content">
+        {entry.data ? (entry.data as { description: string }).description : null}
+      </div>
+    </div>
+  );
 }
 ```
-
-### `PopoverActions<TData, TContext, TPopoverKey>`
-
-```typescript
-export interface PopoverActions<
-  TData = unknown,
-  TContext = unknown,
-  TPopoverKey extends string = string,
-> {
-  openRoot(ownerId: string, entry: TrailEntry<TData>): void;
-  openRootWithResolver(keyOrName: TPopoverKey, anchorEvent: AnchorEventLike, options?: OpenRootOptions): Promise<void>;
-  pushNested(index: number, entry: TrailEntry<TData>): void;
-  pushNestedWithResolver(keyOrName: TPopoverKey, parentKey: TPopoverKey, options?: OpenNestedOptions): Promise<void>;
-  togglePin(key: TPopoverKey, rect?: DOMRect): void;
-  closeFrom(index: number, options?: { transition?: boolean }): void;
-  closeByKey(key: TPopoverKey): void;
-  clear(): void;
-  bringToFront(key: TPopoverKey): void;
-  updateOffset(key: TPopoverKey, dragX: number, dragY: number): void;
-  retryPopover(key: TPopoverKey): Promise<void>;
-  setClosePinnedDescendants(enabled: boolean): void;
-  setCascadeOffsetStep(step: number): void;
-}
-```
-
----
 
 ## API Reference
 
-### `PopoverProvider` Props
-
-| Prop | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `resolveData` | `PopoverResolver<TData, TContext>` | *Required* | Data resolver function. |
-| `initialContext` | `TContext` | `undefined` | Shared global context payload. |
-| `cache` | `PopoverCache<TData>` | `undefined` | Cache provider instance. |
-| `clickOutside` | `ClickOutsideConfig` | `{ enabled: true }` | Outside click backdrop dismissal config. |
-| `enableKeyboardClose` | `boolean` | `true` | Enables closing active cards with `Escape`. |
-| `enableArrowNavigation` | `boolean` | `false` | Enables `ArrowLeft` / `ArrowRight` trail keyboard navigation. |
-| `closePinnedDescendants` | `boolean` | `false` | Closes pinned descendants when a parent card is closed. |
-| `cascadeOffsetStep` | `number` | `16` | Step offset in pixels for cascading popover layers. |
-
----
-
-### `usePopoverCard` / `usePopoverDraggableCard` Options
+### usePopoverCard options
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `entry` | `TrailEntry<TData>` | *Required* | Target popover trail entry node. |
+| `entry` | `TrailEntry` | *Required* | Popover state entry node. |
 | `index` | `number` | *Required* | Stacking depth index. |
-| `isPinned` | `boolean` | *Required* | Pinned/floating status. |
-| `placement` | `PopoverPlacement` | `'bottom'` | Base layout placement direction preference. |
-| `enableTilt` | `boolean` | `true` | Enables 3D spring tilt physics during drag operations. |
-| `maxTiltAngle` | `number` | `5` | Maximum tilt swing angle in degrees. |
-| `tiltSensitivity` | `number` | `8` | Velocity scaling multiplier for tilt response. |
-| `dragAxis` | `DragAxis` (`'x' \| 'y' \| 'both'`) | `'both'` | Locks dragging coordinates to specific axes. |
+| `isPinned` | `boolean` | *Required* | Whether the popover is currently pinned. |
+| `placement` | `PopoverPlacement` | `'bottom'` | Default layout placement relative to anchor. |
+| `enableDrag` | `boolean` | `true` | Enables drag interactions when pinned. |
+| `enableTilt` | `boolean` | `true` | Enables velocity spring tilt during drag. |
+| `maxTiltAngle` | `number` | `5` | Maximum tilt angle in degrees. |
+| `tiltSensitivity` | `number` | `8` | Velocity to rotation scaling factor. |
 
----
-
-### `CollisionConfig` Options
+### CollisionConfig interface
 
 ```typescript
 interface CollisionConfig {
+  /** Element or callback returning the boundary element (default: 'clippingAncestors') */
   boundary?: 'clippingAncestors' | HTMLElement | HTMLElement[] | (() => HTMLElement | HTMLElement[] | null);
+  /** Safety margins around the boundary in pixels */
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
-  flip?: Parameters<typeof flip>[0] | boolean;
-  shift?: Parameters<typeof shift>[0] | boolean;
-  size?: Parameters<typeof size>[0] | boolean;
 }
 ```
-
----
-
-### Helper Utilities and Hooks
-
-#### `isResolvedEntry(entry)`
-Type guard function narrowing `entry.data` from `TData | undefined` to `TData` safely when `isLoading` is false and `error` is null:
-```typescript
-if (isResolvedEntry(entry)) {
-  console.log(entry.data.title); // Strongly typed as TData
-}
-```
-
-#### `usePopoverHydration(key)`
-Returns hydration status indicators for a given popover key:
-```typescript
-const { isLoading, error, reload } = usePopoverHydration(key);
-```
-
-#### `getPopoverStyles(params)`
-Compiles coordinates, offsets, and tilt angles into a unified `CSSProperties` object containing CSS Custom Properties (`--popover-translate-x`, `--popover-rotate-z`, etc.).
-
----
-
-## Development Scripts
-
-| Command | Action |
-| :--- | :--- |
-| `npm run dev` | Launch local interactive Vite development playground. |
-| `npm run build` | Compile TypeScript types (`tsc -b`) and build production client bundle. |
-| `npm run build:lib` | Build library distribution bundles (`dist/index.js`, `dist/index.cjs`, `.d.ts`). |
-| `npm run lint` | Run strict Oxlint audit across all source files. |
-| `npm run test` | Execute Vitest unit test suite. |
-| `npm run knip` | Execute Knip unused code and export audit. |
-
----
-
-## Troubleshooting and Edge Cases
-
-<details>
-<summary><strong>Q: How do I prevent popovers from being clipped inside overflow:hidden containers?</strong></summary>
-<p>By default, popovers compute coordinates relative to the viewport. Wrap your popover card list inside <code>PopoverCanvas</code> or <code>PopoverPortal</code>, which mounts popover cards to a top-level workspace portal layer.</p>
-</details>
-
-<details>
-<summary><strong>Q: How do I handle rapid cursor movement across hover triggers?</strong></summary>
-<p>Configure <code>hover.openDelay</code> (e.g., <code>150ms</code>) and <code>hover.closeDelay</code> (e.g., <code>200ms</code>) in your trigger options. Hovering over a child popover card automatically clears the parent's close timer, preserving trail continuity.</p>
-</details>
-
-<details>
-<summary><strong>Q: How do I override z-index stacking depth for pinned cards?</strong></summary>
-<p>Each trigger accepts a <code>baseZIndex</code> option. Additionally, clicking or dragging any pinned card automatically promotes it to the top of the z-index depth stack via <code>actions.bringToFront(key)</code>.</p>
-</details>
-
----
 
 ## License
-
-MIT License © 2026. Free for open-source and commercial applications.
+MIT
