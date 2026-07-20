@@ -40,7 +40,11 @@ import {
  * @param cache - Optional synchronous/asynchronous cache provider.
  * @returns A Zustand StoreApi instance matching PopoverStore.
  */
-export function createPopoverStore<TData = unknown, TContext = unknown>(
+export function createPopoverStore<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
   resolveData: PopoverResolver<TData, TContext>,
   initialContext?: TContext,
   cache?: PopoverCache<TData>,
@@ -67,7 +71,7 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
     }
   };
 
-  return createStore<PopoverStore<TData, TContext>>((rawSet, get) => {
+  return createStore<PopoverStore<TData, TContext, TPopoverKey>>((rawSet, get) => {
     const set = (
       patchOrFn:
         | Partial<PopoverStore<TData, TContext>>
@@ -467,7 +471,9 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
 
       // Async/Hydration Actions
       openRootWithResolver: async (keyOrName, anchorEvent, options) => {
-        anchorEvent.stopPropagation?.();
+        if ('stopPropagation' in anchorEvent && typeof anchorEvent.stopPropagation === 'function') {
+          anchorEvent.stopPropagation();
+        }
         const { ownerId, trail } = get();
         const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
 
@@ -477,12 +483,13 @@ export function createPopoverStore<TData = unknown, TContext = unknown>(
         }
 
         const anchorElement = 'currentTarget' in anchorEvent ? anchorEvent.currentTarget : null;
-        const anchorRect =
+        const rawRect =
           'currentTarget' in anchorEvent && anchorEvent.currentTarget
             ? anchorEvent.currentTarget.getBoundingClientRect()
             : 'getBoundingClientRect' in anchorEvent
               ? anchorEvent.getBoundingClientRect()
               : new DOMRect(0, 0, 0, 0);
+        const anchorRect = new DOMRect(rawRect.x, rawRect.y, rawRect.width, rawRect.height);
 
         // Save anchor details immediately
         set({ anchorElement, anchorRect });

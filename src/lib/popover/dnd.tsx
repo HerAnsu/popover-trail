@@ -371,6 +371,7 @@ function PopoverCardInner<TData = unknown>({
 
   return (
     <div
+      id={`popover-card-${entry.key}`}
       ref={ref}
       style={{
         ...style,
@@ -380,6 +381,7 @@ function PopoverCardInner<TData = unknown>({
         ...customStyle,
       }}
       role="dialog"
+      aria-modal={!isPinned}
       aria-labelledby={`title-${entry.key}`}
       aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
       className={combinedClassName}

@@ -55,5 +55,12 @@ export function getPopoverStyles({
     transform: `translate(${translateX}px, ${translateY}px) rotateX(${rotationX}deg) rotateY(${rotationY}deg) rotateZ(${rotation}deg)`,
     willChange: 'transform',
     zIndex,
+    // CSS Custom Properties for external style overrides and animations
+    ['--popover-translate-x' as string]: `${translateX}px`,
+    ['--popover-translate-y' as string]: `${translateY}px`,
+    ['--popover-rotate-x' as string]: `${rotationX}deg`,
+    ['--popover-rotate-y' as string]: `${rotationY}deg`,
+    ['--popover-rotate-z' as string]: `${rotation}deg`,
+    ['--popover-z-index' as string]: `${zIndex}`,
   };
 }

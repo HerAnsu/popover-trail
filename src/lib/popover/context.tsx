@@ -427,12 +427,16 @@ export function useIsPopoverOpen(key: string): boolean {
  * @template TContext - The type of global shared context.
  * @returns Object containing dispatch actions.
  */
-export function usePopoverActions<TData = unknown, TContext = unknown>() {
+export function usePopoverActions<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(): Readonly<PopoverStore<TData, TContext, TPopoverKey>['actions']> {
   const store = useContext(PopoverStoreContext);
   if (!store) {
     throw new Error('usePopoverActions must be used within a PopoverProvider');
   }
-  return store.getState().actions as PopoverStore<TData, TContext>['actions'];
+  return store.getState().actions as Readonly<PopoverStore<TData, TContext, TPopoverKey>['actions']>;
 }
 
 /**
@@ -441,13 +445,16 @@ export function usePopoverActions<TData = unknown, TContext = unknown>() {
  *
  * @template TData - The resolved data payload type.
  * @template TContext - The global shared context type.
+ * @template TPopoverKey - Union of valid popover keys.
  *
  * @param key - The unique identifier key of the popover.
  * @returns Unified data values and action wrappers.
  */
-export function usePopover<TData = unknown, TContext = unknown>(
-  key: string,
-): UsePopoverResult<TData> {
+export function usePopover<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(key: TPopoverKey): UsePopoverResult<TData> {
   const entry = usePopoverEntry<TData>(key);
   const isOpen = useIsPopoverOpen(key);
   const isPinned = useIsPopoverPinned(key);
@@ -504,12 +511,40 @@ function usePopoverHoverHandlers(
     }
   }, [actions, key, optionsRef, openTimerRef]);
 
+  const isOpen = useIsPopoverOpen(key);
+
   return useMemo(() => {
+    const ariaProps = {
+      'aria-haspopup': 'dialog' as const,
+      'aria-expanded': isOpen,
+      'aria-controls': `popover-card-${key}`,
+    };
     if (hoverEnabled) {
-      return { onMouseEnter, onMouseLeave };
+      return { ...ariaProps, onMouseEnter, onMouseLeave };
     }
-    return { onClick };
-  }, [onClick, onMouseEnter, onMouseLeave, hoverEnabled]);
+    return { ...ariaProps, onClick };
+  }, [onClick, onMouseEnter, onMouseLeave, hoverEnabled, isOpen, key]);
+}
+
+/**
+ * Hook to track loading/error status and trigger manual data reloads for a popover card.
+ *
+ * @template TData - The type of resolved data payload.
+ * @param key - The unique identifier key of the popover card.
+ * @returns Object containing isLoading status, error, and reload trigger callback.
+ */
+export function usePopoverHydration<TData = unknown>(key: string) {
+  const actions = usePopoverActions();
+  const entry = usePopoverEntry<TData>(key);
+  const reload = useCallback(() => {
+    void actions.retryPopover(key);
+  }, [actions, key]);
+
+  return {
+    isLoading: entry?.isLoading ?? false,
+    error: entry?.error ?? null,
+    reload,
+  };
 }
 
 /**

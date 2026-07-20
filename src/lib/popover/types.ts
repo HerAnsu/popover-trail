@@ -1,4 +1,26 @@
-import type { Placement, Boundary } from '@floating-ui/react';
+import type { Placement, Boundary, VirtualElement, flip, shift, size } from '@floating-ui/react';
+
+/**
+ * Valid lifecycle transition status values for popover card mounting and unmounting animations.
+ */
+export type PopoverTransitionStatus = 'mounting' | 'mounted' | 'unmounting';
+
+/**
+ * Valid shift directions for cascade stacking offsets.
+ */
+export type CascadeOffsetDirection = 'left' | 'right' | 'top' | 'bottom' | 'none';
+
+/**
+ * Axis locks for drag-and-drop movement constraints.
+ */
+export type DragAxis = 'x' | 'y' | 'both';
+
+/**
+ * Branded string type helper for strict popover keys.
+ *
+ * @template T - The string key union.
+ */
+export type PopoverKey<T extends string = string> = T & { readonly __popoverKeyBrand?: unique symbol };
 
 /**
  * Configuration options for hover triggers and delay buffers.
@@ -12,6 +34,50 @@ export interface HoverConfig {
   closeDelay?: number;
   /** If false, the popover card itself will not trigger closing when mouse leaves the card (default: true). */
   closeOnMouseLeave?: boolean;
+}
+
+/**
+ * Shared display configuration options common to trail entries and open option types.
+ */
+export interface PopoverDisplayOptions {
+  /** Custom boundary collision overrides. */
+  collision?: CollisionConfig;
+  /** Hover-trigger options configuration overrides. */
+  hover?: HoverConfig;
+  /** Accessibility description text linked via aria-describedby. */
+  ariaDescribedby?: string;
+  /** True to allow dragging even when the popover is unpinned/trailing. */
+  allowDragWhenUnpinned?: boolean;
+  /** Preferred layout placement direction relative to trigger. */
+  placement?: PopoverPlacement;
+  /** Custom distance gap offset override from trigger in pixels. */
+  offset?: number;
+  /** Custom exit transition duration override in milliseconds. */
+  exitTransitionDuration?: number;
+  /** Custom base z-index layering override. */
+  baseZIndex?: number;
+  /** Custom horizontal/vertical cascade offset step override. */
+  cascadeOffsetStep?: number;
+  /** Custom cascade stacking offset shift direction override. */
+  cascadeOffsetDirection?: CascadeOffsetDirection;
+  /** Custom spring tilt effect toggle override. */
+  enableTilt?: boolean;
+  /** Custom max spring tilt angle override. */
+  maxTiltAngle?: number;
+  /** Custom spring tilt speed sensitivity override. */
+  tiltSensitivity?: number;
+  /** Custom lock axis constraints for dragging ('x' | 'y' | 'both'). */
+  dragAxis?: DragAxis;
+  /** Custom spring tilt friction coefficient (default: 0.95). */
+  tiltFriction?: number;
+  /** Custom spring tilt inertia decay coefficient (default: 0.82). */
+  tiltDecay?: number;
+  /** Custom CSS animation class applied during mounting. */
+  mountingClassName?: string;
+  /** Custom CSS animation class applied during unmounting. */
+  unmountingClassName?: string;
+  /** Custom CSS animation class applied during mounted. */
+  mountedClassName?: string;
 }
 
 /**
@@ -74,15 +140,34 @@ export interface TrailEntry<TData = unknown> extends PopoverDisplayOptions {
   originalRect?: DOMRect;
 
   /** Transition lifecycle state for animating mount/exit states. */
-  transitionStatus?: 'mounting' | 'mounted' | 'unmounting';
+  transitionStatus?: PopoverTransitionStatus;
+}
+
+/**
+ * Type Guard function checking if a TrailEntry has finished resolving data successfully.
+ * Narrows entry.data to TData (eliminating undefined) within conditional blocks.
+ *
+ * @template TData - The resolved data payload type.
+ * @param entry - The TrailEntry to inspect.
+ * @returns True if entry has resolved data without error or loading state.
+ */
+export function isResolvedEntry<TData>(
+  entry: TrailEntry<TData> | undefined,
+): entry is TrailEntry<TData> & { data: TData; isLoading: false; error: null } {
+  return (
+    entry !== undefined &&
+    !entry.isLoading &&
+    entry.error === null &&
+    entry.data !== undefined
+  );
 }
 
 /**
  * A minimal event-like or element-like object accepted by `openRootWithResolver`
- * as the anchor source. Supports either a React-style event (with `currentTarget`)
- * or a raw DOM element (with `getBoundingClientRect`).
+ * as the anchor source. Supports Floating UI VirtualElement, React synthetic events, or raw DOM elements.
  */
 export type AnchorEventLike =
+  | VirtualElement
   | { currentTarget: HTMLElement; stopPropagation?: () => void }
   | { getBoundingClientRect: () => DOMRect; stopPropagation?: () => void };
 
@@ -124,10 +209,10 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   readonly ownerId: string | null;
 
   /** Drag-and-drop coordinate offsets relative to initial position, mapped by popover key. */
-  readonly offsets: Record<string, { x: number; y: number }>;
+  readonly offsets: Readonly<Record<string, Readonly<{ x: number; y: number }>>>;
 
   /** Pinned/floating status mapped by popover key. */
-  readonly pinnedStates: Record<string, boolean>;
+  readonly pinnedStates: Readonly<Record<string, boolean>>;
 
   /** z-index depth order list of keys (highest/topmost is last). */
   readonly zIndexOrder: readonly string[];
@@ -136,7 +221,7 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   readonly rootHydrationRequestCounter: number;
 
   /** Counters tracking nested hydration requests mapped by parent key. */
-  readonly nestedHydrationRequestCounters: Record<string, number>;
+  readonly nestedHydrationRequestCounters: Readonly<Record<string, number>>;
 
   /** The HTML anchor element triggering the root popover. Retained for boundary references. */
   readonly anchorElement: HTMLElement | null;
@@ -186,8 +271,13 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
  *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
+ * @template TPopoverKey - Union of valid popover keys.
  */
-export interface PopoverActions<TData = unknown, TContext = unknown> {
+export interface PopoverActions<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
   /** Updates the shared global context field. */
   setContext: (context: TContext) => void;
 
@@ -204,16 +294,16 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   pushNested: (index: number, entry: TrailEntry<TData>) => void;
 
   /** Toggles a popover's pinned status. Moves it between trail and floating lists. */
-  togglePin: (key: string, rect?: DOMRect) => void;
+  togglePin: (key: TPopoverKey, rect?: DOMRect) => void;
 
   /** Brings a popover and its descendants to the top of the z-index list. */
-  bringToFront: (key: string) => void;
+  bringToFront: (key: TPopoverKey) => void;
 
   /** Closes all popovers at and after a specific virtual index. */
   closeFrom: (index: number, options?: { transition?: boolean }) => void;
 
   /** Updates coordinate offsets from drag events. */
-  updateOffset: (key: string, x: number, y: number) => void;
+  updateOffset: (key: TPopoverKey, x: number, y: number) => void;
 
   /** Resets state completely, aborting all active requests. */
   clear: () => void;
@@ -226,20 +316,20 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
 
   /** Resolves data and opens a root popover. */
   openRootWithResolver: (
-    keyOrName: string,
+    keyOrName: TPopoverKey,
     anchorEvent: AnchorEventLike,
     options?: Readonly<OpenRootOptions>,
   ) => Promise<void>;
 
   /** Resolves data and opens a nested popover from a source parent popover key. */
   openNestedWithResolver: (
-    keyOrName: string,
-    sourceKey: string,
+    keyOrName: TPopoverKey,
+    sourceKey: TPopoverKey,
     options?: Readonly<OpenNestedOptions>,
   ) => Promise<void>;
 
   /** Retries resolving data for an active popover that previously failed to load. */
-  retryPopover: (key: string) => Promise<void>;
+  retryPopover: (key: TPopoverKey) => Promise<void>;
 
   /** Lifecycle cleanup: aborts all in-flight requests and resets state. */
   destroy: () => void;
@@ -251,7 +341,7 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   setCollisionConfig: (config: CollisionConfig | null) => void;
 
   /** Closes a popover by key and cleans up all of its descendants. */
-  closeByKey: (key: string, options?: { transition?: boolean }) => void;
+  closeByKey: (key: TPopoverKey, options?: { transition?: boolean }) => void;
 
   /** Set enableArrowNavigation configuration dynamically. */
   setEnableArrowNavigation: (enable: boolean) => void;
@@ -260,16 +350,16 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
   setDebug: (debug: boolean) => void;
 
   /** Handles mouse hover enter events on popovers. */
-  hoverEnter: (key: string) => void;
+  hoverEnter: (key: TPopoverKey) => void;
 
   /** Handles mouse hover leave events on popovers. */
-  hoverLeave: (key: string, delay?: number) => void;
+  hoverLeave: (key: TPopoverKey, delay?: number) => void;
 
   /** Set cascadeOffsetStep configuration dynamically. */
   setCascadeOffsetStep: (step: number) => void;
 
   /** Updates entry transition status ('mounting' | 'mounted' | 'unmounting'). */
-  setTransitionStatus: (key: string, status: 'mounting' | 'mounted' | 'unmounting') => void;
+  setTransitionStatus: (key: TPopoverKey, status: PopoverTransitionStatus) => void;
 
   /** Set exitTransitionDuration configuration dynamically. */
   setExitTransitionDuration: (duration: number) => void;
@@ -286,11 +376,19 @@ export interface PopoverActions<TData = unknown, TContext = unknown> {
 
 /**
  * Complete representation of the Popover Zustand store state and actions.
+ *
+ * @template TData - The type of resolved data payloads.
+ * @template TContext - The type of global shared context.
+ * @template TPopoverKey - Union of valid popover keys.
  */
-export type PopoverStore<TData = unknown, TContext = unknown> = PopoverStateData<TData, TContext> &
-  PopoverActions<TData, TContext> & {
+export type PopoverStore<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> = PopoverStateData<TData, TContext> &
+  PopoverActions<TData, TContext, TPopoverKey> & {
     actions: Omit<
-      PopoverActions<TData, TContext>,
+      PopoverActions<TData, TContext, TPopoverKey>,
       | 'setContext'
       | 'setResolveData'
       | 'setOwnerId'
@@ -361,55 +459,11 @@ export interface CollisionConfig {
   /** Safety padding margin around the boundary (default: 12 for shift, 0 for flip). */
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
   /** Toggle or configure the Floating UI flip middleware (default: true). */
-  flip?: boolean | Record<string, unknown>;
+  flip?: boolean | Parameters<typeof flip>[0];
   /** Toggle or configure the Floating UI shift middleware (default: true). */
-  shift?: boolean | Record<string, unknown>;
+  shift?: boolean | Parameters<typeof shift>[0];
   /** Toggle or configure the Floating UI size middleware (default: false). */
-  size?: boolean | Record<string, unknown>;
-}
-
-/**
- * Shared display configuration options common to trail entries and open option types.
- */
-export interface PopoverDisplayOptions {
-  /** Custom boundary collision overrides. */
-  collision?: CollisionConfig;
-  /** Hover-trigger options configuration overrides. */
-  hover?: HoverConfig;
-  /** Accessibility description text linked via aria-describedby. */
-  ariaDescribedby?: string;
-  /** True to allow dragging even when the popover is unpinned/trailing. */
-  allowDragWhenUnpinned?: boolean;
-  /** Preferred layout placement direction relative to trigger. */
-  placement?: PopoverPlacement;
-  /** Custom distance gap offset override from trigger in pixels. */
-  offset?: number;
-  /** Custom exit transition duration override in milliseconds. */
-  exitTransitionDuration?: number;
-  /** Custom base z-index layering override. */
-  baseZIndex?: number;
-  /** Custom horizontal/vertical cascade offset step override. */
-  cascadeOffsetStep?: number;
-  /** Custom cascade stacking offset shift direction override. */
-  cascadeOffsetDirection?: 'left' | 'right' | 'top' | 'bottom' | 'none';
-  /** Custom spring tilt effect toggle override. */
-  enableTilt?: boolean;
-  /** Custom max spring tilt angle override. */
-  maxTiltAngle?: number;
-  /** Custom spring tilt speed sensitivity override. */
-  tiltSensitivity?: number;
-  /** Custom lock axis constraints for dragging ('x' | 'y' | 'both'). */
-  dragAxis?: 'x' | 'y' | 'both';
-  /** Custom spring tilt friction coefficient (default: 0.95). */
-  tiltFriction?: number;
-  /** Custom spring tilt inertia decay coefficient (default: 0.82). */
-  tiltDecay?: number;
-  /** Custom CSS animation class applied during mounting. */
-  mountingClassName?: string;
-  /** Custom CSS animation class applied during unmounting. */
-  unmountingClassName?: string;
-  /** Custom CSS animation class applied during mounted. */
-  mountedClassName?: string;
+  size?: boolean | Parameters<typeof size>[0];
 }
 
 /**

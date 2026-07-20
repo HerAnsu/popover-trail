@@ -1,3 +1,27 @@
+/**
+ * popover-trail — Declarative, physics-driven popover trails for React 19.
+ *
+ * @module popover-trail
+ *
+ * @example
+ * ```tsx
+ * import { PopoverProvider, PopoverTrigger, PopoverPortal, usePopover } from 'popover-trail';
+ *
+ * function App() {
+ *   return (
+ *     <PopoverProvider resolveData={async (key) => ({ title: `Data for ${key}` })}>
+ *       <PopoverTrigger popoverKey="card-1">
+ *         <button>Open Card 1</button>
+ *       </PopoverTrigger>
+ *       <PopoverPortal>
+ *         {(entries) => entries.map((entry) => <MyCard key={entry.key} entry={entry} />)}
+ *       </PopoverPortal>
+ *     </PopoverProvider>
+ *   );
+ * }
+ * ```
+ */
+
 export type {
   TrailEntry,
   PopoverResolver,
@@ -10,7 +34,13 @@ export type {
   ClickOutsideConfig,
   AnchorEventLike,
   UsePopoverResult,
+  PopoverTransitionStatus,
+  CascadeOffsetDirection,
+  DragAxis,
+  PopoverKey,
 } from './types';
+
+export { isResolvedEntry } from './types';
 
 export { createPopoverStore } from './store';
 
@@ -28,6 +58,7 @@ export {
   usePopoverOffset,
   usePopoverContext,
   usePopoverActions,
+  usePopoverHydration,
   PopoverPortal,
   usePopoverTrigger,
   usePopoverNestedTrigger,
