@@ -167,6 +167,17 @@ export function createPopoverStore<
         if (debug) {
           console.log('Next State:', nextState);
           console.groupEnd();
+          const devToolsKey = '__REDUX_DEVTOOLS_EXTENSION__';
+          const devTools = (window as unknown as Record<string, unknown>)[devToolsKey] as
+            | { send: (name: string, state: unknown) => void }
+            | undefined;
+          if (devTools) {
+            try {
+              devTools.send('Popover Store Update', nextState);
+            } catch {
+              // Ignore devtools errors
+            }
+          }
         }
         return nextState;
       });
@@ -1093,6 +1104,30 @@ export function createPopoverStore<
       },
       setSlotComponents: (components) => {
         set({ components });
+      },
+      prefetchPopover: async (key, parentData) => {
+        const storeCache = get().cache;
+        if (!storeCache) return undefined;
+
+        try {
+          const rawCached = storeCache.get(key);
+          const cachedVal = isPromise(rawCached) ? await rawCached : rawCached;
+          if (cachedVal !== undefined) return cachedVal as TData;
+
+          const controller = new AbortController();
+          const result = await get().resolveData(
+            key,
+            parentData,
+            get().context ?? undefined,
+            controller.signal,
+          );
+          if (result !== undefined) {
+            void storeCache.set(key, result);
+          }
+          return result;
+        } catch {
+          return undefined;
+        }
       },
     };
 

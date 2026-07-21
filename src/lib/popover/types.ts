@@ -620,6 +620,9 @@ export interface PopoverActions<
 
   /** Configures global component slots overrides. */
   setSlotComponents: (components: PopoverSlotComponents | null) => void;
+
+  /** Prefetches and populates popover data in background cache before user interaction. */
+  prefetchPopover: (key: string, parentData?: TData) => Promise<TData | undefined>;
 }
 
 /**
@@ -636,6 +639,27 @@ export interface PopoverPersistConfig {
   };
   /** Optional filter function selecting which keys to persist. */
   filter?: (key: string) => boolean;
+}
+
+/**
+ * Utility helper to create a VirtualElement / AnchorEventLike object from coordinates.
+ * Useful for opening popovers at mouse clicks, context menus, or canvas coordinates.
+ */
+export function createVirtualElement(x: number, y: number, width = 0, height = 0): AnchorEventLike {
+  return {
+    getBoundingClientRect: () =>
+      ({
+        x,
+        y,
+        left: x,
+        top: y,
+        right: x + width,
+        bottom: y + height,
+        width,
+        height,
+        toJSON: () => ({}),
+      }) as DOMRect,
+  };
 }
 
 /**

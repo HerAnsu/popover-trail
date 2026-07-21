@@ -12,6 +12,17 @@ import type { TrailEntry, PopoverPlacement } from '../types';
 import { usePopoverCollisionConfig, usePopoverStore } from '../context';
 
 /**
+ * Helper to safely measure current viewport bounds across SSR and browser environments.
+ */
+export function getViewportBounds(): { width: number; height: number } {
+  const isClient = typeof window !== 'undefined';
+  return {
+    width: isClient ? window.innerWidth : 1024,
+    height: isClient ? window.innerHeight : 768,
+  };
+}
+
+/**
  * Options parameters for the `usePopoverGeometry` hook.
  */
 interface UsePopoverGeometryOptions {
@@ -217,8 +228,7 @@ export function usePopoverGeometry({
       return entry.pinnedLayoutPos;
     }
 
-    const winWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
-    const winHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+    const { width: winWidth, height: winHeight } = getViewportBounds();
 
     // Handle Responsive Modes & Special Layout Strategies
     if (

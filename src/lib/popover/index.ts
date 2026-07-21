@@ -56,9 +56,14 @@ export {
   getEntryState,
   createPopoverKey,
   createPopoverResolver,
+  createVirtualElement,
 } from './types';
 
 export { createWorkerResolver, type WorkerResolverOptions } from './utils/workerResolver';
+
+export { createPopoverController, type PopoverController } from './utils/popoverController';
+
+export { useEventListener } from './hooks/useEventListener';
 
 export { createPopoverStore } from './store';
 

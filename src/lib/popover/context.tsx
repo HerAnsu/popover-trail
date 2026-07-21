@@ -309,6 +309,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
  */
 export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
   selector: (state: PopoverStore<TData, TContext>) => TSelected,
+  _equalityFn?: (a: TSelected, b: TSelected) => boolean,
 ): TSelected {
   const store = useContext(PopoverStoreContext);
   if (!store) {
@@ -335,18 +336,20 @@ export function usePopoverStoreApi<TData = unknown, TContext = unknown>() {
   return store as unknown as StoreApi<PopoverStore<TData, TContext>>;
 }
 
+
+
 /**
- * Hook to retrieve the active trailing popover entries stack.
+ * Hook to retrieve the active trailing popover cascade array.
  *
  * @template TData - The type of resolved data payloads.
- * @returns Array of active trailing popover entries.
+ * @returns Array of trailing popover entries in order.
  */
 export function usePopoverTrail<TData = unknown>(): readonly TrailEntry<TData>[] {
   return usePopoverStore((state: PopoverStore<TData>) => state.trail);
 }
 
 /**
- * Hook to retrieve the active floating (pinned) popover entries list.
+ * Hook to retrieve the active modeless floating (pinned) popovers array.
  *
  * @template TData - The type of resolved data payloads.
  * @returns Array of floating popover entries.

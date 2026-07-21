@@ -8,9 +8,11 @@ import {
   getEntryState,
   createPopoverKey,
   createPopoverResolver,
+  createVirtualElement,
 } from './types';
 import { SimplePopoverCache } from './utils/cache';
 import { createWorkerResolver } from './utils/workerResolver';
+import { createPopoverController } from './utils/popoverController';
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -1359,6 +1361,34 @@ describe('createPopoverStore', () => {
       // Test setZIndexBaseMap
       store.getState().setZIndexBaseMap({ sidebar: 2000, modal: 9000 });
       expect(store.getState().zIndexBaseMap).toEqual({ sidebar: 2000, modal: 9000 });
+    });
+
+    it('should support createVirtualElement and createPopoverController', () => {
+      const store = createPopoverStore(dummyResolver);
+      const controller = createPopoverController(store);
+
+      const virtualElem = createVirtualElement(150, 300, 200, 50);
+      expect(virtualElem.getBoundingClientRect().top).toBe(300);
+
+      controller.openRoot('owner-ctrl', { key: 'card-ctrl' });
+      expect(controller.getState().trail[0]?.key).toBe('card-ctrl');
+
+      controller.togglePin('card-ctrl');
+      expect(controller.getState().floating.length).toBe(1);
+
+      controller.clear();
+      expect(controller.getState().floating.length).toBe(0);
+    });
+
+    it('should prefetch popover data into cache via prefetchPopover', async () => {
+      const cache = new SimplePopoverCache();
+      const store = createPopoverStore(async (key) => ({ key, prefetched: true }), null, cache);
+
+      const prefetchedData = await store.getState().prefetchPopover('prefetched-item');
+      expect(prefetchedData).toEqual({ key: 'prefetched-item', prefetched: true });
+
+      const cachedResult = await cache.get('prefetched-item');
+      expect(cachedResult).toEqual({ key: 'prefetched-item', prefetched: true });
     });
   });
 });

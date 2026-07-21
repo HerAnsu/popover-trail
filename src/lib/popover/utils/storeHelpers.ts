@@ -543,3 +543,27 @@ export function closeFromState<TData, TContext>(
     ...cleanupPatch,
   };
 }
+
+/**
+ * Safely searches for a TrailEntry by key across both floating and trailing lists.
+ */
+export function findEntryInStore<TData>(
+  floating: readonly TrailEntry<TData>[],
+  trail: readonly TrailEntry<TData>[],
+  key: string,
+): TrailEntry<TData> | undefined {
+  return floating.find((e) => e.key === key) ?? trail.find((e) => e.key === key);
+}
+
+/**
+ * Pure helper for producing clean structural state updates without verbose spreading.
+ */
+export function produceTrailState<TData, TContext>(
+  state: PopoverStateData<TData, TContext>,
+  patch: Partial<PopoverStateData<TData, TContext>>,
+): PopoverStateData<TData, TContext> {
+  return {
+    ...state,
+    ...patch,
+  };
+}
