@@ -336,8 +336,6 @@ export function usePopoverStoreApi<TData = unknown, TContext = unknown>() {
   return store as unknown as StoreApi<PopoverStore<TData, TContext>>;
 }
 
-
-
 /**
  * Hook to retrieve the active trailing popover cascade array.
  *

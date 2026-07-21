@@ -72,6 +72,79 @@ export interface UsePopoverCardResult {
 }
 
 /**
+ * Helper function for handling Arrow navigation and custom keyboard shortcuts on popover cards.
+ */
+export function handleCardKeyboardNavigation(
+  e: React.KeyboardEvent<HTMLElement>,
+  cardElement: HTMLElement | null,
+  entry: TrailEntry,
+  enableArrowNavigation: boolean,
+  isPinned: boolean,
+  trail: readonly TrailEntry[],
+  floatingCount: number,
+  actions: { closeFrom: (index: number) => void },
+): void {
+  // 1. Check custom keyboardShortcuts on entry first
+  if (entry.keyboardShortcuts) {
+    const keyName = e.key;
+    const modKey = (e.metaKey || e.ctrlKey ? 'Mod+' : '') + keyName;
+    const handler = entry.keyboardShortcuts[modKey] ?? entry.keyboardShortcuts[keyName];
+    if (handler) {
+      e.preventDefault();
+      handler(entry.key);
+      return;
+    }
+  }
+
+  if (!enableArrowNavigation) return;
+
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const focusableSelectors = [
+      'a[href]',
+      'area[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      'button:not([disabled])',
+      "[tabindex]:not([tabindex='-1'])",
+    ].join(',');
+
+    if (!cardElement) return;
+    const elements = Array.from(cardElement.querySelectorAll<HTMLElement>(focusableSelectors));
+    if (elements.length === 0) return;
+
+    const activeEl = document.activeElement as HTMLElement;
+    let currentIndex = elements.indexOf(activeEl);
+
+    if (e.key === 'ArrowDown') {
+      currentIndex = (currentIndex + 1) % elements.length;
+    } else {
+      currentIndex = (currentIndex - 1 + elements.length) % elements.length;
+    }
+    elements[currentIndex]?.focus();
+  }
+
+  if (e.key === 'ArrowRight') {
+    const activeEl = document.activeElement as HTMLElement;
+    if (activeEl && (activeEl.tagName === 'BUTTON' || activeEl.tagName === 'A')) {
+      e.preventDefault();
+      activeEl.click();
+    }
+  }
+
+  if (e.key === 'ArrowLeft') {
+    if (!isPinned) {
+      const trailIndex = trail.findIndex((t) => t.key === entry.key);
+      if (trailIndex > 0) {
+        e.preventDefault();
+        actions.closeFrom(floatingCount + trailIndex);
+      }
+    }
+  }
+}
+
+/**
  * A unified composite hook that encapsulates all layout positioning, keyboard/hover controls,
  * focus lock restoration, and actions into a single simple interface.
  * Independent of drag-and-drop libraries.
@@ -248,76 +321,18 @@ export function usePopoverCard({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
-      // 1. Check custom keyboardShortcuts on entry first
-      if (entry.keyboardShortcuts) {
-        const keyName = e.key;
-        const modKey = (e.metaKey || e.ctrlKey ? 'Mod+' : '') + keyName;
-        const handler = entry.keyboardShortcuts[modKey] ?? entry.keyboardShortcuts[keyName];
-        if (handler) {
-          e.preventDefault();
-          handler(entry.key);
-          return;
-        }
-      }
-
-      if (!enableArrowNavigation) return;
-
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        // Find all focusable elements inside the card
-        const focusableSelectors = [
-          'a[href]',
-          'area[href]',
-          'input:not([disabled])',
-          'select:not([disabled])',
-          'textarea:not([disabled])',
-          'button:not([disabled])',
-          "[tabindex]:not([tabindex='-1'])",
-        ].join(',');
-
-        if (!ref.current) return;
-        const elements = Array.from(ref.current.querySelectorAll<HTMLElement>(focusableSelectors));
-        if (elements.length === 0) return;
-
-        const activeEl = document.activeElement as HTMLElement;
-        let currentIndex = elements.indexOf(activeEl);
-
-        if (e.key === 'ArrowDown') {
-          currentIndex = (currentIndex + 1) % elements.length;
-        } else {
-          currentIndex = (currentIndex - 1 + elements.length) % elements.length;
-        }
-        elements[currentIndex]?.focus();
-      }
-
-      if (e.key === 'ArrowRight') {
-        const activeEl = document.activeElement as HTMLElement;
-        // If focused element is a button/link (meaning a nested trigger)
-        if (activeEl && (activeEl.tagName === 'BUTTON' || activeEl.tagName === 'A')) {
-          e.preventDefault();
-          activeEl.click();
-        }
-      }
-
-      if (e.key === 'ArrowLeft') {
-        if (!isPinned) {
-          const trailIndex = trail.findIndex((t) => t.key === entry.key);
-          if (trailIndex > 0) {
-            e.preventDefault();
-            actions.closeFrom(floating.length + trailIndex);
-          }
-        }
-      }
+      handleCardKeyboardNavigation(
+        e,
+        ref.current,
+        entry,
+        enableArrowNavigation,
+        isPinned,
+        trail,
+        floating.length,
+        actions,
+      );
     },
-    [
-      enableArrowNavigation,
-      isPinned,
-      trail,
-      floating.length,
-      entry.key,
-      entry.keyboardShortcuts,
-      actions,
-    ],
+    [enableArrowNavigation, isPinned, trail, floating.length, entry, actions],
   );
 
   const buttonControls = useMemo(
