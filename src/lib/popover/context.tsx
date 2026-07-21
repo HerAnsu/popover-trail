@@ -110,6 +110,15 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
 
   /** Global default CSS animation class applied during mounted (default: 'mounted'). */
   mountedClassName?: string;
+
+  /** Responsive layout transformation mode ('auto' | 'popover' | 'bottom-sheet' | 'modal'). */
+  responsiveMode?: 'auto' | 'popover' | 'bottom-sheet' | 'modal';
+
+  /** Mobile viewport width breakpoint in pixels (default: 640). */
+  mobileBreakpoint?: number;
+
+  /** Active stack group zone ID filter (e.g. 'sidebar', 'canvas', or null for all). */
+  stackGroup?: string | null;
 }
 
 /**
@@ -144,6 +153,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   mountingClassName = 'mounting',
   unmountingClassName = 'unmounting',
   mountedClassName = 'mounted',
+  responsiveMode = 'auto',
+  stackGroup = null,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() =>
@@ -169,6 +180,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     state.setResolveData(resolveData);
     state.setClosePinnedDescendants(Boolean(closePinnedDescendants));
     state.setCollisionConfig(collision ?? null);
+    state.setResponsiveMode(responsiveMode);
+    state.setStackGroupFilter(stackGroup);
   }, [
     enableArrowNavigation,
     debug,
@@ -183,6 +196,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     resolveData,
     closePinnedDescendants,
     collision,
+    responsiveMode,
+    stackGroup,
     store,
   ]);
 

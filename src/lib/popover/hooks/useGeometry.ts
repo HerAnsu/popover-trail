@@ -194,11 +194,58 @@ export function usePopoverGeometry({
     update,
   ]);
 
+  const globalResponsiveMode = usePopoverStore((state) => state.responsiveMode);
+  const mobileBreakpoint = usePopoverStore((state) => state.mobileBreakpoint);
+  const effectiveResponsiveMode = entry?.responsiveMode ?? globalResponsiveMode;
+  const layoutStrategy = entry?.layoutStrategy ?? 'floating-ui';
+
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkMobile = () => {
+      setIsMobileViewport(window.innerWidth < mobileBreakpoint);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [mobileBreakpoint]);
+
   // 5. Calculate the final coordinates
   const finalLayoutPos = useMemo(() => {
     if (isPinned && entry?.pinnedLayoutPos) {
       return entry.pinnedLayoutPos;
     }
+
+    const winWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const winHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+
+    // Handle Responsive Modes & Special Layout Strategies
+    if (
+      effectiveResponsiveMode === 'bottom-sheet' ||
+      (effectiveResponsiveMode === 'auto' && isMobileViewport) ||
+      layoutStrategy === 'docked-bottom'
+    ) {
+      return {
+        top: Math.max(0, winHeight - 320),
+        left: Math.max(0, (winWidth - 400) / 2),
+      };
+    }
+
+    if (effectiveResponsiveMode === 'modal' || layoutStrategy === 'fixed-center') {
+      return {
+        top: Math.max(20, (winHeight - 350) / 2),
+        left: Math.max(20, (winWidth - 400) / 2),
+      };
+    }
+
+    if (layoutStrategy === 'docked-top') {
+      return {
+        top: 10,
+        left: Math.max(0, (winWidth - 400) / 2),
+      };
+    }
+
     // Calculate horizontal/vertical offsets dynamically based on nesting level and custom direction overrides
     const step = entry?.cascadeOffsetStep ?? cascadeOffsetStep;
     const direction =
@@ -224,13 +271,16 @@ export function usePopoverGeometry({
   }, [
     isPinned,
     entry?.pinnedLayoutPos,
+    entry?.cascadeOffsetStep,
+    entry?.cascadeOffsetDirection,
+    effectiveResponsiveMode,
+    isMobileViewport,
+    layoutStrategy,
+    cascadeOffsetStep,
+    resolvedPlacement,
     x,
     y,
     zIndex,
-    cascadeOffsetStep,
-    resolvedPlacement,
-    entry?.cascadeOffsetStep,
-    entry?.cascadeOffsetDirection,
   ]);
 
   return {

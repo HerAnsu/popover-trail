@@ -1258,5 +1258,35 @@ describe('createPopoverStore', () => {
       expect(store.getState().trail[0]?.allowDragWhenPinned).toBe(false);
       expect(store.getState().trail[0]?.allowDragWhenUnpinned).toBe(true);
     });
+
+    it('should support responsiveMode, setStackGroupFilter, layoutStrategy, and keyboardShortcuts', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      // Default responsiveMode is 'auto'
+      expect(store.getState().responsiveMode).toBe('auto');
+
+      // Update responsiveMode dynamically
+      store.getState().setResponsiveMode('bottom-sheet');
+      expect(store.getState().responsiveMode).toBe('bottom-sheet');
+
+      // Update stackGroup filter
+      expect(store.getState().activeStackGroup).toBeNull();
+      store.getState().setStackGroupFilter('sidebar');
+      expect(store.getState().activeStackGroup).toBe('sidebar');
+
+      // Create entry with stackGroup, layoutStrategy, and keyboardShortcuts
+      const shortcutFn = vi.fn();
+      store.getState().openRoot('owner-1', {
+        key: 'universal-card-1',
+        stackGroup: 'sidebar',
+        layoutStrategy: 'fixed-center',
+        keyboardShortcuts: { Escape: shortcutFn },
+      });
+
+      const entry = store.getState().trail[0];
+      expect(entry?.stackGroup).toBe('sidebar');
+      expect(entry?.layoutStrategy).toBe('fixed-center');
+      expect(entry?.keyboardShortcuts?.Escape).toBe(shortcutFn);
+    });
   });
 });

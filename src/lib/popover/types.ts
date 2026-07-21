@@ -84,7 +84,29 @@ export interface PopoverDisplayOptions {
   mountedClassName?: string;
   /** Custom button controls and action toggles configuration settings. */
   buttonControls?: ButtonControlConfig;
+  /** Isolated UI stack group zone ID (e.g. 'sidebar', 'canvas', 'top-bar'). */
+  stackGroup?: string;
+  /** Responsive layout transformation mode ('auto' | 'popover' | 'bottom-sheet' | 'modal'). */
+  responsiveMode?: PopoverResponsiveMode;
+  /** Positioning layout strategy ('floating-ui' | 'fixed-center' | 'docked-bottom' | 'docked-top' | 'custom'). */
+  layoutStrategy?: PopoverLayoutStrategy;
+  /** Custom keyboard shortcuts handler map for this popover card. */
+  keyboardShortcuts?: KeyboardShortcutMap;
 }
+
+/** Responsive layout transformation mode. */
+export type PopoverResponsiveMode = 'auto' | 'popover' | 'bottom-sheet' | 'modal';
+
+/** Positioning layout strategy. */
+export type PopoverLayoutStrategy =
+  | 'floating-ui'
+  | 'fixed-center'
+  | 'docked-bottom'
+  | 'docked-top'
+  | 'custom';
+
+/** Custom keyboard shortcut map. */
+export type KeyboardShortcutMap = Record<string, (key: string) => void>;
 
 /**
  * Configuration options for customizable action controls and button toggles per popover card.
@@ -369,6 +391,12 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   readonly unmountingClassName: string;
   /** Global default CSS animation class applied during mounted. */
   readonly mountedClassName: string;
+  /** Active stack group zone ID filter (e.g. 'sidebar', 'canvas', or null for all). */
+  readonly activeStackGroup: string | null;
+  /** Global responsive layout transformation mode. */
+  readonly responsiveMode: PopoverResponsiveMode;
+  /** Mobile viewport width breakpoint in pixels. */
+  readonly mobileBreakpoint: number;
 }
 
 /**
@@ -535,6 +563,12 @@ export interface PopoverActions<
     control: 'enablePin' | 'enableClose' | 'enableDrag',
     enabled?: boolean,
   ) => void;
+
+  /** Filters active popovers by stack group zone ID (e.g. 'sidebar', 'canvas', or null for all). */
+  setStackGroupFilter: (group: string | null) => void;
+
+  /** Configures global responsive mode ('auto' | 'popover' | 'bottom-sheet' | 'modal'). */
+  setResponsiveMode: (mode: PopoverResponsiveMode) => void;
 }
 
 /**

@@ -39,9 +39,21 @@ export type {
   CascadeOffsetDirection,
   DragAxis,
   PopoverKey,
+  ButtonControlConfig,
+  PopoverResponsiveMode,
+  PopoverLayoutStrategy,
+  KeyboardShortcutMap,
+  PopoverEntryDiscriminatedState,
 } from './types';
 
-export { isResolvedEntry } from './types';
+export {
+  isResolvedEntry,
+  isLoadingEntry,
+  isErrorEntry,
+  getEntryState,
+  createPopoverKey,
+  createPopoverResolver,
+} from './types';
 
 export { createPopoverStore } from './store';
 

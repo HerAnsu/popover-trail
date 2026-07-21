@@ -292,6 +292,10 @@ export function createPopoverStore<
         unmountingClassName: options?.unmountingClassName,
         mountedClassName: options?.mountedClassName,
         buttonControls: options?.buttonControls ?? existingEntry?.buttonControls,
+        stackGroup: options?.stackGroup ?? existingEntry?.stackGroup,
+        responsiveMode: options?.responsiveMode ?? existingEntry?.responsiveMode,
+        layoutStrategy: options?.layoutStrategy ?? existingEntry?.layoutStrategy,
+        keyboardShortcuts: options?.keyboardShortcuts ?? existingEntry?.keyboardShortcuts,
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
@@ -1058,6 +1062,12 @@ export function createPopoverStore<
           }),
         );
       },
+      setStackGroupFilter: (group) => {
+        set({ activeStackGroup: group });
+      },
+      setResponsiveMode: (mode) => {
+        set({ responsiveMode: mode });
+      },
     };
 
     return {
@@ -1085,6 +1095,9 @@ export function createPopoverStore<
       mountingClassName: 'mounting',
       unmountingClassName: 'unmounting',
       mountedClassName: 'mounted',
+      activeStackGroup: null,
+      responsiveMode: 'auto' as const,
+      mobileBreakpoint: 640,
 
       ...actions,
       actions,

@@ -220,6 +220,18 @@ export function usePopoverCard({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
+      // 1. Check custom keyboardShortcuts on entry first
+      if (entry.keyboardShortcuts) {
+        const keyName = e.key;
+        const modKey = (e.metaKey || e.ctrlKey ? 'Mod+' : '') + keyName;
+        const handler = entry.keyboardShortcuts[modKey] ?? entry.keyboardShortcuts[keyName];
+        if (handler) {
+          e.preventDefault();
+          handler(entry.key);
+          return;
+        }
+      }
+
       if (!enableArrowNavigation) return;
 
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -269,7 +281,15 @@ export function usePopoverCard({
         }
       }
     },
-    [enableArrowNavigation, isPinned, trail, floating.length, entry.key, actions],
+    [
+      enableArrowNavigation,
+      isPinned,
+      trail,
+      floating.length,
+      entry.key,
+      entry.keyboardShortcuts,
+      actions,
+    ],
   );
 
   const buttonControls = useMemo(
