@@ -26,6 +26,8 @@ import type {
   UsePopoverResult,
   AnchorEventLike,
   FocusLockOptions,
+  PopoverSlotComponents,
+  ZIndexBaseMap,
 } from './types';
 
 /**
@@ -123,6 +125,12 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
 
   /** Global default focus lock options. */
   focusLockOptions?: FocusLockOptions;
+
+  /** Global component slots overrides. */
+  components?: PopoverSlotComponents;
+
+  /** Base z-index depth offsets per stack group ID. */
+  zIndexBaseMap?: ZIndexBaseMap;
 }
 
 /**
@@ -159,6 +167,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   mountedClassName = 'mounted',
   responsiveMode = 'auto',
   stackGroup = null,
+  components,
+  zIndexBaseMap,
 }: PopoverProviderProps<TData, TContext>) {
   // Use useState to instantiate the store once
   const [store] = useState(() =>
@@ -186,6 +196,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     state.setCollisionConfig(collision ?? null);
     state.setResponsiveMode(responsiveMode);
     state.setStackGroupFilter(stackGroup);
+    state.setSlotComponents(components ?? null);
+    state.setZIndexBaseMap(zIndexBaseMap ?? null);
   }, [
     enableArrowNavigation,
     debug,
@@ -202,6 +214,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     collision,
     responsiveMode,
     stackGroup,
+    components,
+    zIndexBaseMap,
     store,
   ]);
 

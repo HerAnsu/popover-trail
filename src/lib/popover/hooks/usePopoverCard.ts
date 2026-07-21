@@ -214,6 +214,10 @@ export function usePopoverCard({
     transitionClassName = unmountingClass;
   }
 
+  const zIndexBaseMap = usePopoverStore((state) => state.zIndexBaseMap);
+  const groupBaseZIndex = entry.stackGroup ? zIndexBaseMap?.[entry.stackGroup] : undefined;
+  const effectiveBaseZIndex = entry.baseZIndex ?? groupBaseZIndex ?? baseZIndex ?? 1000;
+
   // Compile styles using the compiler utility (static offsets only)
   const style = getPopoverStyles({
     finalLayoutPos,
@@ -221,7 +225,7 @@ export function usePopoverCard({
     dragX: 0,
     dragY: 0,
     rotation: 0,
-    zIndex: zIndex + (entry.baseZIndex ?? baseZIndex ?? 1000),
+    zIndex: zIndex + effectiveBaseZIndex,
   });
 
   const setCombinedRef = useCallback(

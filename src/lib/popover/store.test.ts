@@ -1317,5 +1317,48 @@ describe('createPopoverStore', () => {
       const result = await inlineWorkerResolver('item-123');
       expect(result).toEqual({ workerResult: 'Data for item-123' });
     });
+
+    it('should support lifecycle callbacks onOpen, onPin, onError and setZIndexBaseMap', async () => {
+      const onOpenFn = vi.fn();
+      const onPinFn = vi.fn();
+
+      const store = createPopoverStore(async (key) => {
+        if (key === 'error-key') throw new Error('Failed to resolve');
+        return { loadedKey: key };
+      });
+
+      // Test onOpen & onPin callbacks
+      await store.getState().openRootWithResolver(
+        'root-1',
+        { getBoundingClientRect: () => new DOMRect() },
+        {
+          key: 'root-1',
+          onOpen: onOpenFn,
+          onPin: onPinFn,
+        },
+      );
+
+      expect(onOpenFn).toHaveBeenCalledTimes(1);
+
+      store.getState().togglePin('root-1');
+      expect(onPinFn).toHaveBeenCalledWith('root-1', true);
+
+      // Test onError callback
+      const onErrorFn = vi.fn();
+      await store.getState().openRootWithResolver(
+        'error-key',
+        { getBoundingClientRect: () => new DOMRect() },
+        {
+          key: 'error-key',
+          onError: onErrorFn,
+        },
+      );
+
+      expect(onErrorFn).toHaveBeenCalledTimes(1);
+
+      // Test setZIndexBaseMap
+      store.getState().setZIndexBaseMap({ sidebar: 2000, modal: 9000 });
+      expect(store.getState().zIndexBaseMap).toEqual({ sidebar: 2000, modal: 9000 });
+    });
   });
 });

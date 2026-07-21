@@ -297,6 +297,10 @@ export function createPopoverStore<
         layoutStrategy: options?.layoutStrategy ?? existingEntry?.layoutStrategy,
         keyboardShortcuts: options?.keyboardShortcuts ?? existingEntry?.keyboardShortcuts,
         focusLockOptions: options?.focusLockOptions ?? existingEntry?.focusLockOptions,
+        onOpen: options?.onOpen ?? existingEntry?.onOpen,
+        onClose: options?.onClose ?? existingEntry?.onClose,
+        onPin: options?.onPin ?? existingEntry?.onPin,
+        onError: options?.onError ?? existingEntry?.onError,
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
@@ -314,7 +318,9 @@ export function createPopoverStore<
       }
 
       if (cachedVal !== undefined) {
-        set(insertStatePatch(buildEntry(cachedVal)));
+        const entry = buildEntry(cachedVal);
+        set(insertStatePatch(entry));
+        options?.onOpen?.(entry);
         activeControllers.delete(controllerKey);
         inFlightPromises.delete(key);
         return;
@@ -340,7 +346,9 @@ export function createPopoverStore<
           }
         } catch (err) {
           const errorObj = err instanceof Error ? err : new Error(String(err));
-          set(insertStatePatch(buildEntry(undefined, errorObj)));
+          const entry = buildEntry(undefined, errorObj);
+          set(insertStatePatch(entry));
+          options?.onError?.(errorObj, key);
           activeControllers.delete(controllerKey);
           inFlightPromises.delete(key);
           return;
@@ -350,7 +358,9 @@ export function createPopoverStore<
       }
 
       if (!isPromise<TData>(resultOrPromise)) {
-        set(insertStatePatch(buildEntry(resultOrPromise)));
+        const entry = buildEntry(resultOrPromise);
+        set(insertStatePatch(entry));
+        options?.onOpen?.(entry);
         if (storeCache && resultOrPromise !== undefined) {
           void storeCache.set(key, resultOrPromise);
         }
@@ -360,7 +370,8 @@ export function createPopoverStore<
       }
 
       const startedCounter = incrementCounter();
-      set(insertStatePatch(buildEntry(undefined, null, true)));
+      const loadingEntry = buildEntry(undefined, null, true);
+      set(insertStatePatch(loadingEntry));
 
       try {
         const resolved = await resultOrPromise;
@@ -371,11 +382,16 @@ export function createPopoverStore<
         }
 
         updateEntryStateInLists({ isLoading: false, data: resolved, error: null });
+        const updatedEntry = findEntryByKey(key);
+        if (updatedEntry) {
+          options?.onOpen?.(updatedEntry);
+        }
       } catch (err) {
         if (controller.signal.aborted || isStale(startedCounter)) return;
         const errorObj = err instanceof Error ? err : new Error(String(err));
 
         updateEntryStateInLists({ isLoading: false, error: errorObj });
+        options?.onError?.(errorObj, key);
       } finally {
         if (activeControllers.get(controllerKey) === controller) {
           activeControllers.delete(controllerKey);
@@ -434,6 +450,9 @@ export function createPopoverStore<
         pushSnapshot(getCurrentState());
         clearHoverTimer(key);
         set((state) => togglePinState(state, key, rect));
+        const entry = findEntryByKey(key);
+        const isPinned = get().floating.some((e) => e.key === key);
+        entry?.onPin?.(key, isPinned);
       },
 
       bringToFront: (key) => {
@@ -1069,6 +1088,12 @@ export function createPopoverStore<
       setResponsiveMode: (mode) => {
         set({ responsiveMode: mode });
       },
+      setZIndexBaseMap: (map) => {
+        set({ zIndexBaseMap: map });
+      },
+      setSlotComponents: (components) => {
+        set({ components });
+      },
     };
 
     return {
@@ -1099,6 +1124,8 @@ export function createPopoverStore<
       activeStackGroup: null,
       responsiveMode: 'auto' as const,
       mobileBreakpoint: 640,
+      components: null,
+      zIndexBaseMap: null,
 
       ...actions,
       actions,

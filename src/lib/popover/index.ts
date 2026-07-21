@@ -45,6 +45,8 @@ export type {
   KeyboardShortcutMap,
   PopoverEntryDiscriminatedState,
   FocusLockOptions,
+  PopoverSlotComponents,
+  ZIndexBaseMap,
 } from './types';
 
 export {

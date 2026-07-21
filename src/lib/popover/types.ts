@@ -94,6 +94,31 @@ export interface PopoverDisplayOptions {
   keyboardShortcuts?: KeyboardShortcutMap;
   /** WAI-ARIA Focus lock (focus trapping) and accessibility configuration settings. */
   focusLockOptions?: FocusLockOptions;
+  /** Lifecycle callback triggered when this popover card finishes resolving and opens. */
+  onOpen?: (entry: TrailEntry<unknown>) => void;
+  /** Lifecycle callback triggered when this popover card closes. */
+  onClose?: (key: string) => void;
+  /** Lifecycle callback triggered when this popover card is pinned or unpinned. */
+  onPin?: (key: string, isPinned: boolean) => void;
+  /** Lifecycle callback triggered when data resolution fails. */
+  onError?: (error: Error, key: string) => void;
+}
+
+/** Map of base z-index layering depth offsets per stack group ID. */
+export type ZIndexBaseMap = Record<string, number>;
+
+/**
+ * Global component slots override interface for PopoverProvider.
+ */
+export interface PopoverSlotComponents {
+  /** Custom Pin/Unpin action button component. */
+  PinButton?: React.ComponentType<{ isPinned: boolean; onClick: () => void; keyId: string }>;
+  /** Custom Close action button component. */
+  CloseButton?: React.ComponentType<{ onClick: () => void; keyId: string }>;
+  /** Custom Loading spinner component. */
+  LoadingSpinner?: React.ComponentType<{ keyId: string }>;
+  /** Custom Error fallback component. */
+  ErrorFallback?: React.ComponentType<{ error: Error; onRetry: () => void; keyId: string }>;
 }
 
 /**
@@ -413,6 +438,10 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   readonly responsiveMode: PopoverResponsiveMode;
   /** Mobile viewport width breakpoint in pixels. */
   readonly mobileBreakpoint: number;
+  /** Global component slots overrides. */
+  readonly components: PopoverSlotComponents | null;
+  /** Base z-index depth offsets per stack group ID. */
+  readonly zIndexBaseMap: ZIndexBaseMap | null;
 }
 
 /**
@@ -585,6 +614,12 @@ export interface PopoverActions<
 
   /** Configures global responsive mode ('auto' | 'popover' | 'bottom-sheet' | 'modal'). */
   setResponsiveMode: (mode: PopoverResponsiveMode) => void;
+
+  /** Sets base z-index depth offsets per stack group ID. */
+  setZIndexBaseMap: (map: ZIndexBaseMap | null) => void;
+
+  /** Configures global component slots overrides. */
+  setSlotComponents: (components: PopoverSlotComponents | null) => void;
 }
 
 /**
