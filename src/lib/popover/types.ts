@@ -678,6 +678,41 @@ export type PopoverStoreEvent<TData = unknown> =
   | { type: 'resolve_error'; key: string; error: Error }
   | { type: 'clear' };
 
+/** Type guard for 'open_root' event. */
+export function isOpenRootEvent<TData>(
+  event: PopoverStoreEvent<TData>,
+): event is Extract<PopoverStoreEvent<TData>, { type: 'open_root' }> {
+  return event.type === 'open_root';
+}
+
+/** Type guard for 'push_nested' event. */
+export function isPushNestedEvent<TData>(
+  event: PopoverStoreEvent<TData>,
+): event is Extract<PopoverStoreEvent<TData>, { type: 'push_nested' }> {
+  return event.type === 'push_nested';
+}
+
+/** Type guard for 'close' event. */
+export function isCloseEvent<TData>(
+  event: PopoverStoreEvent<TData>,
+): event is Extract<PopoverStoreEvent<TData>, { type: 'close' }> {
+  return event.type === 'close';
+}
+
+/** Type guard for 'pin' event. */
+export function isPinEvent<TData>(
+  event: PopoverStoreEvent<TData>,
+): event is Extract<PopoverStoreEvent<TData>, { type: 'pin' }> {
+  return event.type === 'pin';
+}
+
+/** Type guard for 'resolve_error' event. */
+export function isResolveErrorEvent<TData>(
+  event: PopoverStoreEvent<TData>,
+): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_error' }> {
+  return event.type === 'resolve_error';
+}
+
 /**
  * Complete representation of the Popover Zustand store state and actions.
  *

@@ -13,6 +13,7 @@ import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
 import { createPopoverStore } from './store';
+import { invariant } from './utils/invariant';
 import type {
   PopoverStore,
   PopoverResolver,
@@ -36,6 +37,7 @@ import type {
  * @internal
  */
 const PopoverStoreContext = createContext<StoreApi<PopoverStore> | null>(null);
+PopoverStoreContext.displayName = 'PopoverStoreContext';
 
 /**
  * Context container holding the current Popover card's unique key ID.
@@ -43,6 +45,7 @@ const PopoverStoreContext = createContext<StoreApi<PopoverStore> | null>(null);
  * their parent popover key automatically.
  */
 export const PopoverCardContext = createContext<string | null>(null);
+PopoverCardContext.displayName = 'PopoverCardContext';
 
 /**
  * Props for the {@link PopoverProvider} component.
@@ -312,9 +315,7 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
   _equalityFn?: (a: TSelected, b: TSelected) => boolean,
 ): TSelected {
   const store = useContext(PopoverStoreContext);
-  if (!store) {
-    throw new Error('usePopoverStore must be used within a PopoverProvider');
-  }
+  invariant(store, 'usePopoverStore must be used within a PopoverProvider');
   return useStore(store, selector as (state: PopoverStore) => TSelected);
 }
 
@@ -330,9 +331,7 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
  */
 export function usePopoverStoreApi<TData = unknown, TContext = unknown>() {
   const store = useContext(PopoverStoreContext);
-  if (!store) {
-    throw new Error('usePopoverStoreApi must be used within a PopoverProvider');
-  }
+  invariant(store, 'usePopoverStoreApi must be used within a PopoverProvider');
   return store as unknown as StoreApi<PopoverStore<TData, TContext>>;
 }
 

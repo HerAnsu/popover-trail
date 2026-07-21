@@ -9,11 +9,15 @@ import {
   createPopoverKey,
   createPopoverResolver,
   createVirtualElement,
+  isOpenRootEvent,
+  isPinEvent,
 } from './types';
 import { SimplePopoverCache } from './utils/cache';
 import { createWorkerResolver } from './utils/workerResolver';
 import { createPopoverController } from './utils/popoverController';
 import { getPopoverStyles } from './utils/styles';
+import { invariant } from './utils/invariant';
+import { clampDragCoordinates, computeTiltMatrix, applyDragFriction } from './utils/dragMath';
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -1419,6 +1423,34 @@ describe('createPopoverStore', () => {
       expect(stats.hits).toBe(1);
       expect(stats.misses).toBe(1);
       expect(stats.hitRatio).toBe(0.5);
+    });
+
+    it('should throw standardized error when invariant assertion fails', () => {
+      expect(() => invariant(true, 'OK')).not.toThrow();
+      expect(() => invariant(false, 'Must be within provider')).toThrow(
+        '[Popover Trail] Must be within provider',
+      );
+    });
+
+    it('should calculate drag coordinates, tilt matrix, and friction in dragMath', () => {
+      const clamped = clampDragCoordinates(150, 250, { maxX: 100, maxY: 200 });
+      expect(clamped).toEqual({ x: 100, y: 200 });
+
+      const tilt = computeTiltMatrix(50, -20);
+      expect(tilt.rotationX).toBeGreaterThan(0);
+      expect(tilt.rotationY).toBeGreaterThan(0);
+
+      const friction = applyDragFriction(100, 0.2);
+      expect(friction).toBe(80);
+    });
+
+    it('should validate Event Bus type guards correctly', () => {
+      const openEvent = { type: 'open_root', key: 'card-1', ownerId: 'owner-1' } as const;
+      const pinEvent = { type: 'pin', key: 'card-1' } as const;
+
+      expect(isOpenRootEvent(openEvent)).toBe(true);
+      expect(isOpenRootEvent(pinEvent)).toBe(false);
+      expect(isPinEvent(pinEvent)).toBe(true);
     });
   });
 });

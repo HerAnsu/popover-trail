@@ -567,3 +567,27 @@ export function produceTrailState<TData, TContext>(
     ...patch,
   };
 }
+
+/**
+ * Safely partitions the trail array at target index, preserving referential equality
+ * if no items are truncated.
+ */
+export function splitTrailAtIndex<TData>(
+  trail: readonly TrailEntry<TData>[],
+  index: number,
+): readonly TrailEntry<TData>[] {
+  if (index >= trail.length - 1) return trail;
+  return trail.slice(0, index + 1);
+}
+
+/**
+ * Compares two arrays for shallow element equality.
+ */
+export function shallowArrayEqual<T>(a: readonly T[], b: readonly T[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}

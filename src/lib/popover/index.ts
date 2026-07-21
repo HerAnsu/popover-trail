@@ -57,6 +57,11 @@ export {
   createPopoverKey,
   createPopoverResolver,
   createVirtualElement,
+  isOpenRootEvent,
+  isPushNestedEvent,
+  isCloseEvent,
+  isPinEvent,
+  isResolveErrorEvent,
 } from './types';
 
 export { createWorkerResolver, type WorkerResolverOptions } from './utils/workerResolver';
@@ -64,6 +69,10 @@ export { createWorkerResolver, type WorkerResolverOptions } from './utils/worker
 export { createPopoverController, type PopoverController } from './utils/popoverController';
 
 export { useEventListener } from './hooks/useEventListener';
+
+export { invariant } from './utils/invariant';
+
+export { clampDragCoordinates, computeTiltMatrix, applyDragFriction } from './utils/dragMath';
 
 export { createPopoverStore } from './store';
 

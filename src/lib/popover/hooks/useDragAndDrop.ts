@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DragAxis } from '../types';
+import { computeTiltMatrix } from '../utils/dragMath';
 
 /**
  * Options parameters for the `usePopoverDragAndDrop` hook.
@@ -99,15 +100,14 @@ export function usePopoverDragAndDrop({
 
         const curr = rotationRef.current;
 
-        // rotateY is affected by horizontal velocity X
-        const nextY =
-          curr.y * tiltFriction + velocityX * tiltSensitivity * (1 - tiltFriction) * 1.5;
-        const boundedY = Math.max(-maxTiltAngle, Math.min(maxTiltAngle, nextY));
-
-        // rotateX is affected by vertical velocity Y
-        const nextX =
-          curr.x * tiltFriction - velocityY * tiltSensitivity * (1 - tiltFriction) * 1.5;
-        const boundedX = Math.max(-maxTiltAngle, Math.min(maxTiltAngle, nextX));
+        const tiltMatrix = computeTiltMatrix(
+          velocityX * (1 - tiltFriction) * 1.5,
+          velocityY * (1 - tiltFriction) * 1.5,
+          maxTiltAngle,
+          tiltSensitivity,
+        );
+        const boundedX = curr.x * tiltFriction + tiltMatrix.rotationX;
+        const boundedY = curr.y * tiltFriction + tiltMatrix.rotationY;
 
         // rotateZ is a slight flat tilt based on X velocity
         const nextZ =

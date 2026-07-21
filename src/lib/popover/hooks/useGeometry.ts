@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEventListener } from './useEventListener';
 import {
   useFloating,
   offset,
@@ -212,15 +213,17 @@ export function usePopoverGeometry({
 
   const [isMobileViewport, setIsMobileViewport] = useState(false);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const checkMobile = () => {
+  const checkMobile = useCallback(() => {
+    if (typeof window !== 'undefined') {
       setIsMobileViewport(window.innerWidth < mobileBreakpoint);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    }
   }, [mobileBreakpoint]);
+
+  useEffect(() => {
+    checkMobile();
+  }, [checkMobile]);
+
+  useEventListener('resize', checkMobile);
 
   // 5. Calculate the final coordinates
   const finalLayoutPos = useMemo(() => {
