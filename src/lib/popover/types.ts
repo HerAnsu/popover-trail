@@ -92,6 +92,22 @@ export interface PopoverDisplayOptions {
   layoutStrategy?: PopoverLayoutStrategy;
   /** Custom keyboard shortcuts handler map for this popover card. */
   keyboardShortcuts?: KeyboardShortcutMap;
+  /** WAI-ARIA Focus lock (focus trapping) and accessibility configuration settings. */
+  focusLockOptions?: FocusLockOptions;
+}
+
+/**
+ * Configuration options for WAI-ARIA Focus Lock (Focus Trapping) and accessibility controls.
+ */
+export interface FocusLockOptions {
+  /** If true, enables Focus Lock (focus trapping) inside this popover card (default: false for popovers, true for modals). */
+  enabled?: boolean;
+  /** Custom CSS selector or callback returning element to auto-focus when opened. */
+  autoFocusElement?: string | (() => HTMLElement | null);
+  /** If true, restores focus to the previously focused element when closed (default: true). */
+  returnFocus?: boolean;
+  /** If true, locks body scrolling while active (default: false). */
+  lockScroll?: boolean;
 }
 
 /** Responsive layout transformation mode. */

@@ -296,6 +296,7 @@ export function createPopoverStore<
         responsiveMode: options?.responsiveMode ?? existingEntry?.responsiveMode,
         layoutStrategy: options?.layoutStrategy ?? existingEntry?.layoutStrategy,
         keyboardShortcuts: options?.keyboardShortcuts ?? existingEntry?.keyboardShortcuts,
+        focusLockOptions: options?.focusLockOptions ?? existingEntry?.focusLockOptions,
       });
 
       const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {

@@ -25,6 +25,7 @@ import type {
   TrailEntry,
   UsePopoverResult,
   AnchorEventLike,
+  FocusLockOptions,
 } from './types';
 
 /**
@@ -119,6 +120,9 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
 
   /** Active stack group zone ID filter (e.g. 'sidebar', 'canvas', or null for all). */
   stackGroup?: string | null;
+
+  /** Global default focus lock options. */
+  focusLockOptions?: FocusLockOptions;
 }
 
 /**

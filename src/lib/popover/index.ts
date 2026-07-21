@@ -44,6 +44,7 @@ export type {
   PopoverLayoutStrategy,
   KeyboardShortcutMap,
   PopoverEntryDiscriminatedState,
+  FocusLockOptions,
 } from './types';
 
 export {
@@ -54,6 +55,8 @@ export {
   createPopoverKey,
   createPopoverResolver,
 } from './types';
+
+export { createWorkerResolver, type WorkerResolverOptions } from './utils/workerResolver';
 
 export { createPopoverStore } from './store';
 

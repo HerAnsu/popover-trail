@@ -97,6 +97,8 @@ export function usePopoverCard({
     const cardElement = ref.current;
 
     return () => {
+      if (entry.focusLockOptions?.returnFocus === false) return;
+
       const elementToFocus = previouslyFocusedElementRef.current;
       const isStillInDom = elementToFocus && document.body.contains(elementToFocus);
 
@@ -132,7 +134,29 @@ export function usePopoverCard({
         }
       }
     };
-  }, [entry.parentKey]);
+  }, [entry.parentKey, entry.focusLockOptions?.returnFocus]);
+
+  // Handle custom autoFocusElement option on mount
+  useEffect(() => {
+    if (!entry.focusLockOptions?.autoFocusElement || typeof document === 'undefined') return;
+    const target =
+      typeof entry.focusLockOptions.autoFocusElement === 'function'
+        ? entry.focusLockOptions.autoFocusElement()
+        : document.querySelector<HTMLElement>(entry.focusLockOptions.autoFocusElement);
+    if (target && typeof target.focus === 'function') {
+      target.focus();
+    }
+  }, [entry.focusLockOptions, entry.focusLockOptions?.autoFocusElement]);
+
+  // Handle optional body scroll locking while card is active
+  useEffect(() => {
+    if (!entry.focusLockOptions?.lockScroll || typeof document === 'undefined') return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [entry.focusLockOptions?.lockScroll]);
 
   // Geometry positioning setup
   const { finalLayoutPos, setFloating } = usePopoverGeometry({

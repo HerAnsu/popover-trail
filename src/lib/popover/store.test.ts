@@ -10,6 +10,7 @@ import {
   createPopoverResolver,
 } from './types';
 import { SimplePopoverCache } from './utils/cache';
+import { createWorkerResolver } from './utils/workerResolver';
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -1287,6 +1288,34 @@ describe('createPopoverStore', () => {
       expect(entry?.stackGroup).toBe('sidebar');
       expect(entry?.layoutStrategy).toBe('fixed-center');
       expect(entry?.keyboardShortcuts?.Escape).toBe(shortcutFn);
+    });
+
+    it('should support focusLockOptions on popover entries', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', {
+        key: 'focus-card-1',
+        focusLockOptions: {
+          enabled: true,
+          autoFocusElement: '#input-1',
+          returnFocus: true,
+          lockScroll: true,
+        },
+      });
+
+      const entry = store.getState().trail[0];
+      expect(entry?.focusLockOptions?.enabled).toBe(true);
+      expect(entry?.focusLockOptions?.autoFocusElement).toBe('#input-1');
+      expect(entry?.focusLockOptions?.lockScroll).toBe(true);
+    });
+
+    it('should support createWorkerResolver fallback in node/test environment', async () => {
+      const inlineWorkerResolver = createWorkerResolver(async (key) => ({
+        workerResult: `Data for ${key}`,
+      }));
+
+      const result = await inlineWorkerResolver('item-123');
+      expect(result).toEqual({ workerResult: 'Data for item-123' });
     });
   });
 });
