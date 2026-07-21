@@ -65,17 +65,6 @@ export { createPopoverController, type PopoverController } from './utils/popover
 
 export { useEventListener } from './hooks/useEventListener';
 
-export {
-  DefaultPinButton,
-  DefaultCloseButton,
-  DefaultLoadingSpinner,
-  DefaultErrorFallback,
-  type PinButtonProps,
-  type CloseButtonProps,
-  type LoadingSpinnerProps,
-  type ErrorFallbackProps,
-} from './components/SlotComponents';
-
 export { createPopoverStore } from './store';
 
 export {

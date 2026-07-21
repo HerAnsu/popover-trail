@@ -3,15 +3,9 @@ import type { PopoverCache } from '../types';
 /**
  * A standard, generic in-memory cache implementation of PopoverCache
  * supporting automatic time-to-live (TTL) record expiration, maximum size
- * eviction, and lazy cleanup.
+ * eviction, background garbage collection, and hit/miss statistics.
  *
  * @template TData - The type of data stored inside the cache entries.
- *
- * @remarks
- * Expiration checks are lazy; expired items are automatically evicted
- * and deleted from the internal Map upon calling {@link get}.
- * When the cache exceeds {@link maxSize}, the oldest entry is evicted
- * on insertion (FIFO eviction policy).
  *
  * @example
  * ```typescript
@@ -24,16 +18,24 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
   private readonly cache = new Map<string, { data: TData; expiry: number }>();
   private readonly ttl: number;
   private readonly maxSize: number;
+  private hitsCount = 0;
+  private missesCount = 0;
+  private autoPruneTimer: ReturnType<typeof setInterval> | null = null;
 
   /**
    * Creates an instance of SimplePopoverCache.
    *
    * @param ttlMs - Time-to-live duration in milliseconds (default: 5 minutes / 300000ms).
    * @param maxSize - Maximum number of entries before FIFO eviction (default: 500).
+   * @param autoPruneIntervalMs - Optional background auto-prune interval in ms (default: 0 / disabled).
    */
-  constructor(ttlMs = 5 * 60 * 1000, maxSize = 500) {
+  constructor(ttlMs = 5 * 60 * 1000, maxSize = 500, autoPruneIntervalMs = 0) {
     this.ttl = ttlMs;
     this.maxSize = maxSize;
+
+    if (autoPruneIntervalMs > 0 && typeof setInterval !== 'undefined') {
+      this.autoPruneTimer = setInterval(() => this.pruneExpired(), autoPruneIntervalMs);
+    }
   }
 
   /**
@@ -43,28 +45,30 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @returns True if a valid (non-expired) entry exists.
    */
   has(key: string): boolean {
-    return this.get(key) !== undefined;
+    const entry = this.cache.get(key);
+    return Boolean(entry && Date.now() <= entry.expiry);
   }
 
   /**
    * Retrieves a cached entry if it exists and has not expired yet.
-   *
-   * @remarks
-   * If the item is found but its expiration timestamp has passed,
-   * it will be deleted from the cache map and `undefined` will be returned.
    *
    * @param key - The unique cache key.
    * @returns The cached data payload if valid; otherwise `undefined`.
    */
   get(key: string): TData | undefined {
     const entry = this.cache.get(key);
-    if (!entry) return undefined;
-
-    if (Date.now() > entry.expiry) {
-      this.cache.delete(key);
+    if (!entry) {
+      this.missesCount++;
       return undefined;
     }
 
+    if (Date.now() > entry.expiry) {
+      this.cache.delete(key);
+      this.missesCount++;
+      return undefined;
+    }
+
+    this.hitsCount++;
     return entry.data;
   }
 
@@ -76,11 +80,9 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @param data - The data payload to cache.
    */
   set(key: string, data: TData): void {
-    // If key exists, delete it first so re-insertion updates Map key order
     if (this.cache.has(key)) {
       this.cache.delete(key);
     } else if (this.cache.size >= this.maxSize) {
-      // Evict oldest entry if at capacity
       const oldestKey = this.cache.keys().next().value;
       if (oldestKey !== undefined) {
         this.cache.delete(oldestKey);
@@ -115,7 +117,30 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
   }
 
   /**
-   * Returns the current number of active cached items (including any un-pruned expired items).
+   * Returns hit/miss performance statistics for cache auditing.
+   */
+  stats(): { size: number; hits: number; misses: number; hitRatio: number } {
+    const total = this.hitsCount + this.missesCount;
+    return {
+      size: this.cache.size,
+      hits: this.hitsCount,
+      misses: this.missesCount,
+      hitRatio: total > 0 ? this.hitsCount / total : 0,
+    };
+  }
+
+  /**
+   * Stops background auto-prune interval timer and resets statistics.
+   */
+  destroy(): void {
+    if (this.autoPruneTimer) {
+      clearInterval(this.autoPruneTimer);
+      this.autoPruneTimer = null;
+    }
+  }
+
+  /**
+   * Returns the current number of active cached items.
    */
   get size(): number {
     return this.cache.size;
@@ -126,5 +151,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    */
   clear(): void {
     this.cache.clear();
+    this.hitsCount = 0;
+    this.missesCount = 0;
   }
 }

@@ -22,6 +22,9 @@ interface GetPopoverStylesParams {
   readonly zIndex?: number;
 }
 
+const styleMemoCache = new Map<string, CSSProperties>();
+const MAX_MEMO_CACHE_SIZE = 128;
+
 /**
  * Computes the absolute layout coordinates, drag-and-drop translations,
  * and rotation physics angles into a single React CSSProperties style object.
@@ -31,6 +34,7 @@ interface GetPopoverStylesParams {
  * fractional layout coordinates from rendering blurry borders and blurry text.
  * Promotes the element to its own compositor layer using `willChange: "transform"`
  * to ensure hardware-accelerated transformations during fast dragging operations.
+ * Uses memoization to preserve referential identity for identical inputs.
  *
  * @param params - The coordinates, offsets, and transformation properties.
  * @returns A CSS properties style object ready to be applied on the outer card element.
@@ -45,13 +49,21 @@ export function getPopoverStyles({
   rotationY = 0,
   zIndex = 1000,
 }: GetPopoverStylesParams): CSSProperties {
+  const top = Math.round(finalLayoutPos.top);
+  const left = Math.round(finalLayoutPos.left);
   const translateX = Math.round(dragX + offset.x);
   const translateY = Math.round(dragY + offset.y);
 
-  return {
+  const cacheKey = `${top}_${left}_${translateX}_${translateY}_${rotation}_${rotationX}_${rotationY}_${zIndex}`;
+  const cachedStyle = styleMemoCache.get(cacheKey);
+  if (cachedStyle) {
+    return cachedStyle;
+  }
+
+  const computedStyle: CSSProperties = {
     position: 'absolute',
-    top: Math.round(finalLayoutPos.top),
-    left: Math.round(finalLayoutPos.left),
+    top,
+    left,
     transform: `translate(${translateX}px, ${translateY}px) rotateX(${rotationX}deg) rotateY(${rotationY}deg) rotateZ(${rotation}deg)`,
     willChange: 'transform',
     zIndex,
@@ -63,4 +75,12 @@ export function getPopoverStyles({
     ['--popover-rotate-z' as string]: `${rotation}deg`,
     ['--popover-z-index' as string]: `${zIndex}`,
   };
+
+  if (styleMemoCache.size >= MAX_MEMO_CACHE_SIZE) {
+    const firstKey = styleMemoCache.keys().next().value;
+    if (firstKey) styleMemoCache.delete(firstKey);
+  }
+  styleMemoCache.set(cacheKey, computedStyle);
+
+  return computedStyle;
 }

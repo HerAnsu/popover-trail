@@ -351,7 +351,10 @@ export function usePopoverCard({
     isTop,
     isDragging: false,
     actions,
-    dragHandleProps: {},
+    dragHandleProps: {
+      'aria-roledescription': 'draggable card handle',
+      'aria-grabbed': false,
+    },
     onMouseEnter,
     onMouseLeave,
     onKeyDown,

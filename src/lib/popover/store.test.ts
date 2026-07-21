@@ -13,6 +13,7 @@ import {
 import { SimplePopoverCache } from './utils/cache';
 import { createWorkerResolver } from './utils/workerResolver';
 import { createPopoverController } from './utils/popoverController';
+import { getPopoverStyles } from './utils/styles';
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -1389,6 +1390,35 @@ describe('createPopoverStore', () => {
 
       const cachedResult = await cache.get('prefetched-item');
       expect(cachedResult).toEqual({ key: 'prefetched-item', prefetched: true });
+    });
+
+    it('should memoize getPopoverStyles style object referential equality for identical inputs', () => {
+      const style1 = getPopoverStyles({
+        finalLayoutPos: { top: 100, left: 200 },
+        offset: { x: 10, y: 20 },
+        zIndex: 1000,
+      });
+
+      const style2 = getPopoverStyles({
+        finalLayoutPos: { top: 100, left: 200 },
+        offset: { x: 10, y: 20 },
+        zIndex: 1000,
+      });
+
+      expect(style1).toBe(style2);
+    });
+
+    it('should track cache hit and miss statistics in SimplePopoverCache', () => {
+      const cache = new SimplePopoverCache<number>();
+      cache.set('a', 100);
+
+      expect(cache.get('a')).toBe(100);
+      expect(cache.get('b')).toBeUndefined();
+
+      const stats = cache.stats();
+      expect(stats.hits).toBe(1);
+      expect(stats.misses).toBe(1);
+      expect(stats.hitRatio).toBe(0.5);
     });
   });
 });
