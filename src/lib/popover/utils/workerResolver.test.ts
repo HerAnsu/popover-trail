@@ -21,8 +21,7 @@ describe('workerResolver', () => {
   });
 
   it('falls back synchronously when Worker API is undefined (SSR environment)', async () => {
-    // @ts-expect-error Mocking SSR environment
-    delete global.Worker;
+    Reflect.deleteProperty(globalThis, 'Worker');
 
     const mockResolverFn = vi.fn().mockImplementation((key: string) => ({
       title: `Resolved ${key}`,
@@ -36,8 +35,7 @@ describe('workerResolver', () => {
   });
 
   it('rejects when Worker API is absent and worker is a URL string', async () => {
-    // @ts-expect-error Mocking SSR environment
-    delete global.Worker;
+    Reflect.deleteProperty(globalThis, 'Worker');
 
     const resolver = createWorkerResolver('/worker.js');
     await expect(resolver('node-1')).rejects.toThrow('Web Worker environment is unavailable');
@@ -47,16 +45,25 @@ describe('workerResolver', () => {
     const postMessageSpy = vi.fn();
     const addEventListenerSpy = vi.fn();
     const removeEventListenerSpy = vi.fn();
+    const terminateSpy = vi.fn();
 
     class MockWorker {
-      postMessage = postMessageSpy;
-      addEventListener = addEventListenerSpy;
-      removeEventListener = removeEventListenerSpy;
-      terminate = vi.fn();
+      postMessage(data: unknown) {
+        postMessageSpy(data);
+      }
+      addEventListener(type: string, listener: unknown) {
+        addEventListenerSpy(type, listener);
+      }
+      removeEventListener(type: string, listener: unknown) {
+        removeEventListenerSpy(type, listener);
+      }
+      terminate() {
+        terminateSpy();
+      }
     }
 
     // @ts-expect-error Mocking global Worker
-    global.Worker = MockWorker;
+    globalThis.Worker = MockWorker;
 
     const controller = new AbortController();
     const resolver = createWorkerResolver('/worker.js');
@@ -69,14 +76,24 @@ describe('workerResolver', () => {
   });
 
   it('handles worker task timeout when timeoutMs is exceeded', async () => {
+    const timeoutPostMessage = vi.fn();
+    const timeoutAddEventListener = vi.fn();
+    const timeoutRemoveEventListener = vi.fn();
+
     class MockWorker {
-      postMessage = vi.fn();
-      addEventListener = vi.fn();
-      removeEventListener = vi.fn();
+      postMessage(data: unknown) {
+        timeoutPostMessage(data);
+      }
+      addEventListener(type: string, listener: unknown) {
+        timeoutAddEventListener(type, listener);
+      }
+      removeEventListener(type: string, listener: unknown) {
+        timeoutRemoveEventListener(type, listener);
+      }
     }
 
     // @ts-expect-error Mocking global Worker
-    global.Worker = MockWorker;
+    globalThis.Worker = MockWorker;
 
     const resolver = createWorkerResolver('/worker.js', { timeoutMs: 50 });
     await expect(resolver('node-timeout')).rejects.toThrow('Worker task timed out after 50ms');
