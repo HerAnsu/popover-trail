@@ -1453,5 +1453,32 @@ describe('createPopoverStore', () => {
       expect(isOpenRootEvent(pinEvent)).toBe(false);
       expect(isPinEvent(pinEvent)).toBe(true);
     });
+
+    it('should clear all popover cards on clear() action', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'root-card' });
+      store.getState().togglePin('root-card');
+      store.getState().pushNested(0, { key: 'nested-card', parentKey: 'root-card' });
+
+      expect(store.getState().trail.length + store.getState().floating.length).toBeGreaterThan(0);
+
+      store.getState().clear();
+
+      expect(store.getState().trail).toEqual([]);
+      expect(store.getState().floating).toEqual([]);
+    });
+
+    it('should close topmost popover card on closeTopmost() action', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'root-card' });
+      store.getState().pushNested(0, { key: 'nested-1', parentKey: 'root-card' });
+
+      expect(store.getState().trail).toHaveLength(2);
+
+      store.getState().closeTopmost();
+
+      expect(store.getState().trail).toHaveLength(1);
+      expect(store.getState().trail[0]?.key).toBe('root-card');
+    });
   });
 });

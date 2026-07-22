@@ -197,8 +197,9 @@ function traverseDescendants<TData>(
   const visited = new Set<string>(startKeys);
   const floatingKeys = ignoreFloating ? new Set(floating.map((e) => e.key)) : null;
 
+  const MAX_TRAVERSAL_NODES = 500;
   let head = 0;
-  while (head < queue.length) {
+  while (head < queue.length && descendants.length < MAX_TRAVERSAL_NODES) {
     const current = queue[head++];
     if (!current) continue;
     const children = childrenMap.get(current);

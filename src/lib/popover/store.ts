@@ -28,6 +28,8 @@ import {
   getRemovedKeysForClose,
   getSnapshotStatePatch,
 } from './utils/storeHelpers';
+import { createHistoryManager } from './store/history';
+import { createTimerManager } from './store/timers';
 
 /**
  * Instantiates and returns a generic Zustand vanilla StoreApi instance.
@@ -56,78 +58,44 @@ export function createPopoverStore<
 ) {
   const activeControllers = new Map<string, AbortController>();
   const inFlightPromises = new Map<string, Promise<TData>>();
-  const hoverCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
-  const transitionTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  const {
+    hoverCloseTimers,
+    transitionTimers,
+    clearHoverTimer,
+    clearTransitionTimer,
+    clearAllTimers,
+  } = createTimerManager();
+
+  const { undoStack, redoStack, pushSnapshot, clearHistory } = createHistoryManager<TData>(30);
 
   const eventListeners = new Set<(event: import('./types').PopoverStoreEvent<TData>) => void>();
   const middlewares = new Set<import('./types').PopoverMiddleware<TData, TContext, TPopoverKey>>();
   let isBatching = false;
   let batchedStatePatch: Partial<PopoverStore<TData, TContext, TPopoverKey>> = {};
 
-  type HistorySnapshot = {
-    trail: readonly TrailEntry<TData>[];
-    floating: readonly TrailEntry<TData>[];
-    offsets: Readonly<Record<string, Readonly<{ x: number; y: number }>>>;
-    pinnedStates: Readonly<Record<string, boolean>>;
-    zIndexOrder: readonly string[];
-    ownerId: string | null;
-  };
-
-  const undoStack: HistorySnapshot[] = [];
-  const redoStack: HistorySnapshot[] = [];
-  const MAX_HISTORY = 30;
-
-  const pushSnapshot = (state: PopoverStore<TData, TContext, TPopoverKey>) => {
-    const last = undoStack[undoStack.length - 1];
-    if (
-      last &&
-      last.trail.length === 0 &&
-      last.floating.length === 0 &&
-      state.trail.length === 0 &&
-      state.floating.length === 0
-    ) {
-      return;
-    }
-    if (undoStack.length >= MAX_HISTORY) {
-      undoStack.shift();
-    }
-    undoStack.push({
-      trail: state.trail,
-      floating: state.floating,
-      offsets: state.offsets,
-      pinnedStates: state.pinnedStates,
-      zIndexOrder: state.zIndexOrder,
-      ownerId: state.ownerId,
-    });
-    if (redoStack.length > 0) {
-      redoStack.length = 0;
-    }
-  };
 
   const emitEvent = (event: import('./types').PopoverStoreEvent<TData>) => {
     if (eventListeners.size === 0) return;
     for (const listener of eventListeners) {
       try {
         listener(event);
-      } catch {
+      } catch (err) {
         // Prevent event listener errors from disrupting store operations
+        console.error('[PopoverStore] Event listener error:', err);
       }
     }
   };
 
-  const clearHoverTimer = (key: string) => {
-    const timer = hoverCloseTimers.get(key);
-    if (timer) {
-      clearTimeout(timer);
-      hoverCloseTimers.delete(key);
-    }
-  };
-
-  const clearTransitionTimer = (key: string) => {
-    const timer = transitionTimers.get(key);
-    if (timer) {
-      clearTimeout(timer);
-      transitionTimers.delete(key);
+  const safeInvoke = <Args extends unknown[]>(
+    fn: ((...args: Args) => void) | undefined,
+    ...args: Args
+  ) => {
+    if (!fn) return;
+    try {
+      fn(...args);
+    } catch (err) {
+      console.error('[PopoverStore] Callback error:', err);
     }
   };
 
@@ -215,19 +183,8 @@ export function createPopoverStore<
       }
       inFlightPromises.clear();
 
-      if (hoverCloseTimers.size > 0) {
-        for (const timer of hoverCloseTimers.values()) {
-          clearTimeout(timer);
-        }
-        hoverCloseTimers.clear();
-      }
-
-      if (transitionTimers.size > 0) {
-        for (const timer of transitionTimers.values()) {
-          clearTimeout(timer);
-        }
-        transitionTimers.clear();
-      }
+      clearAllTimers();
+      clearHistory();
 
       set({
         ownerId: null,
@@ -355,7 +312,7 @@ export function createPopoverStore<
       if (!isPromise<TData>(resultOrPromise)) {
         const entry = buildEntry(resultOrPromise);
         set(insertStatePatch(entry));
-        options?.onOpen?.(entry);
+        safeInvoke(options?.onOpen, entry);
         if (storeCache && resultOrPromise !== undefined) {
           void storeCache.set(key, resultOrPromise);
         }
@@ -379,14 +336,14 @@ export function createPopoverStore<
         updateEntryStateInLists({ isLoading: false, data: resolved, error: null });
         const updatedEntry = findEntryByKey(key);
         if (updatedEntry) {
-          options?.onOpen?.(updatedEntry);
+          safeInvoke(options?.onOpen, updatedEntry);
         }
       } catch (err) {
         if (controller.signal.aborted || isStale(startedCounter)) return;
         const errorObj = toError(err);
 
         updateEntryStateInLists({ isLoading: false, error: errorObj });
-        options?.onError?.(errorObj, key);
+        safeInvoke(options?.onError, errorObj, key);
       } finally {
         if (activeControllers.get(controllerKey) === controller) {
           activeControllers.delete(controllerKey);

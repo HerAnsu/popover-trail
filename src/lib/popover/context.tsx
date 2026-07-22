@@ -12,6 +12,7 @@ import {
 import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
+import equal from 'fast-deep-equal';
 import { createPopoverStore } from './store';
 import { useEventListener } from './hooks/useEventListener';
 import { invariant } from './utils/invariant';
@@ -199,13 +200,21 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
       state.setContext(initialContext as TContext);
       state.setResolveData(resolveData);
       state.setClosePinnedDescendants(Boolean(closePinnedDescendants));
-      state.setCollisionConfig(collision ?? null);
       state.setResponsiveMode(responsiveMode);
       state.setStackGroupFilter(stackGroup);
-      state.setSlotComponents(components ?? null);
-      state.setZIndexBaseMap(zIndexBaseMap ?? null);
+
+      if (!equal(state.collisionConfig, collision ?? null)) {
+        state.setCollisionConfig(collision ?? null);
+      }
+      if (!equal(state.components, components ?? null)) {
+        state.setSlotComponents(components ?? null);
+      }
+      if (!equal(state.zIndexBaseMap, zIndexBaseMap ?? null)) {
+        state.setZIndexBaseMap(zIndexBaseMap ?? null);
+      }
     });
   }, [
+    store,
     enableArrowNavigation,
     debug,
     cascadeOffsetStep,
@@ -223,7 +232,6 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     stackGroup,
     components,
     zIndexBaseMap,
-    store,
   ]);
 
   // Cleanup on Provider unmount: abort all in-flight requests and reset state

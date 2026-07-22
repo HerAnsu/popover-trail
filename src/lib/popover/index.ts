@@ -105,4 +105,6 @@ export { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCar
 export { getPopoverStyles } from './utils/styles';
 export { SimplePopoverCache } from './utils/cache';
 export { PopoverTrigger, type PopoverTriggerProps } from './components/PopoverTrigger';
+export { PopoverCard, type PopoverCardProps } from './components/PopoverCard';
+export { PopoverTrail, type PopoverTrailProps } from './components/PopoverTrail';
 export { createPopoverTrail } from './factory';
