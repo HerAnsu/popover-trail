@@ -893,7 +893,7 @@ export function createPopoverStore<
         if (undoStack.length === 0) return;
         const current = get();
         const prev = undoStack.pop()!;
-        if (redoStack.length >= MAX_HISTORY) {
+        if (redoStack.length >= 30) {
           redoStack.shift();
         }
         redoStack.push({
@@ -910,7 +910,7 @@ export function createPopoverStore<
         if (redoStack.length === 0) return;
         const current = get();
         const next = redoStack.pop()!;
-        if (undoStack.length >= MAX_HISTORY) {
+        if (undoStack.length >= 30) {
           undoStack.shift();
         }
         undoStack.push({
