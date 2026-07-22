@@ -100,7 +100,7 @@ export function createPopoverStore<
 
   const abortControllersForKeys = (keys: Iterable<string>) => {
     if (Array.isArray(keys) && keys.length === 0) return;
-    if (keys instanceof Set && keys.size === 0) return;
+    if ((keys as unknown) instanceof Set && (keys as Set<unknown>).size === 0) return;
     for (const key of keys) {
       const controller = activeControllers.get(key);
       if (controller) {

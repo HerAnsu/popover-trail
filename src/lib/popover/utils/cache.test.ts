@@ -75,7 +75,7 @@ describe('SimplePopoverCache', () => {
   });
 
   it('handles Promise value caching', async () => {
-    const cache = new SimplePopoverCache<string>();
+    const cache = new SimplePopoverCache<string | Promise<string>>();
     const promise = Promise.resolve('async-data');
     cache.set('async-key', promise);
 

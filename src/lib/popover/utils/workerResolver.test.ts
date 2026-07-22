@@ -2,15 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createWorkerResolver, createPopoverWorkerScript } from './workerResolver';
 
 describe('workerResolver', () => {
-  const originalWorker = global.Worker;
+  const originalWorker = globalThis.Worker;
 
   beforeEach(() => {
-    global.Worker = originalWorker;
+    globalThis.Worker = originalWorker;
     vi.restoreAllMocks();
   });
 
   afterEach(() => {
-    global.Worker = originalWorker;
+    globalThis.Worker = originalWorker;
   });
 
   it('generates executable worker script with createPopoverWorkerScript', () => {
