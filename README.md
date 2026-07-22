@@ -167,7 +167,7 @@ export function App() {
 ```bash
 npm run build:lib   # Build ESM, CJS, and DTS bundles via Tsup
 npm test            # Run 103 Vitest unit & integration tests
-npm run lint        # Check code quality via Oxlint (0 warnings, 0 errors)
+npm run lint        # Check code quality via Oxlint
 npm run format      # Format codebase via Oxfmt
 ```
 
