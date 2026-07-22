@@ -10,6 +10,8 @@ Complete API reference for all components, hooks, type guards, factories, and ut
 
 1. [Components and Context](#1-components-and-context)
    - [PopoverProvider](#popoverprovider)
+   - [PopoverCard](#popovercard)
+   - [PopoverTrail](#popovertrail)
    - [PopoverPortal](#popoverportal)
    - [PopoverTrigger](#popovertrigger)
    - [PopoverCardContext](#popovercardcontext)
@@ -110,6 +112,69 @@ export function App() {
     </PopoverProvider>
   );
 }
+```
+
+---
+
+### `<PopoverCard>`
+
+Headless, unstyled compound component for popover card containers. Binds positioning coordinates, CSS variables (`--popover-x`, `--popover-y`, `--popover-z`), and accessibility attributes (`role="dialog"`, `data-state`, `data-pinned`).
+
+Supports polymorphic rendering via the `as` prop (`as={motion.div}`, `as="section"`, etc.).
+
+#### Sub-Components:
+- `PopoverCard.Handle`: Drag handle area for pointer interaction.
+- `PopoverCard.PinButton`: Toggles pinned status for floating windows.
+- `PopoverCard.CloseButton`: Closes popover card by key.
+- `PopoverCard.Content`: Card body content wrapper.
+
+#### Props (`PopoverCardProps`)
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `entry` | `TrailEntry<TData>` | Required | Popover trail entry item. |
+| `index` | `number` | Required | Virtual rendering stack index. |
+| `isPinned` | `boolean` | Required | True if card is floating/pinned. |
+| `as` | `ElementType` | `'div'` | Polymorphic element tag or component. |
+| `placement` | `PopoverPlacement` | `'bottom'` | Layout placement preference. |
+
+#### Usage Example
+```tsx
+import { PopoverCard } from 'popover-trail';
+
+export function Card({ entry, index, isPinned }) {
+  return (
+    <PopoverCard entry={entry} index={index} isPinned={isPinned} className="card">
+      <PopoverCard.Handle className="card-header">
+        <span>{entry.key}</span>
+        <PopoverCard.PinButton />
+        <PopoverCard.CloseButton />
+      </PopoverCard.Handle>
+      <PopoverCard.Content className="card-body">
+        <p>Card Content</p>
+      </PopoverCard.Content>
+    </PopoverCard>
+  );
+}
+```
+
+---
+
+### `<PopoverTrail>`
+
+High-level portal component that tracks active popover trail entries and handles portal mounting with a `renderCard` prop callback.
+
+#### Props (`PopoverTrailProps`)
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `renderCard` | `(entry: TrailEntry, index: number, isPinned: boolean) => ReactNode` | Required | Render function called for each active popover card. |
+| `filter` | `(entry: TrailEntry, index: number) => boolean` | `undefined` | Filter predicate to select which entries to render. |
+| `container` | `HTMLElement \| null` | `document.body` | DOM container element for portal. |
+
+#### Usage Example
+```tsx
+<PopoverTrail renderCard={(entry, index, isPinned) => (
+  <Card key={entry.key} entry={entry} index={index} isPinned={isPinned} />
+)} />
 ```
 
 ---

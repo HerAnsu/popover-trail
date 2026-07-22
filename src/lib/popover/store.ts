@@ -74,7 +74,6 @@ export function createPopoverStore<
   let isBatching = false;
   let batchedStatePatch: Partial<PopoverStore<TData, TContext, TPopoverKey>> = {};
 
-
   const emitEvent = (event: import('./types').PopoverStoreEvent<TData>) => {
     if (eventListeners.size === 0) return;
     for (const listener of eventListeners) {
