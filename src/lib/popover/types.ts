@@ -300,7 +300,10 @@ export function getEntryState<TData>(
   if (entry.error) {
     return { status: 'error', isLoading: false, data: undefined, error: entry.error };
   }
-  return { status: 'success', isLoading: false, data: entry.data as TData, error: null };
+  if (isResolvedEntry(entry)) {
+    return { status: 'success', isLoading: false, data: entry.data, error: null };
+  }
+  return { status: 'loading', isLoading: true, data: undefined, error: null };
 }
 
 /**
@@ -501,6 +504,9 @@ export interface PopoverActions<
 
   /** Resets state completely, aborting all active requests. */
   clear: () => void;
+
+  /** Alias for clear: closes all active popovers. */
+  closeAll: () => void;
 
   /** Clears only the active trail (retains floating ones). */
   clearTrail: () => void;

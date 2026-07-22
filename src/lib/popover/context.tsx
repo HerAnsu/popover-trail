@@ -13,7 +13,9 @@ import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
 import { createPopoverStore } from './store';
+import { useEventListener } from './hooks/useEventListener';
 import { invariant } from './utils/invariant';
+import { hasEntryWithKey } from './utils/storeHelpers';
 import type {
   PopoverStore,
   PopoverResolver,
@@ -181,26 +183,28 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   // Synchronize all provider props to the store in a single effect to avoid
   // 10 separate render cycles when multiple props change simultaneously
   useEffect(() => {
-    const state = store.getState();
-    state.setEnableArrowNavigation(Boolean(enableArrowNavigation));
-    state.setDebug(Boolean(debug));
-    state.setCascadeOffsetStep(Number(cascadeOffsetStep));
-    state.setExitTransitionDuration(Number(exitTransitionDuration));
-    state.setDefaultOffset(Number(defaultOffset));
-    state.setBaseZIndex(Number(baseZIndex));
-    state.setGlobalAnimationClassNames(
-      String(mountingClassName),
-      String(unmountingClassName),
-      String(mountedClassName),
-    );
-    state.setContext(initialContext as TContext);
-    state.setResolveData(resolveData);
-    state.setClosePinnedDescendants(Boolean(closePinnedDescendants));
-    state.setCollisionConfig(collision ?? null);
-    state.setResponsiveMode(responsiveMode);
-    state.setStackGroupFilter(stackGroup);
-    state.setSlotComponents(components ?? null);
-    state.setZIndexBaseMap(zIndexBaseMap ?? null);
+    store.getState().batchUpdates(() => {
+      const state = store.getState();
+      state.setEnableArrowNavigation(Boolean(enableArrowNavigation));
+      state.setDebug(Boolean(debug));
+      state.setCascadeOffsetStep(Number(cascadeOffsetStep));
+      state.setExitTransitionDuration(Number(exitTransitionDuration));
+      state.setDefaultOffset(Number(defaultOffset));
+      state.setBaseZIndex(Number(baseZIndex));
+      state.setGlobalAnimationClassNames(
+        String(mountingClassName),
+        String(unmountingClassName),
+        String(mountedClassName),
+      );
+      state.setContext(initialContext as TContext);
+      state.setResolveData(resolveData);
+      state.setClosePinnedDescendants(Boolean(closePinnedDescendants));
+      state.setCollisionConfig(collision ?? null);
+      state.setResponsiveMode(responsiveMode);
+      state.setStackGroupFilter(stackGroup);
+      state.setSlotComponents(components ?? null);
+      state.setZIndexBaseMap(zIndexBaseMap ?? null);
+    });
   }, [
     enableArrowNavigation,
     debug,
@@ -230,10 +234,9 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   }, [store]);
 
   // Handle Escape key closing globally (WAI-ARIA Accessibility compliance & single listener consolidation)
-  useEffect(() => {
-    if (!enableKeyboardClose) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!enableKeyboardClose) return;
       if (e.key === 'Escape') {
         const state = store.getState();
         const hasActive = state.trail.length > 0 || state.floating.length > 0;
@@ -241,11 +244,11 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
           state.closeTopmost();
         }
       }
-    };
+    },
+    [enableKeyboardClose, store],
+  );
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [enableKeyboardClose, store]);
+  useEventListener('keydown', handleKeyDown);
 
   // Setup click outside logic if enabled
   const enabled = clickOutside?.enabled;
@@ -255,7 +258,11 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   useEffect(() => {
     if (!enabled) return;
 
-    const escapedIgnoreClass = ignoreClass ? `.${CSS.escape(ignoreClass)}` : null;
+    const escapedIgnoreClass = ignoreClass
+      ? typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+        ? `.${CSS.escape(ignoreClass)}`
+        : `.${ignoreClass.replace(/[^a-zA-Z0-9_-]/g, '')}`
+      : null;
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -449,11 +456,7 @@ export function usePopoverCollisionConfig() {
  */
 export function useIsPopoverOpen(key: string): boolean {
   return usePopoverStore(
-    useCallback(
-      (state: PopoverStore) =>
-        state.trail.some((e) => e.key === key) || state.floating.some((e) => e.key === key),
-      [key],
-    ),
+    useCallback((state: PopoverStore) => hasEntryWithKey(state.floating, state.trail, key), [key]),
   );
 }
 /**
@@ -551,43 +554,6 @@ export function usePopover<
   );
 }
 
-function usePopoverHoverHandlers(
-  key: string,
-  openTimerRef: { current: ReturnType<typeof setTimeout> | null },
-  optionsRef: { current: PopoverDisplayOptions | undefined },
-  onMouseEnter: (e: React.MouseEvent<HTMLElement>) => void,
-  onClick: (e: React.MouseEvent<HTMLElement>) => void,
-  hoverEnabled: boolean,
-) {
-  const actions = usePopoverActions();
-  const onMouseLeave = useCallback(() => {
-    const hoverOpts = optionsRef.current?.hover;
-    if (hoverOpts?.enabled) {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
-      }
-      const delay = hoverOpts.closeDelay ?? 300;
-      actions.hoverLeave(key, delay);
-    }
-  }, [actions, key, optionsRef, openTimerRef]);
-
-  const isOpen = useIsPopoverOpen(key);
-
-  return useMemo(() => {
-    const ariaProps = {
-      'aria-haspopup': 'dialog' as const,
-      'aria-expanded': isOpen,
-      'aria-controls': `popover-card-${key}`,
-    };
-    return {
-      ...ariaProps,
-      onMouseEnter: hoverEnabled ? onMouseEnter : undefined,
-      onMouseLeave: hoverEnabled ? onMouseLeave : undefined,
-      onClick,
-    };
-  }, [onClick, onMouseEnter, onMouseLeave, hoverEnabled, isOpen, key]);
-}
-
 /**
  * Hook to track loading/error status and trigger manual data reloads for a popover card.
  *
@@ -609,80 +575,10 @@ export function usePopoverHydration<TData = unknown>(key: string) {
   };
 }
 
-/**
- * Hook to simplify binding an HTML element click trigger to open a root popover.
- *
- * @param key - The unique identifier key for the root popover.
- * @param options - Custom configuration options.
- * @returns Event handler props object (e.g. `{ onClick }`).
- */
-export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
-  const actions = usePopoverActions();
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
-  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
-      }
-    };
-  }, []);
-
-  const onClick = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      if (optionsRef.current?.hover?.enabled) return;
-      void actions.openRootWithResolver(key, e, optionsRef.current);
-    },
-    [actions, key],
-  );
-
-  const onMouseEnter = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      const hoverOpts = optionsRef.current?.hover;
-      if (hoverOpts?.enabled) {
-        if (openTimerRef.current) {
-          clearTimeout(openTimerRef.current);
-        }
-        const currentTarget = e.currentTarget;
-        const fakeEvent: AnchorEventLike = {
-          currentTarget,
-          stopPropagation: () => {
-            e.stopPropagation();
-          },
-        };
-        const delay = hoverOpts.openDelay ?? 200;
-        openTimerRef.current = setTimeout(() => {
-          void actions.openRootWithResolver(key, fakeEvent, optionsRef.current);
-        }, delay);
-      }
-    },
-    [actions, key],
-  );
-
-  return usePopoverHoverHandlers(
-    key,
-    openTimerRef,
-    optionsRef,
-    onMouseEnter,
-    onClick,
-    Boolean(options?.hover?.enabled),
-  );
-}
-
-/**
- * Hook to simplify binding an HTML element click trigger to open a nested child popover.
- *
- * @param key - The unique identifier key for the nested popover.
- * @param sourceKey - The unique key of the parent popover spawning this child.
- * @param options - Custom configuration options.
- * @returns Event handler props object (e.g. `{ onClick }`).
- */
-export function usePopoverNestedTrigger(
+function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
   key: string,
-  sourceKey: string,
-  options?: OpenNestedOptions,
+  options: TOptions | undefined,
+  onOpenHandler: (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => void,
 ) {
   const actions = usePopoverActions();
   const optionsRef = useRef(options);
@@ -700,13 +596,9 @@ export function usePopoverNestedTrigger(
   const onClick = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
       if (optionsRef.current?.hover?.enabled) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      void actions.openNestedWithResolver(key, sourceKey, {
-        ...optionsRef.current,
-        triggerRect: rect,
-      });
+      onOpenHandler(e, e.currentTarget);
     },
-    [actions, key, sourceKey],
+    [onOpenHandler],
   );
 
   const onMouseEnter = useCallback(
@@ -716,32 +608,102 @@ export function usePopoverNestedTrigger(
         if (openTimerRef.current) {
           clearTimeout(openTimerRef.current);
         }
-        const rect = e.currentTarget.getBoundingClientRect();
+        const currentTarget = e.currentTarget;
         const delay = hoverOpts.openDelay ?? 200;
         openTimerRef.current = setTimeout(() => {
-          void actions.openNestedWithResolver(key, sourceKey, {
-            ...optionsRef.current,
-            triggerRect: rect,
-          });
+          onOpenHandler(e, currentTarget);
         }, delay);
       }
     },
-    [actions, key, sourceKey],
+    [onOpenHandler],
   );
 
-  return usePopoverHoverHandlers(
-    key,
-    openTimerRef,
-    optionsRef,
-    onMouseEnter,
-    onClick,
-    Boolean(options?.hover?.enabled),
+  const onMouseLeave = useCallback(() => {
+    const hoverOpts = optionsRef.current?.hover;
+    if (hoverOpts?.enabled) {
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
+      }
+      const delay = hoverOpts.closeDelay ?? 300;
+      actions.hoverLeave(key, delay);
+    }
+  }, [actions, key]);
+
+  const hoverEnabled = Boolean(options?.hover?.enabled);
+  const isOpen = useIsPopoverOpen(key);
+
+  return useMemo(() => {
+    const ariaProps = {
+      'aria-haspopup': 'dialog' as const,
+      'aria-expanded': isOpen,
+      'aria-controls': `popover-card-${key}`,
+    };
+    return {
+      ...ariaProps,
+      onMouseEnter: hoverEnabled ? onMouseEnter : undefined,
+      onMouseLeave: hoverEnabled ? onMouseLeave : undefined,
+      onClick,
+    };
+  }, [onClick, onMouseEnter, onMouseLeave, hoverEnabled, isOpen, key]);
+}
+
+/**
+ * Hook to simplify binding an HTML element click trigger to open a root popover.
+ *
+ * @param key - The unique identifier key for the root popover.
+ * @param options - Custom configuration options.
+ * @returns Event handler props object (e.g. `{ onClick }`).
+ */
+export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
+  const actions = usePopoverActions();
+  const onOpenHandler = useCallback(
+    (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => {
+      const fakeEvent: AnchorEventLike = {
+        currentTarget,
+        stopPropagation: () => {
+          e.stopPropagation?.();
+        },
+      };
+      void actions.openRootWithResolver(key, fakeEvent, options);
+    },
+    [actions, key, options],
   );
+
+  return usePopoverTriggerBase(key, options, onOpenHandler);
+}
+
+/**
+ * Hook to simplify binding an HTML element click trigger to open a nested child popover.
+ *
+ * @param key - The unique identifier key for the nested popover.
+ * @param sourceKey - The unique key of the parent popover spawning this child.
+ * @param options - Custom configuration options.
+ * @returns Event handler props object (e.g. `{ onClick }`).
+ */
+export function usePopoverNestedTrigger(
+  key: string,
+  sourceKey: string,
+  options?: OpenNestedOptions,
+) {
+  const actions = usePopoverActions();
+  const onOpenHandler = useCallback(
+    (_e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => {
+      const rect = currentTarget.getBoundingClientRect();
+      void actions.openNestedWithResolver(key, sourceKey, {
+        ...options,
+        triggerRect: rect,
+      });
+    },
+    [actions, key, sourceKey, options],
+  );
+
+  return usePopoverTriggerBase(key, options, onOpenHandler);
 }
 
 /**
  * Portal wrapper component that safely mounts children elements to `document.body`,
  * bypassing parent `overflow: hidden` layouts and clipping issues.
+ * Supports direct ReactNode elements or render-prop functions receiving formatted entries.
  *
  * @param props - Portal configuration props.
  * @returns The portal element.
@@ -750,12 +712,15 @@ export function PopoverPortal({
   children,
   container,
 }: {
-  /** React elements to portal. */
-  children: ReactNode;
+  /** React elements or render prop callback function. */
+  children: ReactNode | ((entries: Array<TrailEntry & { isPinned: boolean }>) => ReactNode);
   /** Optional custom DOM element target. Defaults to document.body. */
   container?: HTMLElement | (() => HTMLElement | null) | React.RefObject<HTMLElement | null>;
 }) {
   const [mounted, setMounted] = useState(false);
+  const trail = usePopoverTrail();
+  const floating = usePopoverFloating();
+
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
@@ -774,5 +739,13 @@ export function PopoverPortal({
     }
   }
 
-  return createPortal(children, target ?? document.body);
+  const renderedContent =
+    typeof children === 'function'
+      ? (children as (entries: Array<TrailEntry & { isPinned: boolean }>) => ReactNode)([
+          ...floating.map((entry) => ({ ...entry, isPinned: true })),
+          ...trail.map((entry) => ({ ...entry, isPinned: false })),
+        ])
+      : children;
+
+  return createPortal(renderedContent, target ?? document.body);
 }

@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import {
   PopoverCardContext,
   usePopoverTrigger,
@@ -143,11 +143,14 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
   const parentKey = useContext(PopoverCardContext);
   const isOpen = useIsPopoverOpen(popoverKey);
 
-  const mergedOptions = {
-    placement,
-    offset,
-    ...options,
-  };
+  const mergedOptions = useMemo(
+    () => ({
+      placement,
+      offset,
+      ...options,
+    }),
+    [placement, offset, options],
+  );
 
   // Delegate to separate sub-components so each hook is called unconditionally (Rules of Hooks).
   if (parentKey) {

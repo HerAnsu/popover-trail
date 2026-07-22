@@ -35,6 +35,12 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
 
     if (autoPruneIntervalMs > 0 && typeof setInterval !== 'undefined') {
       this.autoPruneTimer = setInterval(() => this.pruneExpired(), autoPruneIntervalMs);
+      if (
+        this.autoPruneTimer &&
+        typeof (this.autoPruneTimer as unknown as { unref?: () => void }).unref === 'function'
+      ) {
+        (this.autoPruneTimer as unknown as { unref: () => void }).unref();
+      }
     }
   }
 
@@ -69,6 +75,8 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
     }
 
     this.hitsCount++;
+    this.cache.delete(key);
+    this.cache.set(key, entry);
     return entry.data;
   }
 
@@ -108,6 +116,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * Proactively sweeps and purges all expired entries from the cache map.
    */
   pruneExpired(): void {
+    if (this.cache.size === 0) return;
     const now = Date.now();
     for (const [key, entry] of this.cache.entries()) {
       if (now > entry.expiry) {

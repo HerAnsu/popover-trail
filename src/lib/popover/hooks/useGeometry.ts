@@ -91,7 +91,7 @@ export function usePopoverGeometry({
   const sizeOption = localCollision?.size ?? globalCollision?.size;
 
   const [resolvedBoundary, setResolvedBoundary] = useState<Boundary | undefined>(
-    typeof boundary === 'string' ? boundary : undefined,
+    typeof boundary !== 'function' ? boundary : undefined,
   );
 
   useEffect(() => {
@@ -111,13 +111,17 @@ export function usePopoverGeometry({
 
   const boundaryOption = resolvedBoundary || undefined;
 
-  // 1. Setup a virtual element for Floating UI positioning using the anchor DOMRect
+  const anchorRectKey = anchorRect
+    ? `${anchorRect.top}_${anchorRect.left}_${anchorRect.width}_${anchorRect.height}`
+    : '';
+
   const virtualElement = useMemo(() => {
     if (!anchorRect) return null;
     return {
       getBoundingClientRect: () => anchorRect,
     };
-  }, [anchorRect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anchorRectKey]);
 
   // 2. Configure useFloating positioning middleware dynamically with autoUpdate
   const middleware = useMemo(() => {
@@ -215,7 +219,8 @@ export function usePopoverGeometry({
 
   const checkMobile = useCallback(() => {
     if (typeof window !== 'undefined') {
-      setIsMobileViewport(window.innerWidth < mobileBreakpoint);
+      const isMobile = window.innerWidth < mobileBreakpoint;
+      setIsMobileViewport((prev) => (prev === isMobile ? prev : isMobile));
     }
   }, [mobileBreakpoint]);
 

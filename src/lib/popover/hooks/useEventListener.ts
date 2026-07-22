@@ -10,19 +10,22 @@ export function useEventListener<K extends keyof WindowEventMap>(
   options?: boolean | AddEventListenerOptions,
 ): void {
   const savedHandler = useRef(handler);
+  const optionsRef = useRef(options);
 
   useEffect(() => {
     savedHandler.current = handler;
-  }, [handler]);
+    optionsRef.current = options;
+  });
 
   useEffect(() => {
     if (!element || !element.addEventListener) return;
 
+    const currentOptions = optionsRef.current;
     const eventListener: typeof handler = (event) => savedHandler.current(event);
-    element.addEventListener(eventName, eventListener as EventListener, options);
+    element.addEventListener(eventName, eventListener as EventListener, currentOptions);
 
     return () => {
-      element.removeEventListener(eventName, eventListener as EventListener, options);
+      element.removeEventListener(eventName, eventListener as EventListener, currentOptions);
     };
-  }, [eventName, element, options]);
+  }, [eventName, element]);
 }

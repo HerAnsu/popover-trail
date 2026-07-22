@@ -54,18 +54,30 @@ export function getPopoverStyles({
   const translateX = Math.round(dragX + offset.x);
   const translateY = Math.round(dragY + offset.y);
 
-  const cacheKey = `${top}_${left}_${translateX}_${translateY}_${rotation}_${rotationX}_${rotationY}_${zIndex}`;
-  const cachedStyle = styleMemoCache.get(cacheKey);
-  if (cachedStyle) {
-    return cachedStyle;
+  const isDynamic =
+    dragX !== 0 || dragY !== 0 || rotation !== 0 || rotationX !== 0 || rotationY !== 0;
+  const cacheKey = isDynamic
+    ? ''
+    : `${top}_${left}_${translateX}_${translateY}_${rotation}_${rotationX}_${rotationY}_${zIndex}`;
+
+  if (!isDynamic) {
+    const cachedStyle = styleMemoCache.get(cacheKey);
+    if (cachedStyle) {
+      return cachedStyle;
+    }
   }
+
+  const hasRotation = rotation !== 0 || rotationX !== 0 || rotationY !== 0;
+  const transformStr = hasRotation
+    ? `translate(${translateX}px, ${translateY}px) rotateX(${rotationX}deg) rotateY(${rotationY}deg) rotateZ(${rotation}deg)`
+    : `translate(${translateX}px, ${translateY}px)`;
 
   const computedStyle: CSSProperties = {
     position: 'absolute',
     top,
     left,
-    transform: `translate(${translateX}px, ${translateY}px) rotateX(${rotationX}deg) rotateY(${rotationY}deg) rotateZ(${rotation}deg)`,
-    willChange: 'transform',
+    transform: transformStr,
+    willChange: isDynamic ? 'transform' : 'auto',
     zIndex,
     // CSS Custom Properties for external style overrides and animations
     ['--popover-translate-x' as string]: `${translateX}px`,
@@ -76,11 +88,13 @@ export function getPopoverStyles({
     ['--popover-z-index' as string]: `${zIndex}`,
   };
 
-  if (styleMemoCache.size >= MAX_MEMO_CACHE_SIZE) {
-    const firstKey = styleMemoCache.keys().next().value;
-    if (firstKey) styleMemoCache.delete(firstKey);
+  if (!isDynamic) {
+    if (styleMemoCache.size >= MAX_MEMO_CACHE_SIZE) {
+      const firstKey = styleMemoCache.keys().next().value;
+      if (firstKey) styleMemoCache.delete(firstKey);
+    }
+    styleMemoCache.set(cacheKey, computedStyle);
   }
-  styleMemoCache.set(cacheKey, computedStyle);
 
   return computedStyle;
 }

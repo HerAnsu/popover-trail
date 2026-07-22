@@ -46,28 +46,24 @@ export function createPopoverTrail<
   }
   PopoverTrigger.displayName = 'PopoverTrigger';
 
+  function usePopover(key: TPopoverKey): UsePopoverResult<TData> {
+    return coreUsePopover<TData, TContext>(key);
+  }
+
+  function usePopoverActions() {
+    return coreUsePopoverActions<TData, TContext>();
+  }
+
+  function usePopoverContext() {
+    return coreUsePopoverContext<TContext>();
+  }
+
   return {
     PopoverProvider,
     PopoverPortal: CorePopoverPortal,
     PopoverTrigger,
-    /**
-     * Type-safe usePopover selector hook pre-bound to your data and context shapes.
-     *
-     * @param key - The unique identifier key of the popover card.
-     * @returns Unified data values and pre-bound action wrappers.
-     */
-    usePopover: (key: TPopoverKey): UsePopoverResult<TData> => coreUsePopover<TData, TContext>(key),
-    /**
-     * Type-safe usePopoverActions hook pre-bound to your data and context shapes.
-     *
-     * @returns Object containing type-safe dispatch actions.
-     */
-    usePopoverActions: () => coreUsePopoverActions<TData, TContext>(),
-    /**
-     * Type-safe usePopoverContext hook pre-bound to your context shape.
-     *
-     * @returns The active context object.
-     */
-    usePopoverContext: () => coreUsePopoverContext<TContext>(),
+    usePopover,
+    usePopoverActions,
+    usePopoverContext,
   };
 }

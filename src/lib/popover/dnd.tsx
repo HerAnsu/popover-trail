@@ -14,6 +14,7 @@ import {
   usePopoverOffset,
   usePopoverTrail,
   usePopoverFloating,
+  usePopoverStore,
   usePopoverStoreApi,
   usePopoverActions,
   PopoverCardContext,
@@ -257,13 +258,21 @@ export function PopoverCanvas<TData = unknown>({
     updateOffset(key, currentOffset.x + delta.x, currentOffset.y + delta.y);
   };
 
-  const activeEntries = useMemo(
-    () => [
+  const zIndexOrder = usePopoverStore((state) => state.zIndexOrder);
+
+  const activeEntries = useMemo(() => {
+    const raw = [
       ...floating.map((entry, idx) => ({ entry, isPinned: true, index: idx })),
       ...trail.map((entry, idx) => ({ entry, isPinned: false, index: floating.length + idx })),
-    ],
-    [floating, trail],
-  );
+    ];
+    if (zIndexOrder.length === 0) return raw;
+    const orderMap = new Map<string, number>(
+      zIndexOrder.map((k: string, i: number) => [k, i] as const),
+    );
+    return raw.sort((a, b) => (orderMap.get(a.entry.key) ?? 0) - (orderMap.get(b.entry.key) ?? 0));
+  }, [floating, trail, zIndexOrder]);
+
+  if (activeEntries.length === 0) return null;
 
   return (
     <DndContext
@@ -365,15 +374,30 @@ function PopoverCardInner<TData = unknown>({
     actions.bringToFront(entry.key);
   }, [actions, entry.key]);
 
-  const combinedClassName = [
-    className,
-    isTop ? 'topmost' : '',
-    isPinned ? 'pinned' : '',
-    isDragging ? 'dragging' : '',
-    transitionClassName,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const combinedClassName = useMemo(
+    () =>
+      [
+        className,
+        isTop ? 'topmost' : '',
+        isPinned ? 'pinned' : '',
+        isDragging ? 'dragging' : '',
+        transitionClassName,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    [className, isTop, isPinned, isDragging, transitionClassName],
+  );
+
+  const combinedStyle = useMemo(
+    () => ({
+      ...style,
+      ...(entry.exitTransitionDuration !== undefined
+        ? { transitionDuration: `${entry.exitTransitionDuration}ms` }
+        : {}),
+      ...customStyle,
+    }),
+    [style, entry.exitTransitionDuration, customStyle],
+  );
 
   const resolvedDragHandleProps = isDragAllowed ? dragHandleProps : {};
 
@@ -381,13 +405,7 @@ function PopoverCardInner<TData = unknown>({
     <div
       id={`popover-card-${entry.key}`}
       ref={ref}
-      style={{
-        ...style,
-        ...(entry.exitTransitionDuration !== undefined
-          ? { transitionDuration: `${entry.exitTransitionDuration}ms` }
-          : {}),
-        ...customStyle,
-      }}
+      style={combinedStyle}
       role="dialog"
       aria-modal={!isPinned}
       aria-labelledby={`title-${entry.key}`}

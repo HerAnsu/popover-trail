@@ -21,14 +21,23 @@ interface NodeData {
 const cache = new SimplePopoverCache<NodeData>(60000, 20);
 
 // Mock resolver function
-const resolveData = async (key: string, _parentData?: unknown, _context?: unknown, signal?: AbortSignal) => {
+const resolveData = async (
+  key: string,
+  _parentData?: unknown,
+  _context?: unknown,
+  signal?: AbortSignal,
+) => {
   await new Promise((resolve, reject) => {
     const timer = setTimeout(resolve, 200);
     if (signal) {
-      signal.addEventListener('abort', () => {
-        clearTimeout(timer);
-        reject(new DOMException('Request aborted', 'AbortError'));
-      });
+      signal.addEventListener(
+        'abort',
+        () => {
+          clearTimeout(timer);
+          reject(new DOMException('Request aborted', 'AbortError'));
+        },
+        { once: true },
+      );
     }
   });
 
@@ -39,7 +48,15 @@ const resolveData = async (key: string, _parentData?: unknown, _context?: unknow
   };
 };
 
-function PopoverCard({ entry, index, isPinned }: { entry: TrailEntry<NodeData>; index: number; isPinned: boolean }) {
+function PopoverCard({
+  entry,
+  index,
+  isPinned,
+}: {
+  entry: TrailEntry<NodeData>;
+  index: number;
+  isPinned: boolean;
+}) {
   const { closeByKey } = usePopoverActions();
   const { ref, style, dragHandleProps, handlePinToggle, isDragging } = usePopoverCard({
     entry,
@@ -52,8 +69,7 @@ function PopoverCard({ entry, index, isPinned }: { entry: TrailEntry<NodeData>; 
     <div
       ref={ref}
       style={style}
-      className={`popover-card ${isPinned ? 'is-pinned' : ''} ${isDragging ? 'is-dragging' : ''}`}
-    >
+      className={`popover-card ${isPinned ? 'is-pinned' : ''} ${isDragging ? 'is-dragging' : ''}`}>
       <header className="drag-handle" {...dragHandleProps}>
         <span className="card-key">{entry.key}</span>
         <div className="card-controls">

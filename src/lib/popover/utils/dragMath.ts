@@ -26,6 +26,10 @@ export function clampDragCoordinates(
   if (bounds.minY !== undefined) clampedY = Math.max(bounds.minY, clampedY);
   if (bounds.maxY !== undefined) clampedY = Math.min(bounds.maxY, clampedY);
 
+  if (clampedX === x && clampedY === y) {
+    return { x, y };
+  }
+
   return { x: clampedX, y: clampedY };
 }
 

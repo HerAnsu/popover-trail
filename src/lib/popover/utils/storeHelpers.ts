@@ -14,6 +14,10 @@ export function isPromise<T>(value: unknown): value is Promise<T> {
   );
 }
 
+export function toError(err: unknown): Error {
+  return err instanceof Error ? err : new Error(String(err));
+}
+
 /**
  * Filters a Record object, retaining only the keys present in the specified Set.
  * Returns the original record reference if no keys were deleted to optimize rendering comparison.
@@ -24,9 +28,11 @@ export function isPromise<T>(value: unknown): value is Promise<T> {
  * @returns The filtered record copy, or the original record.
  */
 function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
+  const keys = Object.keys(record);
+  if (keys.length === 0) return record;
   const nextRecord: Record<string, T> = {};
   let changed = false;
-  for (const key of Object.keys(record)) {
+  for (const key of keys) {
     const val = record[key];
     if (allowedKeys.has(key) && val !== undefined) {
       nextRecord[key] = val;
@@ -183,6 +189,7 @@ function traverseDescendants<TData>(
     ignoreFloating?: boolean;
   } = {},
 ): TrailEntry<TData>[] {
+  if (startKeys.length === 0) return [];
   const { useOriginalParent = false, ignoreFloating = false } = options;
   const childrenMap = buildChildrenMap(floating, trail, useOriginalParent);
   const descendants: TrailEntry<TData>[] = [];
@@ -255,25 +262,33 @@ export function updateEntryInLists<TData>(
   key: string,
   updatedFields: Partial<TrailEntry<TData>>,
 ): { floating: readonly TrailEntry<TData>[]; trail: readonly TrailEntry<TData>[] } {
-  const update = (e: TrailEntry<TData>) => (e.key === key ? { ...e, ...updatedFields } : e);
-  const inFloating = floating.some((e) => e.key === key);
-  if (inFloating) {
-    return {
-      floating: floating.map(update),
-      trail,
-    };
+  let floatingChanged = false;
+  const nextFloating = floating.map((e) => {
+    if (e.key === key) {
+      floatingChanged = true;
+      return { ...e, ...updatedFields };
+    }
+    return e;
+  });
+
+  if (floatingChanged) {
+    return { floating: nextFloating, trail };
   }
-  const inTrail = trail.some((e) => e.key === key);
-  if (inTrail) {
-    return {
-      floating,
-      trail: trail.map(update),
-    };
+
+  let trailChanged = false;
+  const nextTrail = trail.map((e) => {
+    if (e.key === key) {
+      trailChanged = true;
+      return { ...e, ...updatedFields };
+    }
+    return e;
+  });
+
+  if (trailChanged) {
+    return { floating, trail: nextTrail };
   }
-  return {
-    floating,
-    trail,
-  };
+
+  return { floating, trail };
 }
 
 /**
@@ -590,4 +605,140 @@ export function shallowArrayEqual<T>(a: readonly T[], b: readonly T[]): boolean 
     if (a[i] !== b[i]) return false;
   }
   return true;
+}
+
+/**
+ * Sanitizes a numeric coordinate value, defaulting NaN to 0.
+ */
+export function sanitizeNum(val: number): number {
+  return Number.isNaN(val) ? 0 : val;
+}
+
+/**
+ * Sanitizes a DOMRect or DOMRectReadOnly object, ensuring valid numeric properties.
+ */
+export function sanitizeRect(
+  rawRect: { x?: number; y?: number; width?: number; height?: number } | null | undefined,
+): DOMRect | null {
+  if (!rawRect) return null;
+  return new DOMRect(
+    sanitizeNum(rawRect.x ?? 0),
+    sanitizeNum(rawRect.y ?? 0),
+    sanitizeNum(rawRect.width ?? 0),
+    sanitizeNum(rawRect.height ?? 0),
+  );
+}
+
+/**
+ * Constructs a fully initialized TrailEntry object with defaulted fallbacks.
+ */
+export function createTrailEntry<TData>(
+  key: string,
+  parentKey: string | undefined,
+  rect: DOMRect | null,
+  options: (import('../types').OpenRootOptions & import('../types').OpenNestedOptions) | undefined,
+  existingEntry?: TrailEntry<TData>,
+  data?: TData,
+  error: Error | null = null,
+  isLoading = false,
+): TrailEntry<TData> {
+  return {
+    key,
+    parentKey,
+    originalParentKey: parentKey ?? existingEntry?.originalParentKey,
+    rect: rect ?? existingEntry?.rect,
+    originalRect: rect ?? existingEntry?.originalRect,
+    data,
+    error,
+    isLoading,
+    collision: options?.collision,
+    transitionStatus: 'mounting',
+    hover: options?.hover,
+    ariaDescribedby: options?.ariaDescribedby,
+    allowDragWhenPinned: options?.allowDragWhenPinned,
+    allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
+    placement: options?.placement,
+    offset: options?.offset,
+    exitTransitionDuration: options?.exitTransitionDuration,
+    baseZIndex: options?.baseZIndex,
+    cascadeOffsetStep: options?.cascadeOffsetStep,
+    cascadeOffsetDirection: options?.cascadeOffsetDirection,
+    enableTilt: options?.enableTilt,
+    maxTiltAngle: options?.maxTiltAngle,
+    tiltSensitivity: options?.tiltSensitivity,
+    dragAxis: options?.dragAxis,
+    tiltFriction: options?.tiltFriction,
+    tiltDecay: options?.tiltDecay,
+    mountingClassName: options?.mountingClassName,
+    unmountingClassName: options?.unmountingClassName,
+    mountedClassName: options?.mountedClassName,
+    buttonControls: options?.buttonControls ?? existingEntry?.buttonControls,
+    stackGroup: options?.stackGroup ?? existingEntry?.stackGroup,
+    responsiveMode: options?.responsiveMode ?? existingEntry?.responsiveMode,
+    layoutStrategy: options?.layoutStrategy ?? existingEntry?.layoutStrategy,
+    keyboardShortcuts: options?.keyboardShortcuts ?? existingEntry?.keyboardShortcuts,
+    focusLockOptions: options?.focusLockOptions ?? existingEntry?.focusLockOptions,
+    onOpen: options?.onOpen ?? existingEntry?.onOpen,
+    onClose: options?.onClose ?? existingEntry?.onClose,
+    onPin: options?.onPin ?? existingEntry?.onPin,
+    onError: options?.onError ?? existingEntry?.onError,
+  };
+}
+
+/**
+ * Computes the set of popover keys to remove when closing from a target index.
+ */
+export function getRemovedKeysForClose<TData>(
+  floating: readonly TrailEntry<TData>[],
+  trail: readonly TrailEntry<TData>[],
+  index: number,
+  closePinnedDescendants: boolean,
+): { isFloating: boolean; removedKeys: Set<string> } | null {
+  const totalCount = floating.length + trail.length;
+  if (index < 0 || index >= totalCount) return null;
+
+  const isFloating = index < floating.length;
+  let directClosedKeys: string[];
+  if (isFloating) {
+    const entry = floating[index];
+    directClosedKeys = entry ? [entry.key] : [];
+  } else {
+    const trailIndex = index - floating.length;
+    directClosedKeys = trail.slice(trailIndex).map((e) => e.key);
+  }
+  const descendants = getAllDescendants(directClosedKeys, floating, trail);
+  if (!closePinnedDescendants) {
+    const floatingKeys = new Set(floating.map((e) => e.key));
+    for (const key of descendants) {
+      if (floatingKeys.has(key)) {
+        descendants.delete(key);
+      }
+    }
+  }
+  return {
+    isFloating,
+    removedKeys: new Set<string>([...directClosedKeys, ...descendants]),
+  };
+}
+
+/**
+ * Builds a partial state patch object for restoring a historical snapshot.
+ */
+export function getSnapshotStatePatch<TData>(snapshot: {
+  trail: readonly TrailEntry<TData>[];
+  floating: readonly TrailEntry<TData>[];
+  offsets: Record<string, { x: number; y: number }>;
+  pinnedStates: Record<string, boolean>;
+  zIndexOrder: readonly string[];
+  ownerId: string | null;
+}) {
+  return {
+    trail: snapshot.trail,
+    floating: snapshot.floating,
+    offsets: snapshot.offsets,
+    pinnedStates: snapshot.pinnedStates,
+    zIndexOrder: snapshot.zIndexOrder,
+    ownerId: snapshot.ownerId,
+    ...(snapshot.trail.length === 0 ? { anchorElement: null, anchorRect: null } : {}),
+  };
 }

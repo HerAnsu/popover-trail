@@ -53,7 +53,9 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
           };
         `;
         const blob = new Blob([script], { type: 'application/javascript' });
-        worker = new Worker(URL.createObjectURL(blob));
+        const objectUrl = URL.createObjectURL(blob);
+        worker = new Worker(objectUrl);
+        URL.revokeObjectURL(objectUrl);
       } catch {
         worker = null;
       }
@@ -115,7 +117,7 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
           handleAbort();
           return;
         }
-        signal.addEventListener('abort', handleAbort);
+        signal.addEventListener('abort', handleAbort, { once: true });
       }
 
       if (timeoutMs > 0) {

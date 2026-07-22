@@ -81,10 +81,6 @@ export function usePopoverDragAndDrop({
   }, [transform, dragAxis]);
 
   useEffect(() => {
-    rotationRef.current = { z: tilt.rotation, x: tilt.rotationX, y: tilt.rotationY };
-  }, [tilt]);
-
-  useEffect(() => {
     let rafId: number;
 
     if (isDragging && enableTilt) {

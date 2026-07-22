@@ -864,13 +864,13 @@ describe('createPopoverStore', () => {
         return { data: `Parent payload for ${key}` };
       };
 
-      const store = createPopoverStore(resolver);
-      const parent: TrailEntry = {
+      const store = createPopoverStore<unknown>(resolver);
+      const parent: TrailEntry<unknown> = {
         key: 'parent',
         data: { title: 'Parent Data Payload' },
         isLoading: false,
       };
-      const child: TrailEntry = {
+      const child: TrailEntry<unknown> = {
         key: 'pinned-child',
         parentKey: 'parent',
         error: new Error('Failed initial load'),
@@ -1339,7 +1339,6 @@ describe('createPopoverStore', () => {
         'root-1',
         { getBoundingClientRect: () => new DOMRect() },
         {
-          key: 'root-1',
           onOpen: onOpenFn,
           onPin: onPinFn,
         },
@@ -1356,7 +1355,6 @@ describe('createPopoverStore', () => {
         'error-key',
         { getBoundingClientRect: () => new DOMRect() },
         {
-          key: 'error-key',
           onError: onErrorFn,
         },
       );
@@ -1373,7 +1371,10 @@ describe('createPopoverStore', () => {
       const controller = createPopoverController(store);
 
       const virtualElem = createVirtualElement(150, 300, 200, 50);
-      expect(virtualElem.getBoundingClientRect().top).toBe(300);
+      expect(
+        (virtualElem as unknown as { getBoundingClientRect: () => DOMRect }).getBoundingClientRect()
+          .top,
+      ).toBe(300);
 
       controller.openRoot('owner-ctrl', { key: 'card-ctrl' });
       expect(controller.getState().trail[0]?.key).toBe('card-ctrl');

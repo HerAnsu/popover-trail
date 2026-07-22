@@ -69,6 +69,8 @@ export interface UsePopoverCardResult {
       onClick?: (key: string) => void;
     }>;
   }>;
+  /** Callback handler to toggle the pinned status of the card. */
+  readonly handlePinToggle: () => void;
 }
 
 /**
@@ -185,8 +187,12 @@ export function usePopoverCard({
       } else {
         // Fallback: search for parent popover card in DOM
         if (entry.parentKey) {
+          const escapedKey =
+            typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+              ? CSS.escape(entry.parentKey)
+              : entry.parentKey.replace(/[^a-zA-Z0-9_-]/g, '');
           const parentCard = document.querySelector<HTMLElement>(
-            `[aria-labelledby="title-${CSS.escape(entry.parentKey)}"]`,
+            `[aria-labelledby="title-${escapedKey}"]`,
           );
           if (parentCard) {
             const firstFocusable = parentCard.querySelector<HTMLElement>(
@@ -345,6 +351,14 @@ export function usePopoverCard({
     [entry.buttonControls],
   );
 
+  const handlePinToggle = useCallback(() => {
+    if (ref.current) {
+      actions.togglePin(entry.key, ref.current.getBoundingClientRect());
+    } else {
+      actions.togglePin(entry.key);
+    }
+  }, [actions, entry.key]);
+
   return {
     ref: setCombinedRef,
     style,
@@ -360,5 +374,6 @@ export function usePopoverCard({
     onKeyDown,
     transitionClassName,
     buttonControls,
+    handlePinToggle,
   };
 }
