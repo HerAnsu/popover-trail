@@ -135,7 +135,7 @@ export function App() {
 
 ```bash
 npm run build:lib   # Build CJS, ESM, and DTS distribution bundles via Tsup
-npm test            # Run Vitest test suite (103 unit & integration tests)
+npm test            # Run Vitest test suite 
 npm run typecheck   # Validate TypeScript types via tsc --noEmit
 npm run lint        # Run Oxlint static code analyzer
 npm run format      # Format codebase via Oxfmt
