@@ -3,71 +3,71 @@
 [![CI](https://github.com/HerAnsu/popover-trail/actions/workflows/ci.yml/badge.svg)](https://github.com/HerAnsu/popover-trail/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/popover-trail.svg)](https://www.npmjs.com/package/popover-trail)
 [![license](https://img.shields.io/npm/l/popover-trail.svg)](LICENSE)
-![React 19](https://img.shields.io/badge/React-19-blue.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5%2B-blue.svg)
+[![React 19](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5%2B-blue.svg)](https://www.typescriptlang.org)
 
-Headless React 19 library for managing **cascading popover paths**, **draggable floating windows**, and **async Web Worker data hydration**.
+Headless React 19 library for cascading popover paths, draggable floating windows, and background Web Worker data fetching.
 
-Popover Trail structures popovers as nodes in a tree hierarchy. Unpinned popovers form a single linear path. Pinning a popover detaches it into an independent floating window with physics-based drag interactions and spring tilt.
-
----
-
-## 📚 Documentation & Guides
-
-Comprehensive guides and complete TypeScript API signatures are available in the repository documentation:
-
-* 📖 **[API Reference](docs/API.md)** — Full TypeScript signatures, props tables, and return values for all exported components, hooks, type guards, and utilities.
-* 🚀 **[Feature Guides & Manuals](docs/GUIDES.md)** — Step-by-step guides for advanced use cases:
-  * 🔗 [01. Cascading Paths Guide](docs/guides/01-cascading-paths.md) — Managing nested popover trees & BFS unmounting.
-  * 📌 [02. Draggable Pinning & Physics](docs/guides/02-draggable-pinning.md) — Floating canvas, spring tilt, and boundary collision.
-  * ⚡ [03. Web Worker Data Hydration](docs/guides/03-data-hydration.md) — Offloading data resolution with `createWorkerResolver`.
-  * 🎯 [04. Hover Triggers & Buffers](docs/guides/04-hover-triggers.md) — Hover intent delays, safe triangles, and touch support.
-  * 📚 [05. Stacking & Z-Index Control](docs/guides/05-stacking-zindex.md) — Custom stacking groups, modal overlays, and depth layers.
-  * 🎮 [06. Imperative Controller](docs/guides/06-imperative-controller.md) — Controlling popovers from Redux, WebSockets, or Vanilla JS.
-  * 📦 [07. Scoped Typed Instances](docs/guides/07-scoped-instances.md) — Pre-typed factory hooks via `createPopoverTrail`.
-  * ♿ [08. Accessibility & Focus Lock](docs/guides/08-accessibility-focus.md) — WAI-ARIA dialog roles and keyboard navigation.
+Popover Trail treats popovers as nodes in a tree. Open unpinned cards stay in a single linear trail. Pin any card to detach it onto the viewport canvas as an independent window with spring tilt physics and drag handlers.
 
 ---
 
-## 🌟 Highlights & Features
+## 📚 Documentation
 
-* 🎨 **100% Unstyled Headless API**: Zero forced CSS or pre-made themes. Compatible with **Tailwind CSS**, **CSS Modules**, or **Styled Components**.
-* 🎭 **Polymorphic `as` Prop**: Works natively with **Framer Motion** (`as={motion.div}`), custom HTML tags, or React components.
-* ⚡ **Off-Main-Thread Web Workers**: Offload heavy data resolution to background Web Workers via `createWorkerResolver` with zero-copy transfers.
-* 🛑 **Automatic BFS Cancellation**: Closing a parent popover performs a breadth-first search (BFS) tree cleanup, aborting pending network and worker tasks via `AbortSignal`.
-* 📦 **Compound Components & Hooks**: Choose between high-level declarative `<PopoverCard>` compound elements or low-level `usePopoverCard` hooks.
+Detailed API signatures and step-by-step guides live right here in the repository:
+
+* 📖 **[API Reference](docs/API.md)**: TypeScript types, props tables, and return values for all components, hooks, and helpers.
+* 🚀 **[Guides & Manuals](docs/GUIDES.md)**: Deep dives into specific use cases:
+  * 🔗 [01. Cascading Paths Guide](docs/guides/01-cascading-paths.md): Managing popover trees and BFS tree cleanup.
+  * 📌 [02. Draggable Pinning & Physics](docs/guides/02-draggable-pinning.md): Canvas drag, spring tilt, and boundary clamping.
+  * ⚡ [03. Web Worker Data Hydration](docs/guides/03-data-hydration.md): Offloading fetch and parse tasks to background threads.
+  * 🎯 [04. Hover Triggers & Buffers](docs/guides/04-hover-triggers.md): Hover delays, safe triangles, and touch events.
+  * 📚 [05. Stacking & Z-Index Control](docs/guides/05-stacking-zindex.md): Custom stack groups and depth layers.
+  * 🎮 [06. Imperative Controller](docs/guides/06-imperative-controller.md): Controlling popovers from Redux, WebSockets, or Vanilla DOM.
+  * 📦 [07. Scoped Typed Instances](docs/guides/07-scoped-instances.md): Pre-typed factory hooks via `createPopoverTrail`.
+  * ♿ [08. Accessibility & Focus Lock](docs/guides/08-accessibility-focus.md): WAI-ARIA dialog roles and keyboard navigation.
 
 ---
 
-## 🚀 Quick Start
+## Why Popover Trail?
 
-### 1. Installation
+* **Unstyled by design.** Zero bundled CSS. Style cards with Tailwind, CSS Modules, or whatever you use.
+* **Framer Motion friendly.** Pass `as={motion.div}` to `<PopoverCard>` and animate entry/exit states.
+* **Background Worker thread.** Resolve heavy data off the main thread using `createWorkerResolver`.
+* **Automatic request cancellation.** Closing a parent popover triggers BFS cleanup, aborting pending network and worker tasks via `AbortSignal`.
+* **Compound components or hooks.** Pick `<PopoverCard>` compound subcomponents or drop down to `usePopoverCard` hooks when you need raw control.
+
+---
+
+## Quick Start
+
+### 1. Install
 
 ```bash
 npm install popover-trail
 ```
 
-### 2. Configure PopoverProvider & PopoverTrail
+### 2. Wrap your app in PopoverProvider
 
-Wrap your component tree with `PopoverProvider` and add the `PopoverTrail` portal renderer:
+Add `PopoverProvider` around your layout and render `PopoverTrail` to mount portals:
 
 ```tsx
 import { PopoverProvider, PopoverTrail, SimplePopoverCache } from 'popover-trail';
 
-// Async data resolver function
+// Data resolver called when a card opens
 const resolveData = async (key: string, parentData?: unknown, context?: unknown, signal?: AbortSignal) => {
-  const response = await fetch(`/api/items/${key}`, { signal });
-  return response.json();
+  const res = await fetch(`/api/items/${key}`, { signal });
+  return res.json();
 };
 
-const cache = new SimplePopoverCache(300000, 50); // 5-minute TTL, max 50 items
+const cache = new SimplePopoverCache(300000, 50); // 5-minute TTL, 50 items max
 
 export function App() {
   return (
     <PopoverProvider resolveData={resolveData} cache={cache}>
-      <YourAppWorkspace />
+      <Workspace />
 
-      {/* Renders active cascading trail and floating popovers into DOM portal */}
+      {/* Renders active trail and floating popovers into DOM portals */}
       <PopoverTrail
         renderCard={(entry, index, isPinned) => (
           <Card key={entry.key} entry={entry} index={index} isPinned={isPinned} />
@@ -78,9 +78,9 @@ export function App() {
 }
 ```
 
-### 3. Build Unstyled Popover Cards
+### 3. Build popover cards
 
-Use compound components for clean, declarative popover cards without manual hook wiring:
+Use compound components for clean JSX:
 
 ```tsx
 import { PopoverCard, isResolvedEntry, type TrailEntry } from 'popover-trail';
@@ -116,18 +116,18 @@ export function Card({ entry, index, isPinned }: CardProps) {
 
 ---
 
-## ⚡ Web Worker Hydration Example
+## Web Worker Hydration
 
-Keep the main UI thread at 60-120 FPS by resolving popover data in a background Web Worker:
+Fetch and process data off the main UI thread:
 
 ```tsx
 import { PopoverProvider, createWorkerResolver } from 'popover-trail';
 
 const workerResolver = createWorkerResolver(
   async (key, parentData) => {
-    // Executed in a background Web Worker thread
-    const response = await fetch(`/api/data/${key}`);
-    return response.json();
+    // Runs inside a Web Worker thread
+    const res = await fetch(`/api/data/${key}`);
+    return res.json();
   },
   { timeoutMs: 10000, autoRestart: true }
 );
@@ -135,7 +135,7 @@ const workerResolver = createWorkerResolver(
 export function App() {
   return (
     <PopoverProvider resolveData={workerResolver}>
-      <YourAppWorkspace />
+      <Workspace />
     </PopoverProvider>
   );
 }
@@ -143,18 +143,18 @@ export function App() {
 
 ---
 
-## 🛠️ Development & Verification
+## Development
 
 ```bash
-npm run build:lib   # Build ESM, CJS, and DTS bundles via Tsup
-npm test            # Run 103 Vitest unit & integration tests
-npm run typecheck   # Typecheck TypeScript code without emitting
-npm run lint        # Check code quality via Oxlint
-npm run format      # Format codebase via Oxfmt
+npm run build:lib   # Build ESM, CJS, and DTS outputs with Tsup
+npm test            # Run Vitest test suite (103 tests)
+npm run typecheck   # Check TypeScript types
+npm run lint        # Check code with Oxlint
+npm run format      # Format with Oxfmt
 ```
 
 ---
 
-## 📄 License
+## License
 
 [MIT](LICENSE)
