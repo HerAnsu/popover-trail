@@ -1,8 +1,8 @@
-# Popover Trail: API Reference
+# Popover Trail: API Reference (Master Specification)
 
-Exhaustive API reference for all components, hooks, type definitions, factories, type guards, utilities, and `popover-trail/dnd` extensions exported by `popover-trail`.
+Exhaustive, master-level API documentation for all components, compound subcomponents, hooks, type definitions, type guards, factories, utilities, and `popover-trail/dnd` canvas extensions.
 
-> Looking for feature guides and usage tutorials? Check out [Feature Guides & Manuals](GUIDES.md).
+> Looking for step-by-step feature guides and usage tutorials? Check out [Feature Guides & Manuals](GUIDES.md).
 
 ---
 
@@ -17,6 +17,10 @@ Exhaustive API reference for all components, hooks, type definitions, factories,
    - [FocusLockOptions](#focuslockoptions)
    - [ZIndexBaseMap](#zindexbasemap)
    - [PopoverSlotComponents](#popoverslotcomponents)
+   - [PopoverPlacement & Layout Strategy](#popoverplacement--layout-strategy)
+   - [PopoverTransitionStatus](#popovertransitionstatus)
+   - [KeyboardShortcutMap](#keyboardshortcutmap)
+   - [PopoverEntryDiscriminatedState](#popoverentrydiscriminatedstate)
 2. [Components & Context](#2-components--context)
    - [PopoverProvider](#popoverprovider)
    - [PopoverCard](#popovercard)
@@ -52,7 +56,7 @@ Exhaustive API reference for all components, hooks, type definitions, factories,
    - [PopoverCanvas](#popovercanvas)
    - [usePopoverDraggableCard](#usepopoverdraggablecard)
    - [PopoverCard (DND version)](#popovercard-dnd-version)
-6. [Factories](#6-factories)
+6. [Factories & Store Initialization](#6-factories--store-initialization)
    - [createPopoverTrail](#createpopovertrail)
    - [createPopoverStore](#createpopoverstore)
 7. [Type Guards & Event Predicates](#7-type-guards--event-predicates)
@@ -289,6 +293,61 @@ export interface PopoverSlotComponents {
 
 ---
 
+### `PopoverPlacement` & Layout Strategy
+
+Allowed alignment positions relative to trigger element:
+
+```ts
+export type PopoverPlacement =
+  | 'top'
+  | 'top-start'
+  | 'top-end'
+  | 'bottom'
+  | 'bottom-start'
+  | 'bottom-end'
+  | 'right'
+  | 'right-start'
+  | 'right-end'
+  | 'left'
+  | 'left-start'
+  | 'left-end';
+```
+
+---
+
+### `PopoverTransitionStatus`
+
+Lifecycle transition status for animated popovers:
+
+```ts
+export type PopoverTransitionStatus = 'mounting' | 'mounted' | 'unmounting';
+```
+
+---
+
+### `KeyboardShortcutMap`
+
+Map of key combinations to action handlers:
+
+```ts
+export type KeyboardShortcutMap = Record<string, (key: string) => void>;
+```
+
+---
+
+### `PopoverEntryDiscriminatedState`
+
+Discriminated union for type-safe state handling:
+
+```ts
+export type PopoverEntryDiscriminatedState<TData = unknown> =
+  | { state: 'loading'; data?: undefined; error?: undefined }
+  | { state: 'resolved'; data: TData; error?: undefined }
+  | { state: 'error'; data?: undefined; error: Error };
+```
+
+---
+
 ## 2. Components & Context
 
 ### `<PopoverProvider>`
@@ -370,17 +429,103 @@ Declarative wrapper attaching click events, hover listeners, and ARIA attributes
 
 React Context and hook exposing `{ entry, index, isPinned, card, actions }` scope state to internal card subcomponents.
 
+```tsx
+import { usePopoverCardContext } from 'popover-trail';
+
+function CustomCardHeader() {
+  const { entry, index, isPinned, actions } = usePopoverCardContext();
+  return (
+    <div>
+      <span>Card: {entry.key}</span>
+      <button onClick={() => actions.togglePin(entry.key)}>{isPinned ? 'Unpin' : 'Pin'}</button>
+    </div>
+  );
+}
+```
+
 ---
 
 ## 3. Core Hooks
 
-- `usePopoverCard(options)`: Primary hook combining Floating UI positioning, pointer drag handling, velocity spring tilt, and pin state toggles.
-- `usePopover(key, options?)`: High-level hook for managing a specific popover card by key.
-- `usePopoverTrigger(key, options?)`: Returns event handlers and ARIA attributes for root triggers.
-- `usePopoverNestedTrigger(key, parentKey, options?)`: Returns event handlers for nested child triggers.
-- `usePopoverActions()`: Returns memoized action dispatchers (`closeByKey`, `togglePin`, `retryPopover`, `closeAll`, `undo`, `redo`).
-- `usePopoverGeometry(options)`: Calculates layout positioning and viewport collision bounds.
-- `usePopoverDragAndDrop(options)`: Handles pointer drag tracking and spring tilt physics.
+### `usePopoverCard(options)`
+
+Primary hook combining Floating UI positioning, pointer drag handling, velocity spring tilt, and pin state toggles.
+
+```ts
+function usePopoverCard<TData = unknown>(
+  options: UsePopoverCardOptions<TData>
+): UsePopoverCardResult
+```
+
+---
+
+### `usePopover(key, options?)`
+
+High-level hook for managing a specific popover card by key.
+
+```ts
+function usePopover<TData = unknown, TContext = unknown>(
+  key: string,
+  options?: PopoverDisplayOptions
+): UsePopoverResult<TData>
+```
+
+---
+
+### `usePopoverTrigger(key, options?)`
+
+Returns event handlers and ARIA attributes for root triggers.
+
+```ts
+function usePopoverTrigger(
+  popoverKey: string,
+  options?: PopoverDisplayOptions & { hover?: HoverConfig }
+): PopoverTriggerPropsResult
+```
+
+---
+
+### `usePopoverNestedTrigger(key, parentKey, options?)`
+
+Returns event handlers for nested child triggers.
+
+```ts
+function usePopoverNestedTrigger(
+  popoverKey: string,
+  parentKey: string,
+  options?: PopoverDisplayOptions
+): PopoverTriggerPropsResult
+```
+
+---
+
+### `usePopoverActions()`
+
+Returns memoized store action dispatcher methods:
+
+```ts
+function usePopoverActions<TData = unknown, TContext = unknown>(): PopoverActions<TData, TContext>
+```
+
+---
+
+### `usePopoverGeometry(options)`
+
+Calculates layout positioning and viewport collision bounds:
+
+```ts
+function usePopoverGeometry(options: UsePopoverGeometryOptions): UsePopoverGeometryResult
+```
+
+---
+
+### `usePopoverDragAndDrop(options)`
+
+Handles pointer drag tracking and spring tilt physics:
+
+```ts
+function usePopoverDragAndDrop(options: UsePopoverDragAndDropOptions): UsePopoverDragAndDropResult
+```
 
 ---
 
@@ -439,19 +584,57 @@ export function CanvasApp() {
 
 Composite hook integrating `@dnd-kit/core` drag handles, pointer event listeners, and physical spring tilt.
 
+```ts
+function usePopoverDraggableCard(
+  options: UsePopoverDraggableCardOptions
+): UsePopoverDraggableCardResult
+```
+
 ---
 
-## 6. Factories
+### `PopoverCard` (DND version)
+
+High-level pre-bound PopoverCard component that handles hooks, refs, styles, dragging physics, focus locks, and event bindings automatically.
+
+```tsx
+import { PopoverCard } from 'popover-trail/dnd';
+
+<PopoverCard entry={entry} index={index} isPinned={isPinned} enableFocusLock={true}>
+  <h3>Card Content</h3>
+</PopoverCard>
+```
+
+---
+
+## 6. Factories & Store Initialization
 
 ### `createPopoverTrail<TData, TContext, TPopoverKey>()`
 
 Creates pre-typed, schema-bound components and hooks.
+
+```tsx
+import { createPopoverTrail } from 'popover-trail';
+
+export interface DocNode { id: string; title: string; }
+export type DocKeys = 'doc-1' | 'doc-2';
+
+export const DocScope = createPopoverTrail<DocNode, { theme: string }, DocKeys>();
+```
 
 ---
 
 ### `createPopoverStore(initialState?)`
 
 Creates low-level Zustand store instance for independent state trees.
+
+```ts
+import { createPopoverStore } from 'popover-trail';
+
+const customStore = createPopoverStore({
+  maxDepth: 5,
+  closePinnedDescendants: true,
+});
+```
 
 ---
 
@@ -503,11 +686,24 @@ function createWorkerResolver<TData = unknown, TContext = unknown>(
 ): PopoverResolver<TData, TContext>
 ```
 
+#### Options (`WorkerResolverOptions`)
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `timeoutMs` | `number` | `30000` | Task execution timeout in milliseconds. |
+| `autoRestart` | `boolean` | `true` | Automatically restart worker on unhandled error. |
+| `onWorkerError` | `(err: Error) => void` | `undefined` | Error callback handler. |
+
 ---
 
 ### `createPopoverController(store)`
 
 Imperative controller for managing popovers outside React component trees.
+
+```ts
+function createPopoverController<TData = unknown, TContext = unknown>(
+  store: StoreApi<PopoverStore<TData, TContext>>
+): PopoverController<TData, TContext>
+```
 
 ---
 
@@ -538,6 +734,10 @@ Generates inline CSS style object combining placement, transform, and z-index pr
 ### `invariant(condition, message)`
 
 Asserts runtime condition and throws Error with message when condition evaluates to `false`.
+
+```ts
+invariant(Boolean(key), 'Key is required');
+```
 
 ---
 
