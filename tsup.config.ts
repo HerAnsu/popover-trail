@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
   entry: ['src/lib/popover/index.ts', 'src/lib/popover/dnd.tsx'],
   format: ['cjs', 'esm'],
-  dts: true,
+  dts: false,
   tsconfig: 'tsconfig.lib.json',
   splitting: false,
   sourcemap: true,

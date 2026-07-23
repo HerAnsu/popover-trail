@@ -4,6 +4,7 @@
     "noEmit": false,
     "declaration": true,
     "declarationMap": true,
+    "rootDir": "src/lib/popover",
     "ignoreDeprecations": "6.0"
   },
   "include": ["src/lib/popover"],

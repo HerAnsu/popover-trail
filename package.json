@@ -53,7 +53,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:lib": "tsup",
+    "build:lib": "tsup && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "lint": "oxlint",
     "format": "oxfmt --write src",
     "typecheck": "tsc --noEmit",
@@ -94,7 +94,7 @@
     "react-dom": "^19.2.7",
     "react-focus-lock": "^2.13.7",
     "tsup": "^8.5.1",
-    "typescript": "~6.0.2",
+    "typescript": "^7.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10",
     "zustand": "^5.0.14"
