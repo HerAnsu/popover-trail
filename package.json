@@ -1,7 +1,33 @@
 {
   "name": "popover-trail",
   "version": "1.0.0",
+  "description": "Headless React 19 library for managing cascading popover paths, draggable floating windows, and async data hydration.",
+  "keywords": [
+    "react",
+    "react-19",
+    "popover",
+    "popover-trail",
+    "headless",
+    "floating-ui",
+    "zustand",
+    "dnd",
+    "draggable",
+    "compound-components",
+    "web-workers"
+  ],
+  "author": "Ansu <kstenind@gmail.com>",
   "license": "MIT",
+  "homepage": "https://github.com/HerAnsu/popover-trail#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HerAnsu/popover-trail.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HerAnsu/popover-trail/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -45,6 +71,11 @@
     "react-dom": "^19.2.7",
     "react-focus-lock": "^2.13.7",
     "zustand": "^5.0.14"
+  },
+  "peerDependenciesMeta": {
+    "@dnd-kit/core": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
