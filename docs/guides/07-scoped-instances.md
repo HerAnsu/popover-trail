@@ -103,8 +103,9 @@ function DocumentCard({ entry, index, isPinned }: { entry: TrailEntry<DocumentNo
 
 ---
 
-## Summary Checklist
+## 4. Scoped Subsystems Architecture
 
-- [x] Call `createPopoverTrail<TData, TContext, TPopoverKey>()` to create isolated subsystems.
-- [x] Export the factory result as a named scope (e.g. `DocumentTrail`).
-- [x] Use `DocumentTrail.PopoverProvider` and `DocumentTrail.PopoverTrigger` for scope-isolated popovers.
+Scoped instances isolate popover state across different UI regions:
+* **Schema Enforcement**: `createPopoverTrail<TData, TContext, TPopoverKey>()` locks down component props and hook return types to exact schemas.
+* **Independent Stores**: Each `PopoverProvider` created from a factory maintains its own store instance, so closing popovers in one zone never affects another.
+* **Reusable Exports**: Export named scopes (e.g. `DocumentTrail`, `SidebarTrail`) for clean team adoption across large codebases.

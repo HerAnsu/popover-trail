@@ -80,8 +80,9 @@ When moving the mouse cursor from the trigger element onto the opened popover ca
 
 ---
 
-## Summary Checklist
+## 4. Hover Delay & Intent Architecture
 
-- [x] Set `openDelay` (100–200ms) to prevent accidental popover opens during mouse movements.
-- [x] Set `closeDelay` (200–300ms) to allow sufficient time for cursor travel across gap offsets.
-- [x] Use `closeOnMouseLeave: false` for sticky inspect cards that require explicit close action.
+Hover trigger interactions are managed through isolated timer managers:
+* **Open Delays (`openDelay`)**: Introduce a short delay buffer (100–200ms) to ensure popovers only open when the cursor pauses intentionally over a trigger.
+* **Close Delays (`closeDelay`)**: Provide a grace window (200–300ms) allowing users to move the cursor across offset gaps between the trigger element and the card content.
+* **Sticky Mode (`closeOnMouseLeave: false`)**: Keeps popover cards open after hover activation until closed by an explicit user action.

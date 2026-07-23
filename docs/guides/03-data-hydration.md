@@ -141,8 +141,9 @@ export function Card({ entry, index, isPinned }: { entry: TrailEntry; index: num
 
 ---
 
-## Summary Checklist
+## 5. Hydration & Error Recovery Architecture
 
-- [x] Configure `SimplePopoverCache` to prevent redundant network requests.
-- [x] Use `createWorkerResolver` for CPU-intensive data transformations.
-- [x] Provide a retry button via `actions.retryPopover(key)` for error states.
+Data hydration is decoupled from component rendering loops:
+* **Caching Layer**: `SimplePopoverCache` eliminates redundant network requests by returning cached payloads synchronously on cache hits.
+* **Worker Offloading**: `createWorkerResolver` runs data parsing tasks in a background thread, preventing main-thread UI jank during heavy computations.
+* **Error Resilience**: Failed async operations set `entry.error`, allowing components to display custom error UI and trigger re-fetching via `actions.retryPopover(key)`.

@@ -181,8 +181,9 @@ If you prefer closing pinned children when a parent is closed, set `closePinnedD
 
 ---
 
-## Summary Checklist
+## 5. Path Lifecycle & State Management
 
-- [x] Use `<PopoverTrigger>` or `usePopoverTrigger` for root entry nodes.
-- [x] Use `<PopoverTrigger>` inside cards or `usePopoverNestedTrigger` for child nodes.
-- [x] Pass `signal` to `fetch` to enable automatic BFS network request cancellation.
+When managing cascading popover paths, the library handles node relationships automatically:
+* **Root Triggers**: Initiating a new root popover starts a fresh linear trail and unmounts previous unpinned trails.
+* **Child Triggers**: Nested triggers pass `parentKey` to link child nodes directly to their parent in the hierarchy tree.
+* **Request Cancellation**: Asynchronous data resolvers receive an `AbortSignal`, allowing pending network requests to abort cleanly when a parent popover closes before child data finishes loading.

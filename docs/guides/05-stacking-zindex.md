@@ -107,8 +107,9 @@ export function App() {
 
 ---
 
-## Summary Checklist
+## 6. Stacking Architecture
 
-- [x] Use `<PopoverTrail>` to escape CSS stacking context traps.
-- [x] Use `useIsPopoverTopMost(key)` to highlight active topmost cards.
-- [x] Define `zIndexBaseMap` when working with multi-zone layouts (sidebars, modals).
+Depth calculation and stacking behavior follow explicit rules:
+* **Escaping Traps**: Rendering through `<PopoverTrail>` or `<PopoverPortal>` places cards directly under `document.body`, avoiding CSS stacking context traps.
+* **Top-Most Detection**: `useIsPopoverTopMost(key)` tracks the active card on top of the visual stack for focus management and active UI styling.
+* **Multi-Zone Grouping**: `zIndexBaseMap` defines custom base layers for complex UI zones like sidebars and modals.

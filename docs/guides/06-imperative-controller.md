@@ -88,8 +88,9 @@ export function WebSocketSync() {
 
 ---
 
-## Summary Checklist
+## 4. Imperative Controller Architecture
 
-- [x] Use `createPopoverController(store)` for imperative state updates.
-- [x] Access `usePopoverStoreApi()` inside React components to get the store API reference.
-- [x] Call `controller.clear()` or `controller.closeByKey(key)` from non-React event listeners.
+The controller operates directly on the underlying Zustand store:
+* **Off-Tree Execution**: Methods like `closeByKey`, `togglePin`, and `clear` execute synchronously outside React component render cycles.
+* **External Integration**: Easily connect popover state updates to Redux middleware, RxJS streams, WebSockets, or global DOM events.
+* **Direct State Inspection**: `controller.getState()` provides immediate access to current `trail` and `floating` arrays.

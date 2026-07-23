@@ -113,8 +113,9 @@ export function PopoverDebugInspector() {
 
 ---
 
-## Summary Checklist
+## 4. Development & Build Verification Pipeline
 
-- [x] Run `npm run typecheck` to verify TypeScript 7 types before committing.
-- [x] Run `npm test` to verify all 103 Vitest unit tests pass cleanly.
-- [x] Run `npm run build:lib` to test distribution bundle generation.
+The verification pipeline ensures code quality across all release channels:
+* **Static Verification**: `npm run typecheck` validates types using TypeScript 7, and `npm run lint` checks quality rules via Oxlint.
+* **Automated Testing**: `npm test` runs 103 unit and integration tests across 16 test files.
+* **Continuous Integration**: GitHub Actions (`ci.yml`) automatically builds and tests every commit pushed to the repository.

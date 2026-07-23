@@ -140,8 +140,9 @@ During dragging, `willChange: "transform"` is applied to promote popover element
 
 ---
 
-## Summary Checklist
+## 5. Canvas Interaction Architecture
 
-- [x] Use `<PopoverCard.Handle>` or `{...dragHandleProps}` to define drag handle areas.
-- [x] Use `<PopoverCard.PinButton>` or `handlePinToggle` for pinning actions.
-- [x] Verify `touch-action: none` is set on drag handles for touch device support.
+When working with floating pinned cards, the library coordinates pointer interactions and layout positioning:
+* **Drag Handles**: `<PopoverCard.Handle>` or `{...dragHandleProps}` attach pointer capture handlers, allowing users to drag cards anywhere across the viewport.
+* **Pinning Mechanics**: Toggling the pin state transfers the card between anchor-relative positioning and absolute viewport coordinates without resetting card state.
+* **Touch Device Support**: `touch-action: none` is automatically applied to drag handle elements to prevent viewport page scrolling during touch dragging.

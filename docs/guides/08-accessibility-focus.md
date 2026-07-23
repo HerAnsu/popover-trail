@@ -65,8 +65,9 @@ const triggerProps = usePopoverTrigger('card-shortcut-demo', {
 
 ---
 
-## Summary Checklist
+## 4. Accessibility & Focus Locking Architecture
 
-- [x] Use `role="dialog"` and `aria-expanded` for screen reader accessibility.
-- [x] Configure `focusLockOptions` for modal-like popovers requiring focus trapping.
-- [x] Use `keyboardShortcuts` for custom keyboard hotkey bindings.
+Accessibility and keyboard navigation are built into the card lifecycle:
+* **WAI-ARIA Roles**: Cards render with `role="dialog"` and `aria-expanded` attributes for screen reader compatibility.
+* **Focus Trapping**: `FocusLockOptions` traps focus within the topmost card and restores focus to the trigger on close.
+* **Keyboard Hotkeys**: `keyboardShortcuts` maps custom hotkeys (`Mod+s`, `Escape`, `Alt+r`) to store action dispatchers.
