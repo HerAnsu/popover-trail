@@ -33,17 +33,18 @@ export function ImperativeControllerBridge() {
   useEffect(() => {
     const controller = createPopoverController(store);
 
-    // Global listener outside React
-    const handleCustomSignal = (e: CustomEvent<{ action: string; key: string }>) => {
-      if (e.detail.action === 'CLOSE') {
-        controller.closeByKey(e.detail.key);
-      } else if (e.detail.action === 'TOGGLE_PIN') {
-        controller.togglePin(e.detail.key);
+    // Global event listener outside React
+    const handleCustomSignal = (e: Event) => {
+      const customEvt = e as CustomEvent<{ action: string; key: string }>;
+      if (customEvt.detail?.action === 'CLOSE') {
+        controller.closeByKey(customEvt.detail.key);
+      } else if (customEvt.detail?.action === 'TOGGLE_PIN') {
+        controller.togglePin(customEvt.detail.key);
       }
     };
 
-    window.addEventListener('app-popover-signal' as any, handleCustomSignal);
-    return () => window.removeEventListener('app-popover-signal' as any, handleCustomSignal);
+    window.addEventListener('app-popover-signal', handleCustomSignal);
+    return () => window.removeEventListener('app-popover-signal', handleCustomSignal);
   }, [store]);
 
   return null;
@@ -84,3 +85,11 @@ export function WebSocketSync() {
   return null;
 }
 ```
+
+---
+
+## Summary Checklist
+
+- [x] Use `createPopoverController(store)` for imperative state updates.
+- [x] Access `usePopoverStoreApi()` inside React components to get the store API reference.
+- [x] Call `controller.clear()` or `controller.closeByKey(key)` from non-React event listeners.

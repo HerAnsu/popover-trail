@@ -31,12 +31,64 @@ When a user clicks a root trigger, any existing unpinned trail is unmounted, and
 
 ---
 
-## 2. Implementing Triggers
+## 2. Implementing Triggers & Headless Components
 
-### Root Triggers (`usePopoverTrigger`)
+### Declarative Headless Syntax (`<PopoverCard>` & `<PopoverTrail>`)
 
-Root triggers initiate a new popover hierarchy path.
+The recommended declarative approach uses compound components (`<PopoverCard>`, `<PopoverTrail>`) without manual hook wiring:
 
+```tsx
+import { PopoverCard, PopoverTrail, PopoverTrigger, isResolvedEntry, type TrailEntry } from 'popover-trail';
+
+interface CardData {
+  title: string;
+  childKeys: string[];
+}
+
+export function App() {
+  return (
+    <PopoverProvider resolveData={resolveData}>
+      {/* Root trigger for starting a trail */}
+      <PopoverTrigger popoverKey="user-1">
+        <button className="btn">Inspect User #1</button>
+      </PopoverTrigger>
+
+      {/* High-level portal renderer */}
+      <PopoverTrail
+        renderCard={(entry: TrailEntry<CardData>, index, isPinned) => (
+          <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned} className="card">
+            <PopoverCard.Handle className="card-header">
+              <span>{entry.key}</span>
+              <PopoverCard.PinButton />
+              <PopoverCard.CloseButton />
+            </PopoverCard.Handle>
+
+            <PopoverCard.Content className="card-body">
+              {entry.isLoading && <p>Loading...</p>}
+              {isResolvedEntry(entry) && (
+                <div>
+                  <h3>{entry.data.title}</h3>
+                  {entry.data.childKeys.map((childKey) => (
+                    <PopoverTrigger key={childKey} popoverKey={childKey}>
+                      <button className="nested-btn">Open {childKey} →</button>
+                    </PopoverTrigger>
+                  ))}
+                </div>
+              )}
+            </PopoverCard.Content>
+          </PopoverCard>
+        )}
+      />
+    </PopoverProvider>
+  );
+}
+```
+
+### Low-Level Hook Syntax (`usePopoverTrigger` & `usePopoverNestedTrigger`)
+
+When building custom trigger elements, low-level hooks are available:
+
+#### Root Triggers (`usePopoverTrigger`)
 ```tsx
 import { usePopoverTrigger } from 'popover-trail';
 
@@ -57,15 +109,11 @@ export function UserListRow({ userId, name }: { userId: string; name: string }) 
 }
 ```
 
-### Nested Triggers (`usePopoverNestedTrigger`)
-
-Inside a popover card, pass the current entry's `key` as `parentKey` to create nested child triggers.
-
+#### Nested Triggers (`usePopoverNestedTrigger`)
 ```tsx
 import { usePopoverNestedTrigger, type TrailEntry } from 'popover-trail';
 
 export function UserPopoverCard({ entry }: { entry: TrailEntry<{ id: string; orgId: string }> }) {
-  // Nested trigger opening organization details card
   const orgTriggerProps = usePopoverNestedTrigger(
     `org-card-${entry.data?.orgId}`,
     entry.key, // parentKey ties org card to this user card
@@ -99,59 +147,42 @@ Closing "Card 1" automatically closes:
 
 This prevents orphaned child popovers from lingering on the screen when their parent context is removed.
 
-### AbortController Network Request Cancellation
+### `AbortController` Signal Propagation
 
-When a popover card unmounts before its data fetch resolves, Popover Trail immediately triggers the `AbortController.signal` attached to that entry.
+When a popover entry is unmounted during BFS branch cleanup, any pending asynchronous `resolveData` request is cancelled immediately:
 
 ```tsx
-// Inside your resolveData function
-const resolveData = async (key: string, parentData?: unknown, context?: unknown, signal?: AbortSignal) => {
-  // The signal parameter is automatically linked to the entry's AbortController
+const resolveData = async (
+  key: string,
+  parentData?: unknown,
+  context?: unknown,
+  signal?: AbortSignal
+) => {
   const response = await fetch(`/api/details/${key}`, { signal });
-  
-  if (!response.ok) {
-    throw new Error(`HTTP error: ${response.status}`);
-  }
-  
   return response.json();
 };
 ```
 
-If a user rapidly opens and closes popovers, pending HTTP requests are cancelled on the network layer, saving bandwidth and preventing race conditions.
+If the user closes "Card 1" while "Card 3" is still loading, `signal.aborted` evaluates to `true`, cancelling the underlying HTTP fetch request.
 
 ---
 
-## 4. Technical Nuances & Edge Cases
+## 4. Retaining Pinned Descendants (`closePinnedDescendants`)
 
-### Event Propagation (React Portals vs Native DOM)
+By default, pinning a child popover detaches it into a floating window, protecting it from closing when its parent is closed.
 
-Because `<PopoverPortal>` renders cards into `document.body` via React Portals, event bubbling behaves differently across React and DOM boundaries:
-
-* **React Synthetic Event Tree**: React synthetic events bubble up through the JSX parent hierarchy (the component where `<PopoverPortal>` is placed), **not** the DOM parent where the trigger element lives.
-* **Native DOM Event Tree**: Native browser events bubble up through `document.body`.
-* **Nuance / Pitfall**: Calling `e.stopPropagation()` on a native event inside a popover card will not stop the React synthetic event from bubbling up your React component tree. If you need to stop propagation across triggers, use `e.stopPropagation()` on the React event object.
+If you prefer closing pinned children when a parent is closed, set `closePinnedDescendants={true}` on `<PopoverProvider>`:
 
 ```tsx
-// Inside a card component
-<button
-  onClick={(e) => {
-    // Stops synthetic bubbling up through the parent React component tree
-    e.stopPropagation();
-    handleCardButtonClick();
-  }}
->
-  Card Action
-</button>
+<PopoverProvider resolveData={resolveData} closePinnedDescendants={true}>
+  <App />
+</PopoverProvider>
 ```
 
-### Rapid Click Race Conditions & Hydration Counters
+---
 
-When users rapidly click between different triggers:
-1. Each click increments an internal entry `hydrationId` counter.
-2. If an older promise resolves after a newer click has already mounted, the result is discarded if its `hydrationId` does not match the current active state.
-3. This guarantees that stale async responses never overwrite newer state, even if network responses arrive out of order.
+## Summary Checklist
 
-### Circular References & Tree Validation
-
-* **Duplicate Keys**: Popover keys must be unique. Attempting to open a child popover with a key that already exists in its ancestor path is automatically rejected by the store to prevent infinite recursive loops.
-* **Max Depth Enforcers**: Use `maxDepth` on `<PopoverProvider>` (e.g. `maxDepth={4}`) to restrict the nesting level. Any attempt to open a nested popover beyond `maxDepth` is ignored safely without throwing runtime exceptions.
+- [x] Use `<PopoverTrigger>` or `usePopoverTrigger` for root entry nodes.
+- [x] Use `<PopoverTrigger>` inside cards or `usePopoverNestedTrigger` for child nodes.
+- [x] Pass `signal` to `fetch` to enable automatic BFS network request cancellation.

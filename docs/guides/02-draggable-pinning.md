@@ -31,7 +31,33 @@ Pinning a card removes it from `trail` and pushes it into `floating`. Unpinning 
 
 ## 2. Implementing Pin Controls
 
-Use `usePopoverCard` to access `handlePinToggle` and `dragHandleProps`:
+### Declarative Headless Syntax (`<PopoverCard>`)
+
+The compound component syntax manages drag handles and pin buttons automatically:
+
+```tsx
+import { PopoverCard, type TrailEntry } from 'popover-trail';
+
+export function PopoverCardFrame({ entry, index, isPinned }: { entry: TrailEntry; index: number; isPinned: boolean }) {
+  return (
+    <PopoverCard entry={entry} index={index} isPinned={isPinned} className="popover-card">
+      <PopoverCard.Handle className="drag-handle">
+        <span className="card-key">{entry.key}</span>
+        <PopoverCard.PinButton className="btn-pin" />
+        <PopoverCard.CloseButton className="btn-close" />
+      </PopoverCard.Handle>
+
+      <PopoverCard.Content className="card-body">
+        <p>Card Content</p>
+      </PopoverCard.Content>
+    </PopoverCard>
+  );
+}
+```
+
+### Low-Level Hook Syntax (`usePopoverCard`)
+
+For complete manual control over DOM refs and event handlers, use `usePopoverCard`:
 
 ```tsx
 import { usePopoverCard, type TrailEntry } from 'popover-trail';
@@ -97,87 +123,25 @@ The RAF animation loop automatically terminates when the tilt angle drops below 
 
 ### Sub-Pixel Coordinate Rounding & Blurry Text Fix
 
-When browsers render element positions using fractional pixels (e.g. `left: 104.34px` or `translate3d(104.34px, 205.67px, 0)`), font rendering engines often anti-alias text across sub-pixel boundaries, producing blurry text on non-Retina / 1x DPI displays.
+When browsers render element positions using fractional pixels (e.g. `left: 104.34px` or `translate3d(104.34px, 205.67px, 0)`), font rendering engines anti-alias text across sub-pixel boundaries, producing blurry text.
 
-* **Solution in Popover Trail**: All coordinates returned by `usePopoverGeometry` and `usePopoverDragAndDrop` are rounded using `Math.round()` before applying inline CSS styles.
-* **GPU Hardware Acceleration**: Transforms use integer-aligned `translate3d(Xpx, Ypx, 0)` to trigger GPU compositing without sub-pixel blur.
+Popover Trail rounds all coordinates (`Math.round`) in `getPopoverStyles` before applying CSS transforms:
 
-```css
-/* Recommended CSS for popover card elements */
-.popover-card {
-  /* Prevent browser sub-pixel font anti-aliasing issues */
-  backface-visibility: hidden;
-  -webkit-font-smoothing: subpixel-antialiased;
-}
+```tsx
+const top = Math.round(finalLayoutPos.top);
+const left = Math.round(finalLayoutPos.left);
+const translateX = Math.round(dragX + offset.x);
+const translateY = Math.round(dragY + offset.y);
 ```
 
-### Mobile & Touch Pointer Events (`touch-action`)
+### Hardware Compositor Promotion (`willChange: transform`)
 
-When using drag-and-drop on mobile touchscreens or tablet devices:
-
-* **Preventing Page Scroll Conflict**: Drag handle elements **must** have the CSS property `touch-action: none;` applied. Without this, touch drag gestures will trigger browser window scrolling instead of dragging the card.
-
-```css
-.drag-handle-bar {
-  /* Mandatory for touch drag interactions */
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  cursor: grab;
-}
-
-.drag-handle-bar:active {
-  cursor: grabbing;
-}
-```
-
-### High-Refresh-Rate Displays (120Hz / 144Hz)
-
-The RAF inertia loop calculates decay based on frame delta timing rather than fixed 60Hz assumptions. This ensures that spring tilt decay speed remains consistent across 60Hz laptop screens, 120Hz ProMotion iPad displays, and 144Hz gaming monitors.
+During dragging, `willChange: "transform"` is applied to promote popover elements to their own hardware compositor layer.
 
 ---
 
-## 5. Collision Boundaries & Coordinate Clamping
+## Summary Checklist
 
-### Restraining Cards inside Workspace Panels
-
-By default, floating cards are constrained to the browser viewport. You can pass a custom DOM element or getter callback to `collisionBoundary` on `<PopoverProvider>`:
-
-```tsx
-export function WorkspaceApp() {
-  return (
-    <PopoverProvider
-      collisionBoundary={() => document.getElementById('designer-canvas')}
-    >
-      <DesignerCanvas />
-    </PopoverProvider>
-  );
-}
-```
-
-### Manual Coordinate Clamping Utility
-
-If you build custom drag handlers, use `clampDragCoordinates`:
-
-```ts
-import { clampDragCoordinates } from 'popover-trail';
-
-const clampedPosition = clampDragCoordinates(
-  { x: rawX, y: rawY },
-  { minX: 10, maxX: window.innerWidth - 320, minY: 10, maxY: window.innerHeight - 200 }
-);
-```
-
----
-
-## 6. Pinned Descendant Close Behavior
-
-By default (`closePinnedDescendants: false`), closing a parent popover leaves its pinned children open on the screen as independent floating windows.
-
-To force closing pinned descendants when a parent closes, set `closePinnedDescendants={true}` on `<PopoverProvider>`:
-
-```tsx
-<PopoverProvider closePinnedDescendants={true}>
-  <App />
-</PopoverProvider>
-```
+- [x] Use `<PopoverCard.Handle>` or `{...dragHandleProps}` to define drag handle areas.
+- [x] Use `<PopoverCard.PinButton>` or `handlePinToggle` for pinning actions.
+- [x] Verify `touch-action: none` is set on drag handles for touch device support.

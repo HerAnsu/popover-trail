@@ -49,6 +49,7 @@ export const DocumentTrail = createPopoverTrail<DocumentNode, WorkspaceContext, 
 `DocumentTrail` exports pre-typed versions of `PopoverProvider`, `PopoverTrigger`, `PopoverPortal`, and hooks:
 
 ```tsx
+import { PopoverCard, type TrailEntry } from 'popover-trail';
 import { DocumentTrail, type DocumentNode } from './documentScope';
 
 // Resolver bound to DocumentNode schema
@@ -72,8 +73,8 @@ export function DocumentWorkspace() {
 
       <DocumentTrail.PopoverPortal>
         {(entries) =>
-          entries.map((entry) => (
-            <DocumentCard key={entry.key} entry={entry} />
+          entries.map((entry, index) => (
+            <DocumentCard key={entry.key} entry={entry as TrailEntry<DocumentNode>} index={index} isPinned={entry.isPinned} />
           ))
         }
       </DocumentTrail.PopoverPortal>
@@ -81,16 +82,29 @@ export function DocumentWorkspace() {
   );
 }
 
-function DocumentCard({ entry }: { entry: any }) {
-  // DocumentTrail.usePopover is pre-typed
-  const { data, close } = DocumentTrail.usePopover(entry.key);
+function DocumentCard({ entry, index, isPinned }: { entry: TrailEntry<DocumentNode>; index: number; isPinned: boolean }) {
+  // DocumentTrail.usePopover is pre-typed to DocumentNode
+  const { data } = DocumentTrail.usePopover(entry.key as any);
 
   return (
-    <div className="doc-card">
-      <h4>{data?.title}</h4>
-      <p>Author: {data?.author}</p>
-      <button onClick={close}>Close</button>
-    </div>
+    <PopoverCard entry={entry} index={index} isPinned={isPinned} className="doc-card">
+      <PopoverCard.Handle className="card-header">
+        <span>{data?.title}</span>
+        <PopoverCard.PinButton />
+        <PopoverCard.CloseButton />
+      </PopoverCard.Handle>
+      <PopoverCard.Content>
+        <p>Author: {data?.author}</p>
+      </PopoverCard.Content>
+    </PopoverCard>
   );
 }
 ```
+
+---
+
+## Summary Checklist
+
+- [x] Call `createPopoverTrail<TData, TContext, TPopoverKey>()` to create isolated subsystems.
+- [x] Export the factory result as a named scope (e.g. `DocumentTrail`).
+- [x] Use `DocumentTrail.PopoverProvider` and `DocumentTrail.PopoverTrigger` for scope-isolated popovers.

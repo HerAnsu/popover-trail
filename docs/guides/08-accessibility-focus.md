@@ -6,23 +6,22 @@ Popover Trail provides accessibility attributes (WAI-ARIA), focus trapping (Focu
 
 ## 1. WAI-ARIA Compliance
 
-Trigger hooks (`usePopoverTrigger`, `<PopoverTrigger>`) attach accessibility attributes automatically:
+Triggers and cards attach accessibility attributes automatically:
 
 * **`aria-expanded`**: Evaluates to `true` when the popover card is open.
 * **`aria-haspopup`**: Set to `"dialog"` to inform screen readers of dialog content.
+* **`role`**: Set to `"dialog"` on `<PopoverCard>` containers.
 * **`aria-describedby`**: Linked when `ariaDescribedby` option is specified.
 
 ```tsx
-// Output rendered button element:
-// <button aria-expanded="true" aria-haspopup="dialog" aria-describedby="desc-item-1">Inspect</button>
-<PopoverTrigger popoverKey="item-1" ariaDescribedby="desc-item-1">
-  <button>Inspect</button>
+<PopoverTrigger popoverKey="item-1">
+  <button>Inspect Item #1</button>
 </PopoverTrigger>
 ```
 
 ---
 
-## 2. Focus Locking (Focus Trapping)
+## 2. Focus Locking & Focus Trapping (`FocusLockOptions`)
 
 To trap keyboard focus inside an active popover card (ideal for modal-like popovers), pass `focusLockOptions`:
 
@@ -32,7 +31,7 @@ const triggerProps = usePopoverTrigger('modal-popover-1', {
     enabled: true,              // Enable focus trap inside popover
     returnFocus: true,          // Restore focus to trigger button on close
     lockScroll: true,           // Prevent body background scrolling
-    autoFocusElement: '#input', // Selector or function returning element to focus
+    autoFocusElement: '#first-input', // Element to receive initial focus
   },
 });
 ```
@@ -48,7 +47,7 @@ const triggerProps = usePopoverTrigger('modal-popover-1', {
 
 ---
 
-## 3. Keyboard Shortcuts Map (`keyboardShortcuts`)
+## 3. Keyboard Shortcut Handler Map (`keyboardShortcuts`)
 
 Pass custom keyboard action handlers per popover card:
 
@@ -56,8 +55,18 @@ Pass custom keyboard action handlers per popover card:
 const triggerProps = usePopoverTrigger('card-shortcut-demo', {
   keyboardShortcuts: {
     Escape: (key) => actions.closeByKey(key),
-    'Ctrl+p': (key) => actions.togglePin(key),
+    'Mod+s': (key) => console.log('Shortcut triggered for', key),
     'Alt+r': (key) => actions.retryPopover(key),
   },
 });
 ```
+
+`Mod+s` automatically maps to `Cmd+s` on macOS and `Ctrl+s` on Windows/Linux.
+
+---
+
+## Summary Checklist
+
+- [x] Use `role="dialog"` and `aria-expanded` for screen reader accessibility.
+- [x] Configure `focusLockOptions` for modal-like popovers requiring focus trapping.
+- [x] Use `keyboardShortcuts` for custom keyboard hotkey bindings.

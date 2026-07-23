@@ -6,7 +6,7 @@ Popover Trail supports hover-driven triggers with configurable delay timers, pre
 
 ## 1. Hover Configuration Options (`HoverConfig`)
 
-Configure hover settings using `hover` prop on `<PopoverTrigger>` or trigger hooks:
+Configure hover settings using the `hover` prop on `<PopoverTrigger>` or trigger hooks:
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -29,11 +29,13 @@ export function QuickPreviewButton({ itemId }: { itemId: string }) {
     <PopoverTrigger
       popoverKey={`preview-${itemId}`}
       placement="right-start"
-      hover={{
-        enabled: true,
-        openDelay: 150,
-        closeDelay: 250,
-        closeOnMouseLeave: true,
+      options={{
+        hover: {
+          enabled: true,
+          openDelay: 150,
+          closeDelay: 250,
+          closeOnMouseLeave: true,
+        },
       }}
     >
       <button className="preview-trigger-btn">
@@ -69,14 +71,17 @@ export function QuickPreviewCard({ cardId }: { cardId: string }) {
 
 ---
 
-## 3. Preventing Cursor Flickering
+## 3. Cursor Travel & Delay Management
 
 When moving the mouse cursor from the trigger element onto the opened popover card:
 1. `onMouseLeave` fires on the trigger button, starting the `closeDelay` timer (e.g. 250ms).
 2. `onMouseEnter` fires on the popover card, cancelling the pending close timer before it expires.
 3. The popover remains open smoothly without flickering closed.
 
-### Troubleshooting Hover Issues
+---
 
-* **Gap between trigger and card**: If the distance offset between trigger and card is too large, the cursor may spend more time traveling than `closeDelay` allows. Increase `closeDelay` (e.g. `closeDelay: 400`) or decrease placement `offset`.
-* **Sticky hover cards**: If `closeOnMouseLeave` is set to `false`, the popover remains open until an explicit click outside occurs.
+## Summary Checklist
+
+- [x] Set `openDelay` (100–200ms) to prevent accidental popover opens during mouse movements.
+- [x] Set `closeDelay` (200–300ms) to allow sufficient time for cursor travel across gap offsets.
+- [x] Use `closeOnMouseLeave: false` for sticky inspect cards that require explicit close action.

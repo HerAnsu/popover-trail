@@ -36,7 +36,7 @@ When a popover key is opened:
 
 ## 2. In-Memory Caching (`SimplePopoverCache`)
 
-`SimplePopoverCache` provides in-memory storage with Time-To-Live (TTL) expiration and Least Recently Used (LRU) capacity eviction.
+`SimplePopoverCache` provides in-memory storage with Time-To-Live (TTL) expiration, Least Recently Used (LRU) capacity eviction, and statistics tracking:
 
 ```tsx
 import { PopoverProvider, SimplePopoverCache } from 'popover-trail';
@@ -57,11 +57,15 @@ export function App() {
     </PopoverProvider>
   );
 }
+
+// Log hit/miss statistics for cache monitoring
+console.log(cache.stats());
+// { hits: 42, misses: 8, hitRatio: 0.84, size: 12 }
 ```
 
 ### Implementing a Custom Cache
 
-You can supply any cache implementation that adheres to the `PopoverCache` interface:
+Supply any cache implementation adhering to the `PopoverCache` interface:
 
 ```ts
 export interface PopoverCache<TData = unknown> {
@@ -71,100 +75,28 @@ export interface PopoverCache<TData = unknown> {
   delete(key: string): void;
   clear(): void;
 }
-
-// Example: LocalStorage-backed Cache
-export class LocalStoragePopoverCache<TData> implements PopoverCache<TData> {
-  get(key: string): TData | undefined {
-    const raw = localStorage.getItem(`popover_cache_${key}`);
-    return raw ? JSON.parse(raw) : undefined;
-  }
-  set(key: string, data: TData): void {
-    localStorage.setItem(`popover_cache_${key}`, JSON.stringify(data));
-  }
-  has(key: string): boolean {
-    return localStorage.getItem(`popover_cache_${key}`) !== null;
-  }
-  delete(key: string): void {
-    localStorage.removeItem(`popover_cache_${key}`);
-  }
-  clear(): void {
-    Object.keys(localStorage)
-      .filter((k) => k.startsWith('popover_cache_'))
-      .forEach((k) => localStorage.removeItem(k));
-  }
-}
 ```
 
 ---
 
-## 3. Technical Nuances & Session Management
+## 3. Background Web Worker Hydration (`createWorkerResolver`)
 
-### Session Invalidation & Cache Purging
-
-When a user logs out or switches organization accounts in a single-page application (SPA), cached popover data must be invalidated to prevent data leaking across user sessions:
+Offload heavy data processing and JSON parsing to a background Web Worker thread to preserve 60-120 FPS UI performance:
 
 ```tsx
-export function useUserLogout() {
-  const cache = useMemo(() => globalPopoverCache, []);
+import { PopoverProvider, createWorkerResolver } from 'popover-trail';
 
-  const handleLogout = () => {
-    // 1. Clear popover cache
-    cache.clear();
-    // 2. Clear authentication token
-    authService.logout();
-  };
-
-  return handleLogout;
-}
-```
-
-### Memory Leak Prevention in Custom Resolvers
-
-When writing custom resolvers that listen to event streams or WebSockets, ensure event listeners are attached to `signal.addEventListener('abort', ...)` to prevent memory leaks when popovers close before data arrives:
-
-```ts
-const customDataResolver = (key: string, parentData: unknown, context: unknown, signal?: AbortSignal) => {
-  return new Promise((resolve, reject) => {
-    const handler = (data: any) => resolve(data);
-    
-    eventEmitter.on(`data:${key}`, handler);
-
-    if (signal) {
-      signal.addEventListener('abort', () => {
-        // Unbind event emitter listener on abort signal
-        eventEmitter.off(`data:${key}`, handler);
-        reject(new DOMException('Request aborted', 'AbortError'));
-      });
-    }
-  });
-};
-```
-
----
-
-## 4. Web Worker Offloading & Fallback Mechanisms
-
-`createWorkerResolver` allows CPU-intensive tasks to run in a background Web Worker.
-
-```tsx
-import { createWorkerResolver, PopoverProvider } from 'popover-trail';
-
-// Offloads data resolution to a background Worker thread
 const workerResolver = createWorkerResolver(
-  (key, parentData) => {
-    // Runs inside worker thread scope
-    const heavyCalculatedData = Array.from({ length: 50000 }).map((_, i) => ({
-      id: `${key}-${i}`,
-      val: Math.sqrt(i) * 42,
-    }));
-
-    return {
-      key,
-      totalCount: heavyCalculatedData.length,
-      sample: heavyCalculatedData.slice(0, 5),
-    };
+  async (key: string, parentData?: unknown, context?: unknown) => {
+    // Runs inside a Web Worker thread context
+    const res = await fetch(`/api/nodes/${key}`);
+    const data = await res.json();
+    return data;
   },
-  { timeoutMs: 20000 } // Reject task if worker takes over 20s
+  {
+    timeoutMs: 10000,
+    autoRestart: true,
+  }
 );
 
 export function App() {
@@ -176,8 +108,41 @@ export function App() {
 }
 ```
 
-### Content Security Policy (CSP) & Worker Fallbacks
+### Worker Task Cancellation & Zero-Copy Transferables
 
-In environments where Web Workers are restricted by Content Security Policy (`worker-src 'none'`) or in SSR / Node.js test environments:
-* `createWorkerResolver` detects `typeof Worker === 'undefined'` or worker instantiation errors.
-* It falls back to executing the function synchronously in the main thread without throwing runtime initialization errors.
+When a popover unmounts before worker resolution completes, `createWorkerResolver` sends an `{ action: 'abort', id }` message to terminate the worker computation immediately. ArrayBuffer payloads are passed back using zero-copy Transferable Objects.
+
+---
+
+## 4. Retrying Failed Resolvers
+
+When a resolver throws an Error, `isErrorEntry(entry)` evaluates to `true`. Use `actions.retryPopover(key)` to attempt re-fetching:
+
+```tsx
+import { PopoverCard, isErrorEntry, usePopoverActions, type TrailEntry } from 'popover-trail';
+
+export function Card({ entry, index, isPinned }: { entry: TrailEntry; index: number; isPinned: boolean }) {
+  const { retryPopover } = usePopoverActions();
+
+  return (
+    <PopoverCard entry={entry} index={index} isPinned={isPinned}>
+      <PopoverCard.Content>
+        {isErrorEntry(entry) && (
+          <div className="error-box">
+            <p>Failed to load: {entry.error.message}</p>
+            <button onClick={() => retryPopover(entry.key)}>Retry</button>
+          </div>
+        )}
+      </PopoverCard.Content>
+    </PopoverCard>
+  );
+}
+```
+
+---
+
+## Summary Checklist
+
+- [x] Configure `SimplePopoverCache` to prevent redundant network requests.
+- [x] Use `createWorkerResolver` for CPU-intensive data transformations.
+- [x] Provide a retry button via `actions.retryPopover(key)` for error states.

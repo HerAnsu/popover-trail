@@ -50,20 +50,20 @@ In modern CSS, certain properties on parent elements create a **new Stacking Con
 
 ### How Popover Trail Solves Stacking Context Traps
 
-By using `<PopoverPortal>` to render cards directly into `document.body` (or a root-level container element), popover cards escape parent component DOM hierarchies and stacking context traps.
+By using `<PopoverTrail>` or `<PopoverPortal>` to render cards directly into `document.body` (or a root-level container element), popover cards escape parent component DOM hierarchies and stacking context traps.
 
 ```tsx
 // Ensures cards render outside any transformed parent containers
-<PopoverPortal container={document.body}>
-  {(entries) => entries.map((entry) => <Card key={entry.key} entry={entry} />)}
-</PopoverPortal>
+<PopoverTrail renderCard={(entry, index, isPinned) => (
+  <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned} />
+)} />
 ```
 
 ---
 
 ## 4. Detecting Top-Most Card (`useIsPopoverTopMost`)
 
-Use `useIsPopoverTopMost` to check if a specific card is currently on top of the active visual stack. This is useful for highlighting active borders or delegating ESC key events:
+Use `useIsPopoverTopMost` to check if a specific card is currently on top of the active visual stack. This is useful for highlighting active borders or delegating keyboard ESC events:
 
 ```tsx
 import { useIsPopoverTopMost } from 'popover-trail';
@@ -84,13 +84,13 @@ export function CardHeader({ entryKey }: { entryKey: string }) {
 
 ## 5. Multi-Zone Stack Groups (`ZIndexBaseMap`)
 
-When building complex UIs (e.g. sidebar vs main canvas vs modal overlays), separate stack zones using `stackGroup` and `ZIndexBaseMap`:
+When building complex UIs (e.g. sidebar vs main canvas vs modal overlays), separate stack zones using `stackGroup` and `zIndexBaseMap`:
 
 ```tsx
 import { PopoverProvider, type ZIndexBaseMap } from 'popover-trail';
 
 // Custom base z-index layering per group zone
-const stackGroupBases: ZIndexBaseMap = {
+const zIndexBaseMap: ZIndexBaseMap = {
   sidebar: 2000,
   canvas: 1000,
   headerBar: 3000,
@@ -98,9 +98,17 @@ const stackGroupBases: ZIndexBaseMap = {
 
 export function App() {
   return (
-    <PopoverProvider zIndexBaseMap={stackGroupBases}>
+    <PopoverProvider zIndexBaseMap={zIndexBaseMap}>
       <MainWorkspace />
     </PopoverProvider>
   );
 }
 ```
+
+---
+
+## Summary Checklist
+
+- [x] Use `<PopoverTrail>` to escape CSS stacking context traps.
+- [x] Use `useIsPopoverTopMost(key)` to highlight active topmost cards.
+- [x] Define `zIndexBaseMap` when working with multi-zone layouts (sidebars, modals).

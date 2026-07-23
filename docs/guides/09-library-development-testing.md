@@ -6,22 +6,24 @@ Guide for developers contributing to or testing the `popover-trail` library code
 
 ## 1. Development Scripts & Tooling
 
-The library uses a modern, ultra-fast toolchain:
+The library uses a modern, high-performance toolchain:
 
-* **Tsup**: Fast TypeScript library bundler generating ESM, CJS, and `.d.ts` declaration files.
-* **Vitest**: Unit testing framework for store logic, hooks, and React components.
-* **Oxlint**: High-performance Rust-based linter.
+* **TypeScript 7**: Static type checker with strict declaration emit rules (`tsc --noEmit`, `tsc -p tsconfig.lib.json --emitDeclarationOnly`).
+* **Tsup**: Fast TypeScript library bundler generating ESM and CJS bundles.
+* **Vitest**: Unit testing framework (103 unit & integration tests across 16 test files).
+* **Oxlint**: High-performance Rust-based static linter (0 warnings, 0 errors).
 * **Oxfmt**: High-performance Rust-based code formatter.
-* **Vite**: Development server for the example workspace application.
+* **GitHub Actions**: Continuous Integration pipeline (`.github/workflows/ci.yml`).
 
 ### Available npm Commands
 
 | Command | Action | Description |
 | :--- | :--- | :--- |
 | `npm run dev` | Dev Server | Starts Vite dev server with example workspace app. |
-| `npm run build:lib` | Library Build | Bundles library output into `dist/` (ESM, CJS, d.ts) via Tsup. |
-| `npm run test` | Unit Tests | Executes the Vitest test suite (`src/lib/popover/store.test.ts`). |
-| `npm run lint` | Code Quality | Runs Oxlint code quality checks across codebase. |
+| `npm run build:lib` | Library Build | Bundles ESM, CJS, and `.d.ts` outputs into `dist/` via Tsup and TS7 `tsc`. |
+| `npm run test` | Unit Tests | Executes the 103 Vitest unit & integration tests. |
+| `npm run typecheck` | Type Check | Validates TypeScript types across codebase without emitting files. |
+| `npm run lint` | Code Quality | Runs Oxlint static code analyzer. |
 | `npm run format` | Code Format | Formats codebase using Oxfmt. |
 
 ---
@@ -33,7 +35,7 @@ When testing components that utilize `popover-trail`:
 ```tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { PopoverProvider, PopoverTrigger, PopoverPortal, isResolvedEntry } from 'popover-trail';
+import { PopoverProvider, PopoverTrigger, PopoverTrail, PopoverCard, isResolvedEntry } from 'popover-trail';
 
 describe('Popover Trail Integration', () => {
   it('opens popover card and resolves data on trigger click', async () => {
@@ -45,16 +47,16 @@ describe('Popover Trail Integration', () => {
           <button>Open Card</button>
         </PopoverTrigger>
 
-        <PopoverPortal>
-          {(entries) =>
-            entries.map((entry) => (
-              <div key={entry.key} data-testid="popover-card">
+        <PopoverTrail
+          renderCard={(entry, index, isPinned) => (
+            <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
+              <PopoverCard.Content>
                 {entry.isLoading && <span>Loading...</span>}
                 {isResolvedEntry(entry) && <span>{entry.data.title}</span>}
-              </div>
-            ))
-          }
-        </PopoverPortal>
+              </PopoverCard.Content>
+            </PopoverCard>
+          )}
+        />
       </PopoverProvider>
     );
 
@@ -108,3 +110,11 @@ export function PopoverDebugInspector() {
   );
 }
 ```
+
+---
+
+## Summary Checklist
+
+- [x] Run `npm run typecheck` to verify TypeScript 7 types before committing.
+- [x] Run `npm test` to verify all 103 Vitest unit tests pass cleanly.
+- [x] Run `npm run build:lib` to test distribution bundle generation.
