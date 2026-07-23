@@ -6,5 +6,6 @@
     "declarationMap": true,
     "ignoreDeprecations": "6.0"
   },
-  "include": ["src/lib/popover"]
+  "include": ["src/lib/popover"],
+  "exclude": ["src/lib/popover/**/*.test.ts", "src/lib/popover/**/*.test.tsx"]
 }

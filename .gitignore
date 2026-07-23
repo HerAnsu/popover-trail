@@ -8,8 +8,11 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+# Build artifacts & packages
 dist
 dist-ssr
+*.tgz
+.tsup
 *.local
 
 # Editor directories and files
