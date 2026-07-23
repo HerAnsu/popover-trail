@@ -1,22 +1,45 @@
 # Popover Trail
 
-Headless React 19 library for managing cascading popover paths, draggable floating windows, and async data hydration.
+[![CI](https://github.com/HerAnsu/popover-trail/actions/workflows/ci.yml/badge.svg)](https://github.com/HerAnsu/popover-trail/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/popover-trail.svg)](https://www.npmjs.com/package/popover-trail)
+[![license](https://img.shields.io/npm/l/popover-trail.svg)](LICENSE)
+![React 19](https://img.shields.io/badge/React-19-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5%2B-blue.svg)
+
+Headless React 19 library for managing **cascading popover paths**, **draggable floating windows**, and **async Web Worker data hydration**.
 
 Popover Trail structures popovers as nodes in a tree hierarchy. Unpinned popovers form a single linear path. Pinning a popover detaches it into an independent floating window with physics-based drag interactions and spring tilt.
 
 ---
 
-## Features
+## 📚 Documentation & Guides
 
-- **Zero forced CSS**: 100% unstyled headless components (`PopoverCard`, `PopoverTrail`, `PopoverTrigger`). Use Tailwind CSS, CSS Modules, or Styled Components.
-- **Polymorphic `as` prop**: Works natively with Framer Motion (`as={motion.div}`), custom HTML tags, or React components.
-- **Off-main-thread hydration**: Offload data fetching and parsing to Web Workers via `createWorkerResolver` with zero-copy array buffer transfers.
-- **Automatic cancellation**: Closing a parent popover triggers breadth-first search (BFS) cleanup, aborting pending network and worker tasks via `AbortSignal`.
-- **Compound components & hooks**: Use high-level `<PopoverCard>` compound elements or low-level `usePopoverCard` hooks.
+Comprehensive guides and complete TypeScript API signatures are available in the repository documentation:
+
+* 📖 **[API Reference](docs/API.md)** — Full TypeScript signatures, props tables, and return values for all exported components, hooks, type guards, and utilities.
+* 🚀 **[Feature Guides & Manuals](docs/GUIDES.md)** — Step-by-step guides for advanced use cases:
+  * 🔗 [01. Cascading Paths Guide](docs/guides/01-cascading-paths.md) — Managing nested popover trees & BFS unmounting.
+  * 📌 [02. Draggable Pinning & Physics](docs/guides/02-draggable-pinning.md) — Floating canvas, spring tilt, and boundary collision.
+  * ⚡ [03. Web Worker Data Hydration](docs/guides/03-data-hydration.md) — Offloading data resolution with `createWorkerResolver`.
+  * 🎯 [04. Hover Triggers & Buffers](docs/guides/04-hover-triggers.md) — Hover intent delays, safe triangles, and touch support.
+  * 📚 [05. Stacking & Z-Index Control](docs/guides/05-stacking-zindex.md) — Custom stacking groups, modal overlays, and depth layers.
+  * 🎮 [06. Imperative Controller](docs/guides/06-imperative-controller.md) — Controlling popovers from Redux, WebSockets, or Vanilla JS.
+  * 📦 [07. Scoped Typed Instances](docs/guides/07-scoped-instances.md) — Pre-typed factory hooks via `createPopoverTrail`.
+  * ♿ [08. Accessibility & Focus Lock](docs/guides/08-accessibility-focus.md) — WAI-ARIA dialog roles and keyboard navigation.
 
 ---
 
-## Quick Start
+## 🌟 Highlights & Features
+
+* 🎨 **100% Unstyled Headless API**: Zero forced CSS or pre-made themes. Compatible with **Tailwind CSS**, **CSS Modules**, or **Styled Components**.
+* 🎭 **Polymorphic `as` Prop**: Works natively with **Framer Motion** (`as={motion.div}`), custom HTML tags, or React components.
+* ⚡ **Off-Main-Thread Web Workers**: Offload heavy data resolution to background Web Workers via `createWorkerResolver` with zero-copy transfers.
+* 🛑 **Automatic BFS Cancellation**: Closing a parent popover performs a breadth-first search (BFS) tree cleanup, aborting pending network and worker tasks via `AbortSignal`.
+* 📦 **Compound Components & Hooks**: Choose between high-level declarative `<PopoverCard>` compound elements or low-level `usePopoverCard` hooks.
+
+---
+
+## 🚀 Quick Start
 
 ### 1. Installation
 
@@ -24,35 +47,40 @@ Popover Trail structures popovers as nodes in a tree hierarchy. Unpinned popover
 npm install popover-trail
 ```
 
-### 2. Configure PopoverProvider
+### 2. Configure PopoverProvider & PopoverTrail
 
-Wrap your component tree and supply a data resolver function:
+Wrap your component tree with `PopoverProvider` and add the `PopoverTrail` portal renderer:
 
 ```tsx
-import { PopoverProvider, SimplePopoverCache } from 'popover-trail';
+import { PopoverProvider, PopoverTrail, SimplePopoverCache } from 'popover-trail';
 
+// Async data resolver function
 const resolveData = async (key: string, parentData?: unknown, context?: unknown, signal?: AbortSignal) => {
   const response = await fetch(`/api/items/${key}`, { signal });
   return response.json();
 };
 
-const cache = new SimplePopoverCache(300000, 50); // 5-minute TTL, 50 items max
+const cache = new SimplePopoverCache(300000, 50); // 5-minute TTL, max 50 items
 
 export function App() {
   return (
     <PopoverProvider resolveData={resolveData} cache={cache}>
-      <Workspace />
-      <PopoverTrail renderCard={(entry, index, isPinned) => (
-        <Card key={entry.key} entry={entry} index={index} isPinned={isPinned} />
-      )} />
+      <YourAppWorkspace />
+
+      {/* Renders active cascading trail and floating popovers into DOM portal */}
+      <PopoverTrail
+        renderCard={(entry, index, isPinned) => (
+          <Card key={entry.key} entry={entry} index={index} isPinned={isPinned} />
+        )}
+      />
     </PopoverProvider>
   );
 }
 ```
 
-### 3. Render Headless Popover Cards
+### 3. Build Unstyled Popover Cards
 
-Use compound components for clean, declarative cards without manual hook wiring:
+Use compound components for clean, declarative popover cards without manual hook wiring:
 
 ```tsx
 import { PopoverCard, isResolvedEntry, type TrailEntry } from 'popover-trail';
@@ -68,8 +96,8 @@ export function Card({ entry, index, isPinned }: CardProps) {
     <PopoverCard entry={entry} index={index} isPinned={isPinned} className="popover-card">
       <PopoverCard.Handle className="drag-handle">
         <span>{entry.key}</span>
-        <PopoverCard.PinButton className="btn" />
-        <PopoverCard.CloseButton className="btn" />
+        <PopoverCard.PinButton className="btn-pin" />
+        <PopoverCard.CloseButton className="btn-close" />
       </PopoverCard.Handle>
 
       <PopoverCard.Content className="card-body">
@@ -88,54 +116,26 @@ export function Card({ entry, index, isPinned }: CardProps) {
 
 ---
 
-## Architecture
+## ⚡ Web Worker Hydration Example
 
-Popover Trail manages state via a dual-stack Zustand store:
-* **trail**: Linear stack representing the active cascading path.
-* **floating**: Array of pinned popovers floating independently on the viewport.
-
-Closing a parent popover performs a breadth-first search (BFS) traversal over `trail` and `floating` to unmount all child popovers. Active async requests for unmounted popovers are cancelled using `AbortController` signals.
-
----
-
-## Headless Compound Components
-
-### `<PopoverCard>`
-Root container for popover cards. Binds Floating UI coordinates, CSS variables (`--popover-x`, `--popover-y`, `--popover-z`), and accessibility attributes (`role="dialog"`, `data-state`, `data-pinned`).
-
-Supports polymorphic rendering via the `as` prop:
-
-```tsx
-<PopoverCard as={motion.div} initial={{ opacity: 0 }} animate={{ opacity: 1 }} entry={entry} index={index} isPinned={isPinned}>
-  <PopoverCard.Content>Card Body</PopoverCard.Content>
-</PopoverCard>
-```
-
-#### Compound Sub-Components:
-- **`<PopoverCard.Handle>`**: Drag handle header area for pointer interactions.
-- **`<PopoverCard.PinButton>`**: Toggles pinned status for floating windows.
-- **`<PopoverCard.CloseButton>`**: Closes the popover by key.
-- **`<PopoverCard.Content>`**: Container for card content.
-
----
-
-## Web Worker Hydration
-
-Offload data resolution to a background Web Worker to keep the main UI thread responsive:
+Keep the main UI thread at 60-120 FPS by resolving popover data in a background Web Worker:
 
 ```tsx
 import { PopoverProvider, createWorkerResolver } from 'popover-trail';
 
-const workerResolver = createWorkerResolver(async (key, parentData) => {
-  // Executed inside a Web Worker thread
-  const res = await fetch(`/api/data/${key}`);
-  return res.json();
-}, { timeoutMs: 10000, autoRestart: true });
+const workerResolver = createWorkerResolver(
+  async (key, parentData) => {
+    // Executed in a background Web Worker thread
+    const response = await fetch(`/api/data/${key}`);
+    return response.json();
+  },
+  { timeoutMs: 10000, autoRestart: true }
+);
 
 export function App() {
   return (
     <PopoverProvider resolveData={workerResolver}>
-      <Workspace />
+      <YourAppWorkspace />
     </PopoverProvider>
   );
 }
@@ -143,35 +143,18 @@ export function App() {
 
 ---
 
-## API Summary
-
-### Components & Context
-- `<PopoverProvider>`: Store and context provider.
-- `<PopoverCard>`: Headless unstyled compound card container.
-- `<PopoverTrail>`: High-level portal renderer for trail and floating stacks.
-- `<PopoverTrigger>`: Wrapper attaching click/hover handlers to trigger elements.
-- `<PopoverPortal>`: Low-level portal renderer mounting elements to `document.body`.
-
-### Hooks
-- `usePopoverCard`: Hook combining Floating UI positioning, velocity spring tilt, and drag handling.
-- `usePopover`: Key-bound hook returning state and trigger props.
-- `usePopoverActions`: Returns store dispatch methods (`closeByKey`, `togglePin`, `clear`, `retryPopover`).
-- `usePopoverStore`: Subscribes to custom Zustand store slices.
-- `usePopoverGeometry`: Computes layout coordinates, collision boundaries, and cascade offsets.
-- `usePopoverDragAndDrop`: Manages drag interaction physics and tilt damping.
-
----
-
-## Development & Verification
+## 🛠️ Development & Verification
 
 ```bash
 npm run build:lib   # Build ESM, CJS, and DTS bundles via Tsup
 npm test            # Run 103 Vitest unit & integration tests
+npm run typecheck   # Typecheck TypeScript code without emitting
 npm run lint        # Check code quality via Oxlint
 npm run format      # Format codebase via Oxfmt
 ```
 
 ---
 
-## License
-MIT
+## 📄 License
+
+[MIT](LICENSE)
