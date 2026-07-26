@@ -117,6 +117,14 @@ export {
 } from './store/snapshotManager';
 export { PopoverDAG, type DAGNode } from './utils/dag';
 export { QuadTree, type BoundingBox, type QuadItem } from './utils/quadTree';
+export {
+  createPopoverSchema,
+  type PopoverSchemaDefinition,
+  type PopoverSchemaInstance,
+  type PopoverSchemaNode,
+  type SchemaKeys,
+  type SchemaData,
+} from './schema';
 
 export { usePopoverGeometry, type UsePopoverGeometryResult } from './hooks/useGeometry';
 export { usePopoverDragAndDrop, type UsePopoverDragAndDropResult } from './hooks/useDragAndDrop';
