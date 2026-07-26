@@ -26,7 +26,7 @@ const VALID_PLACEMENTS: ReadonlySet<string> = new Set([
 /**
  * Checks if the current environment is a development environment.
  */
-export function isDevEnv(): boolean {
+function isDevEnv(): boolean {
   return (
     typeof globalThis !== 'undefined' &&
     (globalThis as unknown as { process?: { env?: { NODE_ENV?: string } } }).process?.env

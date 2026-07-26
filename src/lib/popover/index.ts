@@ -47,6 +47,8 @@ export type {
   FocusLockOptions,
   PopoverSlotComponents,
   ZIndexBaseMap,
+  PopoverMiddleware,
+  PopoverPersistConfig,
 } from './types';
 
 export {
@@ -132,7 +134,25 @@ export { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCar
 export { getPopoverStyles } from './utils/styles';
 export { SimplePopoverCache } from './utils/cache';
 export { PopoverTrigger, type PopoverTriggerProps } from './components/PopoverTrigger';
-export { PopoverCard, type PopoverCardProps } from './components/PopoverCard';
+export {
+  PopoverCard,
+  type PopoverCardProps,
+  type PopoverCardBaseProps,
+  type PopoverCardHandleProps,
+  type PopoverCardPinButtonProps,
+  type PopoverCardCloseButtonProps,
+  type PopoverCardContentProps,
+} from './components/PopoverCard';
 export { PopoverTrail, type PopoverTrailProps } from './components/PopoverTrail';
-export { PopoverTimeline, type PopoverTimelineProps } from './components/PopoverTimeline';
+export {
+  PopoverTimeline,
+  type PopoverTimelineProps,
+  type PopoverTimelineBaseProps,
+  type PopoverTimelineStepListProps,
+  type PopoverTimelineStepBaseProps,
+  type PopoverTimelineStepProps,
+  type PopoverTimelineUndoButtonProps,
+  type PopoverTimelineRedoButtonProps,
+} from './components/PopoverTimeline';
+export { type HistorySnapshot } from './store/history';
 export { createPopoverTrail } from './factory';
