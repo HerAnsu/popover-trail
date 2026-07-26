@@ -1,8 +1,8 @@
-# Popover Trail: Detailed API Reference Specification
+# Popover Trail: Master API Reference Specification
 
-Exhaustive API documentation for components, compound subcomponents, hooks, schemas, state machine reducers, DAG algorithms, spatial partitioning indexes, and diagnostic error validators in `popover-trail`.
+Exhaustive, production-grade API documentation for all components, compound subcomponents, hooks, schema builders, core engines, type definitions, type guards, canvas extensions, and diagnostic error validators in `popover-trail`.
 
-> Looking for step-by-step usage guides? Read [Feature Guides & Manuals](GUIDES.md).
+> Looking for step-by-step feature tutorials? Read [Feature Guides & Manuals](GUIDES.md).
 
 ---
 
@@ -28,17 +28,31 @@ Exhaustive API documentation for components, compound subcomponents, hooks, sche
    - [usePopoverDragAndDrop](#usepopoverdraganddrop)
    - [usePopoverHydration](#usepopoverhydration)
    - [useIsPopoverOpen & State Selectors](#useispopoveropen--state-selectors)
-4. [Advanced Core Engines](#4-advanced-core-engines)
+4. [DND Sub-package (popover-trail/dnd)](#4-dnd-sub-package-popover-traildnd)
+   - [PopoverCanvas](#popovercanvas)
+   - [usePopoverDraggableCard](#usepopoverdraggablecard)
+   - [PopoverCard (DND Version)](#popovercard-dnd-version)
+5. [Advanced Core Engines](#5-advanced-core-engines)
    - [FSM Statechart Engine (popoverFSMReducer & createPopoverFSM)](#fsm-statechart-engine-popoverfsmreducer--createpopoverfsm)
    - [DAG Cascading Graph (PopoverDAG)](#dag-cascading-graph-popoverdag)
    - [QuadTree 2D Spatial Partitioning Index](#quadtree-2d-spatial-partitioning-index)
    - [PopoverSnapshotManager (BroadcastChannel Sync)](#popoversnapshotmanager-broadcastchannel-sync)
-5. [Type Definitions & Data Interfaces](#5-type-definitions--data-interfaces)
+6. [Type Definitions & Data Interfaces](#6-type-definitions--data-interfaces)
    - [TrailEntry](#trailentry)
    - [PopoverStore](#popoverstore)
    - [PopoverActions](#popoveractions)
    - [PopoverDisplayOptions & Config Interfaces](#popoverdisplayoptions--config-interfaces)
-6. [Complete Guardrail Warnings Registry (PT-101 to PT-125)](#6-complete-guardrail-warnings-registry-pt-101-to-pt-125)
+7. [Type Guards, Helpers & Event Predicates](#7-type-guards-helpers--event-predicates)
+   - [isResolvedEntry, isLoadingEntry, isErrorEntry](#isresolvedentry-isloadingentry-iserrorentry)
+   - [createPopoverKey, createPopoverResolver, createVirtualElement](#createpopoverkey-createpopoverresolver-createvirtualelement)
+   - [Event Predicates (isOpenRootEvent, isPushNestedEvent, isCloseEvent)](#event-predicates)
+8. [Utilities, Caching & Math Helpers](#8-utilities-caching--math-helpers)
+   - [SimplePopoverCache](#simplepopovercache)
+   - [createWorkerResolver](#createworkerresolver)
+   - [createPopoverController](#createpopovercontroller)
+   - [Math & Style Helpers (getPopoverStyles, computeTiltMatrix, applyDragFriction)](#math--style-helpers)
+   - [invariant](#invariant)
+9. [Complete Guardrail Warnings Registry (PT-101 to PT-125)](#9-complete-guardrail-warnings-registry-pt-101-to-pt-125)
 
 ---
 
@@ -354,7 +368,42 @@ const { isLoading, error, reload } = usePopoverHydration('userProfile');
 
 ---
 
-## 4. Advanced Core Engines
+## 4. DND Sub-package (`popover-trail/dnd`)
+
+Separate export entry point providing drag-and-drop canvas capabilities powered by `@dnd-kit/core`.
+
+```tsx
+import { PopoverCanvas, PopoverCard } from 'popover-trail/dnd';
+```
+
+### `<PopoverCanvas>`
+
+Drag-and-drop context wrapper enclosing floating popover cards.
+
+```tsx
+<PopoverCanvas bounds={{ top: 0, left: 0, right: 1920, bottom: 1080 }}>
+  <PopoverTrail />
+</PopoverCanvas>
+```
+
+#### Properties
+
+- `bounds`: Boundary constraint box `{ top, left, right, bottom }`.
+- `onDragEnd`: Callback triggered when dragging completes `(event) => void`.
+
+---
+
+### `usePopoverDraggableCard(key)`
+
+Hook attaching `@dnd-kit` drag sensors to a popover card.
+
+```ts
+const { attributes, listeners, setNodeRef, transform, isDragging } = usePopoverDraggableCard('userProfile');
+```
+
+---
+
+## 5. Advanced Core Engines
 
 ### FSM Statechart Engine (`popoverFSMReducer` & `createPopoverFSM`)
 
@@ -426,7 +475,7 @@ manager.subscribe((restoredState) => console.log('State updated from another tab
 
 ---
 
-## 5. Type Definitions & Data Interfaces
+## 6. Type Definitions & Data Interfaces
 
 ### `TrailEntry<TData = unknown>`
 
@@ -456,7 +505,119 @@ export interface TrailEntry<TData = unknown> {
 
 ---
 
-## 6. Complete Guardrail Warnings Registry (PT-101 to PT-125)
+## 7. Type Guards, Helpers & Event Predicates
+
+### `isResolvedEntry`, `isLoadingEntry`, `isErrorEntry`
+
+Discriminated type guard functions for inspecting `TrailEntry` loading and resolution states safely.
+
+```ts
+import { isResolvedEntry, isLoadingEntry, isErrorEntry } from 'popover-trail';
+
+if (isResolvedEntry(entry)) {
+  console.log('Data loaded:', entry.data);
+}
+```
+
+---
+
+### `createPopoverKey(name, params)`
+
+Utility function generating sanitized popover string keys from base names and parameters.
+
+```ts
+const key = createPopoverKey('user', { id: 123 }); // "user:{"id":123}"
+```
+
+---
+
+### `createPopoverResolver(resolversMap)`
+
+Factory function turning a record dictionary of key resolvers into a single unified `resolveData` callback.
+
+```ts
+const resolver = createPopoverResolver({
+  userProfile: (key) => fetchUser(key),
+  settings: () => ({ theme: 'dark' }),
+});
+```
+
+---
+
+### Event Predicates
+
+Type guard helpers for identifying event types dispatched by the store event emitter.
+
+- `isOpenRootEvent(event)`: Returns `true` if event type is `'open_root'`.
+- `isPushNestedEvent(event)`: Returns `true` if event type is `'push_nested'`.
+- `isCloseEvent(event)`: Returns `true` if event type is `'close'`.
+
+---
+
+## 8. Utilities, Caching & Math Helpers
+
+### `SimplePopoverCache`
+
+In-memory LRU cache implementation for storing resolved popover promises and data objects.
+
+```ts
+import { SimplePopoverCache } from 'popover-trail';
+
+const cache = new SimplePopoverCache({ capacity: 50 });
+cache.set('userProfile', userData);
+const cachedData = cache.get('userProfile');
+```
+
+---
+
+### `createWorkerResolver({ worker, timeoutMs })`
+
+Offloads expensive data resolution tasks to a Web Worker thread to keep the UI main thread responsive.
+
+```ts
+import { createWorkerResolver } from 'popover-trail';
+
+const workerResolver = createWorkerResolver({
+  worker: new Worker('/resolver-worker.js'),
+  timeoutMs: 5000,
+});
+```
+
+---
+
+### `createPopoverController(store)`
+
+Imperative controller for inspecting and dispatching popover actions outside of React component trees (e.g. inside Redux epics, RxJS streams, or Vanilla JS modules).
+
+```ts
+import { createPopoverController } from 'popover-trail';
+
+const controller = createPopoverController(storeApi);
+controller.openRoot('userProfile');
+```
+
+---
+
+### Math & Style Helpers
+
+- `getPopoverStyles(params)`: Generates inline React CSS style objects combining Floating UI layout coordinates, drag translations, 3D tilt angles, z-indexes, and `--pt-*` CSS custom properties.
+- `computeTiltMatrix(velocityX, maxTiltAngle, sensitivity)`: Computes CSS `rotateX`, `rotateY`, `rotateZ` transform strings based on velocity vectors.
+- `applyDragFriction(delta, damping)`: Calculates dampened drag offset deltas.
+- `clampDragCoordinates(coords, bounds)`: Clamps `{ x, y }` coordinates within specified boundary box limits.
+
+---
+
+### `invariant(condition, message)`
+
+Asserts a runtime truth condition and throws a descriptive Error when the condition evaluates to `false`.
+
+```ts
+invariant(typeof key === 'string', 'Popover key must be a string');
+```
+
+---
+
+## 9. Complete Guardrail Warnings Registry (PT-101 to PT-125)
 
 In non-production environments, `popover-trail` logs structured diagnostic warnings formatted as `[popover-trail warning PT-XXX]: <message>`.
 
