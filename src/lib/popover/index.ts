@@ -91,6 +91,7 @@ export {
   usePopoverContext,
   usePopoverActions,
   usePopoverHydration,
+  usePopoverData,
   PopoverPortal,
   usePopoverTrigger,
   usePopoverNestedTrigger,
@@ -98,6 +99,21 @@ export {
   usePopover,
   PopoverCardContext,
 } from './context';
+
+export {
+  createPopoverFSM,
+  popoverFSMReducer,
+  type PopoverFSMContext,
+  type PopoverFSMEvent,
+  type PopoverFSMState,
+} from './store/fsm';
+export {
+  PopoverSnapshotManager,
+  type PopoverSnapshotData,
+  type SnapshotManagerOptions,
+} from './store/snapshotManager';
+export { PopoverDAG, type DAGNode } from './utils/dag';
+export { QuadTree, type BoundingBox, type QuadItem } from './utils/quadTree';
 
 export { usePopoverGeometry, type UsePopoverGeometryResult } from './hooks/useGeometry';
 export { usePopoverDragAndDrop, type UsePopoverDragAndDropResult } from './hooks/useDragAndDrop';

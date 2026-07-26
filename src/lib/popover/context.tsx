@@ -1,4 +1,4 @@
-/* eslint-disable react/only-export-components */
+import * as React from 'react';
 import {
   createContext,
   useContext,
@@ -581,6 +581,25 @@ export function usePopoverHydration<TData = unknown>(key: string) {
     error: entry?.error ?? null,
     reload,
   };
+}
+
+/**
+ * React 19 native data hook with Suspense support leveraging `use(promise)`.
+ *
+ * @template TData - The type of resolved data payload.
+ * @param key - The unique identifier key of the popover card.
+ * @returns The resolved data payload. Suspends when entry.dataPromise is pending in React 19.
+ */
+export function usePopoverData<TData = unknown>(key: string): TData | undefined {
+  const entry = usePopoverEntry<TData>(key);
+  const ReactUse = (React as unknown as Record<string, unknown>).use as
+    | (<T>(p: Promise<T>) => T)
+    | undefined;
+
+  if (entry?.dataPromise && typeof ReactUse === 'function') {
+    return ReactUse(entry.dataPromise);
+  }
+  return entry?.data;
 }
 
 function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(

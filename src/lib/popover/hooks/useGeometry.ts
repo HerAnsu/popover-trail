@@ -15,7 +15,7 @@ import { usePopoverCollisionConfig, usePopoverStore } from '../context';
 /**
  * Helper to safely measure current viewport bounds across SSR and browser environments.
  */
-export function getViewportBounds(): { width: number; height: number } {
+function getViewportBounds(): { width: number; height: number } {
   const isClient = typeof window !== 'undefined';
   return {
     width: isClient ? window.innerWidth : 1024,

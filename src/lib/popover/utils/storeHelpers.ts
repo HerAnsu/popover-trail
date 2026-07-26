@@ -572,46 +572,9 @@ export function findEntryInStore<TData>(
 }
 
 /**
- * Pure helper for producing clean structural state updates without verbose spreading.
- */
-export function produceTrailState<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-  patch: Partial<PopoverStateData<TData, TContext>>,
-): PopoverStateData<TData, TContext> {
-  return {
-    ...state,
-    ...patch,
-  };
-}
-
-/**
- * Safely partitions the trail array at target index, preserving referential equality
- * if no items are truncated.
- */
-export function splitTrailAtIndex<TData>(
-  trail: readonly TrailEntry<TData>[],
-  index: number,
-): readonly TrailEntry<TData>[] {
-  if (index >= trail.length - 1) return trail;
-  return trail.slice(0, index + 1);
-}
-
-/**
- * Compares two arrays for shallow element equality.
- */
-export function shallowArrayEqual<T>(a: readonly T[], b: readonly T[]): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
-/**
  * Sanitizes a numeric coordinate value, defaulting NaN to 0.
  */
-export function sanitizeNum(val: number): number {
+function sanitizeNum(val: number): number {
   return Number.isNaN(val) ? 0 : val;
 }
 

@@ -207,6 +207,11 @@ export interface TrailEntry<TData = unknown> extends PopoverDisplayOptions {
   data?: TData;
 
   /**
+   * Stable data resolution Promise for React 19 use(promise) and Suspense integration.
+   */
+  dataPromise?: Promise<TData>;
+
+  /**
    * True if the popover is currently performing an asynchronous data resolution.
    */
   isLoading?: boolean;

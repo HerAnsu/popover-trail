@@ -1,4 +1,5 @@
 import React, { useContext, useMemo } from 'react';
+import clsx from 'clsx';
 import {
   PopoverCardContext,
   usePopoverTrigger,
@@ -44,9 +45,7 @@ function TriggerRenderer({
 }) {
   const child = React.Children.only(children) as React.ReactElement<Record<string, unknown>>;
 
-  const combinedClassName = [child.props.className, isOpen ? activeClassName : '']
-    .filter(Boolean)
-    .join(' ');
+  const combinedClassName = clsx(child.props.className as string, isOpen && activeClassName);
 
   return React.cloneElement(child, {
     ...triggerProps,

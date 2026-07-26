@@ -6,6 +6,7 @@ import React, {
   type ComponentPropsWithoutRef,
   type ElementType,
 } from 'react';
+import clsx from 'clsx';
 import { usePopoverCard, type UsePopoverCardResult } from '../hooks/usePopoverCard';
 import { usePopoverActions } from '../context';
 import type { TrailEntry, PopoverPlacement } from '../types';
@@ -98,12 +99,14 @@ export function PopoverCard<E extends ElementType = 'div', TData = unknown>({
     [card.style, userStyle],
   );
 
+  const mergedClassName = clsx(className as string, card.transitionClassName);
+
   return (
     <PopoverCardScopeContext.Provider value={scope}>
       <Component
         ref={card.ref}
         style={combinedStyle}
-        className={className}
+        className={mergedClassName || undefined}
         onMouseEnter={card.onMouseEnter}
         onMouseLeave={card.onMouseLeave}
         onKeyDown={card.onKeyDown}

@@ -22,6 +22,11 @@ export interface WorkerResolverOptions<TData = unknown> {
    * If true (default), automatically restarts the background worker instance if it crashes or errors out.
    */
   autoRestart?: boolean;
+
+  /**
+   * Optional flag enabling SharedArrayBuffer zero-copy ring buffer streaming when supported by the environment.
+   */
+  useSharedMemory?: boolean;
 }
 
 /**
