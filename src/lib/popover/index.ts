@@ -92,6 +92,9 @@ export {
   usePopoverActions,
   usePopoverHydration,
   usePopoverData,
+  usePopoverTimeline,
+  type UsePopoverTimelineResult,
+  type PopoverTimelineItem,
   PopoverPortal,
   usePopoverTrigger,
   usePopoverNestedTrigger,
@@ -123,4 +126,5 @@ export { SimplePopoverCache } from './utils/cache';
 export { PopoverTrigger, type PopoverTriggerProps } from './components/PopoverTrigger';
 export { PopoverCard, type PopoverCardProps } from './components/PopoverCard';
 export { PopoverTrail, type PopoverTrailProps } from './components/PopoverTrail';
+export { PopoverTimeline, type PopoverTimelineProps } from './components/PopoverTimeline';
 export { createPopoverTrail } from './factory';
