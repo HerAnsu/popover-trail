@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useDebugValue } from 'react';
 import type { DragAxis } from '../types';
 import { computeTiltMatrix } from '../utils/dragMath';
+import { validateDragOffset } from '../utils/devWarnings';
 
 /**
  * Options parameters for the `usePopoverDragAndDrop` hook.
@@ -159,11 +160,21 @@ export function usePopoverDragAndDrop({
     };
   }, [isDragging, enableTilt, maxTiltAngle, tiltSensitivity, tiltFriction, tiltDecay]);
 
+  const dragX = dragAxis === 'y' ? 0 : (transform?.x ?? 0);
+  const dragY = dragAxis === 'x' ? 0 : (transform?.y ?? 0);
+
+  validateDragOffset(dragX, dragY);
+  useDebugValue(
+    isDragging
+      ? `Dragging [x: ${dragX.toFixed(0)}, y: ${dragY.toFixed(0)}, tilt: ${tilt.rotation.toFixed(1)}°]`
+      : 'Idle',
+  );
+
   return {
     rotation: tilt.rotation,
     rotationX: tilt.rotationX,
     rotationY: tilt.rotationY,
-    dragX: dragAxis === 'y' ? 0 : (transform?.x ?? 0),
-    dragY: dragAxis === 'x' ? 0 : (transform?.y ?? 0),
+    dragX,
+    dragY,
   };
 }
