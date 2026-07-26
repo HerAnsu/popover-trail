@@ -67,6 +67,21 @@ export type PopoverCardProps<E extends ElementType = 'div', TData = unknown> = P
 /**
  * Root `<PopoverCard>` Headless Unstyled Component.
  * Binds positioning, accessibility attributes, data-attributes, and CSS variables automatically.
+ *
+ * @example
+ * ```tsx
+ * import { PopoverCard } from 'popover-trail';
+ *
+ * function MyCard({ entry, index, isPinned }) {
+ *   return (
+ *     <PopoverCard entry={entry} index={index} isPinned={isPinned} className="card-popup">
+ *       <PopoverCard.Handle>Drag Me</PopoverCard.Handle>
+ *       <PopoverCard.Content>{entry.data?.title}</PopoverCard.Content>
+ *       <PopoverCard.CloseButton>Close</PopoverCard.CloseButton>
+ *     </PopoverCard>
+ *   );
+ * }
+ * ```
  */
 export function PopoverCard<E extends ElementType = 'div', TData = unknown>({
   as,

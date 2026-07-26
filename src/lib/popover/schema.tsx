@@ -93,6 +93,28 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
  * @template TSchema - The popover schema definition type.
  * @param definition - Object map defining each popover in the schema.
  * @returns Strongly typed schema instance with bound triggers, hooks, keys, and unified resolver.
+ *
+ * @example
+ * ```tsx
+ * import { createPopoverSchema } from 'popover-trail';
+ *
+ * export const appSchema = createPopoverSchema({
+ *   userProfile: {
+ *     resolver: async (key, parentData) => fetchUser(key),
+ *     placement: 'right',
+ *   },
+ *   userStats: {
+ *     resolver: async (key, parentData) => fetchStats(parentData.id),
+ *     placement: 'bottom',
+ *   },
+ * });
+ *
+ * // Usage in React Component:
+ * function UserCard() {
+ *   const data = appSchema.useData(appSchema.keys.userProfile);
+ *   return <appSchema.Trigger popoverKey="userProfile"><button>User</button></appSchema.Trigger>;
+ * }
+ * ```
  */
 export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
   definition: TSchema,

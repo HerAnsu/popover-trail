@@ -166,6 +166,21 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
  *
  * @param props - Provider configuration properties.
  * @returns The provider element wrapping children.
+ *
+ * @example
+ * ```tsx
+ * import { PopoverProvider, PopoverTrail } from 'popover-trail';
+ * import { appSchema } from './schema';
+ *
+ * export function App() {
+ *   return (
+ *     <PopoverProvider schema={appSchema} clickOutside={{ enabled: true }}>
+ *       <MainView />
+ *       <PopoverTrail />
+ *     </PopoverProvider>
+ *   );
+ * }
+ * ```
  */
 export function PopoverProvider<TData = unknown, TContext = unknown>({
   children,
@@ -534,6 +549,17 @@ export function usePopoverActions<
  *
  * @param key - The unique identifier key of the popover.
  * @returns Unified data values and action wrappers.
+ *
+ * @example
+ * ```tsx
+ * import { usePopover } from 'popover-trail';
+
+ * function ProfileCard() {
+ *   const { data, isOpen, isPinned, close, pin } = usePopover<UserData>('userProfile');
+ *   if (!isOpen) return null;
+ *   return <div><h2>{data?.name}</h2><button onClick={close}>Close</button></div>;
+ * }
+ * ```
  */
 export function usePopover<
   TData = unknown,
@@ -716,6 +742,16 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
  * @template TData - The type of resolved data payload.
  * @param key - The unique identifier key of the popover card.
  * @returns The resolved data payload. Suspends when entry.dataPromise is pending in React 19.
+ *
+ * @example
+ * ```tsx
+ * import { usePopoverData } from 'popover-trail';
+ *
+ * function UserDetails() {
+ *   const data = usePopoverData<UserData>('userProfile');
+ *   return <div>{data?.email}</div>;
+ * }
+ * ```
  */
 export function usePopoverData<TData = unknown>(key: string): TData | undefined {
   const entry = usePopoverEntry<TData>(key);
