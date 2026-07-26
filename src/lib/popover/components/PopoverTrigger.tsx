@@ -131,6 +131,8 @@ function NestedTriggerInner({
  *
  * @template TPopoverKey - Union of valid popover keys.
  */
+import { warnDev } from '../utils/devWarnings';
+
 export function PopoverTrigger<TPopoverKey extends string = string>({
   popoverKey,
   placement,
@@ -139,6 +141,10 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
   activeClassName,
   children,
 }: PopoverTriggerProps<TPopoverKey>) {
+  warnDev(
+    !popoverKey || typeof popoverKey !== 'string' || popoverKey.trim() === '',
+    '<PopoverTrigger> received an empty or invalid "popoverKey" prop.',
+  );
   const parentKey = useContext(PopoverCardContext);
   const isOpen = useIsPopoverOpen(popoverKey);
 

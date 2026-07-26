@@ -16,8 +16,14 @@ interface PopoverTimelineScope {
 
 const PopoverTimelineScopeContext = createContext<PopoverTimelineScope | null>(null);
 
+import { warnDev } from '../utils/devWarnings';
+
 function usePopoverTimelineScope() {
   const ctx = useContext(PopoverTimelineScopeContext);
+  warnDev(
+    !ctx,
+    '<PopoverTimeline.*> sub-components (UndoButton, RedoButton, StepList, Step) must be rendered inside a <PopoverTimeline> container.',
+  );
   if (!ctx) {
     throw new Error('<PopoverTimeline> sub-components must be rendered within a <PopoverTimeline>');
   }

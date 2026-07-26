@@ -24,8 +24,14 @@ interface PopoverCardScope<TData = unknown> {
 
 const PopoverCardScopeContext = createContext<PopoverCardScope | null>(null);
 
+import { warnDev } from '../utils/devWarnings';
+
 function usePopoverCardScope() {
   const ctx = useContext(PopoverCardScopeContext);
+  warnDev(
+    !ctx,
+    '<PopoverCard.*> sub-components (such as Handle, PinButton, CloseButton) must be rendered inside a <PopoverCard> container.',
+  );
   if (!ctx) {
     throw new Error('<PopoverCard> sub-components must be rendered within a <PopoverCard>');
   }

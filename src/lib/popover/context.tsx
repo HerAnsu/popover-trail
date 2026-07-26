@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useDebugValue,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -561,6 +562,12 @@ export function usePopover<
     [actions, key],
   );
 
+  useDebugValue(
+    slice.isOpen
+      ? `Popover "${key}" [Status: ${slice.entry?.isLoading ? 'Loading' : slice.entry?.error ? 'Error' : 'Resolved'}, Pinned: ${slice.isPinned}]`
+      : `Popover "${key}" [Closed]`,
+  );
+
   return useMemo(
     (): UsePopoverResult<TData> => ({
       entry: slice.entry,
@@ -594,6 +601,14 @@ export function usePopoverHydration<TData = unknown>(key: string) {
   const reload = useCallback(() => {
     void actions.retryPopover(key);
   }, [actions, key]);
+
+  useDebugValue(
+    entry?.isLoading
+      ? `Hydrating "${key}"...`
+      : entry?.error
+        ? `Hydration Error: ${entry.error.message}`
+        : `Hydrated "${key}"`,
+  );
 
   return {
     isLoading: entry?.isLoading ?? false,
@@ -668,6 +683,8 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
     },
     [history, actions],
   );
+
+  useDebugValue(`Timeline Step 1/${history.length} [CanUndo: ${canUndo}, CanRedo: ${canRedo}]`);
 
   return {
     history,
