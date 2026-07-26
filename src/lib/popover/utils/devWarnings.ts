@@ -206,3 +206,146 @@ export function validateProviderResolver(hasResolver: boolean): void {
     });
   }
 }
+
+/** PT-114: Validates drag offset coordinates. */
+export function validateDragOffset(x: number, y: number): void {
+  if (!isDevEnv()) return;
+
+  if (Number.isNaN(x) || Number.isNaN(y) || Math.abs(x) > 10000 || Math.abs(y) > 10000) {
+    warnDevDetails(true, {
+      code: 'PT-114',
+      message: `Invalid drag offset coordinates (${x}, ${y}) received. Offsets must be valid numbers within [-10000, 10000].`,
+    });
+  }
+}
+
+/** PT-115: Validates maximum cascade depth. */
+export function validateCascadeDepth(depth: number): void {
+  if (!isDevEnv()) return;
+
+  if (depth > 10) {
+    warnDevDetails(true, {
+      code: 'PT-115',
+      message: `Deep popover cascade stack detected (depth = ${depth}). High cascade depth may impair UI usability.`,
+    });
+  }
+}
+
+/** PT-116: Validates stack group filter string. */
+export function validateStackGroup(stackGroup: string | null | undefined): void {
+  if (!isDevEnv() || stackGroup === null || stackGroup === undefined) return;
+
+  if (typeof stackGroup !== 'string' || stackGroup.trim() === '') {
+    warnDevDetails(true, {
+      code: 'PT-116',
+      message: 'Stack group ID filter is an empty string or whitespace.',
+    });
+  }
+}
+
+/** PT-117: Validates history snapshot stack capacity. */
+export function validateHistoryCapacity(maxHistory: number): void {
+  if (!isDevEnv()) return;
+
+  if (typeof maxHistory !== 'number' || maxHistory <= 0 || maxHistory > 500) {
+    warnDevDetails(true, {
+      code: 'PT-117',
+      message: `Invalid maxHistory capacity of ${maxHistory}. Capacity must be a positive integer between 1 and 500.`,
+    });
+  }
+}
+
+/** PT-118: Validates trigger action event handlers. */
+export function validateTriggerEvent(hasEvent: boolean): void {
+  if (!isDevEnv()) return;
+
+  if (!hasEvent) {
+    warnDevDetails(true, {
+      code: 'PT-118',
+      message: 'Popover action dispatch called without a valid DOM trigger anchor event.',
+    });
+  }
+}
+
+/** PT-119: Validates SharedArrayBuffer worker support. */
+export function validateSharedMemorySupport(useSharedMemory?: boolean): void {
+  if (!isDevEnv() || !useSharedMemory) return;
+
+  if (typeof SharedArrayBuffer === 'undefined') {
+    warnDevDetails(true, {
+      code: 'PT-119',
+      message:
+        'useSharedMemory was requested, but SharedArrayBuffer is not supported or cross-origin isolated in this browser environment.',
+    });
+  }
+}
+
+/** PT-120: Validates hydration error states. */
+export function validateHydrationError(key: string, error: unknown): void {
+  if (!isDevEnv() || !error) return;
+
+  warnDevDetails(true, {
+    code: 'PT-120',
+    message: `Data resolution for popover key "${key}" rejected with error: ${error instanceof Error ? error.message : String(error)}.`,
+  });
+}
+
+/** PT-121: Validates pin drag state logic. */
+export function validatePinDragState(isPinned: boolean, allowDragWhenUnpinned?: boolean): void {
+  if (!isDevEnv()) return;
+
+  if (!isPinned && allowDragWhenUnpinned === false) {
+    warnDevDetails(true, {
+      code: 'PT-121',
+      message: 'Drag action attempted on an unpinned popover card that disables unpinned dragging.',
+    });
+  }
+}
+
+/** PT-122: Validates snapshot manager storage keys. */
+export function validateStorageKey(storageKey: string): void {
+  if (!isDevEnv()) return;
+
+  if (!storageKey || typeof storageKey !== 'string' || storageKey.trim() === '') {
+    warnDevDetails(true, {
+      code: 'PT-122',
+      message: 'PopoverSnapshotManager storageKey is empty or invalid.',
+    });
+  }
+}
+
+/** PT-123: Validates QuadTree spatial bounding box dimensions. */
+export function validateQuadTreeBounds(width: number, height: number): void {
+  if (!isDevEnv()) return;
+
+  if (Number.isNaN(width) || Number.isNaN(height) || width <= 0 || height <= 0) {
+    warnDevDetails(true, {
+      code: 'PT-123',
+      message: `QuadTree spatial index received invalid non-positive dimensions (${width}x${height}).`,
+    });
+  }
+}
+
+/** PT-124: Validates FSM transition event types. */
+export function validateFSMTransitionEvent(eventType: string): void {
+  if (!isDevEnv()) return;
+
+  if (!eventType || typeof eventType !== 'string') {
+    warnDevDetails(true, {
+      code: 'PT-124',
+      message: 'FSM reducer received an invalid or undefined state transition event type.',
+    });
+  }
+}
+
+/** PT-125: Validates portal container DOM node existence. */
+export function validatePortalContainer(container: Element | null): void {
+  if (!isDevEnv()) return;
+
+  if (!container) {
+    warnDevDetails(true, {
+      code: 'PT-125',
+      message: '<PopoverPortal> target container DOM node is null or unmounted.',
+    });
+  }
+}
