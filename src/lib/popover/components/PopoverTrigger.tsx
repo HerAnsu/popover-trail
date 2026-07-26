@@ -48,6 +48,8 @@ function TriggerRenderer({
   const combinedClassName = clsx(child.props.className as string, isOpen && activeClassName);
 
   return React.cloneElement(child, {
+    'aria-haspopup': 'dialog',
+    'aria-expanded': isOpen,
     ...triggerProps,
     ...child.props,
     className: combinedClassName || undefined,

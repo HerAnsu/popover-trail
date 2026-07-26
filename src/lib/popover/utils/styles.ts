@@ -86,6 +86,13 @@ export function getPopoverStyles({
     ['--popover-rotate-y' as string]: `${rotationY}deg`,
     ['--popover-rotate-z' as string]: `${rotation}deg`,
     ['--popover-z-index' as string]: `${zIndex}`,
+    // Standard --pt-* namespace CSS custom properties
+    ['--pt-top' as string]: `${top}px`,
+    ['--pt-left' as string]: `${left}px`,
+    ['--pt-z-index' as string]: `${zIndex}`,
+    ['--pt-drag-x' as string]: `${translateX}px`,
+    ['--pt-drag-y' as string]: `${translateY}px`,
+    ['--pt-tilt-deg' as string]: `${rotation}deg`,
   };
 
   if (!isDynamic) {
