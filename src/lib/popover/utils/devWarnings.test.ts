@@ -20,17 +20,16 @@ describe('Enhanced Guardrail Warnings Utility', () => {
     consoleWarnSpy.mockRestore();
   });
 
-  it('logs structured warnDevDetails warning with solution', () => {
+  it('logs structured warnDevDetails warning with code and message', () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     warnDevDetails(true, {
       code: 'PT-TEST',
-      issue: 'Test issue occurred.',
-      solution: 'Apply test fix.',
+      message: 'Test issue occurred.',
     });
 
     expect(consoleWarnSpy).toHaveBeenCalledWith(
-      '[popover-trail warning PT-TEST]: Test issue occurred.\n  💡 Solution: Apply test fix.',
+      '[popover-trail warning PT-TEST]: Test issue occurred.',
     );
     consoleWarnSpy.mockRestore();
   });

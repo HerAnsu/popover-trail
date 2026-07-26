@@ -18,6 +18,13 @@ import { createPopoverStore } from './store';
 import { useEventListener } from './hooks/useEventListener';
 import { invariant } from './utils/invariant';
 import { hasEntryWithKey } from './utils/storeHelpers';
+import {
+  validateProviderResolver,
+  validateCascadeStep,
+  validateDefaultOffset,
+  validateBaseZIndex,
+  validateExitDuration,
+} from './utils/devWarnings';
 import type {
   PopoverStore,
   PopoverResolver,
@@ -184,6 +191,12 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   components,
   zIndexBaseMap,
 }: PopoverProviderProps<TData, TContext>) {
+  validateProviderResolver(Boolean(resolveData || schema));
+  validateCascadeStep(cascadeOffsetStep);
+  validateDefaultOffset(defaultOffset);
+  validateBaseZIndex(baseZIndex);
+  validateExitDuration(exitTransitionDuration);
+
   const activeResolver = useMemo<PopoverResolver<TData, TContext>>(() => {
     if (resolveData) return resolveData;
     const schemaInstance = schema as

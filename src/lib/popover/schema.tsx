@@ -11,6 +11,7 @@ import type {
   AnchorEventLike,
   TrailEntry,
 } from './types';
+import { validateSchemaKey } from './utils/devWarnings';
 
 /**
  * Definition node configuration for a single popover in the schema.
@@ -107,6 +108,7 @@ export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
   const createResolver = <TContext = unknown,>(): PopoverResolver<unknown, TContext> => {
     return (key: string, parentData?: unknown, context?: TContext) => {
       const node = definition[key];
+      validateSchemaKey(Boolean(node), key);
       if (node && typeof node.resolver === 'function') {
         return node.resolver(key, parentData, context);
       }
