@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup'
+import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/lib/popover/index.ts', 'src/lib/popover/dnd.tsx'],
@@ -19,4 +19,4 @@ export default defineConfig({
     'react-focus-lock',
     'fast-deep-equal',
   ],
-})
+});
