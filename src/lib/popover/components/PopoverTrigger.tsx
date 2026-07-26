@@ -131,7 +131,12 @@ function NestedTriggerInner({
  *
  * @template TPopoverKey - Union of valid popover keys.
  */
-import { warnDev } from '../utils/devWarnings';
+import {
+  validatePopoverKey,
+  validatePlacement,
+  validateHoverDelays,
+  validateCascadeAncestry,
+} from '../utils/devWarnings';
 
 export function PopoverTrigger<TPopoverKey extends string = string>({
   popoverKey,
@@ -141,11 +146,12 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
   activeClassName,
   children,
 }: PopoverTriggerProps<TPopoverKey>) {
-  warnDev(
-    !popoverKey || typeof popoverKey !== 'string' || popoverKey.trim() === '',
-    '<PopoverTrigger> received an empty or invalid "popoverKey" prop.',
-  );
   const parentKey = useContext(PopoverCardContext);
+
+  validatePopoverKey(popoverKey);
+  validatePlacement(placement);
+  validateHoverDelays(options?.hover?.openDelay, options?.hover?.closeDelay);
+  validateCascadeAncestry(popoverKey, parentKey);
   const isOpen = useIsPopoverOpen(popoverKey);
 
   const mergedOptions = useMemo(
