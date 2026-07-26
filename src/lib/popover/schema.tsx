@@ -35,7 +35,7 @@ export interface PopoverSchemaNode<TData = unknown, TParentData = unknown, TCont
 /**
  * Record map of popover schema node definitions.
  */
-export type PopoverSchemaDefinition = Record<string, PopoverSchemaNode<unknown, unknown, unknown>>;
+export type PopoverSchemaDefinition = Record<string, PopoverSchemaNode>;
 
 /**
  * Helper to extract valid key union from a schema definition.
@@ -46,7 +46,7 @@ export type SchemaKeys<TSchema extends PopoverSchemaDefinition> = Extract<keyof 
  * Helper to extract resolved data payload type for a specific key in a schema.
  */
 export type SchemaData<TSchema extends PopoverSchemaDefinition, K extends SchemaKeys<TSchema>> =
-  TSchema[K] extends PopoverSchemaNode<infer TData, unknown, unknown> ? TData : unknown;
+  TSchema[K] extends PopoverSchemaNode<infer TData> ? TData : unknown;
 
 /**
  * Strongly typed Schema Instance object returned by `createPopoverSchema`.
@@ -60,7 +60,7 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
   createResolver: <TContext = unknown>() => PopoverResolver<unknown, TContext>;
   /** Strongly typed PopoverTrigger component bound to schema keys. */
   Trigger: React.ComponentType<
-    Omit<PopoverTriggerProps<string>, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }
+    Omit<PopoverTriggerProps, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }
   >;
   /** Strongly typed hook for accessing resolved data by schema key. */
   useData: <K extends SchemaKeys<TSchema>>(key: K) => SchemaData<TSchema, K> | undefined;
@@ -115,7 +115,7 @@ export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
   };
 
   const SchemaTrigger: React.ComponentType<
-    Omit<PopoverTriggerProps<string>, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }
+    Omit<PopoverTriggerProps, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }
   > = ({ popoverKey, placement, offset, options, ...restProps }) => {
     const node = definition[popoverKey];
     const mergedPlacement = placement ?? node?.placement;
@@ -128,7 +128,13 @@ export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
         allowDragWhenUnpinned: node?.allowDragWhenUnpinned,
         ...options,
       }),
-      [node, options],
+      [
+        node?.collision,
+        node?.hover,
+        node?.allowDragWhenPinned,
+        node?.allowDragWhenUnpinned,
+        options,
+      ],
     );
 
     return (
