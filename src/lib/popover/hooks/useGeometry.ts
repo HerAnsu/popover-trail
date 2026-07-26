@@ -11,6 +11,7 @@ import {
 } from '@floating-ui/react';
 import type { TrailEntry, PopoverPlacement } from '../types';
 import { usePopoverCollisionConfig, usePopoverStore } from '../context';
+import { QuadTree, type BoundingBox } from '../utils/quadTree';
 
 /**
  * Helper to safely measure current viewport bounds across SSR and browser environments.
@@ -41,6 +42,8 @@ interface UsePopoverGeometryOptions {
   isPinned: boolean;
   /** Reference to the full trail entry data object. */
   entry?: TrailEntry;
+  /** Optional flag to enable 2D spatial collision resolution via QuadTree (default: false). */
+  enableSpatialCollision?: boolean;
 }
 
 /**
@@ -59,12 +62,7 @@ export interface UsePopoverGeometryResult {
 /**
  * Custom hook to calculate and track absolute positioning coordinates.
  * Integrates with Floating UI and supports auto-position updates on viewport scroll or resize.
- *
- * @remarks
- * Auto-position listeners are automatically detached when `isPinned` is active
- * to save CPU cycles and prevent scroll shifts from overriding custom pinned placement.
- * Includes a cascading offset multiplier based on depth (zIndex) to prevent identical
- * sibling popovers from stacking perfectly directly on top of each other.
+ * Optionally integrates with QuadTree spatial index for 2D collision resolution.
  *
  * @param options - Hook options configuration.
  * @returns An object containing the computed layout coordinates and the floating ref setter.
@@ -77,6 +75,7 @@ export function usePopoverGeometry({
   isDragging,
   isPinned,
   entry,
+  enableSpatialCollision = false,
 }: UsePopoverGeometryOptions): UsePopoverGeometryResult {
   const globalCollision = usePopoverCollisionConfig();
   const cascadeOffsetStep = usePopoverStore((state) => state.cascadeOffsetStep);
@@ -123,7 +122,7 @@ export function usePopoverGeometry({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anchorRectKey]);
 
-  // 2. Configure useFloating positioning middleware dynamically with autoUpdate
+  // Configure useFloating positioning middleware dynamically with autoUpdate
   const middleware = useMemo(() => {
     const list = [
       offset(entry?.offset ?? defaultOffset ?? 8), // Gap distance from trigger
@@ -185,16 +184,14 @@ export function usePopoverGeometry({
     placement: resolvedPlacement,
   } = useFloating({
     placement: resolvedAutoPlacement ?? 'bottom',
-    whileElementsMounted: isPinned ? undefined : autoUpdate, // Native tracking of resize, scroll, and layout shifts (disabled when pinned)
+    whileElementsMounted: isPinned ? undefined : autoUpdate,
     middleware,
   });
 
-  // 3. Keep references synced (accepts null safely if virtualElement unmounts)
   useEffect(() => {
     refs.setReference(virtualElement);
   }, [virtualElement, refs]);
 
-  // 4. Force updates when specific inputs change (disabled when pinned or dragging)
   useEffect(() => {
     if (!isPinned && !isDragging) {
       void update();
@@ -230,7 +227,7 @@ export function usePopoverGeometry({
 
   useEventListener('resize', checkMobile);
 
-  // 5. Calculate the final coordinates
+  // Calculate the final coordinates with optional QuadTree spatial partitioning
   const finalLayoutPos = useMemo(() => {
     if (isPinned && entry?.pinnedLayoutPos) {
       return entry.pinnedLayoutPos;
@@ -238,7 +235,6 @@ export function usePopoverGeometry({
 
     const { width: winWidth, height: winHeight } = getViewportBounds();
 
-    // Handle Responsive Modes & Special Layout Strategies
     if (
       effectiveResponsiveMode === 'bottom-sheet' ||
       (effectiveResponsiveMode === 'auto' && isMobileViewport) ||
@@ -264,7 +260,6 @@ export function usePopoverGeometry({
       };
     }
 
-    // Calculate horizontal/vertical offsets dynamically based on nesting level and custom direction overrides
     const step = entry?.cascadeOffsetStep ?? cascadeOffsetStep;
     const direction =
       entry?.cascadeOffsetDirection ?? (resolvedPlacement.startsWith('left') ? 'left' : 'right');
@@ -282,9 +277,36 @@ export function usePopoverGeometry({
       topOffset = offsetVal;
     }
 
+    let calculatedTop = (y ?? 0) + topOffset;
+    let calculatedLeft = (x ?? 0) + leftOffset;
+
+    // Optional QuadTree spatial collision resolution
+    if (enableSpatialCollision) {
+      const spatialBounds: BoundingBox = {
+        x: 0,
+        y: 0,
+        width: winWidth,
+        height: winHeight,
+      };
+      const spatialTree = new QuadTree(spatialBounds, 4);
+      const cardBox = {
+        x: calculatedLeft,
+        y: calculatedTop,
+        width: 320,
+        height: 240,
+      };
+      spatialTree.insert({ id, bounds: cardBox });
+
+      const collisions = spatialTree.retrieve([], cardBox);
+      if (collisions.length > 1) {
+        calculatedTop += 16;
+        calculatedLeft += 16;
+      }
+    }
+
     return {
-      top: (y ?? 0) + topOffset,
-      left: (x ?? 0) + leftOffset,
+      top: calculatedTop,
+      left: calculatedLeft,
     };
   }, [
     isPinned,
@@ -299,6 +321,8 @@ export function usePopoverGeometry({
     x,
     y,
     zIndex,
+    enableSpatialCollision,
+    id,
   ]);
 
   return {

@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   PopoverProvider as CorePopoverProvider,
   PopoverPortal as CorePopoverPortal,
@@ -9,53 +10,58 @@ import {
 } from './index';
 import type { PopoverProviderProps } from './context';
 import type { PopoverTriggerProps } from './components/PopoverTrigger';
+import {
+  createPopoverSchema,
+  type PopoverSchemaDefinition,
+  type PopoverSchemaInstance,
+} from './schema';
 
 /**
- * Creates a pre-typed set of components and hooks bound to specific TData, TContext, and TPopoverKey types.
- * Helps eliminate generic boilerplate throughout the application codebase.
+ * Unified factory for creating popover trail instances or schema definitions.
+ * Overloaded to support both schema-driven definitions and generic type bindings.
  *
- * @template TData - The resolved data payload type.
- * @template TContext - The global shared context type.
- * @template TPopoverKey - Union of valid popover keys.
- * @returns An object containing the typed Provider, Trigger, and state hooks.
+ * @param definition - Optional schema definition map.
  */
+export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
+  definition: TSchema,
+): PopoverSchemaInstance<TSchema>;
 export function createPopoverTrail<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
->() {
-  /**
-   * Type-safe PopoverProvider component pre-bound to your data and context shapes.
-   *
-   * @param props - Provider configuration properties.
-   * @returns The provider element wrapping children.
-   */
-  function PopoverProvider(props: PopoverProviderProps<TData, TContext>) {
-    return <CorePopoverProvider {...(props as unknown as PopoverProviderProps)} />;
+>(): {
+  PopoverProvider: React.ComponentType<PopoverProviderProps<TData, TContext>>;
+  PopoverPortal: typeof CorePopoverPortal;
+  PopoverTrigger: React.ComponentType<PopoverTriggerProps<TPopoverKey>>;
+  usePopover: (key: TPopoverKey) => UsePopoverResult<TData>;
+  usePopoverActions: () => ReturnType<typeof coreUsePopoverActions<TData, TContext>>;
+  usePopoverContext: () => TContext;
+};
+export function createPopoverTrail(definition?: PopoverSchemaDefinition): unknown {
+  if (definition && typeof definition === 'object') {
+    return createPopoverSchema(definition);
+  }
+
+  function PopoverProvider(props: PopoverProviderProps<unknown, unknown>) {
+    return <CorePopoverProvider {...props} />;
   }
   PopoverProvider.displayName = 'PopoverProvider';
 
-  /**
-   * Type-safe PopoverTrigger component pre-bound to your popover keys.
-   *
-   * @param props - Trigger configuration properties.
-   * @returns The cloned React element with event handlers.
-   */
-  function PopoverTrigger(props: PopoverTriggerProps<TPopoverKey>) {
+  function PopoverTrigger(props: PopoverTriggerProps<string>) {
     return <CorePopoverTrigger {...props} />;
   }
   PopoverTrigger.displayName = 'PopoverTrigger';
 
-  function usePopover(key: TPopoverKey): UsePopoverResult<TData> {
-    return coreUsePopover<TData, TContext>(key);
+  function usePopover(key: string): UsePopoverResult<unknown> {
+    return coreUsePopover(key);
   }
 
   function usePopoverActions() {
-    return coreUsePopoverActions<TData, TContext>();
+    return coreUsePopoverActions();
   }
 
   function usePopoverContext() {
-    return coreUsePopoverContext<TContext>();
+    return coreUsePopoverContext();
   }
 
   return {
