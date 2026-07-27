@@ -15,6 +15,15 @@ export interface QuadItem {
   bounds: BoundingBox;
 }
 
+function boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
+}
+
 export class QuadTree {
   private items: QuadItem[] = [];
   private nodes: QuadTree[] = [];
@@ -122,7 +131,7 @@ export class QuadTree {
 
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items[i];
-      if (item && item.id) {
+      if (item && item.id && boxesIntersect(item.bounds, itemBounds)) {
         returnItems.push(item);
       }
     }

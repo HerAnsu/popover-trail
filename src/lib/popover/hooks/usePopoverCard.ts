@@ -101,7 +101,16 @@ export function handleCardKeyboardNavigation(
   if (!enableArrowNavigation) return;
 
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-    e.preventDefault();
+    const activeEl = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+    const isEditingText =
+      activeEl &&
+      (activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.isContentEditable);
+
+    if (isEditingText) return;
+
+    if (!cardElement) return;
     const focusableSelectors = [
       'a[href]',
       'area[href]',
@@ -112,12 +121,14 @@ export function handleCardKeyboardNavigation(
       "[tabindex]:not([tabindex='-1'])",
     ].join(',');
 
-    if (!cardElement) return;
-    const elements = Array.from(cardElement.querySelectorAll<HTMLElement>(focusableSelectors));
+    const elements = Array.from(cardElement.querySelectorAll<HTMLElement>(focusableSelectors)).filter(
+      (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0,
+    );
     if (elements.length === 0) return;
 
-    const activeEl = document.activeElement as HTMLElement;
-    let currentIndex = elements.indexOf(activeEl);
+    e.preventDefault();
+
+    let currentIndex = activeEl ? elements.indexOf(activeEl) : -1;
 
     if (e.key === 'ArrowDown') {
       currentIndex = (currentIndex + 1) % elements.length;
@@ -128,7 +139,7 @@ export function handleCardKeyboardNavigation(
   }
 
   if (e.key === 'ArrowRight') {
-    const activeEl = document.activeElement as HTMLElement;
+    const activeEl = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
     if (activeEl && (activeEl.tagName === 'BUTTON' || activeEl.tagName === 'A')) {
       e.preventDefault();
       activeEl.click();

@@ -15,7 +15,7 @@ describe('PopoverSnapshotManager', () => {
     const manager = new PopoverSnapshotManager();
     const snapshot = manager.createSnapshot(['card-1'], ['card-2'], { 'card-1': { x: 10, y: 20 } });
 
-    expect(snapshot.version).toBe('1.0.2');
+    expect(snapshot.version).toBe('1.0.3');
     expect(snapshot.trailKeys).toEqual(['card-1']);
     expect(snapshot.pinnedKeys).toEqual(['card-2']);
     expect(snapshot.offsets).toEqual({ 'card-1': { x: 10, y: 20 } });

@@ -117,6 +117,10 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
 
     if (typeof workerOrFn === 'function') {
       try {
+        if (workerScriptUrl) {
+          URL.revokeObjectURL(workerScriptUrl);
+          workerScriptUrl = null;
+        }
         const script = createPopoverWorkerScript(
           workerOrFn as (key: string, parentData?: unknown, context?: unknown) => unknown,
         );
@@ -184,8 +188,12 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
 
         if (autoRestart && typeof workerOrFn !== 'string' && !(workerOrFn instanceof Worker)) {
           try {
+            if (worker) {
+              worker.terminate();
+            }
             if (workerScriptUrl) {
               URL.revokeObjectURL(workerScriptUrl);
+              workerScriptUrl = null;
             }
             worker = initWorker();
           } catch {
@@ -203,7 +211,11 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
         } catch {
           // Ignore worker postMessage error during abort
         }
-        reject(new DOMException('Aborted by signal', 'AbortError'));
+        const abortError =
+          typeof DOMException !== 'undefined'
+            ? new DOMException('Aborted by signal', 'AbortError')
+            : Object.assign(new Error('Aborted by signal'), { name: 'AbortError' });
+        reject(abortError);
       };
 
       currentWorker.addEventListener('message', handleMessage);
@@ -234,6 +246,19 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
       }
     });
   };
+
+  const terminate = () => {
+    if (worker) {
+      worker.terminate();
+      worker = null;
+    }
+    if (workerScriptUrl) {
+      URL.revokeObjectURL(workerScriptUrl);
+      workerScriptUrl = null;
+    }
+  };
+
+  Object.assign(resolver, { terminate, destroy: terminate });
 
   return resolver;
 }

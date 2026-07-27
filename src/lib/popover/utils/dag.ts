@@ -103,6 +103,13 @@ export class PopoverDAG {
       }
     }
 
+    // Fallback pass for any orphan or disconnected nodes
+    for (const key of this.nodes.keys()) {
+      if (!visited.has(key)) {
+        visit(key);
+      }
+    }
+
     return result;
   }
 }

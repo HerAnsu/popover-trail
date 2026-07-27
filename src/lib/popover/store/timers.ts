@@ -6,6 +6,7 @@ export function createTimerManager() {
   const transitionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   const clearHoverTimer = (key: string) => {
+    if (!key) return;
     const timer = hoverCloseTimers.get(key);
     if (timer) {
       clearTimeout(timer);
@@ -14,6 +15,7 @@ export function createTimerManager() {
   };
 
   const clearTransitionTimer = (key: string) => {
+    if (!key) return;
     const timer = transitionTimers.get(key);
     if (timer) {
       clearTimeout(timer);

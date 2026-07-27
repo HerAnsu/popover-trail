@@ -20,6 +20,7 @@ import {
   PopoverCardContext,
 } from './context';
 import { getPopoverStyles } from './utils/styles';
+import { clsx } from './utils/storeHelpers';
 import type { TrailEntry, PopoverPlacement } from './types';
 
 /**
@@ -255,7 +256,9 @@ export function PopoverCanvas<TData = unknown>({
     const { active, delta } = event;
     const key = String(active.id);
     const currentOffset = store.getState().offsets[key] || { x: 0, y: 0 };
-    updateOffset(key, currentOffset.x + delta.x, currentOffset.y + delta.y);
+    const safeDeltaX = Number.isFinite(delta?.x) ? delta.x : 0;
+    const safeDeltaY = Number.isFinite(delta?.y) ? delta.y : 0;
+    updateOffset(key, currentOffset.x + safeDeltaX, currentOffset.y + safeDeltaY);
   };
 
   const zIndexOrder = usePopoverStore((state) => state.zIndexOrder);
@@ -266,9 +269,10 @@ export function PopoverCanvas<TData = unknown>({
       ...trail.map((entry, idx) => ({ entry, isPinned: false, index: floating.length + idx })),
     ];
     if (zIndexOrder.length === 0) return raw;
-    const orderMap = new Map<string, number>(
-      zIndexOrder.map((k: string, i: number) => [k, i] as const),
-    );
+    const orderMap = new Map<string, number>();
+    for (let i = 0; i < zIndexOrder.length; i++) {
+      orderMap.set(zIndexOrder[i]!, i);
+    }
     return raw.sort((a, b) => (orderMap.get(a.entry.key) ?? 0) - (orderMap.get(b.entry.key) ?? 0));
   }, [floating, trail, zIndexOrder]);
 
@@ -376,15 +380,15 @@ function PopoverCardInner<TData = unknown>({
 
   const combinedClassName = useMemo(
     () =>
-      [
+      clsx(
         className,
-        isTop ? 'topmost' : '',
-        isPinned ? 'pinned' : '',
-        isDragging ? 'dragging' : '',
+        {
+          topmost: isTop,
+          pinned: isPinned,
+          dragging: isDragging,
+        },
         transitionClassName,
-      ]
-        .filter(Boolean)
-        .join(' '),
+      ),
     [className, isTop, isPinned, isDragging, transitionClassName],
   );
 
@@ -415,7 +419,7 @@ function PopoverCardInner<TData = unknown>({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onKeyDown={onKeyDown}>
-      <FocusLock disabled={!enableFocusLock || !isTop || isPinned} returnFocus>
+      <FocusLock disabled={!enableFocusLock || !isTop || isPinned} returnFocus={{ preventScroll: true }}>
         <PopoverCardContext.Provider value={entry.key}>
           {entry.ariaDescribedby && (
             <div id={`desc-${entry.key}`} style={{ display: 'none' }}>

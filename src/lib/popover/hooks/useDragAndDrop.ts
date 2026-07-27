@@ -127,30 +127,32 @@ export function usePopoverDragAndDrop({
       rafId = requestAnimationFrame(updateRotation);
     } else {
       // Smoothly return rotation back to 0 (inertia decay) when dragging stops or tilt is disabled
-      const returnToZero = () => {
-        const curr = rotationRef.current;
+      const curr = rotationRef.current;
+      if (curr.x !== 0 || curr.y !== 0 || curr.z !== 0) {
+        const returnToZero = () => {
+          const c = rotationRef.current;
+          if (c.x === 0 && c.y === 0 && c.z === 0) return;
 
-        // Skip animation if all rotations are already zeroed out
-        if (curr.x === 0 && curr.y === 0 && curr.z === 0) return;
+          const safeDecay = Math.min(Math.max(tiltDecay, 0.1), 0.99);
+          const nextXVal = c.x * safeDecay;
+          const nextYVal = c.y * safeDecay;
+          const nextZVal = c.z * safeDecay;
 
-        const nextXVal = curr.x * tiltDecay;
-        const nextYVal = curr.y * tiltDecay;
-        const nextZVal = curr.z * tiltDecay;
+          const finalX = Math.abs(nextXVal) < 0.05 ? 0 : nextXVal;
+          const finalY = Math.abs(nextYVal) < 0.05 ? 0 : nextYVal;
+          const finalZ = Math.abs(nextZVal) < 0.05 ? 0 : nextZVal;
 
-        const finalX = Math.abs(nextXVal) < 0.05 ? 0 : nextXVal;
-        const finalY = Math.abs(nextYVal) < 0.05 ? 0 : nextYVal;
-        const finalZ = Math.abs(nextZVal) < 0.05 ? 0 : nextZVal;
+          const done = finalX === 0 && finalY === 0 && finalZ === 0;
 
-        const done = finalX === 0 && finalY === 0 && finalZ === 0;
+          rotationRef.current = { z: finalZ, x: finalX, y: finalY };
+          setTilt({ rotation: finalZ, rotationX: finalX, rotationY: finalY });
 
-        rotationRef.current = { z: finalZ, x: finalX, y: finalY };
-        setTilt({ rotation: finalZ, rotationX: finalX, rotationY: finalY });
-
-        if (!done) {
-          rafId = requestAnimationFrame(returnToZero);
-        }
-      };
-      rafId = requestAnimationFrame(returnToZero);
+          if (!done) {
+            rafId = requestAnimationFrame(returnToZero);
+          }
+        };
+        rafId = requestAnimationFrame(returnToZero);
+      }
     }
 
     return () => {

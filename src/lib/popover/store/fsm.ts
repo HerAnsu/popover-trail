@@ -33,100 +33,116 @@ export interface PopoverFSMState<TData = unknown> {
   context: PopoverFSMContext<TData>;
 }
 
-type TransitionFn<TData> = (
+export type TransitionFn<TData> = (
   context: PopoverFSMContext<TData>,
   event: PopoverFSMEvent<TData>,
 ) => PopoverFSMState<TData>;
 
-type TransitionTable<TData> = {
+export type TransitionTable<TData> = {
   [K in PopoverStateValue]?: {
     [E in PopoverFSMEvent['type']]?: TransitionFn<TData>;
   };
 };
 
-/**
- * Pre-compiled $O(1)$ state transition lookup table.
- * Eliminates invalid state combinations by ignoring illegal event triggers.
- */
-const FSM_TRANSITION_TABLE: TransitionTable<unknown> = {
-  Idle: {
-    OPEN_ROOT: (ctx, evt) => ({
-      value: 'Hydrating',
-      context: { ...ctx, key: (evt as { key: string }).key },
-    }),
-    PUSH_NESTED: (ctx, evt) => ({
-      value: 'Hydrating',
-      context: { ...ctx, key: (evt as { key: string }).key },
-    }),
-  },
-  Hydrating: {
-    RESOLVE_SUCCESS: (ctx, evt) => ({
-      value: 'Resolved.Trailing',
-      context: { ...ctx, data: (evt as { data: unknown }).data, error: undefined },
-    }),
-    RESOLVE_FAILURE: (ctx, evt) => ({
-      value: 'Error',
-      context: { ...ctx, error: (evt as { error: Error }).error },
-    }),
-    CLOSE: (ctx) => ({
-      value: 'Unmounting',
-      context: ctx,
-    }),
-  },
-  'Resolved.Trailing': {
-    TOGGLE_PIN: (ctx, evt) => ({
-      value: 'Resolved.Pinned',
-      context: { ...ctx, pinnedPos: (evt as { rect?: { top: number; left: number } }).rect },
-    }),
-    CLOSE: (ctx) => ({
-      value: 'Unmounting',
-      context: ctx,
-    }),
-  },
-  'Resolved.Pinned': {
-    TOGGLE_PIN: (ctx) => ({
-      value: 'Resolved.Trailing',
-      context: { ...ctx, pinnedPos: undefined },
-    }),
-    CLOSE: (ctx) => ({
-      value: 'Unmounting',
-      context: ctx,
-    }),
-  },
-  Error: {
-    RETRY: (ctx) => ({
-      value: 'Hydrating',
-      context: { ...ctx, error: undefined },
-    }),
-    CLOSE: (ctx) => ({
-      value: 'Unmounting',
-      context: ctx,
-    }),
-  },
-  Unmounting: {
-    TRANSITION_END: (ctx) => ({
-      value: 'Idle',
-      context: { key: ctx.key },
-    }),
-  },
-};
-
-/**
- * Pure state reducer for Popover FSM transitions.
- */
 export function popoverFSMReducer<TData = unknown>(
   state: PopoverFSMState<TData>,
   event: PopoverFSMEvent<TData>,
 ): PopoverFSMState<TData> {
-  const transitions = FSM_TRANSITION_TABLE[state.value];
-  const transitionFn = transitions?.[event.type];
+  const { value, context } = state;
 
-  if (!transitionFn) {
-    // Guarantees zero-invalid-state invariant by returning original state on illegal transitions
-    return state;
+  switch (value) {
+    case 'Idle':
+      if (event.type === 'OPEN_ROOT' || event.type === 'PUSH_NESTED') {
+        return {
+          value: 'Hydrating',
+          context: { ...context, key: event.key },
+        };
+      }
+      break;
+
+    case 'Hydrating':
+      if (event.type === 'RESOLVE_SUCCESS') {
+        return {
+          value: 'Resolved.Trailing',
+          context: { ...context, data: event.data, error: undefined },
+        };
+      }
+      if (event.type === 'RESOLVE_FAILURE') {
+        return {
+          value: 'Error',
+          context: { ...context, error: event.error },
+        };
+      }
+      if (event.type === 'CLOSE') {
+        return {
+          value: 'Unmounting',
+          context,
+        };
+      }
+      break;
+
+    case 'Resolved.Trailing':
+      if (event.type === 'TOGGLE_PIN') {
+        return {
+          value: 'Resolved.Pinned',
+          context: { ...context, pinnedPos: event.rect },
+        };
+      }
+      if (event.type === 'CLOSE') {
+        return {
+          value: 'Unmounting',
+          context,
+        };
+      }
+      break;
+
+    case 'Resolved.Pinned':
+      if (event.type === 'TOGGLE_PIN') {
+        return {
+          value: 'Resolved.Trailing',
+          context: { ...context, pinnedPos: undefined },
+        };
+      }
+      if (event.type === 'CLOSE') {
+        return {
+          value: 'Unmounting',
+          context,
+        };
+      }
+      break;
+
+    case 'Error':
+      if (event.type === 'RETRY') {
+        return {
+          value: 'Hydrating',
+          context: { ...context, error: undefined },
+        };
+      }
+      if (event.type === 'CLOSE') {
+        return {
+          value: 'Unmounting',
+          context,
+        };
+      }
+      break;
+
+    case 'Unmounting':
+      if (event.type === 'TRANSITION_END') {
+        return {
+          value: 'Idle',
+          context: { key: context.key },
+        };
+      }
+      if (event.type === 'OPEN_ROOT' || event.type === 'PUSH_NESTED') {
+        return {
+          value: 'Hydrating',
+          context: { ...context, key: event.key },
+        };
+      }
+      break;
   }
 
-  return transitionFn(state.context, event) as PopoverFSMState<TData>;
+  return state;
 }
 
 /**

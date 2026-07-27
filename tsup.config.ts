@@ -5,7 +5,7 @@ export default defineConfig({
   format: ['cjs', 'esm'],
   dts: false,
   tsconfig: 'tsconfig.lib.json',
-  splitting: false,
+  splitting: true,
   sourcemap: true,
   clean: true,
   minify: true,
@@ -17,6 +17,5 @@ export default defineConfig({
     '@floating-ui/react',
     '@dnd-kit/core',
     'react-focus-lock',
-    'fast-deep-equal',
   ],
 });

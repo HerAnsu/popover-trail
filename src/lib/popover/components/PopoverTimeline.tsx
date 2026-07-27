@@ -6,7 +6,7 @@ import React, {
   type ElementType,
   type KeyboardEvent,
 } from 'react';
-import clsx from 'clsx';
+import { clsx } from '../utils/storeHelpers';
 import { usePopoverTimeline, type UsePopoverTimelineResult } from '../context';
 import type { PolymorphicProps } from './PopoverCard';
 
@@ -15,6 +15,7 @@ interface PopoverTimelineScope {
 }
 
 const PopoverTimelineScopeContext = createContext<PopoverTimelineScope | null>(null);
+PopoverTimelineScopeContext.displayName = 'PopoverTimelineScopeContext';
 
 import { validateTimelineSubComponentScope } from '../utils/devWarnings';
 
@@ -185,6 +186,10 @@ PopoverTimeline.UndoButton = function PopoverTimelineUndoButton<E extends Elemen
   const isDisabled = disabled ?? !timeline.canUndo;
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+    if (isDisabled) {
+      e.preventDefault();
+      return;
+    }
     timeline.undo();
     if (typeof onClick === 'function') {
       (onClick as (e: React.MouseEvent<HTMLElement>) => void)(e);
@@ -227,6 +232,10 @@ PopoverTimeline.RedoButton = function PopoverTimelineRedoButton<E extends Elemen
   const isDisabled = disabled ?? !timeline.canRedo;
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+    if (isDisabled) {
+      e.preventDefault();
+      return;
+    }
     timeline.redo();
     if (typeof onClick === 'function') {
       (onClick as (e: React.MouseEvent<HTMLElement>) => void)(e);

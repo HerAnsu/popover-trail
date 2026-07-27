@@ -35,18 +35,23 @@ export function PopoverTrail<TData = unknown>({
   const trail = usePopoverTrail<TData>();
   const floating = usePopoverFloating<TData>();
 
-  const allEntries = useMemo(() => {
-    const combined: Array<{ entry: TrailEntry<TData>; isPinned: boolean }> = [
-      ...floating.map((entry) => ({ entry, isPinned: true })),
-      ...trail.map((entry) => ({ entry, isPinned: false })),
-    ];
-    return combined;
-  }, [floating, trail]);
-
   const filteredEntries = useMemo(() => {
-    if (!filter) return allEntries;
-    return allEntries.filter(({ entry }, idx) => filter(entry, idx));
-  }, [allEntries, filter]);
+    const list: Array<{ entry: TrailEntry<TData>; isPinned: boolean }> = [];
+    let idx = 0;
+    for (let i = 0; i < floating.length; i++) {
+      const entry = floating[i]!;
+      if (!filter || filter(entry, idx++)) {
+        list.push({ entry, isPinned: true });
+      }
+    }
+    for (let i = 0; i < trail.length; i++) {
+      const entry = trail[i]!;
+      if (!filter || filter(entry, idx++)) {
+        list.push({ entry, isPinned: false });
+      }
+    }
+    return list;
+  }, [floating, trail, filter]);
 
   return (
     <PopoverPortal container={container}>

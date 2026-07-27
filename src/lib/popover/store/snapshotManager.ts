@@ -4,9 +4,12 @@
  * and BroadcastChannel real-time multi-tab synchronization without modifying URLs.
  */
 
+import { validateStorageKey } from '../utils/devWarnings';
+
 export interface PopoverSnapshotData<TData = unknown> {
   version: string;
   timestamp: number;
+  tabId?: string;
   trailKeys: string[];
   pinnedKeys: string[];
   offsets: Record<string, { x: number; y: number }>;
@@ -18,6 +21,8 @@ export interface SnapshotManagerOptions<TData = unknown> {
   storageType?: 'localStorage' | 'sessionStorage' | 'none';
   enableBroadcastChannel?: boolean;
   onSnapshotRestored?: (snapshot: PopoverSnapshotData<TData>) => void;
+  serialize?: (data: PopoverSnapshotData<TData>) => string;
+  deserialize?: (raw: string) => PopoverSnapshotData<TData>;
 }
 
 export class PopoverSnapshotManager<TData = unknown> {
@@ -25,18 +30,28 @@ export class PopoverSnapshotManager<TData = unknown> {
   private storageType: 'localStorage' | 'sessionStorage' | 'none';
   private broadcastChannel: BroadcastChannel | null = null;
   private onSnapshotRestored?: (snapshot: PopoverSnapshotData<TData>) => void;
+  private serializer?: (data: PopoverSnapshotData<TData>) => string;
+  private deserializer?: (raw: string) => PopoverSnapshotData<TData>;
+  private readonly tabId = Math.random().toString(36).substring(2, 9);
 
   constructor(options: SnapshotManagerOptions<TData> = {}) {
     this.storageKey = options.storageKey ?? 'pt_popover_trail_snapshot';
+    validateStorageKey(this.storageKey);
     this.storageType = options.storageType ?? 'none';
     this.onSnapshotRestored = options.onSnapshotRestored;
+    this.serializer = options.serialize;
+    this.deserializer = options.deserialize;
 
     if (options.enableBroadcastChannel && typeof BroadcastChannel !== 'undefined') {
       try {
         this.broadcastChannel = new BroadcastChannel(`${this.storageKey}_channel`);
         this.broadcastChannel.onmessage = (event: MessageEvent<PopoverSnapshotData<TData>>) => {
-          if (event.data && this.onSnapshotRestored) {
-            this.onSnapshotRestored(event.data);
+          if (event.data && event.data.tabId !== this.tabId && this.onSnapshotRestored) {
+            try {
+              this.onSnapshotRestored(event.data);
+            } catch (err) {
+              console.warn('[SnapshotManager] Error executing onSnapshotRestored handler:', err);
+            }
           }
         };
       } catch {
@@ -55,12 +70,13 @@ export class PopoverSnapshotManager<TData = unknown> {
     payloads?: Record<string, TData>,
   ): PopoverSnapshotData<TData> {
     return {
-      version: '1.0.2',
+      version: '1.0.3',
       timestamp: Date.now(),
-      trailKeys,
-      pinnedKeys,
-      offsets,
-      payloads,
+      tabId: this.tabId,
+      trailKeys: [...trailKeys],
+      pinnedKeys: [...pinnedKeys],
+      offsets: { ...offsets },
+      payloads: payloads ? { ...payloads } : undefined,
     };
   }
 
@@ -71,7 +87,8 @@ export class PopoverSnapshotManager<TData = unknown> {
     if (this.storageType !== 'none' && typeof window !== 'undefined') {
       try {
         const storage = window[this.storageType];
-        storage.setItem(this.storageKey, JSON.stringify(snapshot));
+        const raw = this.serializer ? this.serializer(snapshot) : JSON.stringify(snapshot);
+        storage.setItem(this.storageKey, raw);
       } catch (err) {
         console.warn('[SnapshotManager] Failed to write snapshot to storage:', err);
       }
@@ -86,6 +103,21 @@ export class PopoverSnapshotManager<TData = unknown> {
     }
   }
 
+  private isValidSnapshot(data: unknown): data is PopoverSnapshotData<TData> {
+    if (typeof data !== 'object' || data === null) return false;
+    const snapshot = data as PopoverSnapshotData<TData>;
+    if (!Array.isArray(snapshot.trailKeys) || !Array.isArray(snapshot.pinnedKeys)) return false;
+    if (typeof snapshot.offsets !== 'object' || snapshot.offsets === null) return false;
+
+    // Protection against Prototype Pollution in stored snapshots
+    const offsetKeys = Object.keys(snapshot.offsets);
+    for (let i = 0; i < offsetKeys.length; i++) {
+      const k = offsetKeys[i];
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') return false;
+    }
+    return true;
+  }
+
   /**
    * Restores snapshot from configured storage engine.
    */
@@ -96,7 +128,8 @@ export class PopoverSnapshotManager<TData = unknown> {
       const storage = window[this.storageType];
       const raw = storage.getItem(this.storageKey);
       if (!raw) return null;
-      return JSON.parse(raw) as PopoverSnapshotData<TData>;
+      const parsed = this.deserializer ? this.deserializer(raw) : (JSON.parse(raw) as PopoverSnapshotData<TData>);
+      return this.isValidSnapshot(parsed) ? parsed : null;
     } catch {
       return null;
     }
@@ -121,6 +154,7 @@ export class PopoverSnapshotManager<TData = unknown> {
    */
   destroy(): void {
     if (this.broadcastChannel) {
+      this.broadcastChannel.onmessage = null;
       this.broadcastChannel.close();
       this.broadcastChannel = null;
     }

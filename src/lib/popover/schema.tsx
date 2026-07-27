@@ -75,12 +75,12 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
       key: K,
       anchorEvent: AnchorEventLike,
       options?: OpenRootOptions,
-    ) => void;
+    ) => Promise<void>;
     pushNested: <K extends SchemaKeys<TSchema>>(
       key: K,
       sourceKey: string,
       options?: OpenNestedOptions,
-    ) => void;
+    ) => Promise<void>;
     close: (key: SchemaKeys<TSchema>) => void;
     togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) => void;
   };
@@ -192,6 +192,7 @@ export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
           options?: OpenRootOptions,
         ) => {
           const node = definition[key];
+          validateSchemaKey(Boolean(node), key as string);
           const mergedOptions = {
             placement: node?.placement,
             offset: node?.offset,
@@ -199,7 +200,7 @@ export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
             hover: node?.hover,
             ...options,
           };
-          void actions.openRootWithResolver(key, anchorEvent, mergedOptions);
+          return actions.openRootWithResolver(key, anchorEvent, mergedOptions);
         },
         pushNested: <K extends SchemaKeys<TSchema>>(
           key: K,
@@ -207,6 +208,7 @@ export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
           options?: OpenNestedOptions,
         ) => {
           const node = definition[key];
+          validateSchemaKey(Boolean(node), key as string);
           const mergedOptions = {
             placement: node?.placement,
             offset: node?.offset,
@@ -214,7 +216,7 @@ export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
             hover: node?.hover,
             ...options,
           };
-          void actions.openNestedWithResolver(key, sourceKey, mergedOptions);
+          return actions.openNestedWithResolver(key, sourceKey, mergedOptions);
         },
         close: (key: SchemaKeys<TSchema>) => actions.closeByKey(key),
         togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) => actions.togglePin(key, rect),

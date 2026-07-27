@@ -14,18 +14,21 @@ export function useEventListener<K extends keyof WindowEventMap>(
 
   useEffect(() => {
     savedHandler.current = handler;
+  }, [handler]);
+
+  useEffect(() => {
     optionsRef.current = options;
-  });
+  }, [options]);
 
   useEffect(() => {
     if (!element || !element.addEventListener) return;
 
-    const currentOptions = optionsRef.current;
     const eventListener: typeof handler = (event) => savedHandler.current(event);
-    element.addEventListener(eventName, eventListener as EventListener, currentOptions);
+    const activeOptions = optionsRef.current;
+    element.addEventListener(eventName, eventListener as EventListener, activeOptions);
 
     return () => {
-      element.removeEventListener(eventName, eventListener as EventListener, currentOptions);
+      element.removeEventListener(eventName, eventListener as EventListener, activeOptions);
     };
   }, [eventName, element]);
 }

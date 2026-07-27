@@ -657,18 +657,30 @@ export interface PopoverPersistConfig {
  * Useful for opening popovers at mouse clicks, context menus, or canvas coordinates.
  */
 export function createVirtualElement(x: number, y: number, width = 0, height = 0): AnchorEventLike {
+  const safeX = Number.isFinite(x) ? x : 0;
+  const safeY = Number.isFinite(y) ? y : 0;
+  const safeWidth = Number.isFinite(width) ? Math.max(0, width) : 0;
+  const safeHeight = Number.isFinite(height) ? Math.max(0, height) : 0;
+
   return {
     getBoundingClientRect: () =>
       ({
-        x,
-        y,
-        left: x,
-        top: y,
-        right: x + width,
-        bottom: y + height,
-        width,
-        height,
-        toJSON: () => ({}),
+        x: safeX,
+        y: safeY,
+        left: safeX,
+        top: safeY,
+        right: safeX + safeWidth,
+        bottom: safeY + safeHeight,
+        toJSON: () => ({
+          x: safeX,
+          y: safeY,
+          left: safeX,
+          top: safeY,
+          right: safeX + safeWidth,
+          bottom: safeY + safeHeight,
+          width: safeWidth,
+          height: safeHeight,
+        }),
       }) as DOMRect,
   };
 }
@@ -780,6 +792,9 @@ export interface PopoverCache<TData = unknown, TPopoverKey extends string = stri
 
   /** Checks if a non-expired cached entry exists for key. */
   has?: (key: TPopoverKey) => Promise<boolean> | boolean;
+
+  /** Destroys cache resources, auto-prune timers, and clears storage. */
+  destroy?: () => void;
 
   /** Sweeps and purges expired records. */
   pruneExpired?: () => Promise<void> | void;

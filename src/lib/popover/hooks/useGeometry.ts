@@ -10,7 +10,7 @@ import {
   type Boundary,
 } from '@floating-ui/react';
 import type { TrailEntry, PopoverPlacement } from '../types';
-import { usePopoverCollisionConfig, usePopoverStore } from '../context';
+import { usePopoverCollisionConfig, usePopoverStore, usePopoverStoreApi } from '../context';
 import { QuadTree, type BoundingBox } from '../utils/quadTree';
 
 /**
@@ -78,6 +78,7 @@ export function usePopoverGeometry({
   enableSpatialCollision = false,
 }: UsePopoverGeometryOptions): UsePopoverGeometryResult {
   const globalCollision = usePopoverCollisionConfig();
+  const storeApi = usePopoverStoreApi();
   const cascadeOffsetStep = usePopoverStore((state) => state.cascadeOffsetStep);
   const defaultOffset = usePopoverStore((state) => state.defaultOffset);
   const localCollision = entry?.collision;
@@ -282,6 +283,8 @@ export function usePopoverGeometry({
 
     // Optional QuadTree spatial collision resolution
     if (enableSpatialCollision) {
+      const activeFloating = storeApi.getState().floating;
+      const activeOffsets = storeApi.getState().offsets;
       const spatialBounds: BoundingBox = {
         x: 0,
         y: 0,
@@ -289,6 +292,22 @@ export function usePopoverGeometry({
         height: winHeight,
       };
       const spatialTree = new QuadTree(spatialBounds, 4);
+
+      for (const sibling of activeFloating) {
+        if (sibling.key !== id) {
+          const off = activeOffsets[sibling.key] ?? { x: 0, y: 0 };
+          spatialTree.insert({
+            id: sibling.key,
+            bounds: {
+              x: (sibling.pinnedLayoutPos?.left ?? 0) + off.x,
+              y: (sibling.pinnedLayoutPos?.top ?? 0) + off.y,
+              width: 320,
+              height: 240,
+            },
+          });
+        }
+      }
+
       const cardBox = {
         x: calculatedLeft,
         y: calculatedTop,
@@ -323,6 +342,7 @@ export function usePopoverGeometry({
     zIndex,
     enableSpatialCollision,
     id,
+    storeApi,
   ]);
 
   return {

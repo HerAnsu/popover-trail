@@ -19,6 +19,60 @@ export function toError(err: unknown): Error {
 }
 
 /**
+ * Lightweight zero-dependency deep equality comparison helper for plain objects, arrays, and primitives.
+ */
+export function isDeepEqual<T>(a: T, b: T): boolean {
+  if (Object.is(a, b)) return true;
+  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
+    return false;
+  }
+  if (Array.isArray(a)) {
+    if (!Array.isArray(b) || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!isDeepEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  if (Array.isArray(b)) return false;
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  for (let i = 0; i < keysA.length; i++) {
+    const key = keysA[i]!;
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    if (
+      !Object.prototype.hasOwnProperty.call(b, key) ||
+      !isDeepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Lightweight zero-dependency className concatenation helper.
+ */
+export function clsx(
+  ...inputs: Array<string | boolean | null | undefined | Record<string, boolean | null | undefined>>
+): string {
+  const classes: string[] = [];
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
+    if (!input) continue;
+    if (typeof input === 'string') {
+      classes.push(input);
+    } else if (typeof input === 'object') {
+      for (const key in input) {
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+        if (input[key]) classes.push(key);
+      }
+    }
+  }
+  return classes.join(' ');
+}
+
+/**
  * Filters a Record object, retaining only the keys present in the specified Set.
  * Returns the original record reference if no keys were deleted to optimize rendering comparison.
  *
@@ -27,12 +81,16 @@ export function toError(err: unknown): Error {
  * @param allowedKeys - The set of keys to preserve.
  * @returns The filtered record copy, or the original record.
  */
-function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
+export function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
   const keys = Object.keys(record);
   if (keys.length === 0) return record;
   const nextRecord: Record<string, T> = {};
   let changed = false;
   for (const key of keys) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      changed = true;
+      continue;
+    }
     const val = record[key];
     if (allowedKeys.has(key) && val !== undefined) {
       nextRecord[key] = val;

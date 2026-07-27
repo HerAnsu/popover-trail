@@ -1,5 +1,6 @@
 import type { StoreApi } from 'zustand';
 import type { PopoverStore, TrailEntry } from '../types';
+import { validateStoreControllerInstance } from './devWarnings';
 
 /**
  * Controller interface providing imperative methods to manipulate popover cards outside React.
@@ -23,6 +24,7 @@ export interface PopoverController<TData = unknown, TContext = unknown> {
 export function createPopoverController<TData = unknown, TContext = unknown>(
   store: StoreApi<PopoverStore<TData, TContext>>,
 ): PopoverController<TData, TContext> {
+  validateStoreControllerInstance(store);
   return {
     openRoot: (ownerId: string, entry: TrailEntry<TData>) => {
       store?.getState?.()?.openRoot(ownerId, entry);
@@ -46,6 +48,6 @@ export function createPopoverController<TData = unknown, TContext = unknown>(
       store?.getState?.()?.clearTrail();
     },
     retryPopover: (key: string) => store?.getState?.()?.retryPopover(key) ?? Promise.resolve(),
-    getState: () => store.getState(),
+    getState: () => store?.getState?.(),
   };
 }

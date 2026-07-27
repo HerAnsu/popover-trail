@@ -15,6 +15,7 @@ import {
   type PopoverSchemaDefinition,
   type PopoverSchemaInstance,
 } from './schema';
+import { validateFactoryPlacement } from './utils/devWarnings';
 
 /**
  * Unified factory for creating popover trail instances or schema definitions.
@@ -38,6 +39,11 @@ export function createPopoverTrail<
   usePopoverContext: () => TContext;
 };
 export function createPopoverTrail(definition?: PopoverSchemaDefinition): unknown {
+  const secretKey = '__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED';
+  const internals = (React as unknown as Record<string, { ReactCurrentDispatcher?: { current?: unknown } }>)[secretKey];
+  const isInsideRender = Boolean(internals?.ReactCurrentDispatcher?.current);
+  validateFactoryPlacement(isInsideRender);
+
   if (definition && typeof definition === 'object') {
     return createPopoverSchema(definition);
   }

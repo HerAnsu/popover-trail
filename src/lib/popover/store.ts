@@ -7,11 +7,12 @@ import type {
   PopoverCache,
   OpenRootOptions,
   OpenNestedOptions,
+  PopoverStoreEvent,
 } from './types';
-import equal from 'fast-deep-equal';
 import {
   isPromise,
   toError,
+  isDeepEqual,
   findEntryInStore,
   findEntryIndex,
   hasEntryWithKey,
@@ -30,6 +31,7 @@ import {
 } from './utils/storeHelpers';
 import { createHistoryManager } from './store/history';
 import { createTimerManager } from './store/timers';
+import { validateBaseZIndex } from './utils/devWarnings';
 
 /**
  * Instantiates and returns a generic Zustand vanilla StoreApi instance.
@@ -69,12 +71,11 @@ export function createPopoverStore<
 
   const { undoStack, redoStack, pushSnapshot, clearHistory } = createHistoryManager<TData>(30);
 
-  const eventListeners = new Set<(event: import('./types').PopoverStoreEvent<TData>) => void>();
+  const eventListeners = new Set<(event: PopoverStoreEvent<TData>) => void>();
   const middlewares = new Set<import('./types').PopoverMiddleware<TData, TContext, TPopoverKey>>();
   let isBatching = false;
   let batchedStatePatch: Partial<PopoverStore<TData, TContext, TPopoverKey>> = {};
-
-  const emitEvent = (event: import('./types').PopoverStoreEvent<TData>) => {
+  const emitEvent = (event: PopoverStoreEvent<TData>) => {
     if (eventListeners.size === 0) return;
     for (const listener of eventListeners) {
       try {
@@ -132,10 +133,14 @@ export function createPopoverStore<
 
       if (middlewares.size > 0) {
         for (const mw of middlewares) {
-          const res = mw(patch, currentState);
-          if (res === false) return;
-          if (res && typeof res === 'object') {
-            patch = res;
+          try {
+            const res = mw(patch, currentState);
+            if (res === false) return;
+            if (res && typeof res === 'object') {
+              patch = res;
+            }
+          } catch (err) {
+            console.warn('[PopoverStore] Middleware execution error:', err);
           }
         }
       }
@@ -347,7 +352,9 @@ export function createPopoverStore<
         if (activeControllers.get(controllerKey) === controller) {
           activeControllers.delete(controllerKey);
         }
-        inFlightPromises.delete(key);
+        if (inFlightPromises.get(key) === resultOrPromise) {
+          inFlightPromises.delete(key);
+        }
       }
     };
 
@@ -355,7 +362,7 @@ export function createPopoverStore<
       setContext: (context) => {
         const current = get().context;
         if (current === context) return;
-        if (!equal(current, context)) {
+        if (!isDeepEqual(current, context)) {
           set({ context });
         }
       },
@@ -497,6 +504,7 @@ export function createPopoverStore<
           }, maxDuration);
 
           for (const key of removedKeys) {
+            clearTransitionTimer(key);
             transitionTimers.set(key, exitTimer);
           }
         } else {
@@ -761,6 +769,7 @@ export function createPopoverStore<
         redoStack.length = 0;
         eventListeners.clear();
         middlewares.clear();
+        cache?.destroy?.();
       },
       setClosePinnedDescendants: (closePinnedDescendants) => {
         if (get().closePinnedDescendants !== closePinnedDescendants) {
@@ -770,7 +779,7 @@ export function createPopoverStore<
       setCollisionConfig: (collisionConfig) => {
         const current = get().collisionConfig;
         if (current === collisionConfig) return;
-        if (!equal(current, collisionConfig)) {
+        if (!isDeepEqual(current, collisionConfig)) {
           set({ collisionConfig });
         }
       },
@@ -836,6 +845,8 @@ export function createPopoverStore<
         }
       },
       setBaseZIndex: (baseZIndex) => {
+        validateBaseZIndex(baseZIndex);
+        if (!Number.isFinite(baseZIndex) || baseZIndex < 0) return;
         if (get().baseZIndex !== baseZIndex) {
           set({ baseZIndex });
         }
@@ -1037,7 +1048,7 @@ export function createPopoverStore<
       },
       setButtonControls: (key, controls) => {
         const entry = findEntryByKey(key);
-        if (!entry || equal(entry.buttonControls, controls)) return;
+        if (!entry || isDeepEqual(entry.buttonControls, controls)) return;
         set((state) =>
           updateEntryInLists(state.floating, state.trail, key, { buttonControls: controls }),
         );

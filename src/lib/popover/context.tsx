@@ -13,17 +13,17 @@ import {
 import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
-import equal from 'fast-deep-equal';
 import { createPopoverStore } from './store';
 import { useEventListener } from './hooks/useEventListener';
 import { invariant } from './utils/invariant';
-import { hasEntryWithKey } from './utils/storeHelpers';
+import { hasEntryWithKey, isDeepEqual } from './utils/storeHelpers';
 import {
   validateProviderResolver,
   validateCascadeStep,
   validateDefaultOffset,
   validateBaseZIndex,
   validateExitDuration,
+  validatePortalContainer,
 } from './utils/devWarnings';
 import type {
   PopoverStore,
@@ -251,13 +251,13 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
       state.setResponsiveMode(responsiveMode);
       state.setStackGroupFilter(stackGroup);
 
-      if (!equal(state.collisionConfig, collision ?? null)) {
+      if (!isDeepEqual(state.collisionConfig, collision ?? null)) {
         state.setCollisionConfig(collision ?? null);
       }
-      if (!equal(state.components, components ?? null)) {
+      if (state.components !== (components ?? null)) {
         state.setSlotComponents(components ?? null);
       }
-      if (!equal(state.zIndexBaseMap, zIndexBaseMap ?? null)) {
+      if (!isDeepEqual(state.zIndexBaseMap, zIndexBaseMap ?? null)) {
         state.setZIndexBaseMap(zIndexBaseMap ?? null);
       }
     });
@@ -373,13 +373,40 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
  * @returns The reactive value slice.
  * @throws {Error} If called outside a PopoverProvider.
  */
+function shallowEqual<T>(objA: T, objB: T): boolean {
+  if (Object.is(objA, objB)) return true;
+  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+    return false;
+  }
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+  if (keysA.length !== keysB.length) return false;
+  for (let i = 0; i < keysA.length; i++) {
+    const key = keysA[i]!;
+    if (
+      !Object.prototype.hasOwnProperty.call(objB, key) ||
+      !Object.is((objA as Record<string, unknown>)[key], (objB as Record<string, unknown>)[key])
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
   selector: (state: PopoverStore<TData, TContext>) => TSelected,
-  _equalityFn?: (a: TSelected, b: TSelected) => boolean,
+  equalityFn?: (a: TSelected, b: TSelected) => boolean,
 ): TSelected {
   const store = useContext(PopoverStoreContext);
   invariant(store, 'usePopoverStore must be used within a PopoverProvider');
-  return useStore(store, selector as (state: PopoverStore) => TSelected);
+  const slice = useStore(store, selector as (state: PopoverStore) => TSelected);
+  const prevRef = useRef<TSelected>(slice);
+
+  if (equalityFn && prevRef.current !== slice && !equalityFn(prevRef.current, slice)) {
+    prevRef.current = slice;
+  }
+
+  return equalityFn ? prevRef.current : slice;
 }
 
 /**
@@ -474,7 +501,7 @@ export function useIsPopoverTopMost(key: string) {
   );
 }
 
-const DEFAULT_OFFSET = { x: 0, y: 0 };
+const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
 /**
  * Hook to retrieve the coordinate offset of a specific popover.
@@ -589,6 +616,7 @@ export function usePopover<
       },
       [key],
     ),
+    shallowEqual,
   );
 
   const actions = usePopoverActions<TData, TContext>();
@@ -755,6 +783,7 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
  */
 export function usePopoverData<TData = unknown>(key: string): TData | undefined {
   const entry = usePopoverEntry<TData>(key);
+  if (entry?.error) return entry.data;
   const ReactUse = (React as unknown as Record<string, unknown>).use as
     | (<T>(p: Promise<T>) => T)
     | undefined;
@@ -772,8 +801,13 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
 ) {
   const actions = usePopoverActions();
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  const onOpenHandlerRef = useRef(onOpenHandler);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    optionsRef.current = options;
+    onOpenHandlerRef.current = onOpenHandler;
+  }, [options, onOpenHandler]);
 
   useEffect(() => {
     return () => {
@@ -783,30 +817,24 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
     };
   }, []);
 
-  const onClick = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      if (optionsRef.current?.hover?.enabled) return;
-      onOpenHandler(e, e.currentTarget);
-    },
-    [onOpenHandler],
-  );
+  const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    if (optionsRef.current?.hover?.enabled) return;
+    onOpenHandlerRef.current(e, e.currentTarget);
+  }, []);
 
-  const onMouseEnter = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      const hoverOpts = optionsRef.current?.hover;
-      if (hoverOpts?.enabled) {
-        if (openTimerRef.current) {
-          clearTimeout(openTimerRef.current);
-        }
-        const currentTarget = e.currentTarget;
-        const delay = hoverOpts.openDelay ?? 200;
-        openTimerRef.current = setTimeout(() => {
-          onOpenHandler(e, currentTarget);
-        }, delay);
+  const onMouseEnter = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    const hoverOpts = optionsRef.current?.hover;
+    if (hoverOpts?.enabled) {
+      if (openTimerRef.current) {
+        clearTimeout(openTimerRef.current);
       }
-    },
-    [onOpenHandler],
-  );
+      const currentTarget = e.currentTarget;
+      const delay = hoverOpts.openDelay ?? 200;
+      openTimerRef.current = setTimeout(() => {
+        onOpenHandlerRef.current(e, currentTarget);
+      }, delay);
+    }
+  }, []);
 
   const onMouseLeave = useCallback(() => {
     const hoverOpts = optionsRef.current?.hover;
@@ -927,6 +955,7 @@ export function PopoverPortal({
     } else {
       target = container;
     }
+    validatePortalContainer(target);
   }
 
   const renderedContent =

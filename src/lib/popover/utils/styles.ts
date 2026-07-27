@@ -49,16 +49,31 @@ export function getPopoverStyles({
   rotationY = 0,
   zIndex = 1000,
 }: GetPopoverStylesParams): CSSProperties {
-  const top = Math.round(finalLayoutPos.top);
-  const left = Math.round(finalLayoutPos.left);
-  const translateX = Math.round(dragX + offset.x);
-  const translateY = Math.round(dragY + offset.y);
+  const safeTopPos = Number.isFinite(finalLayoutPos.top) ? finalLayoutPos.top : 0;
+  const safeLeftPos = Number.isFinite(finalLayoutPos.left) ? finalLayoutPos.left : 0;
+  const safeDragX = typeof dragX === 'number' && Number.isFinite(dragX) ? dragX : 0;
+  const safeDragY = typeof dragY === 'number' && Number.isFinite(dragY) ? dragY : 0;
+  const safeOffsetX = Number.isFinite(offset?.x) ? offset.x : 0;
+  const safeOffsetY = Number.isFinite(offset?.y) ? offset.y : 0;
+  const safeRotation = Number.isFinite(rotation) ? rotation : 0;
+  const safeRotationX = Number.isFinite(rotationX) ? rotationX : 0;
+  const safeRotationY = Number.isFinite(rotationY) ? rotationY : 0;
+  const safeZIndex = Number.isFinite(zIndex) ? zIndex : 1000;
+
+  const top = Math.round(safeTopPos);
+  const left = Math.round(safeLeftPos);
+  const translateX = Math.round(safeDragX + safeOffsetX);
+  const translateY = Math.round(safeDragY + safeOffsetY);
 
   const isDynamic =
-    dragX !== 0 || dragY !== 0 || rotation !== 0 || rotationX !== 0 || rotationY !== 0;
+    safeDragX !== 0 ||
+    safeDragY !== 0 ||
+    safeRotation !== 0 ||
+    safeRotationX !== 0 ||
+    safeRotationY !== 0;
   const cacheKey = isDynamic
     ? ''
-    : `${top}_${left}_${translateX}_${translateY}_${rotation}_${rotationX}_${rotationY}_${zIndex}`;
+    : `${top}_${left}_${translateX}_${translateY}_${safeRotation}_${safeRotationX}_${safeRotationY}_${safeZIndex}`;
 
   if (!isDynamic) {
     const cachedStyle = styleMemoCache.get(cacheKey);
@@ -72,7 +87,7 @@ export function getPopoverStyles({
     ? `translate(${translateX}px, ${translateY}px) rotateX(${rotationX}deg) rotateY(${rotationY}deg) rotateZ(${rotation}deg)`
     : `translate(${translateX}px, ${translateY}px)`;
 
-  const computedStyle: CSSProperties = {
+  const computedStyle: CSSProperties & Record<`--${string}`, string | number> = {
     position: 'absolute',
     top,
     left,
@@ -80,19 +95,19 @@ export function getPopoverStyles({
     willChange: isDynamic ? 'transform' : 'auto',
     zIndex,
     // CSS Custom Properties for external style overrides and animations
-    ['--popover-translate-x' as string]: `${translateX}px`,
-    ['--popover-translate-y' as string]: `${translateY}px`,
-    ['--popover-rotate-x' as string]: `${rotationX}deg`,
-    ['--popover-rotate-y' as string]: `${rotationY}deg`,
-    ['--popover-rotate-z' as string]: `${rotation}deg`,
-    ['--popover-z-index' as string]: `${zIndex}`,
+    '--popover-translate-x': `${translateX}px`,
+    '--popover-translate-y': `${translateY}px`,
+    '--popover-rotate-x': `${rotationX}deg`,
+    '--popover-rotate-y': `${rotationY}deg`,
+    '--popover-rotate-z': `${rotation}deg`,
+    '--popover-z-index': `${zIndex}`,
     // Standard --pt-* namespace CSS custom properties
-    ['--pt-top' as string]: `${top}px`,
-    ['--pt-left' as string]: `${left}px`,
-    ['--pt-z-index' as string]: `${zIndex}`,
-    ['--pt-drag-x' as string]: `${translateX}px`,
-    ['--pt-drag-y' as string]: `${translateY}px`,
-    ['--pt-tilt-deg' as string]: `${rotation}deg`,
+    '--pt-top': `${top}px`,
+    '--pt-left': `${left}px`,
+    '--pt-z-index': `${zIndex}`,
+    '--pt-drag-x': `${translateX}px`,
+    '--pt-drag-y': `${translateY}px`,
+    '--pt-tilt-deg': `${rotation}deg`,
   };
 
   if (!isDynamic) {

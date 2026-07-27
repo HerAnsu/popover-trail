@@ -1,4 +1,5 @@
 import type { PopoverPlacement } from '../types';
+import { toError } from './storeHelpers';
 
 export interface DevWarningDetails {
   /** Unique error code identifier. */
@@ -23,15 +24,13 @@ const VALID_PLACEMENTS: ReadonlySet<string> = new Set([
   'auto',
 ]);
 
-/**
- * Checks if the current environment is a development environment.
- */
+const IS_DEV =
+  typeof globalThis !== 'undefined' &&
+  (globalThis as unknown as { process?: { env?: { NODE_ENV?: string } } }).process?.env
+    ?.NODE_ENV !== 'production';
+
 function isDevEnv(): boolean {
-  return (
-    typeof globalThis !== 'undefined' &&
-    (globalThis as unknown as { process?: { env?: { NODE_ENV?: string } } }).process?.env
-      ?.NODE_ENV !== 'production'
-  );
+  return IS_DEV;
 }
 
 /**
@@ -138,7 +137,7 @@ export function validateTimelineSubComponentScope(
 export function validateSchemaKey(hasKey: boolean, key: string): void {
   if (!isDevEnv()) return;
 
-  if (!hasKey) {
+  if (!hasKey || !key || typeof key !== 'string' || key.trim() === '') {
     warnDevDetails(true, {
       code: 'PT-108',
       message: `Attempted to resolve data for key "${key}" which is not defined in the schema.`,
@@ -286,7 +285,7 @@ export function validateHydrationError(key: string, error: unknown): void {
 
   warnDevDetails(true, {
     code: 'PT-120',
-    message: `Data resolution for popover key "${key}" rejected with error: ${error instanceof Error ? error.message : String(error)}.`,
+    message: `Data resolution for popover key "${key}" rejected with error: ${toError(error).message}.`,
   });
 }
 
@@ -346,6 +345,30 @@ export function validatePortalContainer(container: Element | null): void {
     warnDevDetails(true, {
       code: 'PT-125',
       message: '<PopoverPortal> target container DOM node is null or unmounted.',
+    });
+  }
+}
+
+/** PT-126: Validates createPopoverTrail factory placement. */
+export function validateFactoryPlacement(isInsideRender?: boolean): void {
+  if (!isDevEnv() || !isInsideRender) return;
+
+  warnDevDetails(true, {
+    code: 'PT-126',
+    message:
+      'createPopoverTrail() should be called at top-level module scope, not inside a React component render pass.',
+  });
+}
+
+/** PT-127: Validates store instance provided to createPopoverController. */
+export function validateStoreControllerInstance(store: unknown): void {
+  if (!isDevEnv()) return;
+
+  if (!store || typeof (store as { getState?: unknown }).getState !== 'function') {
+    warnDevDetails(true, {
+      code: 'PT-127',
+      message:
+        'createPopoverController() received an invalid or undefined Zustand store instance.',
     });
   }
 }

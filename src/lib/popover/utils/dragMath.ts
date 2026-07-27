@@ -16,19 +16,33 @@ export function clampDragCoordinates(
   y: number,
   bounds?: ClampBounds,
 ): { x: number; y: number } {
-  if (!bounds) return { x, y };
+  const safeX = Number.isFinite(x) ? x : 0;
+  const safeY = Number.isFinite(y) ? y : 0;
+  if (!bounds) return { x: safeX, y: safeY };
 
-  let clampedX = x;
-  let clampedY = y;
+  let clampedX = safeX;
+  let clampedY = safeY;
 
-  if (bounds.minX !== undefined) clampedX = Math.max(bounds.minX, clampedX);
-  if (bounds.maxX !== undefined) clampedX = Math.min(bounds.maxX, clampedX);
-  if (bounds.minY !== undefined) clampedY = Math.max(bounds.minY, clampedY);
-  if (bounds.maxY !== undefined) clampedY = Math.min(bounds.maxY, clampedY);
+  let minX = bounds.minX !== undefined && Number.isFinite(bounds.minX) ? bounds.minX : undefined;
+  let maxX = bounds.maxX !== undefined && Number.isFinite(bounds.maxX) ? bounds.maxX : undefined;
+  let minY = bounds.minY !== undefined && Number.isFinite(bounds.minY) ? bounds.minY : undefined;
+  let maxY = bounds.maxY !== undefined && Number.isFinite(bounds.maxY) ? bounds.maxY : undefined;
 
-  if (clampedX === x && clampedY === y) {
-    return { x, y };
+  if (minX !== undefined && maxX !== undefined && minX > maxX) {
+    const temp = minX;
+    minX = maxX;
+    maxX = temp;
   }
+  if (minY !== undefined && maxY !== undefined && minY > maxY) {
+    const temp = minY;
+    minY = maxY;
+    maxY = temp;
+  }
+
+  if (minX !== undefined) clampedX = Math.max(minX, clampedX);
+  if (maxX !== undefined) clampedX = Math.min(maxX, clampedX);
+  if (minY !== undefined) clampedY = Math.max(minY, clampedY);
+  if (maxY !== undefined) clampedY = Math.min(maxY, clampedY);
 
   return { x: clampedX, y: clampedY };
 }
@@ -42,11 +56,16 @@ export function computeTiltMatrix(
   maxAngle = 15,
   sensitivity = 0.1,
 ): { rotationX: number; rotationY: number } {
-  const rawX = -deltaY * sensitivity;
-  const rawY = deltaX * sensitivity;
+  const safeDeltaX = Number.isFinite(deltaX) ? deltaX : 0;
+  const safeDeltaY = Number.isFinite(deltaY) ? deltaY : 0;
+  const safeMaxAngle = Number.isFinite(maxAngle) && maxAngle >= 0 ? maxAngle : 15;
+  const safeSensitivity = Number.isFinite(sensitivity) ? sensitivity : 0.1;
 
-  const rotationX = Math.max(-maxAngle, Math.min(maxAngle, rawX));
-  const rotationY = Math.max(-maxAngle, Math.min(maxAngle, rawY));
+  const rawX = -safeDeltaY * safeSensitivity;
+  const rawY = safeDeltaX * safeSensitivity;
+
+  const rotationX = Math.max(-safeMaxAngle, Math.min(safeMaxAngle, rawX));
+  const rotationY = Math.max(-safeMaxAngle, Math.min(safeMaxAngle, rawY));
 
   return { rotationX, rotationY };
 }

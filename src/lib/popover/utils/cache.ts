@@ -52,7 +52,12 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    */
   has(key: string): boolean {
     const entry = this.cache.get(key);
-    return Boolean(entry && Date.now() <= entry.expiry);
+    if (!entry) return false;
+    if (Date.now() > entry.expiry) {
+      this.cache.delete(key);
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -146,6 +151,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
       clearInterval(this.autoPruneTimer);
       this.autoPruneTimer = null;
     }
+    this.clear();
   }
 
   /**

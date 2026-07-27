@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import clsx from 'clsx';
+import { clsx } from '../utils/storeHelpers';
 import {
   PopoverCardContext,
   usePopoverTrigger,
@@ -47,30 +47,67 @@ function TriggerRenderer({
 
   const combinedClassName = clsx(child.props.className as string, isOpen && activeClassName);
 
+  const triggerOnClick = triggerProps.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
+  const childOnClick = child.props.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
+  const onClick = React.useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      triggerOnClick?.(e);
+      childOnClick?.(e);
+    },
+    [triggerOnClick, childOnClick],
+  );
+
+  const triggerOnMouseEnter = triggerProps.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
+  const childOnMouseEnter = child.props.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
+  const onMouseEnter = React.useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      triggerOnMouseEnter?.(e);
+      childOnMouseEnter?.(e);
+    },
+    [triggerOnMouseEnter, childOnMouseEnter],
+  );
+
+  const triggerOnMouseLeave = triggerProps.onMouseLeave as (() => void) | undefined;
+  const childOnMouseLeave = child.props.onMouseLeave as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
+  const onMouseLeave = React.useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      triggerOnMouseLeave?.();
+      childOnMouseLeave?.(e);
+    },
+    [triggerOnMouseLeave, childOnMouseLeave],
+  );
+
+  const triggerOnKeyDown = triggerProps.onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined;
+  const childOnKeyDown = child.props.onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined;
+  const onKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLElement>) => {
+      triggerOnKeyDown?.(e);
+      childOnKeyDown?.(e);
+    },
+    [triggerOnKeyDown, childOnKeyDown],
+  );
+
+  const triggerOnFocus = triggerProps.onFocus as ((e: React.FocusEvent<HTMLElement>) => void) | undefined;
+  const childOnFocus = child.props.onFocus as ((e: React.FocusEvent<HTMLElement>) => void) | undefined;
+  const onFocus = React.useCallback(
+    (e: React.FocusEvent<HTMLElement>) => {
+      triggerOnFocus?.(e);
+      childOnFocus?.(e);
+    },
+    [triggerOnFocus, childOnFocus],
+  );
+
   return React.cloneElement(child, {
     'aria-haspopup': 'dialog',
     'aria-expanded': isOpen,
     ...triggerProps,
     ...child.props,
     className: combinedClassName || undefined,
-    onClick: (e: React.MouseEvent<HTMLElement>) => {
-      (triggerProps.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined)?.(e);
-      if (typeof child.props.onClick === 'function') {
-        child.props.onClick(e);
-      }
-    },
-    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-      (triggerProps.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined)?.(e);
-      if (typeof child.props.onMouseEnter === 'function') {
-        child.props.onMouseEnter(e);
-      }
-    },
-    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-      (triggerProps.onMouseLeave as (() => void) | undefined)?.();
-      if (typeof child.props.onMouseLeave === 'function') {
-        child.props.onMouseLeave(e);
-      }
-    },
+    onClick,
+    onMouseEnter,
+    onMouseLeave,
+    onKeyDown,
+    onFocus,
   });
 }
 

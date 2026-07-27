@@ -30,9 +30,9 @@ export function createHistoryManager<TData = unknown>(maxHistory = 30) {
     undoStack.push({
       trail: state.trail,
       floating: state.floating,
-      offsets: state.offsets,
-      pinnedStates: state.pinnedStates,
-      zIndexOrder: state.zIndexOrder,
+      offsets: { ...state.offsets },
+      pinnedStates: { ...state.pinnedStates },
+      zIndexOrder: [...state.zIndexOrder],
       ownerId: state.ownerId,
     });
     redoStack.length = 0;

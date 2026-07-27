@@ -6,7 +6,7 @@ import React, {
   type ComponentPropsWithoutRef,
   type ElementType,
 } from 'react';
-import clsx from 'clsx';
+import { clsx } from '../utils/storeHelpers';
 import { usePopoverCard, type UsePopoverCardResult } from '../hooks/usePopoverCard';
 import { usePopoverActions } from '../context';
 import type { TrailEntry, PopoverPlacement } from '../types';
@@ -23,6 +23,7 @@ interface PopoverCardScope<TData = unknown> {
 }
 
 const PopoverCardScopeContext = createContext<PopoverCardScope | null>(null);
+PopoverCardScopeContext.displayName = 'PopoverCardScopeContext';
 
 import { validateCardSubComponentScope } from '../utils/devWarnings';
 
@@ -185,18 +186,30 @@ PopoverCard.PinButton = function PopoverCardPinButton<E extends ElementType = 'b
   as,
   children,
   onClick,
+  disabled,
   ...restProps
 }: PopoverCardPinButtonProps<E>) {
   const Component = as || 'button';
   const { entry, isPinned, actions } = usePopoverCardScope();
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
     actions.togglePin(entry.key);
     onClick?.(e);
   };
 
+  const isNativeButton = Component === 'button';
+
   return (
-    <Component type="button" onClick={handleClick} data-pinned={isPinned} {...restProps}>
+    <Component
+      {...(isNativeButton ? { type: 'button' as const } : {})}
+      disabled={disabled}
+      onClick={handleClick}
+      data-pinned={isPinned}
+      {...restProps}>
       {children ?? (isPinned ? 'Unpin' : 'Pin')}
     </Component>
   );
@@ -214,18 +227,29 @@ PopoverCard.CloseButton = function PopoverCardCloseButton<E extends ElementType 
   as,
   children,
   onClick,
+  disabled,
   ...restProps
 }: PopoverCardCloseButtonProps<E>) {
   const Component = as || 'button';
   const { entry, actions } = usePopoverCardScope();
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
     actions.closeByKey(entry.key);
     onClick?.(e);
   };
 
+  const isNativeButton = Component === 'button';
+
   return (
-    <Component type="button" onClick={handleClick} {...restProps}>
+    <Component
+      {...(isNativeButton ? { type: 'button' as const } : {})}
+      disabled={disabled}
+      onClick={handleClick}
+      {...restProps}>
       {children ?? '✕'}
     </Component>
   );
