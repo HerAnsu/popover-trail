@@ -1,8 +1,4 @@
-Findings for State Management Performance:
-- `updateEntryInLists` uses array mapping `floating.map(e => ...)` and `trail.map(e => ...)` which creates new arrays on every call, even for small property updates. This is a common bottleneck when updates are frequent (e.g., during animations or drag).
-- `isDeepEqual` is called during React Context dispatches (`store.ts`) for `collisionConfig` and `buttonControls`, which could cause CPU spikes if configs are large, though they typically are not.
-- `getActiveKeys` creates a `Set` by iterating over `floating` and `trail` every time a component brings an element to front.
-- `hasEntryWithKey` uses `some` which is $O(N)$ for both lists. When scaled to large trailing systems, it may cause minor slowdowns.
-Recommendations:
-- Transition to `immer` for the Zustand store. By applying `mutative` or `immer`, we eliminate manual array mapping in `updateEntryInLists`, leading to simpler and potentially faster state mutations (avoiding full copies of the unmodified trailing popovers).
-- Replace `.find()` and `.some()` lookups with an auxiliary Map or object index `entryMap: Record<string, TrailEntry>` maintained in Zustand to provide $O(1)$ lookups for `findEntryInStore` and `hasEntryWithKey`.
+Findings for Web Worker & Caching Performance:
+- Caching (`cache.ts`): The implementation correctly uses an ES6 `Map`. It correctly mimics LRU semantics on `get` by deleting and re-inserting the item to the end of the Map. On `set`, when limits are reached, it evicts the oldest item via `this.cache.keys().next().value`. This is highly optimized $O(1)$ operations with no obvious memory leaks. The garbage collection runs on a timer which unrefs itself correctly in Node to prevent blocking event loop exit. No changes needed.
+- Worker Resolver (`workerResolver.ts`): The worker evaluates the inline script string perfectly. However, the evaluation `const fn = ${resolverFn.toString()};` happens **inside** the `self.onmessage` handler on every single incoming message. `eval`/`new Function`/Closure instantiation in V8/SpiderMonkey on every message causes severe JIT de-optimization and high CPU overhead when firing many hydration requests simultaneously.
+*Optimization*: Move the `const fn = ${resolverFn.toString()};` statement outside the `self.onmessage` handler so the JS engine parses and compiles the function body exactly once upon worker initialization.
