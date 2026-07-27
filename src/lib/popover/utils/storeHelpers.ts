@@ -321,29 +321,17 @@ export function updateEntryInLists<TData>(
   key: string,
   updatedFields: Partial<TrailEntry<TData>>,
 ): { floating: readonly TrailEntry<TData>[]; trail: readonly TrailEntry<TData>[] } {
-  let floatingChanged = false;
-  const nextFloating = floating.map((e) => {
-    if (e.key === key) {
-      floatingChanged = true;
-      return { ...e, ...updatedFields };
-    }
-    return e;
-  });
-
-  if (floatingChanged) {
+  const floatingIdx = floating.findIndex(e => e.key === key);
+  if (floatingIdx !== -1) {
+    const nextFloating = [...floating];
+    nextFloating[floatingIdx] = { ...nextFloating[floatingIdx], ...updatedFields } as TrailEntry<TData>;
     return { floating: nextFloating, trail };
   }
 
-  let trailChanged = false;
-  const nextTrail = trail.map((e) => {
-    if (e.key === key) {
-      trailChanged = true;
-      return { ...e, ...updatedFields };
-    }
-    return e;
-  });
-
-  if (trailChanged) {
+  const trailIdx = trail.findIndex(e => e.key === key);
+  if (trailIdx !== -1) {
+    const nextTrail = [...trail];
+    nextTrail[trailIdx] = { ...nextTrail[trailIdx], ...updatedFields } as TrailEntry<TData>;
     return { floating, trail: nextTrail };
   }
 

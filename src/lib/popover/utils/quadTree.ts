@@ -125,8 +125,14 @@ export class QuadTree {
 
   retrieve(returnItems: QuadItem[], itemBounds: BoundingBox): QuadItem[] {
     const index = this.getIndex(itemBounds);
-    if (index !== -1 && this.nodes.length > 0) {
-      this.nodes[index]?.retrieve(returnItems, itemBounds);
+    if (this.nodes.length > 0) {
+      if (index !== -1) {
+        this.nodes[index]?.retrieve(returnItems, itemBounds);
+      } else {
+        for (let i = 0; i < this.nodes.length; i++) {
+          this.nodes[i]?.retrieve(returnItems, itemBounds);
+        }
+      }
     }
 
     for (let i = 0; i < this.items.length; i++) {

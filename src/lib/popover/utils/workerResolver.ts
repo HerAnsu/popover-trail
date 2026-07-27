@@ -40,6 +40,7 @@ export function createPopoverWorkerScript(
 ): string {
   return `
     const activeTasks = new Map();
+    const fn = ${resolverFn.toString()};
 
     self.onmessage = async (e) => {
       const { action, id, key, parentData, context } = e.data || {};
@@ -58,7 +59,6 @@ export function createPopoverWorkerScript(
         activeTasks.set(id, { controller });
 
         try {
-          const fn = ${resolverFn.toString()};
           const result = await fn(key, parentData, context);
           
           if (controller && controller.signal.aborted) {

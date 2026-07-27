@@ -111,9 +111,16 @@ export function usePopoverDragAndDrop({
           curr.z * tiltFriction + velocityX * (tiltSensitivity / 2) * (1 - tiltFriction);
         const boundedZ = Math.max(-maxTiltAngle / 2, Math.min(maxTiltAngle / 2, nextZ));
 
-        const nextTilt = { rotation: boundedZ, rotationX: boundedX, rotationY: boundedY };
+        const diffX = Math.abs(curr.x - boundedX);
+        const diffY = Math.abs(curr.y - boundedY);
+        const diffZ = Math.abs(curr.z - boundedZ);
+
         rotationRef.current = { z: boundedZ, x: boundedX, y: boundedY };
-        setTilt(nextTilt);
+
+        // Skip state dispatch if the change is sub-pixel microscopic to prevent React thrashing
+        if (diffX > 0.05 || diffY > 0.05 || diffZ > 0.05) {
+          setTilt({ rotation: boundedZ, rotationX: boundedX, rotationY: boundedY });
+        }
 
         lastDragX.current = currentDragX;
         lastDragY.current = currentDragY;
