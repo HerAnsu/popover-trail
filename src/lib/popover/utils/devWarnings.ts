@@ -367,8 +367,7 @@ export function validateStoreControllerInstance(store: unknown): void {
   if (!store || typeof (store as { getState?: unknown }).getState !== 'function') {
     warnDevDetails(true, {
       code: 'PT-127',
-      message:
-        'createPopoverController() received an invalid or undefined Zustand store instance.',
+      message: 'createPopoverController() received an invalid or undefined Zustand store instance.',
     });
   }
 }

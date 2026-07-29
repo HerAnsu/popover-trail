@@ -19,6 +19,8 @@ import { validateSchemaKey } from './utils/devWarnings';
 export interface PopoverSchemaNode<TData = unknown, TParentData = unknown, TContext = unknown> {
   /** Resolver function to load data for this popover. */
   resolver: (key: string, parentData?: TParentData, context?: TContext) => TData | Promise<TData>;
+  /** Optional list of allowed nested child popover schema keys spawned by this parent. */
+  children?: ReadonlyArray<string>;
   /** Default layout placement. */
   placement?: PopoverPlacement;
   /** Default trigger distance gap offset in pixels. */
@@ -57,8 +59,11 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
   definition: TSchema;
   /** Auto-completing map of valid schema keys. */
   keys: { [K in SchemaKeys<TSchema>]: K };
-  /** Generates a unified PopoverResolver function for PopoverProvider. */
-  createResolver: <TContext = unknown>() => PopoverResolver<unknown, TContext>;
+  /** Generates a unified PopoverResolver function for PopoverProvider with schema data payload inference. */
+  createResolver: <TContext = unknown>() => PopoverResolver<
+    SchemaData<TSchema, SchemaKeys<TSchema>>,
+    TContext
+  >;
   /** Strongly typed PopoverTrigger component bound to schema keys. */
   Trigger: React.ComponentType<
     Omit<PopoverTriggerProps, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }
@@ -69,16 +74,16 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
   useEntry: <K extends SchemaKeys<TSchema>>(
     key: K,
   ) => TrailEntry<SchemaData<TSchema, K>> | undefined;
-  /** Strongly typed hook for dispatching store actions with schema key autocompletion. */
+  /** Strongly typed hook for dispatching store actions with schema key autocompletion and ancestry validation. */
   useActions: () => {
     openRoot: <K extends SchemaKeys<TSchema>>(
       key: K,
       anchorEvent: AnchorEventLike,
       options?: OpenRootOptions,
     ) => Promise<void>;
-    pushNested: <K extends SchemaKeys<TSchema>>(
-      key: K,
-      sourceKey: string,
+    pushNested: <SK extends SchemaKeys<TSchema>, K extends SchemaKeys<TSchema>>(
+      key: TSchema[SK] extends { children: ReadonlyArray<infer C> } ? C & SchemaKeys<TSchema> : K,
+      sourceKey: SK,
       options?: OpenNestedOptions,
     ) => Promise<void>;
     close: (key: SchemaKeys<TSchema>) => void;
@@ -127,12 +132,17 @@ export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
     {} as { [K in SchemaKeys<TSchema>]: K },
   );
 
-  const createResolver = <TContext = unknown,>(): PopoverResolver<unknown, TContext> => {
+  const createResolver = <TContext = unknown,>(): PopoverResolver<
+    SchemaData<TSchema, SchemaKeys<TSchema>>,
+    TContext
+  > => {
     return (key: string, parentData?: unknown, context?: TContext) => {
       const node = definition[key];
       validateSchemaKey(Boolean(node), key);
       if (node && typeof node.resolver === 'function') {
-        return node.resolver(key, parentData, context);
+        return node.resolver(key, parentData, context) as ReturnType<
+          PopoverResolver<SchemaData<TSchema, SchemaKeys<TSchema>>, TContext>
+        >;
       }
       return Promise.reject(new Error(`No schema resolver defined for key: "${key}"`));
     };

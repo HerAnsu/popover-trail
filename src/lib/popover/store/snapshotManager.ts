@@ -33,6 +33,7 @@ export class PopoverSnapshotManager<TData = unknown> {
   private serializer?: (data: PopoverSnapshotData<TData>) => string;
   private deserializer?: (raw: string) => PopoverSnapshotData<TData>;
   private readonly tabId = Math.random().toString(36).substring(2, 9);
+  private messageHandler: ((event: MessageEvent<PopoverSnapshotData<TData>>) => void) | null = null;
 
   constructor(options: SnapshotManagerOptions<TData> = {}) {
     this.storageKey = options.storageKey ?? 'pt_popover_trail_snapshot';
@@ -44,8 +45,9 @@ export class PopoverSnapshotManager<TData = unknown> {
 
     if (options.enableBroadcastChannel && typeof BroadcastChannel !== 'undefined') {
       try {
-        this.broadcastChannel = new BroadcastChannel(`${this.storageKey}_channel`);
-        this.broadcastChannel.onmessage = (event: MessageEvent<PopoverSnapshotData<TData>>) => {
+        const channel = new BroadcastChannel(`${this.storageKey}_channel`);
+        this.broadcastChannel = channel;
+        this.messageHandler = (event: MessageEvent<PopoverSnapshotData<TData>>) => {
           if (event.data && event.data.tabId !== this.tabId && this.onSnapshotRestored) {
             try {
               this.onSnapshotRestored(event.data);
@@ -54,6 +56,7 @@ export class PopoverSnapshotManager<TData = unknown> {
             }
           }
         };
+        channel.addEventListener('message', this.messageHandler as EventListener);
       } catch {
         this.broadcastChannel = null;
       }
@@ -128,7 +131,9 @@ export class PopoverSnapshotManager<TData = unknown> {
       const storage = window[this.storageType];
       const raw = storage.getItem(this.storageKey);
       if (!raw) return null;
-      const parsed = this.deserializer ? this.deserializer(raw) : (JSON.parse(raw) as PopoverSnapshotData<TData>);
+      const parsed = this.deserializer
+        ? this.deserializer(raw)
+        : (JSON.parse(raw) as PopoverSnapshotData<TData>);
       return this.isValidSnapshot(parsed) ? parsed : null;
     } catch {
       return null;
@@ -154,7 +159,10 @@ export class PopoverSnapshotManager<TData = unknown> {
    */
   destroy(): void {
     if (this.broadcastChannel) {
-      this.broadcastChannel.onmessage = null;
+      if (this.messageHandler) {
+        this.broadcastChannel.removeEventListener('message', this.messageHandler as EventListener);
+        this.messageHandler = null;
+      }
       this.broadcastChannel.close();
       this.broadcastChannel = null;
     }

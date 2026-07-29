@@ -902,7 +902,8 @@ export function createPopoverStore<
       undo: () => {
         if (undoStack.length === 0) return;
         const current = get();
-        const prev = undoStack.pop()!;
+        const prev = undoStack.pop();
+        if (!prev) return;
         if (redoStack.length >= 30) {
           redoStack.shift();
         }
@@ -919,7 +920,8 @@ export function createPopoverStore<
       redo: () => {
         if (redoStack.length === 0) return;
         const current = get();
-        const next = redoStack.pop()!;
+        const next = redoStack.pop();
+        if (!next) return;
         if (undoStack.length >= 30) {
           undoStack.shift();
         }
@@ -990,8 +992,10 @@ export function createPopoverStore<
         const savedPinnedStates: Record<string, boolean> = {};
 
         for (const k of keysToSave) {
-          if (offsets[k]) savedOffsets[k] = offsets[k]!;
-          if (pinnedStates[k] !== undefined) savedPinnedStates[k] = pinnedStates[k]!;
+          const offsetVal = offsets[k];
+          if (offsetVal) savedOffsets[k] = offsetVal;
+          const pinnedVal = pinnedStates[k];
+          if (pinnedVal !== undefined) savedPinnedStates[k] = pinnedVal;
         }
 
         const payload = JSON.stringify({

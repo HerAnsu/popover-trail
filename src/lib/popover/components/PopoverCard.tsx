@@ -2,6 +2,7 @@ import React, {
   createContext,
   useContext,
   useMemo,
+  useCallback,
   type ReactNode,
   type ComponentPropsWithoutRef,
   type ElementType,
@@ -84,20 +85,47 @@ export type PopoverCardProps<E extends ElementType = 'div', TData = unknown> = P
  * }
  * ```
  */
-export function PopoverCard<E extends ElementType = 'div', TData = unknown>({
-  as,
-  entry,
-  index,
-  isPinned,
-  placement = 'bottom',
-  children,
-  className,
-  style: userStyle,
-  ...restProps
-}: PopoverCardProps<E, TData>) {
+export interface PopoverCardComponent {
+  <E extends ElementType = 'div', TData = unknown>(
+    props: PopoverCardProps<E, TData> & { ref?: React.Ref<unknown> },
+  ): React.ReactNode;
+  Handle: typeof PopoverCardHandle;
+  PinButton: typeof PopoverCardPinButton;
+  CloseButton: typeof PopoverCardCloseButton;
+  Content: typeof PopoverCardContent;
+}
+
+const PopoverCardBase = React.forwardRef(function PopoverCard(
+  props: Record<string, unknown>,
+  outerRef: React.ForwardedRef<unknown>,
+) {
+  const {
+    as,
+    entry,
+    index,
+    isPinned,
+    placement = 'bottom',
+    children,
+    className,
+    style: userStyle,
+    ...restProps
+  } = props as unknown as PopoverCardProps<ElementType, unknown>;
+
   const Component = as || 'div';
   const actions = usePopoverActions();
   const card = usePopoverCard({ entry, index, isPinned, placement });
+
+  const handleRef = React.useCallback(
+    (node: HTMLElement | null) => {
+      card.ref(node as HTMLDivElement | null);
+      if (typeof outerRef === 'function') {
+        outerRef(node);
+      } else if (outerRef && typeof outerRef === 'object') {
+        (outerRef as React.MutableRefObject<HTMLElement | null>).current = node;
+      }
+    },
+    [card, outerRef],
+  );
 
   const scope = useMemo<PopoverCardScope>(
     () => ({
@@ -123,7 +151,7 @@ export function PopoverCard<E extends ElementType = 'div', TData = unknown>({
   return (
     <PopoverCardScopeContext.Provider value={scope}>
       <Component
-        ref={card.ref}
+        ref={handleRef}
         style={combinedStyle}
         className={mergedClassName || undefined}
         onMouseEnter={card.onMouseEnter}
@@ -135,11 +163,11 @@ export function PopoverCard<E extends ElementType = 'div', TData = unknown>({
         role="dialog"
         aria-describedby={entry.ariaDescribedby}
         {...restProps}>
-        {typeof children === 'function' ? children(scope as PopoverCardScope<TData>) : children}
+        {typeof children === 'function' ? children(scope as PopoverCardScope<unknown>) : children}
       </Component>
     </PopoverCardScopeContext.Provider>
   );
-}
+});
 
 /**
  * Sub-component for the drag handle area of a `<PopoverCard>`.
@@ -149,7 +177,7 @@ export type PopoverCardHandleProps<E extends ElementType = 'header'> = Polymorph
   { children?: ReactNode }
 >;
 
-PopoverCard.Handle = function PopoverCardHandle<E extends ElementType = 'header'>({
+function PopoverCardHandle<E extends ElementType = 'header'>({
   as,
   children,
   className,
@@ -172,7 +200,7 @@ PopoverCard.Handle = function PopoverCardHandle<E extends ElementType = 'header'
       {children}
     </Component>
   );
-};
+}
 
 /**
  * Sub-component for the Pin/Unpin action button of a `<PopoverCard>`.
@@ -182,7 +210,7 @@ export type PopoverCardPinButtonProps<E extends ElementType = 'button'> = Polymo
   { children?: ReactNode }
 >;
 
-PopoverCard.PinButton = function PopoverCardPinButton<E extends ElementType = 'button'>({
+function PopoverCardPinButton<E extends ElementType = 'button'>({
   as,
   children,
   onClick,
@@ -192,14 +220,17 @@ PopoverCard.PinButton = function PopoverCardPinButton<E extends ElementType = 'b
   const Component = as || 'button';
   const { entry, isPinned, actions } = usePopoverCardScope();
 
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) {
-      e.preventDefault();
-      return;
-    }
-    actions.togglePin(entry.key);
-    onClick?.(e);
-  };
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (disabled) {
+        e.preventDefault();
+        return;
+      }
+      actions.togglePin(entry.key);
+      onClick?.(e);
+    },
+    [disabled, actions, entry.key, onClick],
+  );
 
   const isNativeButton = Component === 'button';
 
@@ -213,7 +244,7 @@ PopoverCard.PinButton = function PopoverCardPinButton<E extends ElementType = 'b
       {children ?? (isPinned ? 'Unpin' : 'Pin')}
     </Component>
   );
-};
+}
 
 /**
  * Sub-component for the Close action button of a `<PopoverCard>`.
@@ -223,7 +254,7 @@ export type PopoverCardCloseButtonProps<E extends ElementType = 'button'> = Poly
   { children?: ReactNode }
 >;
 
-PopoverCard.CloseButton = function PopoverCardCloseButton<E extends ElementType = 'button'>({
+function PopoverCardCloseButton<E extends ElementType = 'button'>({
   as,
   children,
   onClick,
@@ -233,14 +264,17 @@ PopoverCard.CloseButton = function PopoverCardCloseButton<E extends ElementType 
   const Component = as || 'button';
   const { entry, actions } = usePopoverCardScope();
 
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) {
-      e.preventDefault();
-      return;
-    }
-    actions.closeByKey(entry.key);
-    onClick?.(e);
-  };
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (disabled) {
+        e.preventDefault();
+        return;
+      }
+      actions.closeByKey(entry.key);
+      onClick?.(e);
+    },
+    [disabled, actions, entry.key, onClick],
+  );
 
   const isNativeButton = Component === 'button';
 
@@ -253,7 +287,7 @@ PopoverCard.CloseButton = function PopoverCardCloseButton<E extends ElementType 
       {children ?? '✕'}
     </Component>
   );
-};
+}
 
 /**
  * Sub-component for the main content body container of a `<PopoverCard>`.
@@ -263,11 +297,21 @@ export type PopoverCardContentProps<E extends ElementType = 'div'> = Polymorphic
   { children?: ReactNode }
 >;
 
-PopoverCard.Content = function PopoverCardContent<E extends ElementType = 'div'>({
+function PopoverCardContent<E extends ElementType = 'div'>({
   as,
   children,
   ...restProps
 }: PopoverCardContentProps<E>) {
   const Component = as || 'div';
   return <Component {...restProps}>{children}</Component>;
-};
+}
+
+export const PopoverCard: PopoverCardComponent = Object.assign(
+  PopoverCardBase as unknown as PopoverCardComponent,
+  {
+    Handle: PopoverCardHandle,
+    PinButton: PopoverCardPinButton,
+    CloseButton: PopoverCardCloseButton,
+    Content: PopoverCardContent,
+  },
+);

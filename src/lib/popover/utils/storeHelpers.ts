@@ -37,8 +37,7 @@ export function isDeepEqual<T>(a: T, b: T): boolean {
   const keysA = Object.keys(a);
   const keysB = Object.keys(b);
   if (keysA.length !== keysB.length) return false;
-  for (let i = 0; i < keysA.length; i++) {
-    const key = keysA[i]!;
+  for (const key of keysA) {
     if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     if (
       !Object.prototype.hasOwnProperty.call(b, key) ||
@@ -81,7 +80,10 @@ export function clsx(
  * @param allowedKeys - The set of keys to preserve.
  * @returns The filtered record copy, or the original record.
  */
-export function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
+export function filterRecord<T>(
+  record: Record<string, T>,
+  allowedKeys: Set<string>,
+): Record<string, T> {
   const keys = Object.keys(record);
   if (keys.length === 0) return record;
   const nextRecord: Record<string, T> = {};

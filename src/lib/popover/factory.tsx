@@ -17,6 +17,12 @@ import {
 } from './schema';
 import { validateFactoryPlacement } from './utils/devWarnings';
 
+interface ReactInternals {
+  __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?: {
+    ReactCurrentDispatcher?: { current?: unknown };
+  };
+}
+
 /**
  * Unified factory for creating popover trail instances or schema definitions.
  * Overloaded to support both schema-driven definitions and generic type bindings.
@@ -38,10 +44,16 @@ export function createPopoverTrail<
   usePopoverActions: () => ReturnType<typeof coreUsePopoverActions<TData, TContext>>;
   usePopoverContext: () => TContext;
 };
+
 export function createPopoverTrail(definition?: PopoverSchemaDefinition): unknown {
-  const secretKey = '__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED';
-  const internals = (React as unknown as Record<string, { ReactCurrentDispatcher?: { current?: unknown } }>)[secretKey];
-  const isInsideRender = Boolean(internals?.ReactCurrentDispatcher?.current);
+  let isInsideRender = false;
+  try {
+    const secret = (React as unknown as ReactInternals)
+      .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    isInsideRender = Boolean(secret?.ReactCurrentDispatcher?.current);
+  } catch {
+    isInsideRender = false;
+  }
   validateFactoryPlacement(isInsideRender);
 
   if (definition && typeof definition === 'object') {

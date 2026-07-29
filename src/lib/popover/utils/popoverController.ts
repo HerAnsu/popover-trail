@@ -5,25 +5,33 @@ import { validateStoreControllerInstance } from './devWarnings';
 /**
  * Controller interface providing imperative methods to manipulate popover cards outside React.
  */
-export interface PopoverController<TData = unknown, TContext = unknown> {
+export interface PopoverController<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
   openRoot: (ownerId: string, entry: TrailEntry<TData>) => void;
   openNested: (index: number, entry: TrailEntry<TData>) => void;
-  closeByKey: (key: string) => void;
-  togglePin: (key: string) => void;
+  closeByKey: (key: TPopoverKey) => void;
+  togglePin: (key: TPopoverKey) => void;
   closeTopmost: () => void;
   clear: () => void;
   clearTrail: () => void;
-  retryPopover: (key: string) => Promise<void>;
-  getState: () => PopoverStore<TData, TContext>;
+  retryPopover: (key: TPopoverKey) => Promise<void>;
+  getState: () => PopoverStore<TData, TContext, TPopoverKey>;
 }
 
 /**
  * Factory helper for controlling popover cards imperatively outside React component trees
  * (e.g. from WebSockets, Redux actions, API responses, or Vanilla JS DOM handlers).
  */
-export function createPopoverController<TData = unknown, TContext = unknown>(
-  store: StoreApi<PopoverStore<TData, TContext>>,
-): PopoverController<TData, TContext> {
+export function createPopoverController<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  store: StoreApi<PopoverStore<TData, TContext, TPopoverKey>>,
+): PopoverController<TData, TContext, TPopoverKey> {
   validateStoreControllerInstance(store);
   return {
     openRoot: (ownerId: string, entry: TrailEntry<TData>) => {
@@ -32,10 +40,10 @@ export function createPopoverController<TData = unknown, TContext = unknown>(
     openNested: (index: number, entry: TrailEntry<TData>) => {
       store?.getState?.()?.pushNested(index, entry);
     },
-    closeByKey: (key: string) => {
+    closeByKey: (key: TPopoverKey) => {
       store?.getState?.()?.closeByKey(key);
     },
-    togglePin: (key: string) => {
+    togglePin: (key: TPopoverKey) => {
       store?.getState?.()?.togglePin(key);
     },
     closeTopmost: () => {
@@ -47,7 +55,7 @@ export function createPopoverController<TData = unknown, TContext = unknown>(
     clearTrail: () => {
       store?.getState?.()?.clearTrail();
     },
-    retryPopover: (key: string) => store?.getState?.()?.retryPopover(key) ?? Promise.resolve(),
+    retryPopover: (key: TPopoverKey) => store?.getState?.()?.retryPopover(key) ?? Promise.resolve(),
     getState: () => store?.getState?.(),
   };
 }

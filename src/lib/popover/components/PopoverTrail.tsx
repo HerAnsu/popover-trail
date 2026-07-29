@@ -38,14 +38,12 @@ export function PopoverTrail<TData = unknown>({
   const filteredEntries = useMemo(() => {
     const list: Array<{ entry: TrailEntry<TData>; isPinned: boolean }> = [];
     let idx = 0;
-    for (let i = 0; i < floating.length; i++) {
-      const entry = floating[i]!;
+    for (const entry of floating) {
       if (!filter || filter(entry, idx++)) {
         list.push({ entry, isPinned: true });
       }
     }
-    for (let i = 0; i < trail.length; i++) {
-      const entry = trail[i]!;
+    for (const entry of trail) {
       if (!filter || filter(entry, idx++)) {
         list.push({ entry, isPinned: false });
       }

@@ -25,21 +25,23 @@ import {
   validateExitDuration,
   validatePortalContainer,
 } from './utils/devWarnings';
-import type {
-  PopoverStore,
-  PopoverResolver,
-  ClickOutsideConfig,
-  PopoverCache,
-  CollisionConfig,
-  PopoverDisplayOptions,
-  OpenRootOptions,
-  OpenNestedOptions,
-  TrailEntry,
-  UsePopoverResult,
-  AnchorEventLike,
-  FocusLockOptions,
-  PopoverSlotComponents,
-  ZIndexBaseMap,
+import {
+  type PopoverStore,
+  type PopoverResolver,
+  type ClickOutsideConfig,
+  type PopoverCache,
+  type CollisionConfig,
+  type PopoverDisplayOptions,
+  type OpenRootOptions,
+  type OpenNestedOptions,
+  type TrailEntry,
+  type UsePopoverResult,
+  type AnchorEventLike,
+  type FocusLockOptions,
+  type PopoverSlotComponents,
+  type ZIndexBaseMap,
+  type PopoverEntryDiscriminatedState,
+  getEntryState,
 } from './types';
 
 /**
@@ -47,7 +49,7 @@ import type {
  *
  * @internal
  */
-const PopoverStoreContext = createContext<StoreApi<PopoverStore> | null>(null);
+const PopoverStoreContext = createContext<StoreApi<PopoverStore<unknown, unknown>> | null>(null);
 PopoverStoreContext.displayName = 'PopoverStoreContext';
 
 /**
@@ -381,8 +383,7 @@ function shallowEqual<T>(objA: T, objB: T): boolean {
   const keysA = Object.keys(objA);
   const keysB = Object.keys(objB);
   if (keysA.length !== keysB.length) return false;
-  for (let i = 0; i < keysA.length; i++) {
-    const key = keysA[i]!;
+  for (const key of keysA) {
     if (
       !Object.prototype.hasOwnProperty.call(objB, key) ||
       !Object.is((objA as Record<string, unknown>)[key], (objB as Record<string, unknown>)[key])
@@ -419,10 +420,12 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
  * @returns The raw Zustand StoreApi instance.
  * @throws {Error} If called outside a PopoverProvider.
  */
-export function usePopoverStoreApi<TData = unknown, TContext = unknown>() {
+export function usePopoverStoreApi<TData = unknown, TContext = unknown>(): StoreApi<
+  PopoverStore<TData, TContext>
+> {
   const store = useContext(PopoverStoreContext);
   invariant(store, 'usePopoverStoreApi must be used within a PopoverProvider');
-  return store as unknown as StoreApi<PopoverStore<TData, TContext>>;
+  return store as StoreApi<PopoverStore<TData, TContext>>;
 }
 
 /**
@@ -561,7 +564,7 @@ export function usePopoverActions<
   if (!store) {
     throw new Error('usePopoverActions must be used within a PopoverProvider');
   }
-  return store.getState().actions as unknown as Readonly<
+  return store.getState().actions as Readonly<
     PopoverStore<TData, TContext, TPopoverKey>['actions']
   >;
 }
@@ -635,9 +638,18 @@ export function usePopover<
       : `Popover "${key}" [Closed]`,
   );
 
+  const discriminatedState = useMemo(
+    (): PopoverEntryDiscriminatedState<TData> =>
+      slice.entry
+        ? getEntryState(slice.entry)
+        : { status: 'loading', isLoading: true, data: undefined, error: null },
+    [slice.entry],
+  );
+
   return useMemo(
     (): UsePopoverResult<TData> => ({
       entry: slice.entry,
+      state: discriminatedState,
       isOpen: slice.isOpen,
       isPinned: slice.isPinned,
       zIndex: slice.zIndex,
@@ -651,16 +663,25 @@ export function usePopover<
       bringToFront,
       updateOffset,
     }),
-    [slice, close, pin, bringToFront, updateOffset],
+    [slice, discriminatedState, close, pin, bringToFront, updateOffset],
   );
 }
+
+/**
+ * Discriminated union representation of popover hydration lifecycle status.
+ */
+export type PopoverHydrationState<TData = unknown> =
+  | { status: 'idle'; isHydrating: false; isHydrated: false; data: undefined; error: null }
+  | { status: 'hydrating'; isHydrating: true; isHydrated: false; data: undefined; error: null }
+  | { status: 'hydrated'; isHydrating: false; isHydrated: true; data: TData; error: null }
+  | { status: 'error'; isHydrating: false; isHydrated: false; data: undefined; error: Error };
 
 /**
  * Hook to track loading/error status and trigger manual data reloads for a popover card.
  *
  * @template TData - The type of resolved data payload.
  * @param key - The unique identifier key of the popover card.
- * @returns Object containing isLoading status, error, and reload trigger callback.
+ * @returns Object containing state discriminated union, isLoading status, error, and reload trigger callback.
  */
 export function usePopoverHydration<TData = unknown>(key: string) {
   const actions = usePopoverActions();
@@ -669,17 +690,55 @@ export function usePopoverHydration<TData = unknown>(key: string) {
     void actions.retryPopover(key);
   }, [actions, key]);
 
+  let state: PopoverHydrationState<TData> = {
+    status: 'idle',
+    isHydrating: false,
+    isHydrated: false,
+    data: undefined,
+    error: null,
+  };
+
+  if (entry) {
+    if (entry.isLoading) {
+      state = {
+        status: 'hydrating',
+        isHydrating: true,
+        isHydrated: false,
+        data: undefined,
+        error: null,
+      };
+    } else if (entry.error) {
+      state = {
+        status: 'error',
+        isHydrating: false,
+        isHydrated: false,
+        data: undefined,
+        error: entry.error,
+      };
+    } else if (entry.data !== undefined) {
+      state = {
+        status: 'hydrated',
+        isHydrating: false,
+        isHydrated: true,
+        data: entry.data,
+        error: null,
+      };
+    }
+  }
+
   useDebugValue(
-    entry?.isLoading
+    state.status === 'hydrating'
       ? `Hydrating "${key}"...`
-      : entry?.error
-        ? `Hydration Error: ${entry.error.message}`
+      : state.status === 'error'
+        ? `Hydration Error: ${state.error.message}`
         : `Hydrated "${key}"`,
   );
 
   return {
-    isLoading: entry?.isLoading ?? false,
-    error: entry?.error ?? null,
+    state,
+    isLoading: state.isHydrating,
+    error: state.error,
+    data: state.data,
     reload,
   };
 }

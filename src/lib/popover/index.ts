@@ -49,7 +49,18 @@ export type {
   ZIndexBaseMap,
   PopoverMiddleware,
   PopoverPersistConfig,
+  Brand,
+  ViewportX,
+  ViewportY,
+  DragOffset,
+  KnownKeyboardKey,
+  TypedPopoverCache,
+  ResolverParams,
+  CancellablePopoverResolver,
+  NoCyclePath,
 } from './types';
+
+export type { ValidatedAnchorRef } from './types';
 
 export {
   isResolvedEntry,
@@ -63,7 +74,16 @@ export {
   isPushNestedEvent,
   isCloseEvent,
   isPinEvent,
+  isUnpinEvent,
+  isResolveStartEvent,
+  isResolveSuccessEvent,
   isResolveErrorEvent,
+  isClearEvent,
+  definePopoverConfig,
+  definePopoverMiddleware,
+  toViewportX,
+  toViewportY,
+  toValidatedAnchorRef,
 } from './types';
 
 export { createWorkerResolver, type WorkerResolverOptions } from './utils/workerResolver';
@@ -93,6 +113,7 @@ export {
   usePopoverContext,
   usePopoverActions,
   usePopoverHydration,
+  type PopoverHydrationState,
   usePopoverData,
   usePopoverTimeline,
   type UsePopoverTimelineResult,
@@ -108,6 +129,7 @@ export {
 export {
   createPopoverFSM,
   popoverFSMReducer,
+  assertPopoverFSMState,
   type PopoverFSMContext,
   type PopoverFSMEvent,
   type PopoverFSMState,

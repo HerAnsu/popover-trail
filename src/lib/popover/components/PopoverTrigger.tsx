@@ -9,6 +9,20 @@ import {
 import type { OpenRootOptions, OpenNestedOptions, PopoverPlacement } from '../types';
 
 /**
+ * Combined event handlers and accessibility attributes passed to custom trigger render props.
+ */
+export interface PopoverTriggerChildProps extends Record<string, unknown> {
+  'aria-haspopup': 'dialog';
+  'aria-expanded': boolean;
+  'aria-controls': string;
+  onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+  onMouseEnter?: (e: React.MouseEvent<HTMLElement>) => void;
+  onMouseLeave?: (e: React.MouseEvent<HTMLElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLElement>) => void;
+  onFocus?: (e: React.FocusEvent<HTMLElement>) => void;
+}
+
+/**
  * Prop types for the `<PopoverTrigger>` component.
  *
  * @template TPopoverKey - Union of valid popover keys.
@@ -24,13 +38,15 @@ export interface PopoverTriggerProps<TPopoverKey extends string = string> {
   options?: Omit<OpenRootOptions | OpenNestedOptions, 'placement' | 'offset'>;
   /** CSS class to apply to the child element when the popover is active. */
   activeClassName?: string;
-  /** Exactly one React element child to wrap. */
-  children: React.ReactElement;
+  /** If true, passes trigger props to child without forcing cloneElement mutations. */
+  asChild?: boolean;
+  /** React element child or render prop callback function. */
+  children: React.ReactElement | ((props: PopoverTriggerChildProps) => React.ReactNode);
 }
 
 /**
  * Shared rendering logic for trigger components. Clones the child element
- * with the merged trigger props, className, and event handlers.
+ * or delegates to a render prop with merged trigger props, className, and event handlers.
  */
 function TriggerRenderer({
   triggerProps,
@@ -41,14 +57,20 @@ function TriggerRenderer({
   triggerProps: Record<string, unknown>;
   isOpen: boolean;
   activeClassName?: string;
-  children: React.ReactElement;
+  asChild?: boolean;
+  children: React.ReactElement | ((props: PopoverTriggerChildProps) => React.ReactNode);
 }) {
-  const child = React.Children.only(children) as React.ReactElement<Record<string, unknown>>;
+  const isFunctionChild = typeof children === 'function';
+  const child = isFunctionChild
+    ? null
+    : (React.Children.only(children) as React.ReactElement<Record<string, unknown>>);
 
-  const combinedClassName = clsx(child.props.className as string, isOpen && activeClassName);
-
-  const triggerOnClick = triggerProps.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
-  const childOnClick = child.props.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
+  const triggerOnClick = triggerProps.onClick as
+    | ((e: React.MouseEvent<HTMLElement>) => void)
+    | undefined;
+  const childOnClick = child?.props.onClick as
+    | ((e: React.MouseEvent<HTMLElement>) => void)
+    | undefined;
   const onClick = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
       triggerOnClick?.(e);
@@ -57,8 +79,12 @@ function TriggerRenderer({
     [triggerOnClick, childOnClick],
   );
 
-  const triggerOnMouseEnter = triggerProps.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
-  const childOnMouseEnter = child.props.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
+  const triggerOnMouseEnter = triggerProps.onMouseEnter as
+    | ((e: React.MouseEvent<HTMLElement>) => void)
+    | undefined;
+  const childOnMouseEnter = child?.props.onMouseEnter as
+    | ((e: React.MouseEvent<HTMLElement>) => void)
+    | undefined;
   const onMouseEnter = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
       triggerOnMouseEnter?.(e);
@@ -68,7 +94,9 @@ function TriggerRenderer({
   );
 
   const triggerOnMouseLeave = triggerProps.onMouseLeave as (() => void) | undefined;
-  const childOnMouseLeave = child.props.onMouseLeave as ((e: React.MouseEvent<HTMLElement>) => void) | undefined;
+  const childOnMouseLeave = child?.props.onMouseLeave as
+    | ((e: React.MouseEvent<HTMLElement>) => void)
+    | undefined;
   const onMouseLeave = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
       triggerOnMouseLeave?.();
@@ -77,8 +105,12 @@ function TriggerRenderer({
     [triggerOnMouseLeave, childOnMouseLeave],
   );
 
-  const triggerOnKeyDown = triggerProps.onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined;
-  const childOnKeyDown = child.props.onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined;
+  const triggerOnKeyDown = triggerProps.onKeyDown as
+    | ((e: React.KeyboardEvent<HTMLElement>) => void)
+    | undefined;
+  const childOnKeyDown = child?.props.onKeyDown as
+    | ((e: React.KeyboardEvent<HTMLElement>) => void)
+    | undefined;
   const onKeyDown = React.useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
       triggerOnKeyDown?.(e);
@@ -87,8 +119,12 @@ function TriggerRenderer({
     [triggerOnKeyDown, childOnKeyDown],
   );
 
-  const triggerOnFocus = triggerProps.onFocus as ((e: React.FocusEvent<HTMLElement>) => void) | undefined;
-  const childOnFocus = child.props.onFocus as ((e: React.FocusEvent<HTMLElement>) => void) | undefined;
+  const triggerOnFocus = triggerProps.onFocus as
+    | ((e: React.FocusEvent<HTMLElement>) => void)
+    | undefined;
+  const childOnFocus = child?.props.onFocus as
+    | ((e: React.FocusEvent<HTMLElement>) => void)
+    | undefined;
   const onFocus = React.useCallback(
     (e: React.FocusEvent<HTMLElement>) => {
       triggerOnFocus?.(e);
@@ -97,18 +133,40 @@ function TriggerRenderer({
     [triggerOnFocus, childOnFocus],
   );
 
-  return React.cloneElement(child, {
+  if (typeof children === 'function') {
+    const rawControls = triggerProps['aria-controls'];
+    const ariaControls = typeof rawControls === 'string' ? rawControls : '';
+    const rawClassName = triggerProps.className;
+    const className =
+      clsx(typeof rawClassName === 'string' ? rawClassName : '', isOpen && activeClassName) ||
+      undefined;
+
+    const fullProps: PopoverTriggerChildProps = {
+      ...triggerProps,
+      'aria-haspopup': 'dialog',
+      'aria-expanded': isOpen,
+      'aria-controls': ariaControls,
+      className,
+    };
+    return children(fullProps);
+  }
+
+  const validChild = React.Children.only(children) as React.ReactElement<Record<string, unknown>>;
+
+  const mergedProps = {
     'aria-haspopup': 'dialog',
     'aria-expanded': isOpen,
     ...triggerProps,
-    ...child.props,
-    className: combinedClassName || undefined,
+    ...validChild.props,
+    className: clsx(validChild.props.className as string, isOpen && activeClassName) || undefined,
     onClick,
     onMouseEnter,
     onMouseLeave,
     onKeyDown,
     onFocus,
-  });
+  };
+
+  return React.cloneElement(validChild, mergedProps);
 }
 
 /**
@@ -120,17 +178,23 @@ function RootTriggerInner({
   mergedOptions,
   isOpen,
   activeClassName,
+  asChild,
   children,
 }: {
   popoverKey: string;
   mergedOptions: OpenRootOptions;
   isOpen: boolean;
   activeClassName?: string;
-  children: React.ReactElement;
+  asChild?: boolean;
+  children: React.ReactElement | ((props: PopoverTriggerChildProps) => React.ReactNode);
 }) {
   const triggerProps = usePopoverTrigger(popoverKey, mergedOptions);
   return (
-    <TriggerRenderer triggerProps={triggerProps} isOpen={isOpen} activeClassName={activeClassName}>
+    <TriggerRenderer
+      triggerProps={triggerProps}
+      isOpen={isOpen}
+      activeClassName={activeClassName}
+      asChild={asChild}>
       {children}
     </TriggerRenderer>
   );
@@ -146,6 +210,7 @@ function NestedTriggerInner({
   mergedOptions,
   isOpen,
   activeClassName,
+  asChild,
   children,
 }: {
   popoverKey: string;
@@ -153,11 +218,16 @@ function NestedTriggerInner({
   mergedOptions: OpenNestedOptions;
   isOpen: boolean;
   activeClassName?: string;
-  children: React.ReactElement;
+  asChild?: boolean;
+  children: React.ReactElement | ((props: PopoverTriggerChildProps) => React.ReactNode);
 }) {
   const triggerProps = usePopoverNestedTrigger(popoverKey, parentKey, mergedOptions);
   return (
-    <TriggerRenderer triggerProps={triggerProps} isOpen={isOpen} activeClassName={activeClassName}>
+    <TriggerRenderer
+      triggerProps={triggerProps}
+      isOpen={isOpen}
+      activeClassName={activeClassName}
+      asChild={asChild}>
       {children}
     </TriggerRenderer>
   );
@@ -183,6 +253,7 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
   offset,
   options,
   activeClassName,
+  asChild,
   children,
 }: PopoverTriggerProps<TPopoverKey>) {
   const parentKey = useContext(PopoverCardContext);
@@ -210,7 +281,8 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
         parentKey={parentKey}
         mergedOptions={mergedOptions as OpenNestedOptions}
         isOpen={isOpen}
-        activeClassName={activeClassName}>
+        activeClassName={activeClassName}
+        asChild={asChild}>
         {children}
       </NestedTriggerInner>
     );
@@ -221,7 +293,8 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
       popoverKey={popoverKey}
       mergedOptions={mergedOptions as OpenRootOptions}
       isOpen={isOpen}
-      activeClassName={activeClassName}>
+      activeClassName={activeClassName}
+      asChild={asChild}>
       {children}
     </RootTriggerInner>
   );

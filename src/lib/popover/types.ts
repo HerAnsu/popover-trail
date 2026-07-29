@@ -146,8 +146,24 @@ export type PopoverLayoutStrategy =
   | 'docked-top'
   | 'custom';
 
-/** Custom keyboard shortcut map. */
-export type KeyboardShortcutMap = Record<string, (key: string) => void>;
+/** Standard keyboard shortcut keys with IDE autocompletion fallback. */
+export type KnownKeyboardKey =
+  | 'Escape'
+  | 'Enter'
+  | 'Tab'
+  | 'Space'
+  | 'ArrowUp'
+  | 'ArrowDown'
+  | 'ArrowLeft'
+  | 'ArrowRight'
+  | 'Home'
+  | 'End'
+  | 'PageUp'
+  | 'PageDown'
+  | (string & {});
+
+/** Custom keyboard shortcut map with key autocompletion. */
+export type KeyboardShortcutMap = Partial<Record<KnownKeyboardKey, (key: string) => void>>;
 
 /**
  * Configuration options for customizable action controls and button toggles per popover card.
@@ -202,26 +218,6 @@ export interface TrailEntry<TData = unknown> extends PopoverDisplayOptions {
   };
 
   /**
-   * The successfully resolved data payload of the popover card.
-   */
-  data?: TData;
-
-  /**
-   * Stable data resolution Promise for React 19 use(promise) and Suspense integration.
-   */
-  dataPromise?: Promise<TData>;
-
-  /**
-   * True if the popover is currently performing an asynchronous data resolution.
-   */
-  isLoading?: boolean;
-
-  /**
-   * Contains any error thrown by the data resolver during resolution.
-   */
-  error?: Error | null;
-
-  /**
    * Stores the original parent key before the popover was pinned.
    * Used to restore the trail tree linkage when unpinning the card.
    */
@@ -235,6 +231,45 @@ export interface TrailEntry<TData = unknown> extends PopoverDisplayOptions {
 
   /** Transition lifecycle state for animating mount/exit states. */
   transitionStatus?: PopoverTransitionStatus;
+
+  /** Discriminated status lifecycle indicator. */
+  status?: 'loading' | 'error' | 'success';
+
+  /** True if data resolution is currently in progress. */
+  isLoading?: boolean;
+
+  /** Error instance if data resolution failed. */
+  error?: Error | null;
+
+  /** Resolved data payload. */
+  data?: TData;
+
+  /** Resolution promise for Suspense and React 19 use(). */
+  dataPromise?: Promise<TData>;
+}
+
+/** TrailEntry subtype in loading state. */
+export interface LoadingTrailEntry<TData = unknown> extends TrailEntry<TData> {
+  status: 'loading';
+  isLoading: true;
+  data: undefined;
+  error: null;
+}
+
+/** TrailEntry subtype in error state. */
+export interface ErrorTrailEntry<TData = unknown> extends TrailEntry<TData> {
+  status: 'error';
+  isLoading: false;
+  data: undefined;
+  error: Error;
+}
+
+/** TrailEntry subtype in successfully resolved state. */
+export interface SuccessTrailEntry<TData = unknown> extends TrailEntry<TData> {
+  status: 'success';
+  isLoading: false;
+  data: TData;
+  error: null;
 }
 
 /**
@@ -346,6 +381,55 @@ export type AnchorEventLike =
   | { getBoundingClientRect: () => DOMRect; stopPropagation?: () => void };
 
 /**
+ * Nominal interface representing a validated positioning anchor ref with guaranteed geometry bounds.
+ */
+export interface ValidatedAnchorRef {
+  readonly getBoundingClientRect: () => DOMRect;
+  readonly currentTarget?: HTMLElement;
+}
+
+/**
+ * Validates and converts an AnchorEventLike source into a ValidatedAnchorRef with geometry bounds.
+ */
+export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRef {
+  const createDefaultRect = (): DOMRect => {
+    if (typeof DOMRect !== 'undefined') {
+      return new DOMRect(0, 0, 0, 0);
+    }
+    return {
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      toJSON: () => ({}),
+    } as DOMRect;
+  };
+
+  if (!source) {
+    return { getBoundingClientRect: createDefaultRect };
+  }
+  if ('getBoundingClientRect' in source && typeof source.getBoundingClientRect === 'function') {
+    return source as ValidatedAnchorRef;
+  }
+  if (
+    'currentTarget' in source &&
+    source.currentTarget &&
+    typeof source.currentTarget.getBoundingClientRect === 'function'
+  ) {
+    const el = source.currentTarget;
+    return {
+      currentTarget: el,
+      getBoundingClientRect: () => el.getBoundingClientRect(),
+    };
+  }
+  return { getBoundingClientRect: createDefaultRect };
+}
+
+/**
  * Resolver callback type for lazy-loading/hydrating data for a popover card.
  *
  * @template TData - The type of data resolved by the callback.
@@ -366,6 +450,29 @@ export type PopoverResolver<TData = unknown, TContext = unknown> = (
   context?: TContext,
   signal?: AbortSignal,
 ) => Promise<TData> | TData;
+
+/**
+ * Parameter object provided to cancellable async resolvers, guaranteeing a non-optional AbortSignal.
+ */
+export interface ResolverParams<TParentData = unknown, TContext = unknown> {
+  /** The unique key or expression to resolve. */
+  key: string;
+  /** Resolved data payload of the parent popover (if nested). */
+  parentData?: TParentData;
+  /** External global context passed from PopoverProvider. */
+  context?: TContext;
+  /** Guaranteed AbortSignal instance to cancel in-flight HTTP requests when popover closes. */
+  signal: AbortSignal;
+}
+
+/**
+ * Strict cancellable resolver callback accepting a single parameter object with non-optional AbortSignal.
+ */
+export type CancellablePopoverResolver<
+  TData = unknown,
+  TParentData = unknown,
+  TContext = unknown,
+> = (params: ResolverParams<TParentData, TContext>) => Promise<TData> | TData;
 
 /**
  * The inner reactive state managed by the popover Zustand store.
@@ -729,11 +836,39 @@ export function isPinEvent<TData>(
   return event.type === 'pin';
 }
 
+/** Type guard for 'unpin' event. */
+export function isUnpinEvent<TData>(
+  event: PopoverStoreEvent<TData>,
+): event is Extract<PopoverStoreEvent<TData>, { type: 'unpin' }> {
+  return event.type === 'unpin';
+}
+
+/** Type guard for 'resolve_start' event. */
+export function isResolveStartEvent<TData>(
+  event: PopoverStoreEvent<TData>,
+): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_start' }> {
+  return event.type === 'resolve_start';
+}
+
+/** Type guard for 'resolve_success' event. */
+export function isResolveSuccessEvent<TData>(
+  event: PopoverStoreEvent<TData>,
+): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_success' }> {
+  return event.type === 'resolve_success';
+}
+
 /** Type guard for 'resolve_error' event. */
 export function isResolveErrorEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_error' }> {
   return event.type === 'resolve_error';
+}
+
+/** Type guard for 'clear' event. */
+export function isClearEvent<TData>(
+  event: PopoverStoreEvent<TData>,
+): event is Extract<PopoverStoreEvent<TData>, { type: 'clear' }> {
+  return event.type === 'clear';
 }
 
 /**
@@ -801,6 +936,48 @@ export interface PopoverCache<TData = unknown, TPopoverKey extends string = stri
 }
 
 /**
+ * Strongly typed cache provider supporting per-key payload types via mapped record.
+ *
+ * @template TCacheMap - Map of popover keys to their respective data payload types.
+ */
+export interface TypedPopoverCache<TCacheMap extends Record<string, unknown>> {
+  /** Retrieves a cached entry for a specific key. */
+  get: <K extends keyof TCacheMap & string>(
+    key: K,
+  ) => Promise<TCacheMap[K] | undefined> | TCacheMap[K] | undefined;
+
+  /** Saves a typed data payload in the cache. */
+  set: <K extends keyof TCacheMap & string>(key: K, data: TCacheMap[K]) => Promise<void> | void;
+
+  /** Removes a specific item from the cache. */
+  delete: <K extends keyof TCacheMap & string>(key: K) => Promise<void> | void;
+
+  /** Clears the cache completely. */
+  clear: () => Promise<void> | void;
+
+  /** Checks if a non-expired cached entry exists for key. */
+  has?: <K extends keyof TCacheMap & string>(key: K) => Promise<boolean> | boolean;
+
+  /** Destroys cache resources, auto-prune timers, and clears storage. */
+  destroy?: () => void;
+
+  /** Sweeps and purges expired records. */
+  pruneExpired?: () => Promise<void> | void;
+}
+
+/**
+ * Type utility checking that an array of popover keys contains no duplicate entries (cycle-free path).
+ */
+export type NoCyclePath<
+  Path extends readonly string[],
+  Seen extends string = never,
+> = Path extends readonly [infer Head extends string, ...infer Tail extends readonly string[]]
+  ? Head extends Seen
+    ? never
+    : readonly [Head, ...NoCyclePath<Tail, Seen | Head>]
+  : Path;
+
+/**
  * Boundary collision settings used by Floating UI shift/flip middleware.
  */
 export interface CollisionConfig {
@@ -844,6 +1021,8 @@ export interface OpenNestedOptions extends PopoverDisplayOptions {
 export interface UsePopoverResult<TData> {
   /** The full active trail entry data object, or undefined if not found. */
   entry: TrailEntry<TData> | undefined;
+  /** Discriminated union representation of resolution state for clean pattern matching. */
+  state: PopoverEntryDiscriminatedState<TData>;
   /** True if the popover is currently open. */
   isOpen: boolean;
   /** True if the popover is pinned/floating. */
@@ -868,4 +1047,49 @@ export interface UsePopoverResult<TData> {
   bringToFront: () => void;
   /** Sets custom coordinate dragging offsets on the card. */
   updateOffset: (x: number, y: number) => void;
+}
+
+/** Nominal Branded type helper for static type isolation. */
+export type Brand<T, B extends string> = T & { readonly __brand: B };
+
+/** Branded nominal type for X-axis viewport coordinates. */
+export type ViewportX = Brand<number, 'ViewportX'>;
+
+/** Branded nominal type for Y-axis viewport coordinates. */
+export type ViewportY = Brand<number, 'ViewportY'>;
+
+/** Converter creating a branded ViewportX coordinate value. */
+export function toViewportX(x: number): ViewportX {
+  return (Number.isFinite(x) ? x : 0) as ViewportX;
+}
+
+/** Converter creating a branded ViewportY coordinate value. */
+export function toViewportY(y: number): ViewportY {
+  return (Number.isFinite(y) ? y : 0) as ViewportY;
+}
+
+/** Branded coordinate offset container object. */
+export interface DragOffset {
+  x: ViewportX;
+  y: ViewportY;
+}
+
+/**
+ * Type-safe configuration builder helper preserving literal types for display options.
+ */
+export function definePopoverConfig<T extends PopoverDisplayOptions>(config: T): T {
+  return config;
+}
+
+/**
+ * Type-safe middleware definition helper ensuring state patch structural validity.
+ */
+export function definePopoverMiddleware<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  middleware: PopoverMiddleware<TData, TContext, TPopoverKey>,
+): PopoverMiddleware<TData, TContext, TPopoverKey> {
+  return middleware;
 }

@@ -23,6 +23,21 @@ import { getPopoverStyles } from './utils/styles';
 import { clsx } from './utils/storeHelpers';
 import type { TrailEntry, PopoverPlacement } from './types';
 
+const FIXED_CONTAINER_STYLE: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  pointerEvents: 'none',
+};
+const AUTO_POINTER_STYLE: React.CSSProperties = { pointerEvents: 'auto' };
+const DISPLAY_NONE_STYLE: React.CSSProperties = { display: 'none' };
+const FULL_FLEX_CONTAINER_STYLE: React.CSSProperties = {
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+};
+const RETURN_FOCUS_CONFIG = { preventScroll: true };
+
 /**
  * Options parameters for the `usePopoverDraggableCard` composite hook.
  */
@@ -248,18 +263,24 @@ export function PopoverCanvas<TData = unknown>({
     return list;
   }, [restrictToWindow, restrictToContainer, customModifiers]);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    bringToFront(String(event.active.id));
-  };
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      bringToFront(String(event.active.id));
+    },
+    [bringToFront],
+  );
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, delta } = event;
-    const key = String(active.id);
-    const currentOffset = store.getState().offsets[key] || { x: 0, y: 0 };
-    const safeDeltaX = Number.isFinite(delta?.x) ? delta.x : 0;
-    const safeDeltaY = Number.isFinite(delta?.y) ? delta.y : 0;
-    updateOffset(key, currentOffset.x + safeDeltaX, currentOffset.y + safeDeltaY);
-  };
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, delta } = event;
+      const key = String(active.id);
+      const currentOffset = store.getState().offsets[key] || { x: 0, y: 0 };
+      const safeDeltaX = Number.isFinite(delta?.x) ? delta.x : 0;
+      const safeDeltaY = Number.isFinite(delta?.y) ? delta.y : 0;
+      updateOffset(key, currentOffset.x + safeDeltaX, currentOffset.y + safeDeltaY);
+    },
+    [store, updateOffset],
+  );
 
   const zIndexOrder = usePopoverStore((state) => state.zIndexOrder);
 
@@ -271,7 +292,8 @@ export function PopoverCanvas<TData = unknown>({
     if (zIndexOrder.length === 0) return raw;
     const orderMap = new Map<string, number>();
     for (let i = 0; i < zIndexOrder.length; i++) {
-      orderMap.set(zIndexOrder[i]!, i);
+      const key = zIndexOrder[i];
+      if (key) orderMap.set(key, i);
     }
     return raw.sort((a, b) => (orderMap.get(a.entry.key) ?? 0) - (orderMap.get(b.entry.key) ?? 0));
   }, [floating, trail, zIndexOrder]);
@@ -283,9 +305,9 @@ export function PopoverCanvas<TData = unknown>({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       modifiers={computedModifiers}>
-      <div ref={containerRef} style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+      <div ref={containerRef} style={FIXED_CONTAINER_STYLE}>
         {activeEntries.map(({ entry, isPinned, index: entryIndex }) => (
-          <div key={entry.key} style={{ pointerEvents: 'auto' }}>
+          <div key={entry.key} style={AUTO_POINTER_STYLE}>
             {children({
               entry,
               index: entryIndex,
@@ -419,10 +441,12 @@ function PopoverCardInner<TData = unknown>({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onKeyDown={onKeyDown}>
-      <FocusLock disabled={!enableFocusLock || !isTop || isPinned} returnFocus={{ preventScroll: true }}>
+      <FocusLock
+        disabled={!enableFocusLock || !isTop || isPinned}
+        returnFocus={RETURN_FOCUS_CONFIG}>
         <PopoverCardContext.Provider value={entry.key}>
           {entry.ariaDescribedby && (
-            <div id={`desc-${entry.key}`} style={{ display: 'none' }}>
+            <div id={`desc-${entry.key}`} style={DISPLAY_NONE_STYLE}>
               {entry.ariaDescribedby}
             </div>
           )}
@@ -433,9 +457,7 @@ function PopoverCardInner<TData = unknown>({
               {children}
             </>
           ) : (
-            <div
-              {...resolvedDragHandleProps}
-              style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div {...resolvedDragHandleProps} style={FULL_FLEX_CONTAINER_STYLE}>
               {children}
             </div>
           )}

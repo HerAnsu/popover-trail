@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createPopoverStore } from './store';
-import type { TrailEntry, AnchorEventLike } from './types';
 import {
   isResolvedEntry,
   isLoadingEntry,
@@ -11,6 +10,8 @@ import {
   createVirtualElement,
   isOpenRootEvent,
   isPinEvent,
+  type TrailEntry,
+  type AnchorEventLike,
 } from './types';
 import { SimplePopoverCache } from './utils/cache';
 import { createWorkerResolver } from './utils/workerResolver';

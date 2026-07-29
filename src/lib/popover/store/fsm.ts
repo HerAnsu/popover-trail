@@ -180,3 +180,21 @@ export function createPopoverFSM<TData = unknown>(initialKey: string) {
     },
   };
 }
+
+/**
+ * TypeScript assertion function verifying the active FSM state value.
+ * Throws an Error if FSM state does not match expected state.
+ */
+export function assertPopoverFSMState<
+  TData = unknown,
+  S extends PopoverStateValue = PopoverStateValue,
+>(
+  state: PopoverFSMState<TData>,
+  expectedState: S,
+): asserts state is PopoverFSMState<TData> & { value: S } {
+  if (state.value !== expectedState) {
+    throw new Error(
+      `[popover-trail FSM assertion error]: Expected FSM state "${expectedState}", but received state "${state.value}".`,
+    );
+  }
+}
