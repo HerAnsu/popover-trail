@@ -34,7 +34,7 @@ describe('Advanced Type Safety & Helpers', () => {
       return patch;
     });
 
-    const mockState: PopoverStateData = {
+    const mockState = {
       trail: [],
       floating: [],
       ownerId: null,
@@ -42,7 +42,7 @@ describe('Advanced Type Safety & Helpers', () => {
       pinnedStates: {},
       zIndexOrder: [],
       rootHydrationRequestCounter: 0,
-    };
+    } as unknown as PopoverStateData;
     const result = mw({ cascadeOffsetStep: 12 }, mockState);
     expect(result).toEqual({ cascadeOffsetStep: 16 });
   });
