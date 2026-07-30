@@ -45,6 +45,52 @@ export type PopoverSchemaDefinition = Record<string, PopoverSchemaNode>;
 /** Helper to extract valid key union from a schema definition. */
 export type SchemaKeys<TSchema extends PopoverSchemaDefinition> = Extract<keyof TSchema, string>;
 
+/**
+ * Type helper computing the allowed child popover schema keys for a given parent source key.
+ * If the parent schema node explicitly declares `children`, restricts autocompletion strictly to those keys.
+ *
+ * @template TSchema - Popover schema definition.
+ * @template KSource - Parent popover key.
+ */
+export type AllowedChildrenOf<
+  TSchema extends PopoverSchemaDefinition,
+  KSource extends SchemaKeys<TSchema>,
+> = TSchema[KSource] extends { children: ReadonlyArray<infer C> }
+  ? Extract<C, SchemaKeys<TSchema>>
+  : SchemaKeys<TSchema>;
+
+/**
+ * Branded type for strict schema keys, preventing passing unvalidated string literals.
+ *
+ * @template TSchema - Popover schema definition.
+ */
+export type StrictPopoverKey<TSchema extends PopoverSchemaDefinition> =
+  SchemaKeys<TSchema> & { readonly __schemaKeyBrand: unique symbol };
+
+/**
+ * Identity converter validating and returning a strongly typed schema key.
+ *
+ * @template TSchema - Popover schema definition.
+ * @template K - Valid schema key string literal.
+ * @param _schema - Target schema instance.
+ * @param key - Schema key string.
+ * @returns Validated schema key.
+ *
+ * @example
+ * ```typescript
+ * const key = toSchemaKey(appSchema, 'userProfile');
+ * ```
+ */
+export function toSchemaKey<
+  TSchema extends PopoverSchemaDefinition,
+  K extends SchemaKeys<TSchema>,
+>(
+  _schema: PopoverSchemaInstance<TSchema>,
+  key: K,
+): K {
+  return key;
+}
+
 /** Helper to extract resolved data payload type for a specific key in a schema. */
 export type SchemaData<TSchema extends PopoverSchemaDefinition, K extends SchemaKeys<TSchema>> =
   TSchema[K] extends PopoverSchemaNode<infer TData> ? TData : unknown;
@@ -77,8 +123,8 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
       anchorEvent: AnchorEventLike,
       options?: OpenRootOptions,
     ) => Promise<void>;
-    pushNested: <SK extends SchemaKeys<TSchema>, K extends SchemaKeys<TSchema>>(
-      key: TSchema[SK] extends { children: ReadonlyArray<infer C> } ? C & SchemaKeys<TSchema> : K,
+    pushNested: <SK extends SchemaKeys<TSchema>>(
+      key: AllowedChildrenOf<TSchema, SK>,
       sourceKey: SK,
       options?: OpenNestedOptions,
     ) => Promise<void>;
@@ -97,30 +143,36 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
  *
  * @example
  * ```tsx
- * import { createPopoverSchema } from 'popover-trail';
+ * import { createPopoverSchema, PopoverProvider } from 'popover-trail';
  *
  * export const appSchema = createPopoverSchema({
  *   userProfile: {
- *     resolver: async (key, parentData) => fetchUser(key),
+ *     resolver: async (key) => ({ name: 'Alex', id: 'usr_1' }),
  *     placement: 'right',
+ *     children: ['userStats'],
  *   },
  *   userStats: {
- *     resolver: async (key, parentData) => fetchStats(parentData.id),
+ *     resolver: async (key, parentData) => ({ score: 100 }),
  *     placement: 'bottom',
  *   },
  * });
  *
- * function UserCard() {
- *   const data = appSchema.useData(appSchema.keys.userProfile);
+ * function App() {
  *   return (
- *     <appSchema.Trigger popoverKey="userProfile">
- *       <button>User</button>
- *     </appSchema.Trigger>
+ *     <PopoverProvider schema={appSchema}>
+ *       <appSchema.Trigger popoverKey="userProfile">
+ *         <button>Open User Profile</button>
+ *       </appSchema.Trigger>
+ *     </PopoverProvider>
  *   );
  * }
  * ```
+ *
+ * @see {@link PopoverProvider}
+ * @see {@link createPopoverStore}
+ * @see {@link createPopoverTrail}
  */
-export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
+export function createPopoverSchema<const TSchema extends PopoverSchemaDefinition>(
   definition: TSchema,
 ): PopoverSchemaInstance<TSchema> {
   const keys = Object.fromEntries(Object.keys(definition).map((k) => [k, k])) as {

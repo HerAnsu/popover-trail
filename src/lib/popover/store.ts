@@ -6,6 +6,7 @@
  */
 
 import { createStore } from 'zustand/vanilla';
+import { PopoverMiddlewareEngine } from './store/storeMiddlewareEngine';
 import type {
   PopoverStore,
   PopoverResolver,
@@ -79,7 +80,7 @@ export function createPopoverStore<
   const { undoStack, redoStack, pushSnapshot, clearHistory } = createHistoryManager<TData>(30);
 
   const eventListeners = new Set<(event: PopoverStoreEvent<TData>) => void>();
-  const middlewares = new Set<import('./types').PopoverMiddleware<TData, TContext, TPopoverKey>>();
+  const middlewareEngine = new PopoverMiddlewareEngine<TData, TContext, TPopoverKey>();
   let isBatching = false;
   let batchedStatePatch: Partial<PopoverStore<TData, TContext, TPopoverKey>> = {};
   const emitEvent = (event: PopoverStoreEvent<TData>) => {
@@ -138,19 +139,9 @@ export function createPopoverStore<
       let patch = typeof patchOrFn === 'function' ? patchOrFn(currentState) : patchOrFn;
       if (typeof patch === 'object' && patch !== null && Object.keys(patch).length === 0) return;
 
-      if (middlewares.size > 0) {
-        for (const mw of middlewares) {
-          try {
-            const res = mw(patch, currentState);
-            if (res === false) return;
-            if (res && typeof res === 'object') {
-              patch = res;
-            }
-          } catch (err) {
-            console.warn('[PopoverStore] Middleware execution error:', err);
-          }
-        }
-      }
+      const processedPatch = middlewareEngine.apply(patch, currentState);
+      if (processedPatch === false) return;
+      patch = processedPatch as Partial<PopoverStore<TData, TContext, TPopoverKey>>;
 
       const debug = currentState?.debug;
       if (isBatching) {
@@ -775,7 +766,6 @@ export function createPopoverStore<
         undoStack.length = 0;
         redoStack.length = 0;
         eventListeners.clear();
-        middlewares.clear();
         cache?.destroy?.();
       },
       setClosePinnedDescendants: (closePinnedDescendants) => {
@@ -898,12 +888,7 @@ export function createPopoverStore<
           }
         }
       },
-      useMiddleware: (middleware) => {
-        middlewares.add(middleware);
-        return () => {
-          middlewares.delete(middleware);
-        };
-      },
+      useMiddleware: (middleware) => middlewareEngine.use(middleware),
       canUndo: () => undoStack.length > 0,
       canRedo: () => redoStack.length > 0,
       undo: () => {

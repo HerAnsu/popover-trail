@@ -53,6 +53,19 @@ export interface UsePopoverDragAndDropResult {
  *
  * @param options - Hook configuration settings.
  * @returns Object containing computed rotation angles and active drag x/y coordinates.
+ *
+ * @example
+ * ```tsx
+ * const { rotation, rotationX, rotationY, dragX, dragY } = usePopoverDragAndDrop({
+ *   isDragging: true,
+ *   transform: { x: 10, y: 20 },
+ *   enableTilt: true,
+ *   dragAxis: 'both',
+ * });
+ * ```
+ *
+ * @see {@link computeTiltMatrix}
+ * @see {@link PopoverCard}
  */
 export function usePopoverDragAndDrop({
   isDragging,

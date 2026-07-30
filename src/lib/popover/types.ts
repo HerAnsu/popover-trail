@@ -6,6 +6,8 @@
 
 import type { Placement, Boundary, VirtualElement, flip, shift, size } from '@floating-ui/react';
 
+export type { VirtualElement };
+
 /**
  * Valid lifecycle transition status values for popover card mounting and unmounting animations.
  */
@@ -279,48 +281,6 @@ export interface SuccessTrailEntry<TData = unknown> extends TrailEntry<TData> {
 }
 
 /**
- * Type Guard function checking if a TrailEntry has finished resolving data successfully.
- * Narrows entry.data to TData (eliminating undefined) within conditional blocks.
- *
- * @template TData - The resolved data payload type.
- * @param entry - The TrailEntry to inspect.
- * @returns True if entry has resolved data without error or loading state.
- */
-export function isResolvedEntry<TData>(
-  entry: TrailEntry<TData> | undefined,
-): entry is TrailEntry<TData> & { data: TData; isLoading: false; error: null } {
-  return (
-    entry !== undefined && !entry.isLoading && entry.error === null && entry.data !== undefined
-  );
-}
-
-/**
- * Type Guard checking if a TrailEntry is currently performing data resolution.
- *
- * @template TData - The resolved data payload type.
- * @param entry - The TrailEntry to inspect.
- * @returns True if entry is loading.
- */
-export function isLoadingEntry<TData>(
-  entry: TrailEntry<TData> | undefined,
-): entry is TrailEntry<TData> & { isLoading: true } {
-  return entry !== undefined && entry.isLoading === true;
-}
-
-/**
- * Type Guard checking if a TrailEntry encountered a resolution error.
- *
- * @template TData - The resolved data payload type.
- * @param entry - The TrailEntry to inspect.
- * @returns True if entry has a non-null Error.
- */
-export function isErrorEntry<TData>(
-  entry: TrailEntry<TData> | undefined,
-): entry is TrailEntry<TData> & { error: Error } {
-  return entry !== undefined && entry.error instanceof Error;
-}
-
-/**
  * Discriminated union representation of a TrailEntry's asynchronous resolution state.
  *
  * @template TData - The resolved data payload type.
@@ -331,51 +291,48 @@ export type PopoverEntryDiscriminatedState<TData = unknown> =
   | { status: 'success'; isLoading: false; data: TData; error: null };
 
 /**
- * Extracts a discriminated state object from a TrailEntry for pattern matching (`switch (state.status)`).
+ * Event objects emitted by store action lifecycles for monitoring, analytics, and debugging.
  *
- * @template TData - The resolved data payload type.
- * @param entry - The TrailEntry to inspect.
- * @returns Discriminated union state object.
+ * @template TData - Resolved data payload type.
  */
-export function getEntryState<TData>(
-  entry: TrailEntry<TData>,
-): PopoverEntryDiscriminatedState<TData> {
-  if (entry.isLoading) {
-    return { status: 'loading', isLoading: true, data: undefined, error: null };
-  }
-  if (entry.error) {
-    return { status: 'error', isLoading: false, data: undefined, error: entry.error };
-  }
-  if (isResolvedEntry(entry)) {
-    return { status: 'success', isLoading: false, data: entry.data, error: null };
-  }
-  return { status: 'loading', isLoading: true, data: undefined, error: null };
-}
+export type PopoverStoreEvent<TData = unknown> =
+  | { type: 'open_root'; key: string; ownerId: string }
+  | { type: 'push_nested'; key: string; parentKey?: string }
+  | { type: 'close'; keys: string[] }
+  | { type: 'pin'; key: string }
+  | { type: 'unpin'; key: string }
+  | { type: 'resolve_start'; key: string }
+  | { type: 'resolve_success'; key: string; data: TData }
+  | { type: 'resolve_error'; key: string; error: Error }
+  | { type: 'clear' };
 
-/**
- * Utility constructor for creating branded PopoverKey string instances.
- *
- * @template T - The string key type.
- * @param key - The string key value.
- * @returns A branded PopoverKey value.
- */
-export function createPopoverKey<T extends string>(key: T): PopoverKey<T> {
-  return key as PopoverKey<T>;
-}
-
-/**
- * Helper function providing automatic type inference when creating custom PopoverResolver functions.
- *
- * @template TData - The resolved data payload type.
- * @template TContext - The external context type.
- * @param resolver - The resolver callback function.
- * @returns The typed PopoverResolver callback.
- */
-export function createPopoverResolver<TData = unknown, TContext = unknown>(
-  resolver: PopoverResolver<TData, TContext>,
-): PopoverResolver<TData, TContext> {
-  return resolver;
-}
+export {
+  isResolvedEntry,
+  isLoadingEntry,
+  isErrorEntry,
+  getEntryState,
+  createPopoverKey,
+  definePopoverResolver,
+  createPopoverResolver,
+  isVirtualElementAnchor,
+  isEventAnchor,
+  toValidatedAnchorRef,
+  toViewportX,
+  toViewportY,
+  createVirtualElement,
+  isOpenRootEvent,
+  isPushNestedEvent,
+  isCloseEvent,
+  isPinEvent,
+  isUnpinEvent,
+  isResolveStartEvent,
+  isResolveSuccessEvent,
+  isResolveErrorEvent,
+  isClearEvent,
+  isStoreEvent,
+  definePopoverConfig,
+  definePopoverMiddleware,
+} from './utils/typeGuards';
 
 /**
  * A minimal event-like or element-like object accepted by `openRootWithResolver`
@@ -392,47 +349,6 @@ export type AnchorEventLike =
 export interface ValidatedAnchorRef {
   readonly getBoundingClientRect: () => DOMRect;
   readonly currentTarget?: HTMLElement;
-}
-
-/**
- * Validates and converts an AnchorEventLike source into a ValidatedAnchorRef with geometry bounds.
- */
-export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRef {
-  const createDefaultRect = (): DOMRect => {
-    if (typeof DOMRect !== 'undefined') {
-      return new DOMRect(0, 0, 0, 0);
-    }
-    return {
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      top: 0,
-      bottom: 0,
-      left: 0,
-      right: 0,
-      toJSON: () => ({}),
-    } as DOMRect;
-  };
-
-  if (!source) {
-    return { getBoundingClientRect: createDefaultRect };
-  }
-  if ('getBoundingClientRect' in source && typeof source.getBoundingClientRect === 'function') {
-    return source as ValidatedAnchorRef;
-  }
-  if (
-    'currentTarget' in source &&
-    source.currentTarget &&
-    typeof source.currentTarget.getBoundingClientRect === 'function'
-  ) {
-    const el = source.currentTarget;
-    return {
-      currentTarget: el,
-      getBoundingClientRect: () => el.getBoundingClientRect(),
-    };
-  }
-  return { getBoundingClientRect: createDefaultRect };
 }
 
 /**
@@ -565,21 +481,30 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   readonly zIndexBaseMap: ZIndexBaseMap | null;
 }
 
+/** Strongly typed state patch payload passed to store middleware interceptors. */
+export type TypedMiddlewarePatch<
+  TData = unknown,
+  TContext = unknown,
+  _TPopoverKey extends string = string,
+> = Partial<PopoverStateData<TData, TContext>> & {
+  targetKey?: string;
+};
+
 /**
  * Middleware function intercepting state updates before commit.
  *
  * @template TData - Resolved data payload type.
  * @template TContext - Global shared context type.
- * @template TPopoverKey - Valid popover key union.
+ * @template _TPopoverKey - Valid popover key union.
  */
 export type PopoverMiddleware<
   TData = unknown,
   TContext = unknown,
   _TPopoverKey extends string = string,
 > = (
-  patch: Partial<PopoverStateData<TData, TContext>>,
+  patch: TypedMiddlewarePatch<TData, TContext, _TPopoverKey>,
   state: PopoverStateData<TData, TContext>,
-) => Partial<PopoverStateData<TData, TContext>> | false | void;
+) => TypedMiddlewarePatch<TData, TContext, _TPopoverKey> | false | void;
 
 /**
  * The dispatch and lifecycle actions exposed by the popover store.
@@ -765,117 +690,7 @@ export interface PopoverPersistConfig {
   filter?: (key: string) => boolean;
 }
 
-/**
- * Utility helper to create a VirtualElement / AnchorEventLike object from coordinates.
- * Useful for opening popovers at mouse clicks, context menus, or canvas coordinates.
- */
-export function createVirtualElement(x: number, y: number, width = 0, height = 0): AnchorEventLike {
-  const safeX = Number.isFinite(x) ? x : 0;
-  const safeY = Number.isFinite(y) ? y : 0;
-  const safeWidth = Number.isFinite(width) ? Math.max(0, width) : 0;
-  const safeHeight = Number.isFinite(height) ? Math.max(0, height) : 0;
 
-  return {
-    getBoundingClientRect: () =>
-      ({
-        x: safeX,
-        y: safeY,
-        left: safeX,
-        top: safeY,
-        right: safeX + safeWidth,
-        bottom: safeY + safeHeight,
-        toJSON: () => ({
-          x: safeX,
-          y: safeY,
-          left: safeX,
-          top: safeY,
-          right: safeX + safeWidth,
-          bottom: safeY + safeHeight,
-          width: safeWidth,
-          height: safeHeight,
-        }),
-      }) as DOMRect,
-  };
-}
-
-/**
- * Event objects emitted by store action lifecycles for monitoring, analytics, and debugging.
- *
- * @template TData - Resolved data payload type.
- */
-export type PopoverStoreEvent<TData = unknown> =
-  | { type: 'open_root'; key: string; ownerId: string }
-  | { type: 'push_nested'; key: string; parentKey?: string }
-  | { type: 'close'; keys: string[] }
-  | { type: 'pin'; key: string }
-  | { type: 'unpin'; key: string }
-  | { type: 'resolve_start'; key: string }
-  | { type: 'resolve_success'; key: string; data: TData }
-  | { type: 'resolve_error'; key: string; error: Error }
-  | { type: 'clear' };
-
-/** Type guard for 'open_root' event. */
-export function isOpenRootEvent<TData>(
-  event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'open_root' }> {
-  return event.type === 'open_root';
-}
-
-/** Type guard for 'push_nested' event. */
-export function isPushNestedEvent<TData>(
-  event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'push_nested' }> {
-  return event.type === 'push_nested';
-}
-
-/** Type guard for 'close' event. */
-export function isCloseEvent<TData>(
-  event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'close' }> {
-  return event.type === 'close';
-}
-
-/** Type guard for 'pin' event. */
-export function isPinEvent<TData>(
-  event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'pin' }> {
-  return event.type === 'pin';
-}
-
-/** Type guard for 'unpin' event. */
-export function isUnpinEvent<TData>(
-  event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'unpin' }> {
-  return event.type === 'unpin';
-}
-
-/** Type guard for 'resolve_start' event. */
-export function isResolveStartEvent<TData>(
-  event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_start' }> {
-  return event.type === 'resolve_start';
-}
-
-/** Type guard for 'resolve_success' event. */
-export function isResolveSuccessEvent<TData>(
-  event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_success' }> {
-  return event.type === 'resolve_success';
-}
-
-/** Type guard for 'resolve_error' event. */
-export function isResolveErrorEvent<TData>(
-  event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_error' }> {
-  return event.type === 'resolve_error';
-}
-
-/** Type guard for 'clear' event. */
-export function isClearEvent<TData>(
-  event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'clear' }> {
-  return event.type === 'clear';
-}
 
 /**
  * Complete representation of the Popover Zustand store state and actions.
@@ -1064,15 +879,45 @@ export type ViewportX = Brand<number, 'ViewportX'>;
 /** Branded nominal type for Y-axis viewport coordinates. */
 export type ViewportY = Brand<number, 'ViewportY'>;
 
-/** Converter creating a branded ViewportX coordinate value. */
-export function toViewportX(x: number): ViewportX {
-  return (Number.isFinite(x) ? x : 0) as ViewportX;
-}
 
-/** Converter creating a branded ViewportY coordinate value. */
-export function toViewportY(y: number): ViewportY {
-  return (Number.isFinite(y) ? y : 0) as ViewportY;
-}
+
+/**
+ * Type utility inferring the resolved TData payload type from any PopoverResolver or resolver function.
+ *
+ * @template T - Resolver function or PopoverResolver type.
+ *
+ * @example
+ * ```typescript
+ * const myResolver = async (key: string) => ({ id: 123, title: 'Card' });
+ * type ResolvedData = InferResolverData<typeof myResolver>;
+ * // ResolvedData -> { id: number; title: string }
+ * ```
+ */
+export type InferResolverData<T> = T extends PopoverResolver<infer TData, unknown>
+  ? TData
+  : T extends (...args: unknown[]) => infer R
+  ? Awaited<R>
+  : unknown;
+
+/**
+ * Mapped type converting PopoverStoreEvent type discriminators ('resolve_success', 'close', etc.)
+ * into strongly typed event callback props ('onResolve_success', 'onClose', etc.).
+ *
+ * @template TData - Resolved data payload type.
+ *
+ * @example
+ * ```typescript
+ * const handlers: OnPopoverEventMap<MyData> = {
+ *   onResolve_success: (evt) => console.log(evt.data),
+ *   onClose: (evt) => console.log(evt.key),
+ * };
+ * ```
+ */
+export type OnPopoverEventMap<TData = unknown> = {
+  [K in PopoverStoreEvent<TData>['type'] as `on${Capitalize<K>}`]?: (
+    event: Extract<PopoverStoreEvent<TData>, { type: K }>,
+  ) => void;
+};
 
 /** Branded coordinate offset container object. */
 export interface DragOffset {
@@ -1080,22 +925,35 @@ export interface DragOffset {
   y: ViewportY;
 }
 
-/**
- * Type-safe configuration builder helper preserving literal types for display options.
- */
-export function definePopoverConfig<T extends PopoverDisplayOptions>(config: T): T {
-  return config;
+
+
+/** Active history timeline step in popover navigation. */
+export interface ActiveTimelineStep<TData = unknown> {
+  status: 'active';
+  stepIndex: number;
+  trailKeys: string[];
+  pinnedKeys: string[];
+  primaryKey: string;
+  timestamp?: number;
+  payload?: TData;
+  canUndo: boolean;
+  canRedo: false;
 }
 
-/**
- * Type-safe middleware definition helper ensuring state patch structural validity.
- */
-export function definePopoverMiddleware<
-  TData = unknown,
-  TContext = unknown,
-  TPopoverKey extends string = string,
->(
-  middleware: PopoverMiddleware<TData, TContext, TPopoverKey>,
-): PopoverMiddleware<TData, TContext, TPopoverKey> {
-  return middleware;
+/** Undone history timeline step in popover navigation available for redo. */
+export interface UndoneTimelineStep<TData = unknown> {
+  status: 'undone';
+  stepIndex: number;
+  trailKeys: string[];
+  pinnedKeys: string[];
+  primaryKey: string;
+  timestamp?: number;
+  payload?: TData;
+  canUndo: false;
+  canRedo: true;
 }
+
+/** Discriminated union representation of a popover timeline history navigation step. */
+export type PopoverTimelineStep<TData = unknown> =
+  | ActiveTimelineStep<TData>
+  | UndoneTimelineStep<TData>;

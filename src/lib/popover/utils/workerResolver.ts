@@ -78,13 +78,35 @@ export function createPopoverWorkerScript(
 
 /**
  * Creates a non-blocking PopoverResolver that executes data resolution in a background Web Worker.
+ * Offloads heavy computation, network transformations, or data parsing off the main UI thread.
  *
  * @template TData - The resolved data payload type.
  * @template TContext - The external context type.
  *
  * @param workerOrFn - A Worker instance, script URL string, or inline resolver function.
- * @param options - Execution options.
- * @returns A typed PopoverResolver function.
+ * @param options - Execution options (timeout, transferables, autoRestart).
+ * @returns A typed PopoverResolver function augmented with `.terminate()` / `.destroy()`.
+ *
+ * @example
+ * ```tsx
+ * import { createWorkerResolver, PopoverProvider } from 'popover-trail';
+ *
+ * const workerResolver = createWorkerResolver(
+ *   async (key) => {
+ *     // Executes inside Web Worker context
+ *     const res = await fetch(`/api/card/${key}`);
+ *     return res.json();
+ *   },
+ *   { timeoutMs: 15000, autoRestart: true }
+ * );
+ *
+ * function App() {
+ *   return <PopoverProvider resolveData={workerResolver}>...</PopoverProvider>;
+ * }
+ * ```
+ *
+ * @see {@link PopoverProvider}
+ * @see {@link createPopoverStore}
  */
 export function createWorkerResolver<TData = unknown, TContext = unknown>(
   workerOrFn:

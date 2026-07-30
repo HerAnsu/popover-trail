@@ -11,6 +11,9 @@ import {
   createPopoverController,
   createPopoverStore,
   type PopoverStoreEvent,
+  type LoadingTrailEntry,
+  type ErrorTrailEntry,
+  type SuccessTrailEntry,
 } from './index';
 
 describe('Type Safety Guards & Event Predicates', () => {
@@ -71,5 +74,34 @@ describe('Type Safety Guards & Event Predicates', () => {
     expect(controller).toBeDefined();
     expect(typeof controller.closeByKey).toBe('function');
     expect(typeof controller.togglePin).toBe('function');
+  });
+
+  it('validates Discriminated TrailEntry subtypes', () => {
+    type Data = { title: string };
+    const loading: LoadingTrailEntry<Data> = {
+      key: 'k1',
+      status: 'loading',
+      isLoading: true,
+      data: undefined,
+      error: null,
+    };
+    const err: ErrorTrailEntry<Data> = {
+      key: 'k2',
+      status: 'error',
+      isLoading: false,
+      data: undefined,
+      error: new Error('Failed'),
+    };
+    const ok: SuccessTrailEntry<Data> = {
+      key: 'k3',
+      status: 'success',
+      isLoading: false,
+      data: { title: 'Success' },
+      error: null,
+    };
+
+    expect(loading.isLoading).toBe(true);
+    expect(err.error.message).toBe('Failed');
+    expect(ok.data.title).toBe('Success');
   });
 });

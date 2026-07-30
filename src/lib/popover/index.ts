@@ -48,6 +48,7 @@ export type {
   PopoverSlotComponents,
   ZIndexBaseMap,
   PopoverMiddleware,
+  TypedMiddlewarePatch,
   PopoverPersistConfig,
   Brand,
   ViewportX,
@@ -57,11 +58,14 @@ export type {
   TypedPopoverCache,
   ResolverParams,
   CancellablePopoverResolver,
-  NoCyclePath,
   LoadingTrailEntry,
   ErrorTrailEntry,
   SuccessTrailEntry,
-  PopoverStoreEvent,
+  InferResolverData,
+  OnPopoverEventMap,
+  ActiveTimelineStep,
+  UndoneTimelineStep,
+  PopoverTimelineStep,
 } from './types';
 
 export type { ValidatedAnchorRef } from './types';
@@ -73,6 +77,7 @@ export {
   getEntryState,
   createPopoverKey,
   createPopoverResolver,
+  definePopoverResolver,
   createVirtualElement,
   isOpenRootEvent,
   isPushNestedEvent,
@@ -83,11 +88,14 @@ export {
   isResolveSuccessEvent,
   isResolveErrorEvent,
   isClearEvent,
+  isStoreEvent,
   definePopoverConfig,
   definePopoverMiddleware,
   toViewportX,
   toViewportY,
   toValidatedAnchorRef,
+  isVirtualElementAnchor,
+  isEventAnchor,
 } from './types';
 
 export { createWorkerResolver, type WorkerResolverOptions } from './utils/workerResolver';
@@ -128,6 +136,7 @@ export {
   useIsPopoverOpen,
   usePopover,
   PopoverCardContext,
+  definePopoverContext,
 } from './context';
 
 export {
@@ -137,6 +146,12 @@ export {
   type PopoverFSMContext,
   type PopoverFSMEvent,
   type PopoverFSMState,
+  type IdleFSMState,
+  type HydratingFSMState,
+  type ResolvedTrailingFSMState,
+  type ResolvedPinnedFSMState,
+  type ErrorFSMState,
+  type UnmountingFSMState,
   type TransitionFn,
   type TransitionTable,
 } from './store/fsm';
@@ -149,11 +164,14 @@ export { PopoverDAG, type DAGNode } from './utils/dag';
 export { QuadTree, type BoundingBox, type QuadItem } from './utils/quadTree';
 export {
   createPopoverSchema,
+  toSchemaKey,
   type PopoverSchemaDefinition,
   type PopoverSchemaInstance,
   type PopoverSchemaNode,
   type SchemaKeys,
   type SchemaData,
+  type AllowedChildrenOf,
+  type StrictPopoverKey,
 } from './schema';
 
 export { usePopoverGeometry, type UsePopoverGeometryResult } from './hooks/useGeometry';
@@ -174,6 +192,8 @@ export {
   type PopoverCardPinButtonProps,
   type PopoverCardCloseButtonProps,
   type PopoverCardContentProps,
+  type PolymorphicRef,
+  type PolymorphicPropsWithRef,
 } from './components/PopoverCard';
 export { PopoverTrail, type PopoverTrailProps } from './components/PopoverTrail';
 export {

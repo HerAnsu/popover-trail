@@ -1,8 +1,6 @@
 /**
- * Directed Acyclic Graph (DAG) Kernel for popover-trail.
- * Manages parent-child relationship hierarchies and topological z-index sorting.
+ * Represents a single node inside the popover hierarchy graph.
  */
-
 export interface DAGNode {
   key: string;
   parentKey?: string;
@@ -10,6 +8,21 @@ export interface DAGNode {
   depth: number;
 }
 
+/**
+ * Directed Acyclic Graph (DAG) Kernel for popover-trail.
+ * Manages parent-child relationship hierarchies, cycle prevention, and topological z-index sorting.
+ *
+ * @example
+ * ```typescript
+ * const dag = new PopoverDAG();
+ * dag.addNode('root');
+ * dag.addNode('child-1', 'root');
+ * dag.addNode('grandchild', 'child-1');
+ *
+ * const descendants = dag.getDescendantKeys('root');
+ * console.log(descendants.has('grandchild')); // true
+ * ```
+ */
 export class PopoverDAG {
   private nodes = new Map<string, DAGNode>();
 

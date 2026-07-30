@@ -13,23 +13,20 @@ import {
   useCallback,
   useEffect,
   useRef,
-  useDebugValue,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
 import { createPopoverStore } from './store';
 import { useEventListener } from './hooks/useEventListener';
 import { invariant } from './utils/invariant';
-import { hasEntryWithKey, isDeepEqual, getEventPath, getEventTarget } from './utils/storeHelpers';
+import { isDeepEqual, getEventPath, getEventTarget } from './utils/storeHelpers';
 import {
   validateProviderResolver,
   validateCascadeStep,
   validateDefaultOffset,
   validateBaseZIndex,
   validateExitDuration,
-  validatePortalContainer,
 } from './utils/devWarnings';
 import {
   type PopoverStore,
@@ -37,17 +34,9 @@ import {
   type ClickOutsideConfig,
   type PopoverCache,
   type CollisionConfig,
-  type PopoverDisplayOptions,
-  type OpenRootOptions,
-  type OpenNestedOptions,
-  type TrailEntry,
-  type UsePopoverResult,
-  type AnchorEventLike,
   type FocusLockOptions,
   type PopoverSlotComponents,
   type ZIndexBaseMap,
-  type PopoverEntryDiscriminatedState,
-  getEntryState,
 } from './types';
 
 /**
@@ -384,32 +373,34 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
  * @returns The reactive value slice.
  * @throws {Error} If called outside a PopoverProvider.
  */
-function shallowEqual<T>(objA: T, objB: T): boolean {
-  if (Object.is(objA, objB)) return true;
-  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
-    return false;
-  }
-  const keysA = Object.keys(objA);
-  const keysB = Object.keys(objB);
-  if (keysA.length !== keysB.length) return false;
-  for (const key of keysA) {
-    if (
-      !Object.prototype.hasOwnProperty.call(objB, key) ||
-      !Object.is((objA as Record<string, unknown>)[key], (objB as Record<string, unknown>)[key])
-    ) {
-      return false;
-    }
-  }
-  return true;
-}
 
+
+/**
+ * Custom selector hook for direct access to reactive slices of the Popover Zustand store.
+ *
+ * @template TSelected - The extracted state slice type.
+ * @template TData - The type of resolved data payloads.
+ * @template TContext - The type of global shared context.
+ *
+ * @param selector - Function to extract a slice of the store state.
+ * @param equalityFn - Optional custom equality function to prevent redundant re-renders.
+ * @returns The selected state slice.
+ * @throws {Error} If called outside a `<PopoverProvider>`.
+ *
+ * @example
+ * ```tsx
+ * const activeCount = usePopoverStore((state) => state.trail.length);
+ * ```
+ *
+ * @see {@link PopoverProvider}
+ * @see {@link usePopoverStoreApi}
+ */
 export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
   selector: (state: PopoverStore<TData, TContext>) => TSelected,
   equalityFn?: (a: TSelected, b: TSelected) => boolean,
 ): TSelected {
-  const store = useContext(PopoverStoreContext);
-  invariant(store, 'usePopoverStore must be used within a PopoverProvider');
-  const slice = useStore(store, selector as (state: PopoverStore) => TSelected);
+  const store = usePopoverStoreApi<TData, TContext>();
+  const slice = useStore(store, selector as (state: PopoverStore<TData, TContext>) => TSelected);
   const prevRef = useRef<TSelected>(slice);
 
   if (equalityFn && prevRef.current !== slice && !equalityFn(prevRef.current, slice)) {
@@ -421,13 +412,22 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
 
 /**
  * Hook to retrieve the raw store API instance directly, without subscribing to state changes.
- * Useful for performance-sensitive imperative writes (e.g. inside drag events).
+ * Useful for performance-sensitive imperative writes (e.g. inside drag events or event handlers).
  *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
  *
- * @returns The raw Zustand StoreApi instance.
- * @throws {Error} If called outside a PopoverProvider.
+ * @returns The raw Zustand StoreApi instance matching PopoverStore.
+ * @throws {Error} If called outside a `<PopoverProvider>`.
+ *
+ * @example
+ * ```tsx
+ * const storeApi = usePopoverStoreApi();
+ * const currentState = storeApi.getState();
+ * ```
+ *
+ * @see {@link PopoverProvider}
+ * @see {@link usePopoverStore}
  */
 export function usePopoverStoreApi<TData = unknown, TContext = unknown>(): StoreApi<
   PopoverStore<TData, TContext>
@@ -437,123 +437,6 @@ export function usePopoverStoreApi<TData = unknown, TContext = unknown>(): Store
   return store as StoreApi<PopoverStore<TData, TContext>>;
 }
 
-/**
- * Hook to retrieve the active trailing popover cascade array.
- *
- * @template TData - The type of resolved data payloads.
- * @returns Array of trailing popover entries in order.
- */
-export function usePopoverTrail<TData = unknown>(): readonly TrailEntry<TData>[] {
-  return usePopoverStore((state: PopoverStore<TData>) => state.trail);
-}
-
-/**
- * Hook to retrieve the active modeless floating (pinned) popovers array.
- *
- * @template TData - The type of resolved data payloads.
- * @returns Array of floating popover entries.
- */
-export function usePopoverFloating<TData = unknown>(): readonly TrailEntry<TData>[] {
-  return usePopoverStore((state: PopoverStore<TData>) => state.floating);
-}
-
-/**
- * Hook to retrieve coordinate offsets of all active popovers.
- *
- * @returns Record of offset coordinate objects mapped by popover key.
- */
-export function usePopoverOffsets() {
-  return usePopoverStore((state) => state.offsets);
-}
-
-/**
- * Hook to retrieve the pinning state of a specific popover.
- *
- * @param key - The unique identifier key of the popover.
- * @returns True if the popover is currently pinned/floating.
- */
-export function useIsPopoverPinned(key: string) {
-  return usePopoverStore((state) => state.pinnedStates[key] ?? false);
-}
-
-/**
- * Hook to retrieve a popover entry (either trailing or floating) by its unique key ID.
- *
- * @template TData - The type of resolved data payloads.
- * @param key - The unique identifier key of the popover.
- * @returns The matching TrailEntry or undefined if not found.
- */
-export function usePopoverEntry<TData = unknown>(key: string): TrailEntry<TData> | undefined {
-  return usePopoverStore(
-    (state: PopoverStore<TData>) =>
-      state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key),
-  );
-}
-
-/**
- * Hook to retrieve the z-index stack position index of a popover.
- *
- * @param key - The unique identifier key of the popover.
- * @returns The 0-based z-index depth index, or -1 if not found.
- */
-export function usePopoverZIndex(key: string) {
-  return usePopoverStore((state) => state.zIndexOrder.indexOf(key));
-}
-
-/**
- * Hook to verify if a popover is currently focused and at the top of the z-index stack.
- *
- * @param key - The unique identifier key of the popover.
- * @returns True if the popover is topmost.
- */
-export function useIsPopoverTopMost(key: string) {
-  return usePopoverStore(
-    (state) =>
-      state.zIndexOrder.length > 0 && state.zIndexOrder[state.zIndexOrder.length - 1] === key,
-  );
-}
-
-const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
-
-/**
- * Hook to retrieve the coordinate offset of a specific popover.
- *
- * @param key - The unique identifier key of the popover.
- * @returns The coordinate offset object.
- */
-export function usePopoverOffset(key: string) {
-  return usePopoverStore((state) => state.offsets[key] ?? DEFAULT_OFFSET);
-}
-
-/**
- * Hook to retrieve the global context value.
- *
- * @template TContext - The type of context.
- * @returns The active context object.
- */
-export function usePopoverContext<TContext = unknown>() {
-  return usePopoverStore((state: PopoverStore<unknown, TContext>) => state.context);
-}
-
-/**
- * Hook to retrieve the global collision boundary settings.
- *
- * @returns The collision configuration object.
- */
-export function usePopoverCollisionConfig() {
-  return usePopoverStore((state) => state.collisionConfig);
-}
-/**
- * Hook to check if a specific popover key is currently open (exists in trail or floating lists).
- *
- * @param key - The unique identifier key of the popover.
- * @returns True if the popover is active and open.
- */
-export function useIsPopoverOpen(key: string): boolean {
-  return usePopoverStore(
-    useCallback((state: PopoverStore) => hasEntryWithKey(state.floating, state.trail, key), [key]),
-  );
-}
 /**
  * Hook to retrieve public popover store action dispatch methods.
  *
@@ -578,461 +461,72 @@ export function usePopoverActions<
   >;
 }
 
+import {
+  usePopoverTrail,
+  usePopoverFloating,
+  usePopoverOffsets,
+  useIsPopoverPinned,
+  usePopoverEntry,
+  usePopoverZIndex,
+  useIsPopoverTopMost,
+  usePopoverOffset,
+  usePopoverContext,
+  usePopoverCollisionConfig,
+  useIsPopoverOpen,
+  usePopover,
+  usePopoverData,
+  usePopoverHydration,
+  type PopoverHydrationState,
+} from './hooks/usePopoverSelectors';
+
+export {
+  usePopoverTrail,
+  usePopoverFloating,
+  usePopoverOffsets,
+  useIsPopoverPinned,
+  usePopoverEntry,
+  usePopoverZIndex,
+  useIsPopoverTopMost,
+  usePopoverOffset,
+  usePopoverContext,
+  usePopoverCollisionConfig,
+  useIsPopoverOpen,
+  usePopover,
+  usePopoverData,
+  usePopoverHydration,
+  type PopoverHydrationState,
+};
+
+export {
+  usePopoverTimeline,
+  type PopoverTimelineItem,
+  type UsePopoverTimelineResult,
+} from './hooks/usePopoverTimeline';
+
+export { usePopoverTrigger, usePopoverNestedTrigger } from './hooks/usePopoverTriggers';
+export { PopoverPortal, type PopoverPortalProps } from './components/PopoverPortal';
+
+
+
 /**
- * A unified selector hook that provides all data, loading status, active states,
- * and dispatch actions needed to interact with a specific popover card.
+ * Factory creating pre-bound PopoverProvider and custom hooks for a specific shared global app TContext.
+ * Eliminates repeating generic parameter types across components.
  *
- * @template TData - The resolved data payload type.
- * @template TContext - The global shared context type.
- * @template TPopoverKey - Union of valid popover keys.
- *
- * @param key - The unique identifier key of the popover.
- * @returns Unified data values and action wrappers.
+ * @template TContext - Global shared context type.
  *
  * @example
  * ```tsx
- * import { usePopover } from 'popover-trail';
-
- * function ProfileCard() {
- *   const { data, isOpen, isPinned, close, pin } = usePopover<UserData>('userProfile');
- *   if (!isOpen) return null;
- *   return <div><h2>{data?.name}</h2><button onClick={close}>Close</button></div>;
- * }
+ * const { Provider, useContext, useActions } = definePopoverContext<MyGlobalContext>();
  * ```
- */
-export function usePopover<
-  TData = unknown,
-  TContext = unknown,
-  TPopoverKey extends string = string,
->(key: TPopoverKey): UsePopoverResult<TData> {
-  const slice = usePopoverStore(
-    useCallback(
-      (state: PopoverStore<TData, TContext>) => {
-        const entry =
-          state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key);
-        const isOpen = entry !== undefined;
-        const isPinned = state.pinnedStates[key] ?? false;
-        const zIndex = state.zIndexOrder.indexOf(key);
-        const isTop =
-          state.zIndexOrder.length > 0 && state.zIndexOrder[state.zIndexOrder.length - 1] === key;
-        const offset = state.offsets[key] ?? DEFAULT_OFFSET;
-
-        return {
-          entry,
-          isOpen,
-          isPinned,
-          zIndex,
-          isTop,
-          offset,
-        };
-      },
-      [key],
-    ),
-    shallowEqual,
-  );
-
-  const actions = usePopoverActions<TData, TContext>();
-
-  const close = useCallback(() => actions.closeByKey(key, { transition: true }), [actions, key]);
-  const pin = useCallback((rect: DOMRect) => actions.togglePin(key, rect), [actions, key]);
-  const bringToFront = useCallback(() => actions.bringToFront(key), [actions, key]);
-  const updateOffset = useCallback(
-    (x: number, y: number) => actions.updateOffset(key, x, y),
-    [actions, key],
-  );
-
-  useDebugValue(
-    slice.isOpen
-      ? `Popover "${key}" [Status: ${slice.entry?.isLoading ? 'Loading' : slice.entry?.error ? 'Error' : 'Resolved'}, Pinned: ${slice.isPinned}]`
-      : `Popover "${key}" [Closed]`,
-  );
-
-  const discriminatedState = useMemo(
-    (): PopoverEntryDiscriminatedState<TData> =>
-      slice.entry
-        ? getEntryState(slice.entry)
-        : { status: 'loading', isLoading: true, data: undefined, error: null },
-    [slice.entry],
-  );
-
-  return useMemo(
-    (): UsePopoverResult<TData> => ({
-      entry: slice.entry,
-      state: discriminatedState,
-      isOpen: slice.isOpen,
-      isPinned: slice.isPinned,
-      zIndex: slice.zIndex,
-      isTop: slice.isTop,
-      offset: slice.offset,
-      isLoading: slice.entry?.isLoading ?? false,
-      data: slice.entry?.data,
-      error: slice.entry?.error,
-      close,
-      pin,
-      bringToFront,
-      updateOffset,
-    }),
-    [slice, discriminatedState, close, pin, bringToFront, updateOffset],
-  );
-}
-
-/**
- * Discriminated union representation of popover hydration lifecycle status.
- */
-export type PopoverHydrationState<TData = unknown> =
-  | { status: 'idle'; isHydrating: false; isHydrated: false; data: undefined; error: null }
-  | { status: 'hydrating'; isHydrating: true; isHydrated: false; data: undefined; error: null }
-  | { status: 'hydrated'; isHydrating: false; isHydrated: true; data: TData; error: null }
-  | { status: 'error'; isHydrating: false; isHydrated: false; data: undefined; error: Error };
-
-/**
- * Hook to track loading/error status and trigger manual data reloads for a popover card.
  *
- * @template TData - The type of resolved data payload.
- * @param key - The unique identifier key of the popover card.
- * @returns Object containing state discriminated union, isLoading status, error, and reload trigger callback.
+ * @see {@link PopoverProvider}
+ * @see {@link usePopoverContext}
  */
-export function usePopoverHydration<TData = unknown>(key: string) {
-  const actions = usePopoverActions();
-  const entry = usePopoverEntry<TData>(key);
-  const reload = useCallback(() => {
-    void actions.retryPopover(key);
-  }, [actions, key]);
-
-  let state: PopoverHydrationState<TData> = {
-    status: 'idle',
-    isHydrating: false,
-    isHydrated: false,
-    data: undefined,
-    error: null,
-  };
-
-  if (entry) {
-    if (entry.isLoading) {
-      state = {
-        status: 'hydrating',
-        isHydrating: true,
-        isHydrated: false,
-        data: undefined,
-        error: null,
-      };
-    } else if (entry.error) {
-      state = {
-        status: 'error',
-        isHydrating: false,
-        isHydrated: false,
-        data: undefined,
-        error: entry.error,
-      };
-    } else if (entry.data !== undefined) {
-      state = {
-        status: 'hydrated',
-        isHydrating: false,
-        isHydrated: true,
-        data: entry.data,
-        error: null,
-      };
-    }
-  }
-
-  useDebugValue(
-    state.status === 'hydrating'
-      ? `Hydrating "${key}"...`
-      : state.status === 'error'
-        ? `Hydration Error: ${state.error.message}`
-        : `Hydrated "${key}"`,
-  );
-
+export function definePopoverContext<TContext = unknown>() {
   return {
-    state,
-    isLoading: state.isHydrating,
-    error: state.error,
-    data: state.data,
-    reload,
+    useContext: () => usePopoverContext<TContext>(),
+    useActions: <TData = unknown>() => usePopoverActions<TData, TContext>(),
+    useStoreApi: <TData = unknown>() => usePopoverStoreApi<TData, TContext>(),
+    Provider: PopoverProvider as React.ComponentType<PopoverProviderProps<unknown, TContext>>,
   };
-}
-
-/**
- * Item element in the popover timeline history.
- */
-export interface PopoverTimelineItem<TData = unknown> {
-  stepIndex: number;
-  trailKeys: string[];
-  pinnedKeys: string[];
-  primaryKey: string;
-  timestamp?: number;
-  payload?: TData;
-}
-
-/**
- * Result object returned by the `usePopoverTimeline` hook.
- */
-export interface UsePopoverTimelineResult<TData = unknown> {
-  history: PopoverTimelineItem<TData>[];
-  currentIndex: number;
-  canUndo: boolean;
-  canRedo: boolean;
-  undo: () => void;
-  redo: () => void;
-  jumpToStep: (index: number) => void;
-}
-
-/**
- * Hook to access and control the visual breadcrumb timeline and undo/redo history navigation.
- *
- * @template TData - The type of resolved data payload.
- * @returns Timeline step items, active step index, undo/redo triggers, and jumpToStep callback.
- */
-export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<TData> {
-  const actions = usePopoverActions<TData>();
-  const canUndo = usePopoverStore((state) => state.actions.canUndo());
-  const canRedo = usePopoverStore((state) => state.actions.canRedo());
-  const trail = usePopoverTrail<TData>();
-  const floating = usePopoverFloating<TData>();
-
-  const history = useMemo<PopoverTimelineItem<TData>[]>(() => {
-    const activeTrailKeys = trail.map((e) => e.key);
-    const activePinnedKeys = floating.map((e) => e.key);
-    const primaryKey = activeTrailKeys[activeTrailKeys.length - 1] ?? activePinnedKeys[0] ?? 'root';
-
-    return [
-      {
-        stepIndex: 0,
-        trailKeys: activeTrailKeys,
-        pinnedKeys: activePinnedKeys,
-        primaryKey,
-      },
-    ];
-  }, [trail, floating]);
-
-  const jumpToStep = useCallback(
-    (stepIndex: number) => {
-      if (stepIndex < 0 || stepIndex >= history.length) return;
-      const targetStep = history[stepIndex];
-      if (targetStep && targetStep.trailKeys.length > 0) {
-        const lastKey = targetStep.trailKeys[targetStep.trailKeys.length - 1];
-        if (lastKey) {
-          actions.bringToFront(lastKey);
-        }
-      }
-    },
-    [history, actions],
-  );
-
-  useDebugValue(`Timeline Step 1/${history.length} [CanUndo: ${canUndo}, CanRedo: ${canRedo}]`);
-
-  return {
-    history,
-    currentIndex: 0,
-    canUndo,
-    canRedo,
-    undo: actions.undo,
-    redo: actions.redo,
-    jumpToStep,
-  };
-}
-
-/**
- * React 19 native data hook with Suspense support leveraging `use(promise)`.
- *
- * @template TData - The type of resolved data payload.
- * @param key - The unique identifier key of the popover card.
- * @returns The resolved data payload. Suspends when entry.dataPromise is pending in React 19.
- *
- * @example
- * ```tsx
- * import { usePopoverData } from 'popover-trail';
- *
- * function UserDetails() {
- *   const data = usePopoverData<UserData>('userProfile');
- *   return <div>{data?.email}</div>;
- * }
- * ```
- */
-export function usePopoverData<TData = unknown>(key: string): TData | undefined {
-  const entry = usePopoverEntry<TData>(key);
-  if (entry?.error) return entry.data;
-  const ReactUse = (React as unknown as Record<string, unknown>).use as
-    | (<T>(p: Promise<T>) => T)
-    | undefined;
-
-  if (entry?.dataPromise && typeof ReactUse === 'function') {
-    return ReactUse(entry.dataPromise);
-  }
-  return entry?.data;
-}
-
-function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
-  key: string,
-  options: TOptions | undefined,
-  onOpenHandler: (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => void,
-) {
-  const actions = usePopoverActions();
-  const optionsRef = useRef(options);
-  const onOpenHandlerRef = useRef(onOpenHandler);
-  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    optionsRef.current = options;
-    onOpenHandlerRef.current = onOpenHandler;
-  }, [options, onOpenHandler]);
-
-  useEffect(() => {
-    return () => {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
-      }
-    };
-  }, []);
-
-  const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    if (optionsRef.current?.hover?.enabled) return;
-    onOpenHandlerRef.current(e, e.currentTarget);
-  }, []);
-
-  const onMouseEnter = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    const hoverOpts = optionsRef.current?.hover;
-    if (hoverOpts?.enabled) {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
-      }
-      const currentTarget = e.currentTarget;
-      const delay = hoverOpts.openDelay ?? 200;
-      openTimerRef.current = setTimeout(() => {
-        onOpenHandlerRef.current(e, currentTarget);
-      }, delay);
-    }
-  }, []);
-
-  const onMouseLeave = useCallback(() => {
-    const hoverOpts = optionsRef.current?.hover;
-    if (hoverOpts?.enabled) {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
-      }
-      const delay = hoverOpts.closeDelay ?? 300;
-      actions.hoverLeave(key, delay);
-    }
-  }, [actions, key]);
-
-  const hoverEnabled = Boolean(options?.hover?.enabled);
-  const isOpen = useIsPopoverOpen(key);
-
-  return useMemo(() => {
-    const ariaProps = {
-      'aria-haspopup': 'dialog' as const,
-      'aria-expanded': isOpen,
-      'aria-controls': `popover-card-${key}`,
-    };
-    return {
-      ...ariaProps,
-      onMouseEnter: hoverEnabled ? onMouseEnter : undefined,
-      onMouseLeave: hoverEnabled ? onMouseLeave : undefined,
-      onClick,
-    };
-  }, [onClick, onMouseEnter, onMouseLeave, hoverEnabled, isOpen, key]);
-}
-
-/**
- * Hook to simplify binding an HTML element click trigger to open a root popover.
- *
- * @param key - The unique identifier key for the root popover.
- * @param options - Custom configuration options.
- * @returns Event handler props object (e.g. `{ onClick }`).
- */
-export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
-  const actions = usePopoverActions();
-  const onOpenHandler = useCallback(
-    (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => {
-      const fakeEvent: AnchorEventLike = {
-        currentTarget,
-        stopPropagation: () => {
-          e.stopPropagation?.();
-        },
-      };
-      void actions.openRootWithResolver(key, fakeEvent, options);
-    },
-    [actions, key, options],
-  );
-
-  return usePopoverTriggerBase(key, options, onOpenHandler);
-}
-
-/**
- * Hook to simplify binding an HTML element click trigger to open a nested child popover.
- *
- * @param key - The unique identifier key for the nested popover.
- * @param sourceKey - The unique key of the parent popover spawning this child.
- * @param options - Custom configuration options.
- * @returns Event handler props object (e.g. `{ onClick }`).
- */
-export function usePopoverNestedTrigger(
-  key: string,
-  sourceKey: string,
-  options?: OpenNestedOptions,
-) {
-  const actions = usePopoverActions();
-  const onOpenHandler = useCallback(
-    (_e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => {
-      const rect = currentTarget.getBoundingClientRect();
-      void actions.openNestedWithResolver(key, sourceKey, {
-        ...options,
-        triggerRect: rect,
-      });
-    },
-    [actions, key, sourceKey, options],
-  );
-
-  return usePopoverTriggerBase(key, options, onOpenHandler);
-}
-
-/**
- * Portal wrapper component that safely mounts children elements to `document.body`,
- * bypassing parent `overflow: hidden` layouts and clipping issues.
- * Supports direct ReactNode elements or render-prop functions receiving formatted entries.
- *
- * @param props - Portal configuration props.
- * @returns The portal element.
- */
-export function PopoverPortal({
-  children,
-  container,
-}: {
-  /** React elements or render prop callback function. */
-  children: ReactNode | ((entries: Array<TrailEntry & { isPinned: boolean }>) => ReactNode);
-  /** Optional custom DOM element target. Defaults to document.body. */
-  container?: HTMLElement | (() => HTMLElement | null) | React.RefObject<HTMLElement | null>;
-}) {
-  const [mounted, setMounted] = useState(false);
-  const trail = usePopoverTrail();
-  const floating = usePopoverFloating();
-
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  if (!mounted) return null;
-
-  let target: HTMLElement | null = null;
-  if (container) {
-    if (typeof container === 'function') {
-      target = container();
-    } else if ('current' in container) {
-      target = container.current;
-    } else {
-      target = container;
-    }
-    validatePortalContainer(target);
-  }
-
-  const renderedContent =
-    typeof children === 'function'
-      ? (children as (entries: Array<TrailEntry & { isPinned: boolean }>) => ReactNode)([
-          ...floating.map((entry) => ({ ...entry, isPinned: true })),
-          ...trail.map((entry) => ({ ...entry, isPinned: false })),
-        ])
-      : children;
-
-  return createPortal(renderedContent, target ?? document.body);
 }

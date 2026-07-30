@@ -66,6 +66,22 @@ export interface UsePopoverGeometryResult {
  *
  * @param options - Hook options configuration.
  * @returns An object containing the computed layout coordinates and the floating ref setter.
+ *
+ * @example
+ * ```tsx
+ * const { finalLayoutPos, setFloating } = usePopoverGeometry({
+ *   id: entry.key,
+ *   anchorRect: triggerRect,
+ *   placement: 'bottom',
+ *   zIndex: 0,
+ *   isDragging: false,
+ *   isPinned: false,
+ *   entry,
+ * });
+ * ```
+ *
+ * @see {@link PopoverCard}
+ * @see {@link QuadTree}
  */
 export function usePopoverGeometry({
   id,

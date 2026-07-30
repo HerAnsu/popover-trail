@@ -9,6 +9,7 @@ Complete technical specification for components, hooks, schema builders, core en
 1. [Typed schema builder and factory](#1-typed-schema-builder-and-factory)
    - [createPopoverSchema](#createpopoverschema)
    - [createPopoverTrail](#createpopovertrail)
+   - [definePopoverContext](#definepopovercontext)
 2. [Components and compound layouts](#2-components-and-compound-layouts)
    - [PopoverProvider](#popoverprovider)
    - [PopoverCard and compound subcomponents](#popovercard-and-compound-subcomponents)
@@ -34,12 +35,18 @@ Complete technical specification for components, hooks, schema builders, core en
    - [DAG cascading graph](#dag-cascading-graph)
    - [QuadTree 2D spatial partitioning index](#quadtree-2d-spatial-partitioning-index)
    - [PopoverSnapshotManager](#popoversnapshotmanager)
-6. [Types and data interfaces](#6-types-and-data-interfaces)
+6. [Types and discriminated unions](#6-types-and-discriminated-unions)
    - [TrailEntry](#trailentry)
-   - [PopoverStore](#popoverstore)
-   - [PopoverActions](#popoveractions)
-7. [Type guards and helpers](#7-type-guards-and-helpers)
-   - [isResolvedEntry, isLoadingEntry, isErrorEntry](#type-guards)
+   - [PopoverFSMState](#popoverfsmstate)
+   - [PopoverTimelineStep](#popovertimelinestep)
+   - [PopoverEntryDiscriminatedState](#popoverentrydiscriminatedstate)
+   - [PolymorphicPropsWithRef](#polymorphicpropswithref)
+   - [TypedMiddlewarePatch](#typedmiddlewarepatch)
+7. [Type guards and helper utilities](#7-type-guards-and-helper-utilities)
+   - [Entry type guards](#entry-type-guards)
+   - [Anchor type guards](#anchor-type-guards)
+   - [Store event type guards](#store-event-type-guards)
+   - [Type-safe builder helpers](#type-safe-builder-helpers)
 8. [Utilities, caching, and controllers](#8-utilities-caching-and-controllers)
    - [SimplePopoverCache](#simplepopovercache)
    - [createWorkerResolver](#createworkerresolver)
@@ -118,6 +125,23 @@ const { PopoverProvider, PopoverTrigger, usePopover } = trailHelpers;
 
 ---
 
+### `definePopoverContext<TContext>()`
+
+Factory function generating pre-bound React Context hooks and provider components typed for a specific global `TContext` structure. Eliminates repeating generic parameter types across application components.
+
+```tsx
+import { definePopoverContext } from 'popover-trail';
+
+export interface AppContext {
+  userId: string;
+  theme: 'light' | 'dark';
+}
+
+export const { Provider, useContext, useActions, useStoreApi } = definePopoverContext<AppContext>();
+```
+
+---
+
 ## 2. Components and compound layouts
 
 ### `<PopoverProvider>`
@@ -158,7 +182,7 @@ Instantiates the Zustand store, injects context into the React tree, and manages
 
 ### `<PopoverCard>` and compound subcomponents
 
-Polymorphic container element for popover cards. Binds coordinates, accessibility attributes (`role="dialog"`), data attributes (`data-state`, `data-pinned`, `data-key`), and CSS custom variables automatically.
+Polymorphic container element for popover cards. Binds coordinates, accessibility attributes (`role="dialog"`), data attributes (`data-state`, `data-pinned`, `data-key`), and CSS custom variables automatically. Supports full polymorphic `ref` inference via `PolymorphicPropsWithRef<E, P>`.
 
 ```tsx
 <PopoverCard entry={entry} index={index} isPinned={isPinned} className="card-container">
@@ -228,7 +252,7 @@ Compound component rendering interactive visual breadcrumb steps and history und
 
 ### `<PopoverPortal>`
 
-Renders children into `document.body` or a specified DOM target container via `ReactDOM.createPortal`.
+Renders children into `document.body` or a specified DOM target container via `ReactDOM.createPortal`. Validates target DOM node presence before rendering.
 
 ---
 
@@ -325,11 +349,17 @@ Tracks async data loading status (`isLoading`, `error`) and provides a `reload()
 
 ### `useIsPopoverOpen` and state selectors
 
+Fine-grained selector hooks exported from `usePopoverSelectors`:
+
 - `useIsPopoverOpen(key)`: Returns `true` if key is active in trail or floating list.
 - `useIsPopoverPinned(key)`: Returns `true` if key is pinned.
 - `usePopoverEntry(key)`: Returns `TrailEntry<TData> | undefined`.
 - `usePopoverZIndex(key)`: Returns 0-based z-index depth.
 - `useIsPopoverTopMost(key)`: Returns `true` if key is topmost in stack.
+- `usePopoverTrail()`: Returns active trailing cascade array.
+- `usePopoverFloating()`: Returns active floating card array.
+- `usePopoverOffsets()`: Returns record of all card drag offsets.
+- `usePopoverContext<TContext>()`: Returns current global context.
 
 ---
 
@@ -365,17 +395,22 @@ Hook attaching `@dnd-kit` drag handles and spring tilt physics to a card compone
 
 ### FSM statechart engine
 
-Deterministic state machine reducer with a static O(1) transition lookup table (`popoverFSMReducer` & `createPopoverFSM`).
+Deterministic state machine reducer with static O(1) transition lookup table (`popoverFSMReducer` & `createPopoverFSM`). `PopoverFSMState<TData>` is a 6-state discriminated union allowing zero-assertion narrowing:
+
+- `IdleFSMState` (`value: 'Idle'`)
+- `HydratingFSMState` (`value: 'Hydrating'`)
+- `ResolvedTrailingFSMState` (`value: 'Resolved.Trailing'`, narrows `context.data` to `TData`)
+- `ResolvedPinnedFSMState` (`value: 'Resolved.Pinned'`, narrows `context.data` to `TData`)
+- `ErrorFSMState` (`value: 'Error'`, narrows `context.error` to `Error`)
+- `UnmountingFSMState` (`value: 'Unmounting'`)
 
 ```ts
 import { popoverFSMReducer, createPopoverFSM } from 'popover-trail';
 
-// Pure reducer call:
-const nextState = popoverFSMReducer(currentState, { type: 'TOGGLE_PIN' });
-
-// Interpreter instance:
-const fsm = createPopoverFSM('userProfile');
-fsm.send({ type: 'RESOLVE_SUCCESS', data: { id: '123' } });
+const fsmState = fsm.getState();
+if (fsmState.value === 'Resolved.Trailing') {
+  console.log(fsmState.context.data); // Narrowed to TData safely
+}
 ```
 
 ---
@@ -422,7 +457,7 @@ manager.saveSnapshot(snapshot);
 
 ---
 
-## 6. Types and data interfaces
+## 6. Types and discriminated unions
 
 ### `TrailEntry<TData = unknown>`
 
@@ -452,19 +487,117 @@ export interface TrailEntry<TData = unknown> {
 
 ---
 
-## 7. Type guards and helpers
+### `PopoverTimelineStep<TData>`
 
-### Type guards
-
-Discriminated type guard functions for inspecting `TrailEntry` loading and resolution states safely.
+Discriminated union type representing navigation steps in popover timeline history:
 
 ```ts
-import { isResolvedEntry, isLoadingEntry, isErrorEntry } from 'popover-trail';
+export type PopoverTimelineStep<TData = unknown> =
+  | ActiveTimelineStep<TData>
+  | UndoneTimelineStep<TData>;
 
-if (isResolvedEntry(entry)) {
-  console.log('Data loaded:', entry.data);
+export interface ActiveTimelineStep<TData = unknown> {
+  status: 'active';
+  stepIndex: number;
+  trailKeys: string[];
+  pinnedKeys: string[];
+  primaryKey: string;
+  timestamp?: number;
+  payload?: TData;
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
+export interface UndoneTimelineStep<TData = unknown> {
+  status: 'undone';
+  stepIndex: number;
+  trailKeys: string[];
+  pinnedKeys: string[];
+  primaryKey: string;
+  timestamp?: number;
+  payload?: TData;
+  canUndo: false;
+  canRedo: true;
 }
 ```
+
+---
+
+### `PopoverEntryDiscriminatedState<TData>`
+
+Discriminated union for asynchronous resolution state pattern matching:
+
+```ts
+export type PopoverEntryDiscriminatedState<TData = unknown> =
+  | { status: 'loading'; isLoading: true; data: undefined; error: null }
+  | { status: 'error'; isLoading: false; data: undefined; error: Error }
+  | { status: 'success'; isLoading: false; data: TData; error: null };
+```
+
+---
+
+### `PolymorphicPropsWithRef<E, P>`
+
+Helper utility for building custom polymorphic popover card components with element ref inference:
+
+```ts
+export type PolymorphicRef<E extends React.ElementType> =
+  React.ComponentPropsWithRef<E>['ref'];
+
+export type PolymorphicPropsWithRef<
+  E extends React.ElementType,
+  P = {},
+> = P & { as?: E } & Omit<React.ComponentPropsWithoutRef<E>, keyof P | 'as'> & {
+    ref?: PolymorphicRef<E>;
+  };
+```
+
+---
+
+### `TypedMiddlewarePatch<TData, TContext, TPopoverKey>`
+
+Strongly typed state patch signature returned by store middleware interceptors:
+
+```ts
+export type TypedMiddlewarePatch<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> = Partial<PopoverStateData<TData, TContext>>;
+```
+
+---
+
+## 7. Type guards and helper utilities
+
+All executable type guards and helper converters are exported from `utils/typeGuards`:
+
+### Entry type guards
+
+- `isResolvedEntry(entry)`: Narrows `entry.data` to `TData`.
+- `isLoadingEntry(entry)`: Narrows `entry.isLoading` to `true`.
+- `isErrorEntry(entry)`: Narrows `entry.error` to `Error`.
+- `getEntryState(entry)`: Extracts `PopoverEntryDiscriminatedState<TData>`.
+
+### Anchor type guards
+
+- `isVirtualElementAnchor(source)`: Narrows `AnchorEventLike` to Floating UI `VirtualElement`.
+- `isEventAnchor(source)`: Narrows `AnchorEventLike` to DOM event with `currentTarget`.
+- `toValidatedAnchorRef(source)`: Converts event source into guaranteed `ValidatedAnchorRef`.
+- `createVirtualElement(x, y, w, h)`: Creates a `VirtualElement` positioning anchor from coordinates.
+
+### Store event type guards
+
+- `isStoreEvent(event, type)`: Generic discriminator guard for `PopoverStoreEvent<TData>`.
+- `isOpenRootEvent(event)`, `isPushNestedEvent(event)`, `isCloseEvent(event)`, `isPinEvent(event)`, `isUnpinEvent(event)`, `isResolveStartEvent(event)`, `isResolveSuccessEvent(event)`, `isResolveErrorEvent(event)`, `isClearEvent(event)`.
+
+### Type-safe builder helpers
+
+- `createPopoverKey(key)`: Returns branded `PopoverKey<T>` instance.
+- `definePopoverResolver(resolver)` / `createPopoverResolver(resolver)`: Infers typed `PopoverResolver<TData, TContext>`.
+- `definePopoverConfig(config)`: Type-safe display configuration builder.
+- `definePopoverMiddleware(mw)`: Type-safe middleware definition builder.
+- `toViewportX(x)` / `toViewportY(y)`: Converts number into branded `ViewportX` / `ViewportY` coordinate.
 
 ---
 

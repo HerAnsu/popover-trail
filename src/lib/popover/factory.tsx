@@ -68,6 +68,9 @@ export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
  *
  * const myTrail = createPopoverTrail<MyData, MyContext, 'card-1' | 'card-2'>();
  * ```
+ *
+ * @see {@link createPopoverSchema}
+ * @see {@link PopoverProvider}
  */
 export function createPopoverTrail<
   TData = unknown,

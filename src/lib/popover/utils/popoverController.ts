@@ -49,7 +49,23 @@ export interface PopoverController<
  * @template TContext - Shared context payload type.
  * @template TPopoverKey - Union of valid popover keys.
  * @param store - Zustand StoreApi instance.
- * @returns PopoverController instance.
+ * @returns PopoverController instance matching PopoverController interface.
+ *
+ * @example
+ * ```typescript
+ * import { createPopoverStore, createPopoverController } from 'popover-trail';
+ *
+ * const store = createPopoverStore(async (key) => ({ id: key }));
+ * const controller = createPopoverController(store);
+ *
+ * // Close a popover card imperatively when WebSocket receives an update event
+ * socket.on('dismiss', (key) => {
+ *   controller.closeByKey(key);
+ * });
+ * ```
+ *
+ * @see {@link createPopoverStore}
+ * @see {@link usePopoverActions}
  */
 export function createPopoverController<
   TData = unknown,

@@ -6,8 +6,5 @@
   "ignoreDependencies": [
     "@changesets/cli"
   ],
-  "ignoreBinaries": [
-    "tsx"
-  ],
   "ignoreExportsUsedInFile": true
 }

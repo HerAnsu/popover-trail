@@ -36,9 +36,17 @@ function usePopoverCardScope() {
   return ctx;
 }
 
-/**
- * Polymorphic component props helper.
- */
+/** Helper type inferring the ref prop type of a polymorphic component element. */
+export type PolymorphicRef<E extends ElementType> = React.ComponentPropsWithRef<E>['ref'];
+
+/** Polymorphic component props helper including strict element ref type inference. */
+export type PolymorphicPropsWithRef<E extends ElementType, P = object> = P &
+  Omit<ComponentPropsWithoutRef<E>, keyof P | 'as'> & {
+    as?: E;
+    ref?: PolymorphicRef<E>;
+  };
+
+/** Polymorphic component props helper without ref. */
 export type PolymorphicProps<E extends ElementType, P = object> = P &
   Omit<ComponentPropsWithoutRef<E>, keyof P | 'as'> & {
     as?: E;
@@ -60,10 +68,10 @@ export interface PopoverCardBaseProps<TData = unknown> {
   children?: ReactNode | ((scope: PopoverCardScope<TData>) => ReactNode);
 }
 
-export type PopoverCardProps<E extends ElementType = 'div', TData = unknown> = PolymorphicProps<
-  E,
-  PopoverCardBaseProps<TData>
->;
+export type PopoverCardProps<
+  E extends ElementType = 'div',
+  TData = unknown,
+> = PolymorphicPropsWithRef<E, PopoverCardBaseProps<TData>>;
 
 /**
  * Root `<PopoverCard>` Headless Unstyled Component.

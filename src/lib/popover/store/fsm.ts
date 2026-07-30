@@ -45,15 +45,55 @@ export type PopoverFSMEvent<TData = unknown> =
   | { type: 'RETRY' }
   | { type: 'TRANSITION_END' };
 
+/** FSM State in Idle initial state. */
+export interface IdleFSMState<TData = unknown> {
+  value: 'Idle';
+  context: PopoverFSMContext<TData>;
+}
+
+/** FSM State in Hydrating data resolution state. */
+export interface HydratingFSMState<TData = unknown> {
+  value: 'Hydrating';
+  context: PopoverFSMContext<TData>;
+}
+
+/** FSM State in Resolved.Trailing state holding data payload. */
+export interface ResolvedTrailingFSMState<TData = unknown> {
+  value: 'Resolved.Trailing';
+  context: PopoverFSMContext<TData> & { data: TData };
+}
+
+/** FSM State in Resolved.Pinned state holding data payload and pinned position coordinates. */
+export interface ResolvedPinnedFSMState<TData = unknown> {
+  value: 'Resolved.Pinned';
+  context: PopoverFSMContext<TData> & { data: TData; pinnedPos?: { top: number; left: number } };
+}
+
+/** FSM State in Error state holding resolution failure error. */
+export interface ErrorFSMState<TData = unknown> {
+  value: 'Error';
+  context: PopoverFSMContext<TData> & { error: Error };
+}
+
+/** FSM State in Unmounting teardown state. */
+export interface UnmountingFSMState<TData = unknown> {
+  value: 'Unmounting';
+  context: PopoverFSMContext<TData>;
+}
+
 /**
  * Immutable snapshot of the state machine status and context.
+ * Represented as a discriminated union over state value.
  *
  * @template TData - The resolved data payload type.
  */
-export interface PopoverFSMState<TData = unknown> {
-  value: PopoverStateValue;
-  context: PopoverFSMContext<TData>;
-}
+export type PopoverFSMState<TData = unknown> =
+  | IdleFSMState<TData>
+  | HydratingFSMState<TData>
+  | ResolvedTrailingFSMState<TData>
+  | ResolvedPinnedFSMState<TData>
+  | ErrorFSMState<TData>
+  | UnmountingFSMState<TData>;
 
 /** Transition function type mapping context and event to next state. */
 export type TransitionFn<TData> = (
@@ -189,7 +229,12 @@ export function popoverFSMReducer<TData = unknown>(
  * const fsm = createPopoverFSM('card-1');
  * fsm.send({ type: 'OPEN_ROOT', key: 'card-1' });
  * console.log(fsm.getState().value); // 'Hydrating'
+ * fsm.send({ type: 'RESOLVE_SUCCESS', data: { title: 'Card 1' } });
+ * console.log(fsm.getState().value); // 'Resolved.Trailing'
  * ```
+ *
+ * @see {@link popoverFSMReducer}
+ * @see {@link assertPopoverFSMState}
  */
 export function createPopoverFSM<TData = unknown>(initialKey: string) {
   let currentState: PopoverFSMState<TData> = {
@@ -245,6 +290,15 @@ export function createPopoverFSM<TData = unknown>(initialKey: string) {
  * @param state - State object to check.
  * @param expectedState - Target expected state value.
  * @throws {Error} If state.value !== expectedState.
+ *
+ * @example
+ * ```typescript
+ * assertPopoverFSMState(fsmState, 'Resolved.Trailing');
+ * // fsmState.context.data is now safely accessible
+ * ```
+ *
+ * @see {@link createPopoverFSM}
+ * @see {@link popoverFSMReducer}
  */
 export function assertPopoverFSMState<
   TData = unknown,
