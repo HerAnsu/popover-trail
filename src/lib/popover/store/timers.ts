@@ -1,4 +1,11 @@
 /**
+ * Isolated Close and Transition Timer Manager for popover-trail.
+ * Handles automatic timer clearance and memory leak prevention.
+ *
+ * @module timers
+ */
+
+/**
  * Creates an isolated manager for hover close and transition timers.
  */
 export function createTimerManager() {

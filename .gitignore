@@ -25,3 +25,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Antigravity technical loop internal runner & reports
+.gemini/scripts/
+.gemini/reports/
+

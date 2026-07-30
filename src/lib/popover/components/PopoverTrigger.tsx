@@ -7,6 +7,12 @@ import {
   useIsPopoverOpen,
 } from '../context';
 import type { OpenRootOptions, OpenNestedOptions, PopoverPlacement } from '../types';
+import {
+  validatePopoverKey,
+  validatePlacement,
+  validateHoverDelays,
+  validateCascadeAncestry,
+} from '../utils/devWarnings';
 
 /**
  * Combined event handlers and accessibility attributes passed to custom trigger render props.
@@ -240,13 +246,6 @@ function NestedTriggerInner({
  *
  * @template TPopoverKey - Union of valid popover keys.
  */
-import {
-  validatePopoverKey,
-  validatePlacement,
-  validateHoverDelays,
-  validateCascadeAncestry,
-} from '../utils/devWarnings';
-
 export function PopoverTrigger<TPopoverKey extends string = string>({
   popoverKey,
   placement,
@@ -273,7 +272,6 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
     [placement, offset, options],
   );
 
-  // Delegate to separate sub-components so each hook is called unconditionally (Rules of Hooks).
   if (parentKey) {
     return (
       <NestedTriggerInner

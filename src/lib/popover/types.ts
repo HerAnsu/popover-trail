@@ -1,3 +1,9 @@
+/**
+ * Core Type Definitions, Interfaces, and Type Guards for popover-trail.
+ *
+ * @module types
+ */
+
 import type { Placement, Boundary, VirtualElement, flip, shift, size } from '@floating-ui/react';
 
 /**

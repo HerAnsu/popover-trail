@@ -1,3 +1,9 @@
+/**
+ * React Context, Provider, and Custom Hooks Engine for popover-trail.
+ *
+ * @module context
+ */
+
 import * as React from 'react';
 import {
   createContext,
@@ -16,7 +22,7 @@ import type { StoreApi } from 'zustand/vanilla';
 import { createPopoverStore } from './store';
 import { useEventListener } from './hooks/useEventListener';
 import { invariant } from './utils/invariant';
-import { hasEntryWithKey, isDeepEqual } from './utils/storeHelpers';
+import { hasEntryWithKey, isDeepEqual, getEventPath, getEventTarget } from './utils/storeHelpers';
 import {
   validateProviderResolver,
   validateCascadeStep,
@@ -323,13 +329,13 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
       : null;
 
     const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
+      const path = getEventPath(e);
+      const target = getEventTarget<HTMLElement>(e) ?? (e.target as HTMLElement);
       const state = store.getState();
 
       if (state.trail.length === 0) return;
 
-      // Use composedPath to handle detached DOM nodes correctly
-      const path = e.composedPath ? e.composedPath() : [];
+      // Use composedPath to handle detached DOM nodes and Shadow DOM correctly
       const clickedInside = path.some((el) => {
         if (el instanceof HTMLElement) {
           try {
@@ -344,8 +350,11 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
 
       if (clickedInside) return;
 
-      // If click target is the anchor element itself, ignore
-      if (state.anchorElement && state.anchorElement.contains(target)) {
+      // If click target is the anchor element itself or contained within path, ignore
+      if (
+        state.anchorElement &&
+        (path.includes(state.anchorElement) || state.anchorElement.contains(target))
+      ) {
         return;
       }
 

@@ -1,3 +1,10 @@
+/**
+ * Zustand Store State Engine for popover-trail.
+ * Coordinates trail linkages, floating/pinned states, drag offsets, stacking order, and lifecycle transitions.
+ *
+ * @module store
+ */
+
 import { createStore } from 'zustand/vanilla';
 import type {
   PopoverStore,

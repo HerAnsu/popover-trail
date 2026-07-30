@@ -1,4 +1,11 @@
 /**
+ * Drag Physics and Math Utilities for popover-trail.
+ * Provides coordinate clamping, 3D tilt matrices, and drag friction calculations.
+ *
+ * @module dragMath
+ */
+
+/**
  * Options parameters for coordinate clamping bounds.
  */
 export interface ClampBounds {
@@ -10,6 +17,11 @@ export interface ClampBounds {
 
 /**
  * Clamps drag translation coordinates (x, y) within specified minimum/maximum bounds.
+ *
+ * @param x - Raw X coordinate offset.
+ * @param y - Raw Y coordinate offset.
+ * @param bounds - Optional min/max boundary limits.
+ * @returns Clamped coordinate object { x, y }.
  */
 export function clampDragCoordinates(
   x: number,
@@ -29,14 +41,10 @@ export function clampDragCoordinates(
   let maxY = bounds.maxY !== undefined && Number.isFinite(bounds.maxY) ? bounds.maxY : undefined;
 
   if (minX !== undefined && maxX !== undefined && minX > maxX) {
-    const temp = minX;
-    minX = maxX;
-    maxX = temp;
+    [minX, maxX] = [maxX, minX];
   }
   if (minY !== undefined && maxY !== undefined && minY > maxY) {
-    const temp = minY;
-    minY = maxY;
-    maxY = temp;
+    [minY, maxY] = [maxY, minY];
   }
 
   if (minX !== undefined) clampedX = Math.max(minX, clampedX);
@@ -49,6 +57,12 @@ export function clampDragCoordinates(
 
 /**
  * Computes 3D tilt angles (rotateX, rotateY) based on drag velocity or offset.
+ *
+ * @param deltaX - X offset delta.
+ * @param deltaY - Y offset delta.
+ * @param maxAngle - Maximum rotation limit in degrees (default: 15).
+ * @param sensitivity - Sensitivity multiplier factor (default: 0.1).
+ * @returns Rotation angles object { rotationX, rotationY }.
  */
 export function computeTiltMatrix(
   deltaX: number,
@@ -72,6 +86,10 @@ export function computeTiltMatrix(
 
 /**
  * Applies drag friction resistance factor to raw movement deltas.
+ *
+ * @param delta - Raw movement delta value.
+ * @param friction - Resistance coefficient between 0 and 1 (default: 0.5).
+ * @returns Resistance-adjusted delta.
  */
 export function applyDragFriction(delta: number, friction = 0.5): number {
   return delta * (1 - Math.min(1, Math.max(0, friction)));

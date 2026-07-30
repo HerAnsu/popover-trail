@@ -1,6 +1,6 @@
 {
   "name": "popover-trail",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Headless React 19 library for managing cascading popover paths, draggable floating windows, and async data hydration.",
   "keywords": [
     "react",
@@ -54,14 +54,24 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./dnd": {
-      "types": "./dist/dnd.d.ts",
-      "import": "./dist/dnd.js",
-      "require": "./dist/dnd.cjs"
+      "import": {
+        "types": "./dist/dnd.d.ts",
+        "default": "./dist/dnd.js"
+      },
+      "require": {
+        "types": "./dist/dnd.d.ts",
+        "default": "./dist/dnd.cjs"
+      }
     }
   },
   "scripts": {
@@ -71,10 +81,12 @@
     "lint": "oxlint",
     "format": "oxfmt --write src",
     "typecheck": "tsc --noEmit",
+    "check:pub": "npx publint",
     "preview": "vite preview",
     "test": "vitest run",
-    "prepublishOnly": "npm run build:lib && npm test",
-    "knip": "knip"
+    "prepublishOnly": "npm run build:lib && npm run check:pub && npm test",
+    "knip": "knip",
+    "quality:audit": "npx tsx .gemini/scripts/run-full-audit.ts"
   },
   "dependencies": {},
   "peerDependencies": {
@@ -101,6 +113,7 @@
     "knip": "^6.26.0",
     "oxfmt": "^0.58.0",
     "oxlint": "^1.71.0",
+    "publint": "^0.2.12",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-focus-lock": "^2.13.7",

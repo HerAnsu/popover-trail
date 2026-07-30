@@ -1,3 +1,10 @@
+/**
+ * Unified Factory Engine for popover-trail.
+ * Provides `createPopoverTrail` for schema-based or generic type-safe bindings.
+ *
+ * @module factory
+ */
+
 import React from 'react';
 import {
   PopoverProvider as CorePopoverProvider,
@@ -24,14 +31,44 @@ interface ReactInternals {
 }
 
 /**
- * Unified factory for creating popover trail instances or schema definitions.
- * Overloaded to support both schema-driven definitions and generic type bindings.
+ * Safely inspects React internals to detect if a call is executed inside a component render pass.
+ */
+function isCurrentlyRenderingInReact(): boolean {
+  try {
+    const secret = (React as unknown as ReactInternals)
+      .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    return Boolean(secret?.ReactCurrentDispatcher?.current);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Unified factory creating popover trail instances from a schema definition.
  *
- * @param definition - Optional schema definition map.
+ * @template TSchema - Schema definition map type.
+ * @param definition - Object map defining schema nodes.
+ * @returns Strongly typed schema instance with bound triggers, hooks, and keys.
  */
 export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
   definition: TSchema,
 ): PopoverSchemaInstance<TSchema>;
+
+/**
+ * Unified factory creating generic type-bound popover trail components and hooks.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Shared context payload type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @returns Object containing type-bound PopoverProvider, PopoverTrigger, PopoverPortal, and hooks.
+ *
+ * @example
+ * ```tsx
+ * import { createPopoverTrail } from 'popover-trail';
+ *
+ * const myTrail = createPopoverTrail<MyData, MyContext, 'card-1' | 'card-2'>();
+ * ```
+ */
 export function createPopoverTrail<
   TData = unknown,
   TContext = unknown,
@@ -46,15 +83,7 @@ export function createPopoverTrail<
 };
 
 export function createPopoverTrail(definition?: PopoverSchemaDefinition): unknown {
-  let isInsideRender = false;
-  try {
-    const secret = (React as unknown as ReactInternals)
-      .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-    isInsideRender = Boolean(secret?.ReactCurrentDispatcher?.current);
-  } catch {
-    isInsideRender = false;
-  }
-  validateFactoryPlacement(isInsideRender);
+  validateFactoryPlacement(isCurrentlyRenderingInReact());
 
   if (definition && typeof definition === 'object') {
     return createPopoverSchema(definition);

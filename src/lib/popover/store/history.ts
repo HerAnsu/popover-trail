@@ -1,7 +1,16 @@
+/**
+ * Undo / Redo History Snapshot Manager for popover-trail.
+ * Maintains isolated history stacks with bounded capacity and referential safety.
+ *
+ * @module history
+ */
+
 import type { TrailEntry, PopoverStore } from '../types';
 
 /**
  * Snapshot of popover store state used for undo/redo history operations.
+ *
+ * @template TData - Resolved data payload type.
  */
 export type HistorySnapshot<TData = unknown> = {
   trail: readonly TrailEntry<TData>[];
@@ -15,7 +24,9 @@ export type HistorySnapshot<TData = unknown> = {
 /**
  * Creates an isolated history state manager for undo/redo snapshots.
  *
+ * @template TData - Resolved data payload type.
  * @param maxHistory - Maximum number of history snapshots to retain (default: 30).
+ * @returns History manager instance containing undo/redo stacks and push/clear methods.
  */
 export function createHistoryManager<TData = unknown>(maxHistory = 30) {
   const undoStack: HistorySnapshot<TData>[] = [];

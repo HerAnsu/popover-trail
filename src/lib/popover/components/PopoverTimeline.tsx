@@ -1,3 +1,10 @@
+/**
+ * Visual History Timeline & Navigation Component for popover-trail.
+ * Provides interactive breadcrumbs, step-by-step jump navigation, undo, and redo.
+ *
+ * @module PopoverTimeline
+ */
+
 import React, {
   createContext,
   useContext,
@@ -9,6 +16,7 @@ import React, {
 import { clsx } from '../utils/storeHelpers';
 import { usePopoverTimeline, type UsePopoverTimelineResult } from '../context';
 import type { PolymorphicProps } from './PopoverCard';
+import { validateTimelineSubComponentScope } from '../utils/devWarnings';
 
 interface PopoverTimelineScope {
   timeline: UsePopoverTimelineResult;
@@ -16,8 +24,6 @@ interface PopoverTimelineScope {
 
 const PopoverTimelineScopeContext = createContext<PopoverTimelineScope | null>(null);
 PopoverTimelineScopeContext.displayName = 'PopoverTimelineScopeContext';
-
-import { validateTimelineSubComponentScope } from '../utils/devWarnings';
 
 function usePopoverTimelineScope() {
   const ctx = useContext(PopoverTimelineScopeContext);

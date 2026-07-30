@@ -14,8 +14,35 @@ export function isPromise<T>(value: unknown): value is Promise<T> {
   );
 }
 
+/**
+ * Safely converts an unknown error/exception catch value to a standard Error instance.
+ *
+ * @param err - Unknown error value.
+ * @returns Standardized Error instance.
+ */
 export function toError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
+}
+
+/**
+ * Safely extracts the event target or primary Shadow DOM origin node from an event.
+ */
+export function getEventTarget<T extends EventTarget = HTMLElement>(e: Event): T | null {
+  if (typeof e.composedPath === 'function') {
+    const path = e.composedPath();
+    if (path.length > 0) return (path[0] as T) ?? (e.target as T | null);
+  }
+  return (e.target as T | null) ?? null;
+}
+
+/**
+ * Returns the event propagation path, supporting Shadow DOM composedPath.
+ */
+export function getEventPath(e: Event): EventTarget[] {
+  if (typeof e.composedPath === 'function') {
+    return e.composedPath();
+  }
+  return e.target ? [e.target] : [];
 }
 
 /**
@@ -80,10 +107,7 @@ export function clsx(
  * @param allowedKeys - The set of keys to preserve.
  * @returns The filtered record copy, or the original record.
  */
-export function filterRecord<T>(
-  record: Record<string, T>,
-  allowedKeys: Set<string>,
-): Record<string, T> {
+function filterRecord<T>(record: Record<string, T>, allowedKeys: Set<string>): Record<string, T> {
   const keys = Object.keys(record);
   if (keys.length === 0) return record;
   const nextRecord: Record<string, T> = {};

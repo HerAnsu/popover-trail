@@ -1,4 +1,12 @@
 /* eslint-disable react/only-export-components */
+/**
+ * Drag-and-Drop (dnd-kit) Integration Module for popover-trail.
+ * Provides `usePopoverDraggableCard`, `PopoverCanvas`, and `PopoverCard` with
+ * spring physics tilt, viewport clamping, multi-tab sync, and keyboard focus lock.
+ *
+ * @module dnd
+ */
+
 import { memo, useCallback, useRef, useMemo, type ReactNode } from 'react';
 import {
   useDraggable,
@@ -290,11 +298,7 @@ export function PopoverCanvas<TData = unknown>({
       ...trail.map((entry, idx) => ({ entry, isPinned: false, index: floating.length + idx })),
     ];
     if (zIndexOrder.length === 0) return raw;
-    const orderMap = new Map<string, number>();
-    for (let i = 0; i < zIndexOrder.length; i++) {
-      const key = zIndexOrder[i];
-      if (key) orderMap.set(key, i);
-    }
+    const orderMap = new Map<string, number>(zIndexOrder.filter(Boolean).map((key, i) => [key, i]));
     return raw.sort((a, b) => (orderMap.get(a.entry.key) ?? 0) - (orderMap.get(b.entry.key) ?? 0));
   }, [floating, trail, zIndexOrder]);
 

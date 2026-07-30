@@ -60,6 +60,15 @@ export function validatePopoverKey(key: string | undefined): void {
       code: 'PT-101',
       message: 'Popover key is missing, null, or consists entirely of whitespace.',
     });
+    return;
+  }
+
+  const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+  if (UNSAFE_KEYS.has(key)) {
+    warnDevDetails(true, {
+      code: 'PT-101',
+      message: `Unsafe JavaScript property name "${key}" cannot be used as a popover key.`,
+    });
   }
 }
 

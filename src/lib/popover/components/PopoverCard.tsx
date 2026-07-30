@@ -11,6 +11,7 @@ import { clsx } from '../utils/storeHelpers';
 import { usePopoverCard, type UsePopoverCardResult } from '../hooks/usePopoverCard';
 import { usePopoverActions } from '../context';
 import type { TrailEntry, PopoverPlacement } from '../types';
+import { validateCardSubComponentScope } from '../utils/devWarnings';
 
 /**
  * Shared Context scope holding active card state and action handlers for sub-components.
@@ -25,8 +26,6 @@ interface PopoverCardScope<TData = unknown> {
 
 const PopoverCardScopeContext = createContext<PopoverCardScope | null>(null);
 PopoverCardScopeContext.displayName = 'PopoverCardScopeContext';
-
-import { validateCardSubComponentScope } from '../utils/devWarnings';
 
 function usePopoverCardScope() {
   const ctx = useContext(PopoverCardScopeContext);

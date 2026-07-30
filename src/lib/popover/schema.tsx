@@ -15,6 +15,10 @@ import { validateSchemaKey } from './utils/devWarnings';
 
 /**
  * Definition node configuration for a single popover in the schema.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TParentData - Data type of parent popover if nested.
+ * @template TContext - Custom context type.
  */
 export interface PopoverSchemaNode<TData = unknown, TParentData = unknown, TContext = unknown> {
   /** Resolver function to load data for this popover. */
@@ -35,25 +39,17 @@ export interface PopoverSchemaNode<TData = unknown, TParentData = unknown, TCont
   allowDragWhenUnpinned?: boolean;
 }
 
-/**
- * Record map of popover schema node definitions.
- */
+/** Record map of popover schema node definitions. */
 export type PopoverSchemaDefinition = Record<string, PopoverSchemaNode>;
 
-/**
- * Helper to extract valid key union from a schema definition.
- */
+/** Helper to extract valid key union from a schema definition. */
 export type SchemaKeys<TSchema extends PopoverSchemaDefinition> = Extract<keyof TSchema, string>;
 
-/**
- * Helper to extract resolved data payload type for a specific key in a schema.
- */
+/** Helper to extract resolved data payload type for a specific key in a schema. */
 export type SchemaData<TSchema extends PopoverSchemaDefinition, K extends SchemaKeys<TSchema>> =
   TSchema[K] extends PopoverSchemaNode<infer TData> ? TData : unknown;
 
-/**
- * Strongly typed Schema Instance object returned by `createPopoverSchema`.
- */
+/** Strongly typed Schema Instance object returned by `createPopoverSchema`. */
 export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> {
   /** The underlying raw schema definitions. */
   definition: TSchema;
@@ -114,30 +110,30 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
  *   },
  * });
  *
- * // Usage in React Component:
  * function UserCard() {
  *   const data = appSchema.useData(appSchema.keys.userProfile);
- *   return <appSchema.Trigger popoverKey="userProfile"><button>User</button></appSchema.Trigger>;
+ *   return (
+ *     <appSchema.Trigger popoverKey="userProfile">
+ *       <button>User</button>
+ *     </appSchema.Trigger>
+ *   );
  * }
  * ```
  */
 export function createPopoverSchema<TSchema extends PopoverSchemaDefinition>(
   definition: TSchema,
 ): PopoverSchemaInstance<TSchema> {
-  const keys = Object.keys(definition).reduce(
-    (acc, k) => {
-      acc[k as SchemaKeys<TSchema>] = k as SchemaKeys<TSchema>;
-      return acc;
-    },
-    {} as { [K in SchemaKeys<TSchema>]: K },
-  );
+  const keys = Object.fromEntries(Object.keys(definition).map((k) => [k, k])) as {
+    [K in SchemaKeys<TSchema>]: K;
+  };
 
   const createResolver = <TContext = unknown,>(): PopoverResolver<
     SchemaData<TSchema, SchemaKeys<TSchema>>,
     TContext
   > => {
     return (key: string, parentData?: unknown, context?: TContext) => {
-      const node = definition[key];
+      const hasNode = Object.prototype.hasOwnProperty.call(definition, key);
+      const node = hasNode ? definition[key] : undefined;
       validateSchemaKey(Boolean(node), key);
       if (node && typeof node.resolver === 'function') {
         return node.resolver(key, parentData, context) as ReturnType<

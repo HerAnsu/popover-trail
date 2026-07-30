@@ -58,6 +58,9 @@ export type {
   ResolverParams,
   CancellablePopoverResolver,
   NoCyclePath,
+  LoadingTrailEntry,
+  ErrorTrailEntry,
+  SuccessTrailEntry,
 } from './types';
 
 export type { ValidatedAnchorRef } from './types';
@@ -133,6 +136,8 @@ export {
   type PopoverFSMContext,
   type PopoverFSMEvent,
   type PopoverFSMState,
+  type TransitionFn,
+  type TransitionTable,
 } from './store/fsm';
 export {
   PopoverSnapshotManager,
@@ -155,7 +160,11 @@ export { usePopoverDragAndDrop, type UsePopoverDragAndDropResult } from './hooks
 export { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCard';
 export { getPopoverStyles } from './utils/styles';
 export { SimplePopoverCache } from './utils/cache';
-export { PopoverTrigger, type PopoverTriggerProps } from './components/PopoverTrigger';
+export {
+  PopoverTrigger,
+  type PopoverTriggerProps,
+  type PopoverTriggerChildProps,
+} from './components/PopoverTrigger';
 export {
   PopoverCard,
   type PopoverCardProps,

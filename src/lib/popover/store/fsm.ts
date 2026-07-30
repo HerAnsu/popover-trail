@@ -1,8 +1,11 @@
 /**
  * Finite State Machine (FSM / Statechart) Engine for popover-trail.
  * Provides deterministic, zero-invalid-state transitions for popover card lifecycles.
+ *
+ * @module fsm
  */
 
+/** Possible discrete state values for a popover card state machine. */
 export type PopoverStateValue =
   | 'Idle'
   | 'Hydrating'
@@ -11,13 +14,27 @@ export type PopoverStateValue =
   | 'Error'
   | 'Unmounting';
 
+/**
+ * Context payload held within an FSM state node.
+ *
+ * @template TData - The resolved data payload type.
+ */
 export interface PopoverFSMContext<TData = unknown> {
+  /** Unique popover key identifier. */
   key: string;
+  /** Resolved data payload when in Resolved state. */
   data?: TData;
+  /** Error object if resolution failed. */
   error?: Error;
+  /** Absolute coordinates if card is pinned. */
   pinnedPos?: { top: number; left: number };
 }
 
+/**
+ * Events dispatched to trigger state machine transitions.
+ *
+ * @template TData - The resolved data payload type.
+ */
 export type PopoverFSMEvent<TData = unknown> =
   | { type: 'OPEN_ROOT'; key: string }
   | { type: 'PUSH_NESTED'; key: string }
@@ -28,22 +45,37 @@ export type PopoverFSMEvent<TData = unknown> =
   | { type: 'RETRY' }
   | { type: 'TRANSITION_END' };
 
+/**
+ * Immutable snapshot of the state machine status and context.
+ *
+ * @template TData - The resolved data payload type.
+ */
 export interface PopoverFSMState<TData = unknown> {
   value: PopoverStateValue;
   context: PopoverFSMContext<TData>;
 }
 
+/** Transition function type mapping context and event to next state. */
 export type TransitionFn<TData> = (
   context: PopoverFSMContext<TData>,
   event: PopoverFSMEvent<TData>,
 ) => PopoverFSMState<TData>;
 
+/** Declarative transition table mapping state values and events to transition functions. */
 export type TransitionTable<TData> = {
   [K in PopoverStateValue]?: {
     [E in PopoverFSMEvent['type']]?: TransitionFn<TData>;
   };
 };
 
+/**
+ * Pure reducer computing the next FSM state given current state and event.
+ *
+ * @template TData - The resolved data payload type.
+ * @param state - Current FSM state node.
+ * @param event - Dispatched event.
+ * @returns The next state node (or current state reference if unhandled).
+ */
 export function popoverFSMReducer<TData = unknown>(
   state: PopoverFSMState<TData>,
   event: PopoverFSMEvent<TData>,
@@ -147,6 +179,17 @@ export function popoverFSMReducer<TData = unknown>(
 
 /**
  * Creates an instance of a Popover State Machine interpreter.
+ *
+ * @template TData - The resolved data payload type.
+ * @param initialKey - Initial popover key.
+ * @returns State machine interpreter instance with getState, send, matches, and subscribe methods.
+ *
+ * @example
+ * ```typescript
+ * const fsm = createPopoverFSM('card-1');
+ * fsm.send({ type: 'OPEN_ROOT', key: 'card-1' });
+ * console.log(fsm.getState().value); // 'Hydrating'
+ * ```
  */
 export function createPopoverFSM<TData = unknown>(initialKey: string) {
   let currentState: PopoverFSMState<TData> = {
@@ -157,22 +200,34 @@ export function createPopoverFSM<TData = unknown>(initialKey: string) {
   const listeners = new Set<(state: PopoverFSMState<TData>) => void>();
 
   return {
-    getState: () => currentState,
-    matches: (value: PopoverStateValue) => currentState.value === value,
-    send: (event: PopoverFSMEvent<TData>) => {
-      const nextState = (
-        popoverFSMReducer as (
-          s: PopoverFSMState<TData>,
-          e: PopoverFSMEvent<TData>,
-        ) => PopoverFSMState<TData>
-      )(currentState, event);
+    /** Returns current immutable state node. */
+    getState: (): PopoverFSMState<TData> => currentState,
+
+    /** Checks whether active state value matches the expected state. */
+    matches: (value: PopoverStateValue): boolean => currentState.value === value,
+
+    /**
+     * Dispatches an event to transition state.
+     *
+     * @param event - Event to process.
+     * @returns Updated state node.
+     */
+    send: (event: PopoverFSMEvent<TData>): PopoverFSMState<TData> => {
+      const nextState = popoverFSMReducer(currentState, event);
       if (nextState !== currentState) {
         currentState = nextState;
         listeners.forEach((fn) => fn(currentState));
       }
       return currentState;
     },
-    subscribe: (fn: (state: PopoverFSMState<TData>) => void) => {
+
+    /**
+     * Subscribes a listener callback to state changes.
+     *
+     * @param fn - Listener callback.
+     * @returns Unsubscribe function.
+     */
+    subscribe: (fn: (state: PopoverFSMState<TData>) => void): (() => void) => {
       listeners.add(fn);
       return () => {
         listeners.delete(fn);
@@ -184,6 +239,12 @@ export function createPopoverFSM<TData = unknown>(initialKey: string) {
 /**
  * TypeScript assertion function verifying the active FSM state value.
  * Throws an Error if FSM state does not match expected state.
+ *
+ * @template TData - The resolved data payload type.
+ * @template S - Expected state value string literal.
+ * @param state - State object to check.
+ * @param expectedState - Target expected state value.
+ * @throws {Error} If state.value !== expectedState.
  */
 export function assertPopoverFSMState<
   TData = unknown,
