@@ -20,7 +20,7 @@ describe('Discriminated TrailEntry & Geometry Validation', () => {
 
     if (entry.status === 'success') {
       // TypeScript guarantees entry.data is defined
-      expect(entry.data.title).toBe('Pop-1');
+      expect(entry.data?.title).toBe('Pop-1');
     }
     expect(entry.isLoading).toBe(false);
   });

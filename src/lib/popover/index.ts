@@ -61,6 +61,7 @@ export type {
   LoadingTrailEntry,
   ErrorTrailEntry,
   SuccessTrailEntry,
+  PopoverStoreEvent,
 } from './types';
 
 export type { ValidatedAnchorRef } from './types';

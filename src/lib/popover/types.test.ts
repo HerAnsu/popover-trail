@@ -55,14 +55,18 @@ describe('Type Safety Guards & Event Predicates', () => {
     expect(isResolveErrorEvent(errorEvt)).toBe(true);
     expect(isClearEvent(clearEvt)).toBe(true);
 
-    if (isResolveSuccessEvent(successEvt)) {
+    if (isResolveSuccessEvent<{ name: string }>(successEvt)) {
       expect(successEvt.data.name).toBe('Test');
     }
   });
 
   it('creates typed popover controller with bounded key operations', () => {
     const store = createPopoverStore(async (key) => ({ key }));
-    const controller = createPopoverController<unknown, unknown, 'card-1' | 'card-2'>(store);
+    const controller = createPopoverController<unknown, unknown, 'card-1' | 'card-2'>(
+      store as unknown as Parameters<
+        typeof createPopoverController<unknown, unknown, 'card-1' | 'card-2'>
+      >[0],
+    );
 
     expect(controller).toBeDefined();
     expect(typeof controller.closeByKey).toBe('function');

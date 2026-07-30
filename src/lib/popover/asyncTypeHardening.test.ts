@@ -30,8 +30,8 @@ describe('Async & Deep Type Hardening', () => {
     cache.set('userProfile', { id: 'usr-1', name: 'Alice' });
     cache.set('userStats', { views: 100, likes: 42 });
 
-    const profile = cache.get('userProfile');
-    const stats = cache.get('userStats');
+    const profile = cache.get('userProfile') as UserProfile | undefined;
+    const stats = cache.get('userStats') as UserStats | undefined;
 
     expect(profile?.name).toBe('Alice');
     expect(stats?.views).toBe(100);

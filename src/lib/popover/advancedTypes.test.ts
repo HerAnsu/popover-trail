@@ -41,8 +41,8 @@ describe('Advanced Type Safety & Helpers', () => {
       pinnedStates: {},
       zIndexOrder: [],
       rootHydrationRequestCounter: 0,
-    };
-    const result = mw({ debug: true }, mockState);
+    } as unknown as Parameters<typeof mw>[1];
+    const result = mw({ debug: true } as unknown as Parameters<typeof mw>[0], mockState);
     expect(result).toEqual({ debug: true, cascadeOffsetStep: 16 });
   });
 
