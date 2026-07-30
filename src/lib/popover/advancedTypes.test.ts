@@ -7,6 +7,7 @@ import {
   assertPopoverFSMState,
   createPopoverFSM,
   createPopoverSchema,
+  type PopoverStateData,
 } from './index';
 
 describe('Advanced Type Safety & Helpers', () => {
@@ -27,13 +28,13 @@ describe('Advanced Type Safety & Helpers', () => {
 
   it('validates state patches with definePopoverMiddleware helper', () => {
     const mw = definePopoverMiddleware((patch, _state) => {
-      if (patch.debug) {
+      if (patch.cascadeOffsetStep) {
         return { ...patch, cascadeOffsetStep: 16 };
       }
       return patch;
     });
 
-    const mockState = {
+    const mockState: PopoverStateData = {
       trail: [],
       floating: [],
       ownerId: null,
@@ -41,9 +42,9 @@ describe('Advanced Type Safety & Helpers', () => {
       pinnedStates: {},
       zIndexOrder: [],
       rootHydrationRequestCounter: 0,
-    } as unknown as Parameters<typeof mw>[1];
-    const result = mw({ debug: true } as unknown as Parameters<typeof mw>[0], mockState);
-    expect(result).toEqual({ debug: true, cascadeOffsetStep: 16 });
+    };
+    const result = mw({ cascadeOffsetStep: 12 }, mockState);
+    expect(result).toEqual({ cascadeOffsetStep: 16 });
   });
 
   it('creates branded ViewportX and ViewportY coordinates', () => {

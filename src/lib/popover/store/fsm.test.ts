@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createPopoverFSM, popoverFSMReducer, type PopoverFSMEvent } from './fsm';
+import { createPopoverFSM, popoverFSMReducer, PopoverFSMEvent } from './fsm';
 
 describe('Popover FSM Engine', () => {
   it('should start in Idle state', () => {
