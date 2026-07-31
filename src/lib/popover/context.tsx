@@ -19,8 +19,9 @@ import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
 import { createPopoverStore } from './store';
 import { useEventListener } from './hooks/useEventListener';
+import { useClickOutside } from './hooks/useClickOutside';
 import { invariant } from './utils/invariant';
-import { isDeepEqual, getEventPath, getEventTarget } from './utils/storeHelpers';
+import { isDeepEqual } from './utils/storeHelpers';
 import {
   validateProviderResolver,
   validateCascadeStep,
@@ -190,6 +191,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   cache,
   collision,
   enableArrowNavigation = true,
+  allowDragWhenPinned = true,
+  allowDragWhenUnpinned = true,
   debug = false,
   cascadeOffsetStep = 8,
   exitTransitionDuration = 0,
@@ -199,7 +202,9 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   unmountingClassName = 'unmounting',
   mountedClassName = 'mounted',
   responsiveMode = 'auto',
+  mobileBreakpoint = 640,
   stackGroup = null,
+  focusLockOptions,
   components,
   zIndexBaseMap,
 }: PopoverProviderProps<TData, TContext>) {
@@ -226,12 +231,13 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     createPopoverStore<TData, TContext>(activeResolver, initialContext, cache),
   );
 
-  // Synchronize all provider props to the store in a single effect to avoid
-  // 10 separate render cycles when multiple props change simultaneously
+  // Synchronize all provider props to the store in a single effect
   useEffect(() => {
     store.getState().batchUpdates(() => {
       const state = store.getState();
       state.setEnableArrowNavigation(Boolean(enableArrowNavigation));
+      state.setAllowDragWhenPinned(Boolean(allowDragWhenPinned));
+      state.setAllowDragWhenUnpinned(Boolean(allowDragWhenUnpinned));
       state.setDebug(Boolean(debug));
       state.setCascadeOffsetStep(Number(cascadeOffsetStep));
       state.setExitTransitionDuration(Number(exitTransitionDuration));
@@ -246,8 +252,12 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
       state.setResolveData(activeResolver);
       state.setClosePinnedDescendants(Boolean(closePinnedDescendants));
       state.setResponsiveMode(responsiveMode);
+      state.setMobileBreakpoint(Number(mobileBreakpoint));
       state.setStackGroupFilter(stackGroup);
 
+      if (focusLockOptions) {
+        state.setFocusLockOptions(focusLockOptions);
+      }
       if (!isDeepEqual(state.collisionConfig, collision ?? null)) {
         state.setCollisionConfig(collision ?? null);
       }
@@ -261,6 +271,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   }, [
     store,
     enableArrowNavigation,
+    allowDragWhenPinned,
+    allowDragWhenUnpinned,
     debug,
     cascadeOffsetStep,
     exitTransitionDuration,
@@ -274,7 +286,9 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     closePinnedDescendants,
     collision,
     responsiveMode,
+    mobileBreakpoint,
     stackGroup,
+    focusLockOptions,
     components,
     zIndexBaseMap,
   ]);
@@ -286,14 +300,16 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     };
   }, [store]);
 
-  // Handle Escape key closing globally (WAI-ARIA Accessibility compliance & single listener consolidation)
+  // Handle Escape key closing globally
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!enableKeyboardClose) return;
+      if (!enableKeyboardClose || e.defaultPrevented) return;
       if (e.key === 'Escape') {
         const state = store.getState();
         const hasActive = state.trail.length > 0 || state.floating.length > 0;
         if (hasActive) {
+          e.preventDefault();
+          e.stopPropagation();
           state.closeTopmost();
         }
       }
@@ -303,62 +319,18 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
 
   useEventListener('keydown', handleKeyDown);
 
-  // Setup click outside logic if enabled
-  const enabled = clickOutside?.enabled;
-  const ignoreClass = clickOutside?.ignoreClass;
-  const popoverSelector = clickOutside?.popoverSelector ?? '.popover-card';
+  useEventListener('keydown', handleKeyDown);
 
-  useEffect(() => {
-    if (!enabled) return;
-
-    const escapedIgnoreClass = ignoreClass
-      ? typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
-        ? `.${CSS.escape(ignoreClass)}`
-        : `.${ignoreClass.replace(/[^a-zA-Z0-9_-]/g, '')}`
-      : null;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      const path = getEventPath(e);
-      const target = getEventTarget<HTMLElement>(e) ?? (e.target as HTMLElement);
-      const state = store.getState();
-
-      if (state.trail.length === 0) return;
-
-      // Use composedPath to handle detached DOM nodes and Shadow DOM correctly
-      const clickedInside = path.some((el) => {
-        if (el instanceof HTMLElement) {
-          try {
-            if (el.matches(popoverSelector)) return true;
-            if (escapedIgnoreClass && el.matches(escapedIgnoreClass)) return true;
-          } catch {
-            if (ignoreClass && el.classList.contains(ignoreClass)) return true;
-          }
-        }
-        return false;
-      });
-
-      if (clickedInside) return;
-
-      // If click target is the anchor element itself or contained within path, ignore
-      if (
-        state.anchorElement &&
-        (path.includes(state.anchorElement) || state.anchorElement.contains(target))
-      ) {
-        return;
-      }
-
-      // Click is outside, clear the active trail!
-      state.clearTrail();
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [enabled, ignoreClass, popoverSelector, store]);
+  // Setup click outside logic using custom hook
+  useClickOutside({
+    store: store as unknown as StoreApi<PopoverStore<unknown, unknown>>,
+    clickOutside,
+  });
 
   return (
-    <PopoverStoreContext.Provider value={store as unknown as StoreApi<PopoverStore>}>
+    <PopoverStoreContext value={store as unknown as StoreApi<PopoverStore>}>
       {children}
-    </PopoverStoreContext.Provider>
+    </PopoverStoreContext>
   );
 }
 
@@ -373,7 +345,6 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
  * @returns The reactive value slice.
  * @throws {Error} If called outside a PopoverProvider.
  */
-
 
 /**
  * Custom selector hook for direct access to reactive slices of the Popover Zustand store.
@@ -467,6 +438,7 @@ import {
   usePopoverOffsets,
   useIsPopoverPinned,
   usePopoverEntry,
+  usePopoverEntryStatus,
   usePopoverZIndex,
   useIsPopoverTopMost,
   usePopoverOffset,
@@ -485,6 +457,7 @@ export {
   usePopoverOffsets,
   useIsPopoverPinned,
   usePopoverEntry,
+  usePopoverEntryStatus,
   usePopoverZIndex,
   useIsPopoverTopMost,
   usePopoverOffset,
@@ -506,8 +479,6 @@ export {
 export { usePopoverTrigger, usePopoverNestedTrigger } from './hooks/usePopoverTriggers';
 export { PopoverPortal, type PopoverPortalProps } from './components/PopoverPortal';
 
-
-
 /**
  * Factory creating pre-bound PopoverProvider and custom hooks for a specific shared global app TContext.
  * Eliminates repeating generic parameter types across components.
@@ -525,8 +496,8 @@ export { PopoverPortal, type PopoverPortalProps } from './components/PopoverPort
 export function definePopoverContext<TContext = unknown>() {
   return {
     useContext: () => usePopoverContext<TContext>(),
-    useActions: <TData = unknown>() => usePopoverActions<TData, TContext>(),
-    useStoreApi: <TData = unknown>() => usePopoverStoreApi<TData, TContext>(),
+    useActions: <TData = unknown,>() => usePopoverActions<TData, TContext>(),
+    useStoreApi: <TData = unknown,>() => usePopoverStoreApi<TData, TContext>(),
     Provider: PopoverProvider as React.ComponentType<PopoverProviderProps<unknown, TContext>>,
   };
 }

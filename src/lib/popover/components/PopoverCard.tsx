@@ -168,6 +168,8 @@ const PopoverCardBase = React.forwardRef(function PopoverCard(
         data-pinned={isPinned ? 'true' : 'false'}
         data-key={entry.key}
         role="dialog"
+        aria-modal={!isPinned}
+        aria-label={(restProps['aria-label'] as string) ?? `Popover ${entry.key}`}
         aria-describedby={entry.ariaDescribedby}
         {...restProps}>
         {typeof children === 'function' ? children(scope as PopoverCardScope<unknown>) : children}
@@ -246,6 +248,8 @@ function PopoverCardPinButton<E extends ElementType = 'button'>({
       {...(isNativeButton ? { type: 'button' as const } : {})}
       disabled={disabled}
       onClick={handleClick}
+      aria-pressed={isPinned}
+      aria-label={isPinned ? 'Unpin popover' : 'Pin popover'}
       data-pinned={isPinned}
       {...restProps}>
       {children ?? (isPinned ? 'Unpin' : 'Pin')}
@@ -290,6 +294,7 @@ function PopoverCardCloseButton<E extends ElementType = 'button'>({
       {...(isNativeButton ? { type: 'button' as const } : {})}
       disabled={disabled}
       onClick={handleClick}
+      aria-label="Close popover"
       {...restProps}>
       {children ?? '✕'}
     </Component>

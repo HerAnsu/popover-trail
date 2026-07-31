@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useDebugValue } from 'react';
+import { useEffect, useRef, useState, useMemo, useDebugValue } from 'react';
 import type { DragAxis } from '../types';
 import { computeTiltMatrix } from '../utils/dragMath';
 import { validateDragOffset } from '../utils/devWarnings';
@@ -94,13 +94,19 @@ export function usePopoverDragAndDrop({
     transformYRef.current = dragAxis === 'x' ? 0 : (transform?.y ?? 0);
   }, [transform, dragAxis]);
 
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
   useEffect(() => {
     let rafId: number;
 
-    if (isDragging && enableTilt) {
+    if (isDragging && enableTilt && !prefersReducedMotion) {
       const updateRotation = () => {
         const now = performance.now();
         const dt = Math.max(1, now - lastTime.current);
+        const frameRatio = dt / 16.667;
 
         const currentDragX = transformXRef.current;
         const currentDragY = transformYRef.current;
@@ -116,12 +122,13 @@ export function usePopoverDragAndDrop({
           maxTiltAngle,
           tiltSensitivity,
         );
-        const boundedX = curr.x * tiltFriction + tiltMatrix.rotationX;
-        const boundedY = curr.y * tiltFriction + tiltMatrix.rotationY;
+        const safeFriction = Math.pow(tiltFriction, frameRatio);
+        const boundedX = curr.x * safeFriction + tiltMatrix.rotationX;
+        const boundedY = curr.y * safeFriction + tiltMatrix.rotationY;
 
         // rotateZ is a slight flat tilt based on X velocity
         const nextZ =
-          curr.z * tiltFriction + velocityX * (tiltSensitivity / 2) * (1 - tiltFriction);
+          curr.z * safeFriction + velocityX * (tiltSensitivity / 2) * (1 - tiltFriction);
         const boundedZ = Math.max(-maxTiltAngle / 2, Math.min(maxTiltAngle / 2, nextZ));
 
         const nextTilt = { rotation: boundedZ, rotationX: boundedX, rotationY: boundedY };

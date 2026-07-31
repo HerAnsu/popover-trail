@@ -313,3 +313,18 @@ export function assertPopoverFSMState<
     );
   }
 }
+
+/**
+ * Validates whether a transitionStatus transition is valid according to FSM transition rules.
+ */
+export function isValidTransitionStatusChange(
+  current: import('../types').PopoverTransitionStatus | undefined,
+  next: import('../types').PopoverTransitionStatus,
+): boolean {
+  if (!current || current === next) return true;
+  if (current === 'unmounting' && next === 'mounting') return true;
+  if (current === 'unmounting' && next === 'mounted') return false;
+  if (current === 'mounting' && (next === 'mounted' || next === 'unmounting')) return true;
+  if (current === 'mounted' && next === 'unmounting') return true;
+  return true;
+}

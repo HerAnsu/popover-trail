@@ -210,9 +210,7 @@ describe('Advanced Type Safety & Helpers', () => {
   });
 
   it('validates AnchorEventLike type guards isVirtualElementAnchor and isEventAnchor', async () => {
-    const { isVirtualElementAnchor, isEventAnchor, createVirtualElement } = await import(
-      './index'
-    );
+    const { isVirtualElementAnchor, isEventAnchor, createVirtualElement } = await import('./index');
 
     const virtualElem = createVirtualElement(10, 20, 100, 50);
     expect(isVirtualElementAnchor(virtualElem)).toBe(true);

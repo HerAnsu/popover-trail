@@ -155,9 +155,9 @@ export function createPopoverResolver<TData = unknown, TContext = unknown>(
 export function isVirtualElementAnchor(source: AnchorEventLike): source is VirtualElement {
   return Boolean(
     source &&
-      'getBoundingClientRect' in source &&
-      typeof source.getBoundingClientRect === 'function' &&
-      !('currentTarget' in source),
+    'getBoundingClientRect' in source &&
+    typeof source.getBoundingClientRect === 'function' &&
+    !('currentTarget' in source),
   );
 }
 

@@ -19,10 +19,10 @@ describe('styles - getPopoverStyles', () => {
     expect(style.left).toBe(201);
     expect(style.zIndex).toBe(1050);
     expect(style.willChange).toBe('transform');
-    expect(style.transform).toContain('translate(15px, 25px)');
-    expect(style.transform).toContain('rotateX(1deg)');
-    expect(style.transform).toContain('rotateY(3deg)');
-    expect(style.transform).toContain('rotateZ(2deg)');
+    expect(style.transform).toContain('15px, 25px');
+    expect(style.transform).toContain('rotateX(1.00deg)');
+    expect(style.transform).toContain('rotateY(3.00deg)');
+    expect(style.transform).toContain('rotateZ(2.00deg)');
   });
 
   it('preserves referential identity for identical input arguments (memoization)', () => {

@@ -62,8 +62,6 @@ export function getPopoverStyles({
 
   const top = Math.round(safeTopPos);
   const left = Math.round(safeLeftPos);
-  const translateX = Math.round(safeDragX + safeOffsetX);
-  const translateY = Math.round(safeDragY + safeOffsetY);
 
   const isDynamic =
     safeDragX !== 0 ||
@@ -71,6 +69,14 @@ export function getPopoverStyles({
     safeRotation !== 0 ||
     safeRotationX !== 0 ||
     safeRotationY !== 0;
+
+  const translateX = isDynamic
+    ? Number((safeDragX + safeOffsetX).toFixed(2))
+    : Math.round(safeDragX + safeOffsetX);
+  const translateY = isDynamic
+    ? Number((safeDragY + safeOffsetY).toFixed(2))
+    : Math.round(safeDragY + safeOffsetY);
+
   const cacheKey = isDynamic
     ? ''
     : `${top}_${left}_${translateX}_${translateY}_${safeRotation}_${safeRotationX}_${safeRotationY}_${safeZIndex}`;
@@ -84,14 +90,15 @@ export function getPopoverStyles({
 
   const hasRotation = rotation !== 0 || rotationX !== 0 || rotationY !== 0;
   const transformStr = hasRotation
-    ? `translate(${translateX}px, ${translateY}px) rotateX(${rotationX}deg) rotateY(${rotationY}deg) rotateZ(${rotation}deg)`
-    : `translate(${translateX}px, ${translateY}px)`;
+    ? `perspective(1000px) translate3d(${translateX}px, ${translateY}px, 0px) rotateX(${rotationX.toFixed(2)}deg) rotateY(${rotationY.toFixed(2)}deg) rotateZ(${rotation.toFixed(2)}deg)`
+    : `translate3d(${translateX}px, ${translateY}px, 0px)`;
 
   const computedStyle: CSSProperties & Record<`--${string}`, string | number> = {
     position: 'absolute',
     top,
     left,
     transform: transformStr,
+    backfaceVisibility: 'hidden',
     willChange: isDynamic ? 'transform' : 'auto',
     zIndex,
     // CSS Custom Properties for external style overrides and animations

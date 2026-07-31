@@ -66,6 +66,12 @@ export type {
   ActiveTimelineStep,
   UndoneTimelineStep,
   PopoverTimelineStep,
+  NarrowTrailEntry,
+  IdleStoreState,
+  ActiveTrailStoreState,
+  PinnedOnlyStoreState,
+  PopoverStoreDiscriminatedState,
+  DomainPopoverKey,
 } from './types';
 
 export type { ValidatedAnchorRef } from './types';
@@ -119,6 +125,7 @@ export {
   usePopoverOffsets,
   useIsPopoverPinned,
   usePopoverEntry,
+  usePopoverEntryStatus,
   usePopoverZIndex,
   useIsPopoverTopMost,
   usePopoverOffset,
@@ -165,6 +172,8 @@ export { QuadTree, type BoundingBox, type QuadItem } from './utils/quadTree';
 export {
   createPopoverSchema,
   toSchemaKey,
+  defineSchemaNode,
+  type InferSchemaContext,
   type PopoverSchemaDefinition,
   type PopoverSchemaInstance,
   type PopoverSchemaNode,

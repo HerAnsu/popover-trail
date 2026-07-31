@@ -380,3 +380,37 @@ export function validateStoreControllerInstance(store: unknown): void {
     });
   }
 }
+
+/** PT-128: Validates schema circular child definitions. */
+export function validateSchemaCircularChild(parentKey: string, childKey: string): void {
+  if (!isDevEnv()) return;
+
+  if (parentKey === childKey) {
+    warnDevDetails(true, {
+      code: 'PT-128',
+      message: `Schema node "${parentKey}" declares itself as a direct child, which creates a circular render loop.`,
+    });
+  }
+}
+
+/** PT-129: Validates resolver timeout duration. */
+export function validateResolverTimeout(durationMs: number, key: string): void {
+  if (!isDevEnv()) return;
+
+  if (durationMs > 5000) {
+    warnDevDetails(true, {
+      code: 'PT-129',
+      message: `Resolver for key "${key}" has taken longer than ${durationMs}ms to resolve. Ensure AbortSignal is handled.`,
+    });
+  }
+}
+
+/** PT-130: Validates portal exclusion element attributes. */
+export function validatePortalExclusion(elementName: string): void {
+  if (!isDevEnv()) return;
+
+  warnDevDetails(true, {
+    code: 'PT-130',
+    message: `Element <${elementName}> is marked with data-popover-portal and will be excluded from click-outside teardown.`,
+  });
+}

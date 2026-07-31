@@ -1,8 +1,22 @@
 import * as React from 'react';
 import { useCallback, useDebugValue, useMemo } from 'react';
-import { getEntryState, type PopoverEntryDiscriminatedState, type PopoverStore, type TrailEntry, type UsePopoverResult } from '../types';
-import { hasEntryWithKey } from '../utils/storeHelpers';
+import {
+  getEntryState,
+  type PopoverEntryDiscriminatedState,
+  type PopoverStore,
+  type TrailEntry,
+  type NarrowTrailEntry,
+  type UsePopoverResult,
+} from '../types';
 import { usePopoverActions, usePopoverStore } from '../context';
+import {
+  selectActiveTrail,
+  selectFloatingEntries,
+  selectEntryByKey,
+  selectIsPinned,
+  selectOffset,
+  selectHasEntry,
+} from '../store/storeSelectors';
 
 const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
@@ -32,7 +46,9 @@ function shallowEqual<T>(objA: T, objB: T): boolean {
  * @returns Array of trailing popover entries in order.
  */
 export function usePopoverTrail<TData = unknown>(): readonly TrailEntry<TData>[] {
-  return usePopoverStore((state: PopoverStore<TData>) => state.trail);
+  return usePopoverStore(
+    selectActiveTrail as (state: PopoverStore<TData>) => readonly TrailEntry<TData>[],
+  );
 }
 
 /**
@@ -42,7 +58,9 @@ export function usePopoverTrail<TData = unknown>(): readonly TrailEntry<TData>[]
  * @returns Array of floating popover entries.
  */
 export function usePopoverFloating<TData = unknown>(): readonly TrailEntry<TData>[] {
-  return usePopoverStore((state: PopoverStore<TData>) => state.floating);
+  return usePopoverStore(
+    selectFloatingEntries as (state: PopoverStore<TData>) => readonly TrailEntry<TData>[],
+  );
 }
 
 /**
@@ -61,7 +79,7 @@ export function usePopoverOffsets() {
  * @returns True if the popover is currently pinned/floating.
  */
 export function useIsPopoverPinned(key: string) {
-  return usePopoverStore((state) => state.pinnedStates[key] ?? false);
+  return usePopoverStore(selectIsPinned(key));
 }
 
 /**
@@ -73,9 +91,31 @@ export function useIsPopoverPinned(key: string) {
  */
 export function usePopoverEntry<TData = unknown>(key: string): TrailEntry<TData> | undefined {
   return usePopoverStore(
-    (state: PopoverStore<TData>) =>
-      state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key),
+    selectEntryByKey<TData>(key) as (state: PopoverStore<TData>) => TrailEntry<TData> | undefined,
   );
+}
+
+/**
+ * Hook to retrieve a popover entry with guaranteed status narrowing.
+ *
+ * @template TData - The type of resolved data payloads.
+ * @template S - Status string discriminator ('loading' | 'error' | 'success').
+ * @param key - The unique identifier key of the popover.
+ * @param expectedStatus - Target status discriminator.
+ * @returns The matching narrowed entry or undefined if not found or status mismatch.
+ */
+export function usePopoverEntryStatus<
+  TData = unknown,
+  S extends 'loading' | 'error' | 'success' = 'success',
+>(key: string, expectedStatus: S = 'success' as S): NarrowTrailEntry<TData, S> | undefined {
+  const entry = usePopoverEntry<TData>(key);
+  if (!entry) return undefined;
+  const currentStatus =
+    entry.status ?? (entry.isLoading ? 'loading' : entry.error ? 'error' : 'success');
+  if (currentStatus === expectedStatus) {
+    return entry as NarrowTrailEntry<TData, S>;
+  }
+  return undefined;
 }
 
 /**
@@ -108,7 +148,7 @@ export function useIsPopoverTopMost(key: string) {
  * @returns The coordinate offset object.
  */
 export function usePopoverOffset(key: string) {
-  return usePopoverStore((state) => state.offsets[key] ?? DEFAULT_OFFSET);
+  return usePopoverStore(selectOffset(key));
 }
 
 /**
@@ -137,9 +177,7 @@ export function usePopoverCollisionConfig() {
  * @returns True if the popover is active and open.
  */
 export function useIsPopoverOpen(key: string): boolean {
-  return usePopoverStore(
-    useCallback((state: PopoverStore) => hasEntryWithKey(state.floating, state.trail, key), [key]),
-  );
+  return usePopoverStore(selectHasEntry(key));
 }
 
 /**

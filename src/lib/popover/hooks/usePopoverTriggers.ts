@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useIsPopoverOpen, usePopoverActions } from '../context';
-import type { AnchorEventLike, OpenNestedOptions, OpenRootOptions, PopoverDisplayOptions } from '../types';
+import type {
+  AnchorEventLike,
+  OpenNestedOptions,
+  OpenRootOptions,
+  PopoverDisplayOptions,
+} from '../types';
 
 function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
   key: string,

@@ -5,10 +5,20 @@
  * @module timers
  */
 
+export interface TimerManager {
+  hoverCloseTimers: Map<string, ReturnType<typeof setTimeout>>;
+  transitionTimers: Map<string, ReturnType<typeof setTimeout>>;
+  clearHoverTimer: (key: string) => void;
+  clearTransitionTimer: (key: string) => void;
+  clearAllTimers: () => void;
+  scheduleHoverLeave: (key: string, delay: number, callback: () => void) => void;
+  scheduleTransitionExit: (key: string, duration: number, callback: () => void) => void;
+}
+
 /**
  * Creates an isolated manager for hover close and transition timers.
  */
-export function createTimerManager() {
+export function createTimerManager(): TimerManager {
   const hoverCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const transitionTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -42,11 +52,31 @@ export function createTimerManager() {
     transitionTimers.clear();
   };
 
+  const scheduleHoverLeave = (key: string, delay: number, callback: () => void) => {
+    clearHoverTimer(key);
+    const timer = setTimeout(() => {
+      hoverCloseTimers.delete(key);
+      callback();
+    }, delay);
+    hoverCloseTimers.set(key, timer);
+  };
+
+  const scheduleTransitionExit = (key: string, duration: number, callback: () => void) => {
+    clearTransitionTimer(key);
+    const timer = setTimeout(() => {
+      transitionTimers.delete(key);
+      callback();
+    }, duration);
+    transitionTimers.set(key, timer);
+  };
+
   return {
     hoverCloseTimers,
     transitionTimers,
     clearHoverTimer,
     clearTransitionTimer,
     clearAllTimers,
+    scheduleHoverLeave,
+    scheduleTransitionExit,
   };
 }

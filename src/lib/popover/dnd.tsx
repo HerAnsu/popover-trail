@@ -11,6 +11,11 @@ import { memo, useCallback, useRef, useMemo, type ReactNode } from 'react';
 import {
   useDraggable,
   DndContext,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
   type DragStartEvent,
   type DragEndEvent,
   type Modifier,
@@ -18,6 +23,11 @@ import {
 import FocusLock from 'react-focus-lock';
 import { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCard';
 import { usePopoverDragAndDrop } from './hooks/useDragAndDrop';
+import {
+  DEFAULT_DRAG_DISTANCE_THRESHOLD,
+  DEFAULT_TOUCH_DELAY_MS,
+  DEFAULT_TOUCH_TOLERANCE_PX,
+} from './constants';
 import {
   usePopoverOffset,
   usePopoverTrail,
@@ -209,6 +219,46 @@ export interface PopoverCanvasProps<TData> {
  * @param props - Component props containing the render prop children.
  * @returns The DndContext wrapper structure.
  */
+function clampToWindowBounds(
+  transform: { x: number; y: number; scaleX?: number; scaleY?: number },
+  activeNodeRect: { left: number; top: number; width: number; height: number },
+) {
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+  const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+
+  const minX = -activeNodeRect.left;
+  const maxX = windowWidth - activeNodeRect.left - activeNodeRect.width;
+  const minY = -activeNodeRect.top;
+  const maxY = windowHeight - activeNodeRect.top - activeNodeRect.height;
+
+  return {
+    ...transform,
+    x: Math.max(minX, Math.min(maxX, transform.x)),
+    y: Math.max(minY, Math.min(maxY, transform.y)),
+    scaleX: transform.scaleX ?? 1,
+    scaleY: transform.scaleY ?? 1,
+  };
+}
+
+function clampToContainerBounds(
+  transform: { x: number; y: number; scaleX?: number; scaleY?: number },
+  activeNodeRect: { left: number; top: number; width: number; height: number },
+  containerRect: DOMRect,
+) {
+  const minX = containerRect.left - activeNodeRect.left;
+  const maxX = containerRect.right - activeNodeRect.left - activeNodeRect.width;
+  const minY = containerRect.top - activeNodeRect.top;
+  const maxY = containerRect.bottom - activeNodeRect.top - activeNodeRect.height;
+
+  return {
+    ...transform,
+    x: Math.max(minX, Math.min(maxX, transform.x)),
+    y: Math.max(minY, Math.min(maxY, transform.y)),
+    scaleX: transform.scaleX ?? 1,
+    scaleY: transform.scaleY ?? 1,
+  };
+}
+
 export function PopoverCanvas<TData = unknown>({
   children,
   modifiers: customModifiers,
@@ -222,45 +272,34 @@ export function PopoverCanvas<TData = unknown>({
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: DEFAULT_DRAG_DISTANCE_THRESHOLD },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: DEFAULT_TOUCH_DELAY_MS,
+        tolerance: DEFAULT_TOUCH_TOLERANCE_PX,
+      },
+    }),
+    useSensor(KeyboardSensor),
+  );
+
   const computedModifiers = useMemo(() => {
     const list: Modifier[] = [];
 
     if (restrictToWindow) {
       list.push(({ transform, activeNodeRect }) => {
         if (!activeNodeRect) return transform;
-
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-
-        const minX = -activeNodeRect.left;
-        const maxX = windowWidth - activeNodeRect.left - activeNodeRect.width;
-        const minY = -activeNodeRect.top;
-        const maxY = windowHeight - activeNodeRect.top - activeNodeRect.height;
-
-        return {
-          ...transform,
-          x: Math.max(minX, Math.min(maxX, transform.x)),
-          y: Math.max(minY, Math.min(maxY, transform.y)),
-        };
+        return clampToWindowBounds(transform, activeNodeRect);
       });
     }
 
     if (restrictToContainer) {
       list.push(({ transform, activeNodeRect }) => {
         if (!activeNodeRect || !containerRef.current) return transform;
-
         const containerRect = containerRef.current.getBoundingClientRect();
-
-        const minX = containerRect.left - activeNodeRect.left;
-        const maxX = containerRect.right - activeNodeRect.left - activeNodeRect.width;
-        const minY = containerRect.top - activeNodeRect.top;
-        const maxY = containerRect.bottom - activeNodeRect.top - activeNodeRect.height;
-
-        return {
-          ...transform,
-          x: Math.max(minX, Math.min(maxX, transform.x)),
-          y: Math.max(minY, Math.min(maxY, transform.y)),
-        };
+        return clampToContainerBounds(transform, activeNodeRect, containerRect);
       });
     }
 
@@ -273,7 +312,8 @@ export function PopoverCanvas<TData = unknown>({
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
-      bringToFront(String(event.active.id));
+      const key = String(event.active.id);
+      bringToFront(key);
     },
     [bringToFront],
   );
@@ -294,8 +334,8 @@ export function PopoverCanvas<TData = unknown>({
 
   const activeEntries = useMemo(() => {
     const raw = [
-      ...floating.map((entry, idx) => ({ entry, isPinned: true, index: idx })),
-      ...trail.map((entry, idx) => ({ entry, isPinned: false, index: floating.length + idx })),
+      ...floating.map((entry, idx) => ({ entry, isPinned: true, index: floating.length + idx })),
+      ...trail.map((entry, idx) => ({ entry, isPinned: false, index: idx })),
     ];
     if (zIndexOrder.length === 0) return raw;
     const orderMap = new Map<string, number>(zIndexOrder.filter(Boolean).map((key, i) => [key, i]));
@@ -306,8 +346,10 @@ export function PopoverCanvas<TData = unknown>({
 
   return (
     <DndContext
+      sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragEnd}
       modifiers={computedModifiers}>
       <div ref={containerRef} style={FIXED_CONTAINER_STYLE}>
         {activeEntries.map(({ entry, isPinned, index: entryIndex }) => (

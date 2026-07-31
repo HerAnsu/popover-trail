@@ -479,7 +479,73 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   readonly components: PopoverSlotComponents | null;
   /** Base z-index depth offsets per stack group ID. */
   readonly zIndexBaseMap: ZIndexBaseMap | null;
+  /** Global default for dragging pinned cards. */
+  readonly allowDragWhenPinned?: boolean;
+  /** Global default for dragging unpinned cards. */
+  readonly allowDragWhenUnpinned?: boolean;
+  /** Global focus lock configuration options. */
+  readonly focusLockOptions?: FocusLockOptions | null;
 }
+
+/** Discriminated idle state when no popovers are open in trail or floating. */
+export type IdleStoreState<TData = unknown, TContext = unknown> = PopoverStateData<
+  TData,
+  TContext
+> & {
+  readonly status: 'idle';
+  readonly trail: readonly [];
+  readonly floating: readonly [];
+  readonly anchorElement: null;
+  readonly anchorRect: null;
+  readonly ownerId: null;
+};
+
+/** Discriminated active state when at least one popover is active in the trail. */
+export type ActiveTrailStoreState<TData = unknown, TContext = unknown> = PopoverStateData<
+  TData,
+  TContext
+> & {
+  readonly status: 'active-trail';
+  readonly trail: readonly [TrailEntry<TData>, ...TrailEntry<TData>[]];
+  readonly anchorElement: HTMLElement;
+  readonly anchorRect: DOMRect;
+  readonly ownerId: string;
+};
+
+/** Discriminated pinned-only state when only pinned/floating popovers are active. */
+export type PinnedOnlyStoreState<TData = unknown, TContext = unknown> = PopoverStateData<
+  TData,
+  TContext
+> & {
+  readonly status: 'pinned-only';
+  readonly trail: readonly [];
+  readonly floating: readonly [TrailEntry<TData>, ...TrailEntry<TData>[]];
+  readonly anchorElement: null;
+  readonly anchorRect: null;
+  readonly ownerId: null;
+};
+
+/** Comprehensive Discriminated Union representing all possible runtime states of the popover store. */
+export type PopoverStoreDiscriminatedState<TData = unknown, TContext = unknown> =
+  | IdleStoreState<TData, TContext>
+  | ActiveTrailStoreState<TData, TContext>
+  | PinnedOnlyStoreState<TData, TContext>;
+
+/** Type helper mapping a status string discriminator to its narrowed TrailEntry subtype. */
+export type NarrowTrailEntry<
+  TData,
+  TStatus extends 'loading' | 'error' | 'success',
+> = TStatus extends 'loading'
+  ? LoadingTrailEntry<TData>
+  : TStatus extends 'error'
+    ? ErrorTrailEntry<TData>
+    : SuccessTrailEntry<TData>;
+
+/** Domain-scoped template literal type for namespaced popover keys (e.g. 'user:profile'). */
+export type DomainPopoverKey<
+  TDomain extends string = string,
+  TName extends string = string,
+> = `${TDomain}:${TName}`;
 
 /** Strongly typed state patch payload passed to store middleware interceptors. */
 export type TypedMiddlewarePatch<
@@ -555,7 +621,7 @@ export interface PopoverActions<
   clearTrail: () => void;
 
   /** Closes the topmost active popover based on z-index depth order. */
-  closeTopmost: () => void;
+  closeTopmost: (options?: { transition?: boolean }) => void;
 
   /** Resolves data and opens a root popover. */
   openRootWithResolver: (
@@ -615,6 +681,18 @@ export interface PopoverActions<
 
   /** Set global animation class names dynamically. */
   setGlobalAnimationClassNames: (mounting: string, unmounting: string, mounted: string) => void;
+
+  /** Set allowDragWhenPinned configuration dynamically. */
+  setAllowDragWhenPinned: (allow: boolean) => void;
+
+  /** Set allowDragWhenUnpinned configuration dynamically. */
+  setAllowDragWhenUnpinned: (allow: boolean) => void;
+
+  /** Set mobileBreakpoint configuration dynamically. */
+  setMobileBreakpoint: (breakpoint: number) => void;
+
+  /** Set focusLockOptions configuration dynamically. */
+  setFocusLockOptions: (options: FocusLockOptions | null) => void;
 
   /** Subscribes an event listener to real-time store lifecycle events. */
   subscribeEvent: (listener: (event: PopoverStoreEvent<TData>) => void) => () => void;
@@ -689,8 +767,6 @@ export interface PopoverPersistConfig {
   /** Optional filter function selecting which keys to persist. */
   filter?: (key: string) => boolean;
 }
-
-
 
 /**
  * Complete representation of the Popover Zustand store state and actions.
@@ -824,6 +900,8 @@ export interface CollisionConfig {
 export interface OpenRootOptions extends PopoverDisplayOptions {
   /** Optional custom owner identifier claiming the trail. */
   ownerId?: string;
+  /** Bounding box of the trigger element. */
+  triggerRect?: DOMRect;
 }
 
 /**
@@ -879,8 +957,6 @@ export type ViewportX = Brand<number, 'ViewportX'>;
 /** Branded nominal type for Y-axis viewport coordinates. */
 export type ViewportY = Brand<number, 'ViewportY'>;
 
-
-
 /**
  * Type utility inferring the resolved TData payload type from any PopoverResolver or resolver function.
  *
@@ -893,11 +969,12 @@ export type ViewportY = Brand<number, 'ViewportY'>;
  * // ResolvedData -> { id: number; title: string }
  * ```
  */
-export type InferResolverData<T> = T extends PopoverResolver<infer TData, unknown>
-  ? TData
-  : T extends (...args: unknown[]) => infer R
-  ? Awaited<R>
-  : unknown;
+export type InferResolverData<T> =
+  T extends PopoverResolver<infer TData, unknown>
+    ? TData
+    : T extends (...args: unknown[]) => infer R
+      ? Awaited<R>
+      : unknown;
 
 /**
  * Mapped type converting PopoverStoreEvent type discriminators ('resolve_success', 'close', etc.)
@@ -924,8 +1001,6 @@ export interface DragOffset {
   x: ViewportX;
   y: ViewportY;
 }
-
-
 
 /** Active history timeline step in popover navigation. */
 export interface ActiveTimelineStep<TData = unknown> {

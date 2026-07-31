@@ -21,8 +21,13 @@ import { validateSchemaKey } from './utils/devWarnings';
  * @template TContext - Custom context type.
  */
 export interface PopoverSchemaNode<TData = unknown, TParentData = unknown, TContext = unknown> {
-  /** Resolver function to load data for this popover. */
-  resolver: (key: string, parentData?: TParentData, context?: TContext) => TData | Promise<TData>;
+  /** Resolver function to load data for this popover. Supports cancellable AbortSignal. */
+  resolver: (
+    key: string,
+    parentData?: TParentData,
+    context?: TContext,
+    signal?: AbortSignal,
+  ) => TData | Promise<TData>;
   /** Optional list of allowed nested child popover schema keys spawned by this parent. */
   children?: ReadonlyArray<string>;
   /** Default layout placement. */
@@ -45,12 +50,22 @@ export type PopoverSchemaDefinition = Record<string, PopoverSchemaNode>;
 /** Helper to extract valid key union from a schema definition. */
 export type SchemaKeys<TSchema extends PopoverSchemaDefinition> = Extract<keyof TSchema, string>;
 
+/** Type helper extracting inferred global context type from schema node resolvers. */
+export type InferSchemaContext<TSchema extends PopoverSchemaDefinition> =
+  TSchema[keyof TSchema] extends PopoverSchemaNode<any, any, infer TC> ? TC : unknown;
+
+/**
+ * Ergonomic helper to define an individual schema node with full type inference and autocompletion.
+ */
+export function defineSchemaNode<TData, TParentData = unknown, TContext = unknown>(
+  node: PopoverSchemaNode<TData, TParentData, TContext>,
+): PopoverSchemaNode<TData, TParentData, TContext> {
+  return node;
+}
+
 /**
  * Type helper computing the allowed child popover schema keys for a given parent source key.
  * If the parent schema node explicitly declares `children`, restricts autocompletion strictly to those keys.
- *
- * @template TSchema - Popover schema definition.
- * @template KSource - Parent popover key.
  */
 export type AllowedChildrenOf<
   TSchema extends PopoverSchemaDefinition,
@@ -61,50 +76,38 @@ export type AllowedChildrenOf<
 
 /**
  * Branded type for strict schema keys, preventing passing unvalidated string literals.
- *
- * @template TSchema - Popover schema definition.
  */
-export type StrictPopoverKey<TSchema extends PopoverSchemaDefinition> =
-  SchemaKeys<TSchema> & { readonly __schemaKeyBrand: unique symbol };
+export type StrictPopoverKey<TSchema extends PopoverSchemaDefinition> = SchemaKeys<TSchema> & {
+  readonly __schemaKeyBrand: unique symbol;
+};
 
 /**
  * Identity converter validating and returning a strongly typed schema key.
- *
- * @template TSchema - Popover schema definition.
- * @template K - Valid schema key string literal.
- * @param _schema - Target schema instance.
- * @param key - Schema key string.
- * @returns Validated schema key.
- *
- * @example
- * ```typescript
- * const key = toSchemaKey(appSchema, 'userProfile');
- * ```
  */
-export function toSchemaKey<
-  TSchema extends PopoverSchemaDefinition,
-  K extends SchemaKeys<TSchema>,
->(
+export function toSchemaKey<TSchema extends PopoverSchemaDefinition, K extends SchemaKeys<TSchema>>(
   _schema: PopoverSchemaInstance<TSchema>,
   key: K,
-): K {
-  return key;
+): StrictPopoverKey<TSchema> {
+  return key as unknown as StrictPopoverKey<TSchema>;
 }
 
 /** Helper to extract resolved data payload type for a specific key in a schema. */
 export type SchemaData<TSchema extends PopoverSchemaDefinition, K extends SchemaKeys<TSchema>> =
-  TSchema[K] extends PopoverSchemaNode<infer TData> ? TData : unknown;
+  TSchema[K] extends PopoverSchemaNode<infer TData> ? Awaited<TData> : unknown;
 
 /** Strongly typed Schema Instance object returned by `createPopoverSchema`. */
-export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> {
+export interface PopoverSchemaInstance<
+  TSchema extends PopoverSchemaDefinition,
+  TContext = InferSchemaContext<TSchema>,
+> {
   /** The underlying raw schema definitions. */
   definition: TSchema;
   /** Auto-completing map of valid schema keys. */
   keys: { [K in SchemaKeys<TSchema>]: K };
   /** Generates a unified PopoverResolver function for PopoverProvider with schema data payload inference. */
-  createResolver: <TContext = unknown>() => PopoverResolver<
+  createResolver: <TC = TContext>() => PopoverResolver<
     SchemaData<TSchema, SchemaKeys<TSchema>>,
-    TContext
+    TC
   >;
   /** Strongly typed PopoverTrigger component bound to schema keys. */
   Trigger: React.ComponentType<
@@ -113,9 +116,7 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
   /** Strongly typed hook for accessing resolved data by schema key. */
   useData: <K extends SchemaKeys<TSchema>>(key: K) => SchemaData<TSchema, K> | undefined;
   /** Strongly typed hook for accessing active trail entry by schema key. */
-  useEntry: <K extends SchemaKeys<TSchema>>(
-    key: K,
-  ) => TrailEntry<SchemaData<TSchema, K>> | undefined;
+  useEntry<K extends SchemaKeys<TSchema>>(key: K): TrailEntry<SchemaData<TSchema, K>> | undefined;
   /** Strongly typed hook for dispatching store actions with schema key autocompletion and ancestry validation. */
   useActions: () => {
     openRoot: <K extends SchemaKeys<TSchema>>(
@@ -129,7 +130,12 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
       options?: OpenNestedOptions,
     ) => Promise<void>;
     close: (key: SchemaKeys<TSchema>) => void;
+    closeAll: () => void;
     togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) => void;
+    bringToFront: (key: SchemaKeys<TSchema>) => void;
+    retryPopover: (key: SchemaKeys<TSchema>) => Promise<void>;
+    prefetchPopover: (key: SchemaKeys<TSchema>, parentData?: unknown) => Promise<unknown>;
+    clear: () => void;
   };
 }
 
@@ -138,58 +144,29 @@ export interface PopoverSchemaInstance<TSchema extends PopoverSchemaDefinition> 
  * Consolidates popover definitions, key types, data payload types, placement defaults, and resolvers.
  *
  * @template TSchema - The popover schema definition type.
+ * @template TContext - Global shared context type.
  * @param definition - Object map defining each popover in the schema.
  * @returns Strongly typed schema instance with bound triggers, hooks, keys, and unified resolver.
- *
- * @example
- * ```tsx
- * import { createPopoverSchema, PopoverProvider } from 'popover-trail';
- *
- * export const appSchema = createPopoverSchema({
- *   userProfile: {
- *     resolver: async (key) => ({ name: 'Alex', id: 'usr_1' }),
- *     placement: 'right',
- *     children: ['userStats'],
- *   },
- *   userStats: {
- *     resolver: async (key, parentData) => ({ score: 100 }),
- *     placement: 'bottom',
- *   },
- * });
- *
- * function App() {
- *   return (
- *     <PopoverProvider schema={appSchema}>
- *       <appSchema.Trigger popoverKey="userProfile">
- *         <button>Open User Profile</button>
- *       </appSchema.Trigger>
- *     </PopoverProvider>
- *   );
- * }
- * ```
- *
- * @see {@link PopoverProvider}
- * @see {@link createPopoverStore}
- * @see {@link createPopoverTrail}
  */
-export function createPopoverSchema<const TSchema extends PopoverSchemaDefinition>(
-  definition: TSchema,
-): PopoverSchemaInstance<TSchema> {
+export function createPopoverSchema<
+  const TSchema extends PopoverSchemaDefinition,
+  TContext = InferSchemaContext<TSchema>,
+>(definition: TSchema): PopoverSchemaInstance<TSchema, TContext> {
   const keys = Object.fromEntries(Object.keys(definition).map((k) => [k, k])) as {
     [K in SchemaKeys<TSchema>]: K;
   };
 
-  const createResolver = <TContext = unknown,>(): PopoverResolver<
+  const createResolver = <TC = TContext,>(): PopoverResolver<
     SchemaData<TSchema, SchemaKeys<TSchema>>,
-    TContext
+    TC
   > => {
-    return (key: string, parentData?: unknown, context?: TContext) => {
+    return (key: string, parentData?: unknown, context?: TC, signal?: AbortSignal) => {
       const hasNode = Object.prototype.hasOwnProperty.call(definition, key);
       const node = hasNode ? definition[key] : undefined;
       validateSchemaKey(Boolean(node), key);
       if (node && typeof node.resolver === 'function') {
-        return node.resolver(key, parentData, context) as ReturnType<
-          PopoverResolver<SchemaData<TSchema, SchemaKeys<TSchema>>, TContext>
+        return node.resolver(key, parentData, context, signal) as ReturnType<
+          PopoverResolver<SchemaData<TSchema, SchemaKeys<TSchema>>, TC>
         >;
       }
       return Promise.reject(new Error(`No schema resolver defined for key: "${key}"`));
@@ -229,6 +206,7 @@ export function createPopoverSchema<const TSchema extends PopoverSchemaDefinitio
       />
     );
   };
+  SchemaTrigger.displayName = 'PopoverSchemaTrigger';
 
   const useData = <K extends SchemaKeys<TSchema>>(key: K): SchemaData<TSchema, K> | undefined => {
     return usePopoverData<SchemaData<TSchema, K>>(key);
@@ -256,28 +234,38 @@ export function createPopoverSchema<const TSchema extends PopoverSchemaDefinitio
             offset: node?.offset,
             collision: node?.collision,
             hover: node?.hover,
+            allowDragWhenPinned: node?.allowDragWhenPinned,
+            allowDragWhenUnpinned: node?.allowDragWhenUnpinned,
             ...options,
           };
           return actions.openRootWithResolver(key, anchorEvent, mergedOptions);
         },
-        pushNested: <K extends SchemaKeys<TSchema>>(
-          key: K,
-          sourceKey: string,
+        pushNested: <SK extends SchemaKeys<TSchema>>(
+          key: AllowedChildrenOf<TSchema, SK>,
+          sourceKey: SK,
           options?: OpenNestedOptions,
         ) => {
-          const node = definition[key];
+          const node = definition[key as string];
           validateSchemaKey(Boolean(node), key as string);
           const mergedOptions = {
             placement: node?.placement,
             offset: node?.offset,
             collision: node?.collision,
             hover: node?.hover,
+            allowDragWhenPinned: node?.allowDragWhenPinned,
+            allowDragWhenUnpinned: node?.allowDragWhenUnpinned,
             ...options,
           };
-          return actions.openNestedWithResolver(key, sourceKey, mergedOptions);
+          return actions.openNestedWithResolver(key, sourceKey as string, mergedOptions);
         },
         close: (key: SchemaKeys<TSchema>) => actions.closeByKey(key),
+        closeAll: () => actions.closeAll(),
         togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) => actions.togglePin(key, rect),
+        bringToFront: (key: SchemaKeys<TSchema>) => actions.bringToFront(key),
+        retryPopover: (key: SchemaKeys<TSchema>) => actions.retryPopover(key),
+        prefetchPopover: (key: SchemaKeys<TSchema>, parentData?: unknown) =>
+          actions.prefetchPopover(key, parentData),
+        clear: () => actions.clear(),
       }),
       [actions],
     );
