@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createPopoverFSM, popoverFSMReducer, type PopoverFSMEvent } from './fsm';
+import {
+  createPopoverFSM,
+  popoverFSMReducer,
+  assertPopoverFSMState,
+  isValidTransitionStatusChange,
+  type PopoverFSMEvent,
+} from './fsm';
 
 describe('Popover FSM Engine', () => {
   it('should start in Idle state', () => {
@@ -96,5 +102,26 @@ describe('Popover FSM Engine', () => {
     fsm.send({ type: 'RESOLVE_SUCCESS', data: 'stale' });
     expect(fsm.getState().value).toBe('Idle');
     expect(fsm.getState().context.data).toBeUndefined();
+  });
+
+  it('verifies state using assertPopoverFSMState helper and isValidTransitionStatusChange', () => {
+    const fsm = createPopoverFSM<string>('card-1');
+    fsm.send({ type: 'OPEN_ROOT', key: 'card-1' });
+    fsm.send({ type: 'RESOLVE_SUCCESS', data: 'test-data' });
+
+    expect(() => assertPopoverFSMState(fsm.getState(), 'Resolved.Trailing')).not.toThrow();
+    expect(() => assertPopoverFSMState(fsm.getState(), 'Idle')).toThrow(
+      /Expected FSM state "Idle"/,
+    );
+
+    expect(isValidTransitionStatusChange('mounting', 'mounted')).toBe(true);
+    expect(isValidTransitionStatusChange('unmounting', 'mounted')).toBe(false);
+  });
+
+  it('returns unchanged state for unhandled unknown events', () => {
+    const initialState = { value: 'Idle' as const, context: { key: 'card-1' } };
+    // @ts-expect-error Testing invalid event type
+    const nextState = popoverFSMReducer(initialState, { type: 'UNKNOWN_EVENT' });
+    expect(nextState).toBe(initialState);
   });
 });

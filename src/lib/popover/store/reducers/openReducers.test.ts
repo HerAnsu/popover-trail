@@ -87,4 +87,19 @@ describe('openReducers module', () => {
     const result = pushNestedState(state, -1, nestedEntry);
     expect(result).toEqual({});
   });
+
+  it('brings pinned floating card to top of zIndexOrder when pushNestedState is called with pinned key', () => {
+    const state = createMockState();
+    state.floating = [
+      { key: 'pinned-child', isLoading: false, error: null } as TrailEntry<unknown>,
+    ];
+    state.pinnedStates = { 'pinned-child': true };
+    state.zIndexOrder = ['pinned-child', 'root-1'];
+
+    const result = pushNestedState(state, 0, {
+      key: 'pinned-child',
+      parentKey: 'root-1',
+    } as TrailEntry<unknown>);
+    expect(result.zIndexOrder).toEqual(['root-1', 'pinned-child']);
+  });
 });

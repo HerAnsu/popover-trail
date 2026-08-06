@@ -84,4 +84,18 @@ describe('QuadTree utility', () => {
     const results = tree.retrieve([], { x: 800, y: 800, width: 100, height: 100 });
     expect(results).toHaveLength(0);
   });
+
+  it('splits and distributes items across quadrants when capacity is exceeded', () => {
+    const tree = new QuadTree({ x: 0, y: 0, width: 1000, height: 1000 });
+
+    for (let i = 0; i < 8; i++) {
+      tree.insert({
+        id: `item-${i}`,
+        bounds: { x: (i % 2) * 400 + 10, y: Math.floor(i / 2) * 200 + 10, width: 50, height: 50 },
+      });
+    }
+
+    const results = tree.retrieve([], { x: 0, y: 0, width: 300, height: 300 });
+    expect(results.length).toBeGreaterThan(0);
+  });
 });
