@@ -13,6 +13,8 @@ Unpinned popovers form a linear trail (`trail`). Pinning a card detaches it into
 
 ```bash
 npm install popover-trail @floating-ui/react zustand
+# Optional for drag-and-drop and focus locking
+npm install @dnd-kit/core react-focus-lock
 ```
 
 ```tsx

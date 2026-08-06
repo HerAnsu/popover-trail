@@ -62,4 +62,57 @@ describe('HistoryManager', () => {
     expect(history.undoStack).toHaveLength(0);
     expect(history.redoStack).toHaveLength(0);
   });
+
+  it('handles complete undo/redo cycle correctly', () => {
+    const history = createHistoryManager(5);
+
+    const state1 = {
+      trail: [{ key: 'step-1' }],
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: ['step-1'],
+      ownerId: 'owner-1',
+    } as unknown as PopoverStore;
+
+    const state2 = {
+      trail: [{ key: 'step-1' }, { key: 'step-2' }],
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: ['step-1', 'step-2'],
+      ownerId: 'owner-2',
+    } as unknown as PopoverStore;
+
+    history.pushSnapshot(state1);
+    history.pushSnapshot(state2);
+
+    expect(history.canUndo()).toBe(true);
+
+    const poppedUndo = history.undo(state2);
+    expect(poppedUndo?.ownerId).toBe('owner-2');
+    expect(history.canRedo()).toBe(true);
+
+    const poppedRedo = history.redo(state1);
+    expect(poppedRedo?.ownerId).toBe('owner-2');
+  });
+
+  it('deduplicates identical consecutive snapshots', () => {
+    const history = createHistoryManager(5);
+    const trailRef = [{ key: 'card-1' }];
+
+    const mockState = {
+      trail: trailRef,
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: ['card-1'],
+      ownerId: 'owner-1',
+    } as unknown as PopoverStore;
+
+    history.pushSnapshot(mockState);
+    history.pushSnapshot(mockState); // Identical reference push
+
+    expect(history.undoStack).toHaveLength(1);
+  });
 });

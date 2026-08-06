@@ -170,13 +170,23 @@ Instantiates the Zustand store, injects context into the React tree, and manages
 | `initialContext` | `TContext` | `undefined` | Initial global shared context object passed to all resolvers. |
 | `clickOutside` | `ClickOutsideConfig` | `{ enabled: true }` | Configuration object for click-outside auto-closing. |
 | `enableKeyboardClose` | `boolean` | `true` | Close topmost popover when Escape key is pressed. |
+| `enableArrowNavigation` | `boolean` | `true` | Enable keyboard arrow key navigation between active popovers. |
 | `closePinnedDescendants` | `boolean` | `false` | Close pinned floating child popovers when a parent closes. |
+| `allowDragWhenPinned` | `boolean` | `true` | Allow mouse/touch dragging when card is pinned/floating. |
+| `allowDragWhenUnpinned` | `boolean` | `true` | Allow mouse/touch dragging when card is unpinned/trailing. |
+| `cache` | `PopoverCache<TData>` | `undefined` | Custom synchronous or asynchronous data cache implementation. |
+| `collision` | `CollisionConfig` | `undefined` | Global boundary collision configuration. |
 | `baseZIndex` | `number` | `1000` | Base z-index depth factor. |
 | `cascadeOffsetStep` | `number` | `8` | Pixel offset shift added per level of nesting. |
 | `exitTransitionDuration` | `number` | `0` | Unmount delay in milliseconds for CSS exit animations. |
 | `defaultOffset` | `number` | `8` | Default gap offset distance in pixels. |
 | `responsiveMode` | `'auto' \| 'popover' \| 'bottom-sheet' \| 'modal'` | `'auto'` | Responsive layout transformation mode. |
 | `mobileBreakpoint` | `number` | `640` | Viewport width threshold in pixels for mobile layout transformation. |
+| `stackGroup` | `string \| null` | `null` | Active stack group zone ID filter. |
+| `focusLockOptions` | `FocusLockOptions` | `undefined` | Focus trap configuration options. |
+| `components` | `PopoverSlotComponents` | `undefined` | Custom UI slot component overrides. |
+| `zIndexBaseMap` | `ZIndexBaseMap` | `undefined` | Per-stack-group base z-index mapping. |
+| `debug` | `boolean` | `false` | Log Zustand state mutations to console. |
 
 ---
 

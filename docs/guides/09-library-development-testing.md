@@ -10,8 +10,8 @@ The library uses a modern, high-performance toolchain:
 
 * **TypeScript 7**: Static type checker with strict declaration emit rules (`tsc --noEmit`, `tsc -p tsconfig.lib.json --emitDeclarationOnly`).
 * **Tsup**: Fast TypeScript library bundler generating ESM and CJS bundles.
-* **Vitest**: Unit testing framework (103 unit & integration tests across 16 test files).
-* **Oxlint**: High-performance Rust-based static linter (0 warnings, 0 errors).
+* **Vitest**: Unit testing framework for unit and integration test suites.
+* **Oxlint**: High-performance Rust-based static linter.
 * **Oxfmt**: High-performance Rust-based code formatter.
 * **GitHub Actions**: Continuous Integration pipeline (`.github/workflows/ci.yml`).
 
@@ -21,7 +21,7 @@ The library uses a modern, high-performance toolchain:
 | :--- | :--- | :--- |
 | `npm run dev` | Dev Server | Starts Vite dev server with example workspace app. |
 | `npm run build:lib` | Library Build | Bundles ESM, CJS, and `.d.ts` outputs into `dist/` via Tsup and TS7 `tsc`. |
-| `npm run test` | Unit Tests | Executes the 103 Vitest unit & integration tests. |
+| `npm run test` | Unit Tests | Executes the Vitest unit and integration test suite. |
 | `npm run typecheck` | Type Check | Validates TypeScript types across codebase without emitting files. |
 | `npm run lint` | Code Quality | Runs Oxlint static code analyzer. |
 | `npm run format` | Code Format | Formats codebase using Oxfmt. |
@@ -117,5 +117,5 @@ export function PopoverDebugInspector() {
 
 The verification pipeline ensures code quality across all release channels:
 * **Static Verification**: `npm run typecheck` validates types using TypeScript 7, and `npm run lint` checks quality rules via Oxlint.
-* **Automated Testing**: `npm test` runs 103 unit and integration tests across 16 test files.
+* **Automated Testing**: `npm test` runs the unit and integration test suite via Vitest.
 * **Continuous Integration**: GitHub Actions (`ci.yml`) automatically builds and tests every commit pushed to the repository.

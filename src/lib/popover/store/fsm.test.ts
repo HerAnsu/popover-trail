@@ -59,11 +59,42 @@ describe('Popover FSM Engine', () => {
   it('should notify subscribers on valid transitions', () => {
     const fsm = createPopoverFSM('card-1');
     const states: string[] = [];
-    fsm.subscribe((s) => states.push(s.value));
+    const unsubscribe = fsm.subscribe((s) => states.push(s.value));
 
     fsm.send({ type: 'OPEN_ROOT', key: 'card-1' });
     fsm.send({ type: 'RESOLVE_SUCCESS', data: {} });
 
     expect(states).toEqual(['Hydrating', 'Resolved.Trailing']);
+
+    unsubscribe();
+    fsm.send({ type: 'CLOSE' });
+    // Subscriber should not be notified after unsubscribing
+    expect(states).toEqual(['Hydrating', 'Resolved.Trailing']);
+  });
+
+  it('handles Unmounting exit transition lifecycle and returns to Idle on TRANSITION_END', () => {
+    const fsm = createPopoverFSM<string>('card-1');
+    fsm.send({ type: 'OPEN_ROOT', key: 'card-1' });
+    fsm.send({ type: 'RESOLVE_SUCCESS', data: 'data' });
+
+    fsm.send({ type: 'CLOSE' });
+    expect(fsm.getState().value).toBe('Unmounting');
+
+    fsm.send({ type: 'TRANSITION_END' });
+    expect(fsm.getState().value).toBe('Idle');
+    expect(fsm.getState().context.data).toBeUndefined();
+  });
+
+  it('ignores stale RESOLVE_SUCCESS when state was transition-ended to Idle', () => {
+    const fsm = createPopoverFSM<string>('card-1');
+    fsm.send({ type: 'OPEN_ROOT', key: 'card-1' });
+    fsm.send({ type: 'CLOSE' });
+    fsm.send({ type: 'TRANSITION_END' });
+    expect(fsm.getState().value).toBe('Idle');
+
+    // Late arriving promise result
+    fsm.send({ type: 'RESOLVE_SUCCESS', data: 'stale' });
+    expect(fsm.getState().value).toBe('Idle');
+    expect(fsm.getState().context.data).toBeUndefined();
   });
 });
