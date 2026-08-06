@@ -62,4 +62,23 @@ describe('pinReducers module', () => {
     expect(result.floating?.[0]?.rect?.top).toBe(120);
     expect(result.floating?.[0]?.rect?.left).toBe(240);
   });
+
+  it('resets custom pinnedPos when unpinning back to trail', () => {
+    const state = createMockState();
+    state.floating = [
+      {
+        key: 'card-1',
+        isLoading: false,
+        error: null,
+        pinnedLayoutPos: { top: 100, left: 100 },
+      } as TrailEntry<unknown>,
+    ];
+    state.trail = [];
+    state.pinnedStates['card-1'] = true;
+    state.offsets['card-1'] = { x: 50, y: 50 };
+
+    const result = togglePinState(state, 'card-1');
+
+    expect(result.trail?.[0]?.pinnedLayoutPos).toBeUndefined();
+  });
 });

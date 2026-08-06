@@ -64,4 +64,14 @@ describe('closeReducers module', () => {
     expect(result.floating).toHaveLength(1);
     expect(result.floating?.[0]?.key).toBe('pinned-1');
   });
+
+  it('removes pinned descendants when closePinnedDescendants is true', () => {
+    const state = createMockState();
+    state.closePinnedDescendants = true;
+    (state.floating[0] as unknown as { parentKey?: string }).parentKey = 'root-1';
+
+    const result = closeFromState(state, 1); // Close root-1
+    expect(result.floating).toHaveLength(0);
+    expect(result.pinnedStates?.['pinned-1']).toBeUndefined();
+  });
 });

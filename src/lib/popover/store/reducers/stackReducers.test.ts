@@ -100,4 +100,19 @@ describe('stackReducers module', () => {
   it('filterRecord handles empty record gracefully', () => {
     expect(filterRecord({}, new Set(['a']))).toEqual({});
   });
+
+  it('getCleanupStatePatch preserves ownerId when active elements remain in trail', () => {
+    const patch = getCleanupStatePatch(
+      [],
+      [{ key: 'active-1' } as TrailEntry<unknown>],
+      { 'active-1': { x: 0, y: 0 }, orphan: { x: 10, y: 10 } },
+      ['active-1', 'orphan'],
+      { 'active-1': false },
+      { 'active-1': 1 },
+    );
+
+    expect(patch.ownerId).toBeUndefined();
+    expect(patch.offsets).toEqual({ 'active-1': { x: 0, y: 0 } });
+    expect(patch.zIndexOrder).toEqual(['active-1']);
+  });
 });
