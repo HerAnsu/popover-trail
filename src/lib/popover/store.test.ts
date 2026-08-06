@@ -62,6 +62,26 @@ const createMockAnchor = (x = 10, y = 20, width = 100, height = 200): AnchorEven
   stopPropagation: () => {},
 });
 
+function createMockStorage(initialData?: Record<string, string>): Storage {
+  const storageMap = new Map<string, string>(Object.entries(initialData ?? {}));
+  return {
+    getItem: (k: string) => storageMap.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      storageMap.set(k, v);
+    },
+    removeItem: (k: string) => {
+      storageMap.delete(k);
+    },
+    clear: () => {
+      storageMap.clear();
+    },
+    key: (index: number) => Array.from(storageMap.keys())[index] ?? null,
+    get length() {
+      return storageMap.size;
+    },
+  };
+}
+
 describe('createPopoverStore', () => {
   const dummyResolver = vi.fn<(key: string) => unknown>().mockImplementation((key) => {
     return { title: `Resolved ${key}`, value: 42 };
@@ -410,6 +430,7 @@ describe('createPopoverStore', () => {
       set: (key: string, val: unknown) => {
         cacheMap.set(key, val);
       },
+      has: (key: string) => cacheMap.has(key),
       delete: (key: string) => {
         cacheMap.delete(key);
       },
@@ -459,7 +480,7 @@ describe('createPopoverStore', () => {
     const store = createPopoverStore(dummyResolver);
     const mockButton = createMockAnchor(10, 20, 100, 200);
 
-    const localCollision = { padding: 45 };
+    const localCollision = { enabled: true, padding: 45 };
 
     // Set collision config dynamically via open options
     store.getState().openRootWithResolver('item-col', mockButton, {
@@ -928,8 +949,9 @@ describe('createPopoverStore', () => {
 
     it('should fall back to resolveData when async cache returns undefined (cache miss)', async () => {
       const asyncCache = {
-        get: async (_key: string) => undefined, // Async cache miss!
+        get: async (_key: string) => undefined,
         set: vi.fn(),
+        has: (_key: string) => false,
         delete: vi.fn(),
         clear: vi.fn(),
       };
@@ -1703,6 +1725,7 @@ describe('createPopoverStore', () => {
         set: (k: string, v: unknown) => {
           cacheMap.set(k, v);
         },
+        has: (k: string) => cacheMap.has(k),
         delete: (k: string) => {
           cacheMap.delete(k);
         },
@@ -2074,12 +2097,7 @@ describe('createPopoverStore', () => {
     });
 
     it('should preserve stackGroup, layoutStrategy, keyboardShortcuts, and focusLockOptions during rehydration', async () => {
-      const storageMap = new Map<string, string>();
-      const storage = {
-        getItem: (k: string) => storageMap.get(k) ?? null,
-        setItem: (k: string, v: string) => storageMap.set(k, v),
-        removeItem: (k: string) => storageMap.delete(k),
-      };
+      const storage = createMockStorage();
 
       const store1 = createPopoverStore(dummyResolver);
       store1.getState().openRoot('owner-1', {
@@ -2310,11 +2328,7 @@ describe('createPopoverStore', () => {
         offsets: { 'damaged-card': 'invalid_string_offset' },
       });
 
-      const storage = {
-        getItem: () => corruptPayload,
-        setItem: () => {},
-        removeItem: () => {},
-      };
+      const storage = createMockStorage({ corrupt_key: corruptPayload });
 
       const store = createPopoverStore(dummyResolver);
       const success = await store.getState().rehydrateState({ key: 'corrupt_key', storage });
@@ -2355,11 +2369,7 @@ describe('createPopoverStore', () => {
 
       const success = await store.getState().rehydrateState({
         key: 'sync_key',
-        storage: {
-          getItem: () => externalSnapshot,
-          setItem: () => {},
-          removeItem: () => {},
-        },
+        storage: createMockStorage({ sync_key: externalSnapshot }),
       });
 
       expect(success).toBe(true);
@@ -2697,7 +2707,7 @@ describe('createPopoverStore', () => {
 
       store.getState().openRoot('owner-1', {
         key: 'focus-card',
-        focusLockOptions: { enabled: true, returnFocusOnClose: true, autoFocusElement: '#input' },
+        focusLockOptions: { enabled: true, returnFocus: true, autoFocusElement: '#input' },
       });
 
       expect(store.getState().trail[0]?.focusLockOptions?.autoFocusElement).toBe('#input');
@@ -2844,12 +2854,7 @@ describe('createPopoverStore', () => {
     });
 
     it('should serialize and rehydrate buttonControls and custom offsets without loss of precision', async () => {
-      const storageMap = new Map<string, string>();
-      const storage = {
-        getItem: (k: string) => storageMap.get(k) ?? null,
-        setItem: (k: string, v: string) => storageMap.set(k, v),
-        removeItem: (k: string) => storageMap.delete(k),
-      };
+      const storage = createMockStorage();
 
       const store1 = createPopoverStore(dummyResolver);
       store1.getState().openRoot('owner-1', {
