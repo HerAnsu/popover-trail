@@ -119,6 +119,13 @@ export interface StoreSliceDescriptor<TSlice, TData = unknown, TContext = unknow
   ) => TSlice;
 }
 
+/** Helper function defining a strongly typed domain store slice descriptor. */
+export function defineStoreSlice<TSlice, TData = unknown, TContext = unknown>(
+  descriptor: StoreSliceDescriptor<TSlice, TData, TContext>,
+): StoreSliceDescriptor<TSlice, TData, TContext> {
+  return descriptor;
+}
+
 /** Helper type recursively applying readonly modifier to all properties and nested objects. */
 export type ReadonlyDeep<T> = T extends (...args: unknown[]) => unknown
   ? T

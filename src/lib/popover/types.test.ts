@@ -10,10 +10,15 @@ import {
   isClearEvent,
   createPopoverController,
   createPopoverStore,
+  matchEntryState,
+  defineStoreSlice,
   type PopoverStoreEvent,
   type LoadingTrailEntry,
   type ErrorTrailEntry,
   type SuccessTrailEntry,
+  type PopoverCSSProperties,
+  type DeepReadonly,
+  type PopoverEntryDiscriminatedState,
 } from './index';
 
 describe('Type Safety Guards & Event Predicates', () => {
@@ -106,7 +111,7 @@ describe('Type Safety Guards & Event Predicates', () => {
   });
 
   it('supports PopoverCSSProperties for CSS variable styling', () => {
-    const cssVars: import('./index').PopoverCSSProperties = {
+    const cssVars: PopoverCSSProperties = {
       '--popover-z-index': 1000,
       '--popover-offset-x': '20px',
       '--popover-offset-y': 15,
@@ -119,7 +124,34 @@ describe('Type Safety Guards & Event Predicates', () => {
 
   it('validates DeepReadonly type helper immutability', () => {
     type Sample = { a: { b: number } };
-    const sample: import('./index').DeepReadonly<Sample> = { a: { b: 42 } };
+    const sample: DeepReadonly<Sample> = { a: { b: 42 } };
     expect(sample.a.b).toBe(42);
+  });
+
+  it('executes pattern matching over PopoverEntryDiscriminatedState using matchEntryState', () => {
+    const loadingState: PopoverEntryDiscriminatedState<string> = {
+      status: 'loading',
+      isLoading: true,
+      data: undefined,
+      error: null,
+    };
+
+    const result = matchEntryState(loadingState, {
+      loading: () => 'is-loading',
+      error: () => 'is-error',
+      success: (s) => `is-success:${s.data}`,
+    });
+
+    expect(result).toBe('is-loading');
+  });
+
+  it('instantiates store slice descriptors using defineStoreSlice helper', () => {
+    const descriptor = defineStoreSlice({
+      name: 'customSlice',
+      create: () => ({ customAction: () => true }),
+    });
+
+    expect(descriptor.name).toBe('customSlice');
+    expect(typeof descriptor.create).toBe('function');
   });
 });

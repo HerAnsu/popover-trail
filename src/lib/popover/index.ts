@@ -83,6 +83,11 @@ export type {
   PopoverCSSProperties,
   PolymorphicProps,
   PopoverKeyId,
+  PopoverStoreEventMap,
+  PopoverEventAction,
+  PopoverStoreEventName,
+  StoreSliceDescriptor,
+  StoreSliceCreator,
 } from './types';
 
 export type { ValidatedAnchorRef } from './types';
@@ -113,6 +118,8 @@ export {
   toValidatedAnchorRef,
   isVirtualElementAnchor,
   isEventAnchor,
+  matchEntryState,
+  defineStoreSlice,
 } from './types';
 
 export {

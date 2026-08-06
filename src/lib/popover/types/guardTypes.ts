@@ -32,6 +32,9 @@ import {
   definePopoverMiddleware,
 } from '../utils/typeGuards';
 
+import { matchEntryState } from './entryTypes';
+import { defineStoreSlice } from './storeTypes';
+
 export {
   isResolvedEntry,
   isLoadingEntry,
@@ -58,4 +61,6 @@ export {
   isStoreEvent,
   definePopoverConfig,
   definePopoverMiddleware,
+  matchEntryState,
+  defineStoreSlice,
 };
