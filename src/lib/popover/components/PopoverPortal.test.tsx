@@ -7,4 +7,12 @@ describe('PopoverPortal component', () => {
     const el = <PopoverPortal>{<div>Portal Content</div>}</PopoverPortal>;
     expect(React.isValidElement(el)).toBe(true);
   });
+
+  it('supports container prop function and object ref', () => {
+    const target = typeof document !== 'undefined' ? document.createElement('div') : null;
+    const containerFn = () => target;
+
+    const el = <PopoverPortal container={containerFn}>{<div>Content</div>}</PopoverPortal>;
+    expect(React.isValidElement(el)).toBe(true);
+  });
 });

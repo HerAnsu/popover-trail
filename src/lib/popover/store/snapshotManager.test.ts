@@ -28,4 +28,30 @@ describe('PopoverSnapshotManager', () => {
     manager.saveSnapshot(snapshot);
     expect(manager.loadSnapshot()).toBeNull();
   });
+
+  it('supports custom serialize and deserialize callbacks', () => {
+    let rawStore = '';
+    const manager = new PopoverSnapshotManager({
+      serialize: (data) => {
+        rawStore = JSON.stringify(data);
+        return rawStore;
+      },
+      deserialize: (raw) => JSON.parse(raw),
+    });
+
+    const snapshot = manager.createSnapshot(['root-1'], ['pinned-1'], {
+      'root-1': { x: 5, y: 15 },
+    });
+    expect(snapshot.trailKeys).toEqual(['root-1']);
+    expect(snapshot.pinnedKeys).toEqual(['pinned-1']);
+  });
+
+  it('destroys BroadcastChannel resources on destroy()', () => {
+    const manager = new PopoverSnapshotManager({
+      enableBroadcastChannel: true,
+      storageKey: 'test-destroy-key',
+    });
+
+    expect(() => manager.destroy()).not.toThrow();
+  });
 });

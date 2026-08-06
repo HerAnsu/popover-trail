@@ -8,8 +8,8 @@ Popover Trail allows any popover card to be pinned, detaching it from relative a
 
 The core store maintains state in two separate arrays:
 
-* **`trail`**: Active linear stack of anchor-aligned popovers.
-* **`floating`**: Array of pinned cards positioned independently on the viewport.
+- **`trail`**: Active linear stack of anchor-aligned popovers.
+- **`floating`**: Array of pinned cards positioned independently on the viewport.
 
 ```
                     ┌─────────────────────────┐
@@ -38,7 +38,15 @@ The compound component syntax manages drag handles and pin buttons automatically
 ```tsx
 import { PopoverCard, type TrailEntry } from 'popover-trail';
 
-export function PopoverCardFrame({ entry, index, isPinned }: { entry: TrailEntry; index: number; isPinned: boolean }) {
+export function PopoverCardFrame({
+  entry,
+  index,
+  isPinned,
+}: {
+  entry: TrailEntry;
+  index: number;
+  isPinned: boolean;
+}) {
   return (
     <PopoverCard entry={entry} index={index} isPinned={isPinned} className="popover-card">
       <PopoverCard.Handle className="drag-handle">
@@ -62,7 +70,15 @@ For complete manual control over DOM refs and event handlers, use `usePopoverCar
 ```tsx
 import { usePopoverCard, type TrailEntry } from 'popover-trail';
 
-export function PopoverCardFrame({ entry, index, isPinned }: { entry: TrailEntry; index: number; isPinned: boolean }) {
+export function PopoverCardFrame({
+  entry,
+  index,
+  isPinned,
+}: {
+  entry: TrailEntry;
+  index: number;
+  isPinned: boolean;
+}) {
   const { ref, style, dragHandleProps, handlePinToggle, isDragging } = usePopoverCard({
     entry,
     index,
@@ -76,17 +92,14 @@ export function PopoverCardFrame({ entry, index, isPinned }: { entry: TrailEntry
     <div
       ref={ref}
       style={style}
-      className={`popover-card-container ${isPinned ? 'pinned' : 'anchored'} ${isDragging ? 'dragging' : ''}`}
-    >
+      className={`popover-card-container ${isPinned ? 'pinned' : 'anchored'} ${isDragging ? 'dragging' : ''}`}>
       <header className="drag-handle-bar" {...dragHandleProps}>
         <span className="card-key">{entry.key}</span>
         <button onClick={handlePinToggle} className="pin-toggle-btn">
           {isPinned ? 'Unpin' : 'Pin Window'}
         </button>
       </header>
-      <div className="card-body">
-        {/* Card content */}
-      </div>
+      <div className="card-body">{/* Card content */}</div>
     </div>
   );
 }
@@ -110,12 +123,12 @@ The RAF animation loop automatically terminates when the tilt angle drops below 
 
 ### Tilt Options Configuration
 
-| Option | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `enableTilt` | `boolean` | `true` | Toggles velocity spring tilt effect. |
-| `maxTiltAngle` | `number` | `5` | Maximum tilt angle constraint in degrees. |
-| `tiltSensitivity` | `number` | `8` | Velocity to rotation angle scaling multiplier. |
-| `tiltDecay` | `number` | `0.82` | Friction decay coefficient applied per frame on release. |
+| Option            | Type      | Default | Description                                              |
+| :---------------- | :-------- | :------ | :------------------------------------------------------- |
+| `enableTilt`      | `boolean` | `true`  | Toggles velocity spring tilt effect.                     |
+| `maxTiltAngle`    | `number`  | `5`     | Maximum tilt angle constraint in degrees.                |
+| `tiltSensitivity` | `number`  | `8`     | Velocity to rotation angle scaling multiplier.           |
+| `tiltDecay`       | `number`  | `0.82`  | Friction decay coefficient applied per frame on release. |
 
 ---
 
@@ -143,6 +156,7 @@ During dragging, `willChange: "transform"` is applied to promote popover element
 ## 5. Canvas Interaction Architecture
 
 When working with floating pinned cards, the library coordinates pointer interactions and layout positioning:
-* **Drag Handles**: `<PopoverCard.Handle>` or `{...dragHandleProps}` attach pointer capture handlers, allowing users to drag cards anywhere across the viewport.
-* **Pinning Mechanics**: Toggling the pin state transfers the card between anchor-relative positioning and absolute viewport coordinates without resetting card state.
-* **Touch Device Support**: `touch-action: none` is automatically applied to drag handle elements to prevent viewport page scrolling during touch dragging.
+
+- **Drag Handles**: `<PopoverCard.Handle>` or `{...dragHandleProps}` attach pointer capture handlers, allowing users to drag cards anywhere across the viewport.
+- **Pinning Mechanics**: Toggling the pin state transfers the card between anchor-relative positioning and absolute viewport coordinates without resetting card state.
+- **Touch Device Support**: `touch-action: none` is automatically applied to drag handle elements to prevent viewport page scrolling during touch dragging.

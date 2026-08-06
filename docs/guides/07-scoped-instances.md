@@ -6,9 +6,9 @@ If your application requires multiple independent popover systems operating simu
 
 ## 1. Why Use Scoped Instances?
 
-* **Type Safety**: Enforces strict union types for popover keys, resolved data payloads, and context objects.
-* **State Isolation**: Popover operations in one scope do not affect or close popovers in another scope.
-* **Zero Boilerplate**: Avoids repeatedly passing generic arguments (`usePopover<MyData, MyContext>('key')`).
+- **Type Safety**: Enforces strict union types for popover keys, resolved data payloads, and context objects.
+- **State Isolation**: Popover operations in one scope do not affect or close popovers in another scope.
+- **Zero Boilerplate**: Avoids repeatedly passing generic arguments (`usePopover<MyData, MyContext>('key')`).
 
 ---
 
@@ -33,13 +33,14 @@ export interface WorkspaceContext {
 }
 
 // 3. Define Valid Keys Union
-export type DocumentPopoverKeys =
-  | 'doc-info'
-  | 'doc-permissions'
-  | 'doc-history';
+export type DocumentPopoverKeys = 'doc-info' | 'doc-permissions' | 'doc-history';
 
 // 4. Create Scoped Instance Factory
-export const DocumentTrail = createPopoverTrail<DocumentNode, WorkspaceContext, DocumentPopoverKeys>();
+export const DocumentTrail = createPopoverTrail<
+  DocumentNode,
+  WorkspaceContext,
+  DocumentPopoverKeys
+>();
 ```
 
 ---
@@ -62,8 +63,7 @@ export function DocumentWorkspace() {
   return (
     <DocumentTrail.PopoverProvider
       resolveData={resolveDocData}
-      context={{ theme: 'dark', readOnly: false }}
-    >
+      context={{ theme: 'dark', readOnly: false }}>
       <div className="document-toolbar">
         {/* DocumentTrail.PopoverTrigger strictly validates popoverKey */}
         <DocumentTrail.PopoverTrigger popoverKey="doc-info" placement="bottom-start">
@@ -74,7 +74,12 @@ export function DocumentWorkspace() {
       <DocumentTrail.PopoverPortal>
         {(entries) =>
           entries.map((entry, index) => (
-            <DocumentCard key={entry.key} entry={entry as TrailEntry<DocumentNode>} index={index} isPinned={entry.isPinned} />
+            <DocumentCard
+              key={entry.key}
+              entry={entry as TrailEntry<DocumentNode>}
+              index={index}
+              isPinned={entry.isPinned}
+            />
           ))
         }
       </DocumentTrail.PopoverPortal>
@@ -82,7 +87,15 @@ export function DocumentWorkspace() {
   );
 }
 
-function DocumentCard({ entry, index, isPinned }: { entry: TrailEntry<DocumentNode>; index: number; isPinned: boolean }) {
+function DocumentCard({
+  entry,
+  index,
+  isPinned,
+}: {
+  entry: TrailEntry<DocumentNode>;
+  index: number;
+  isPinned: boolean;
+}) {
   // DocumentTrail.usePopover is pre-typed to DocumentNode
   const { data } = DocumentTrail.usePopover(entry.key as any);
 
@@ -106,6 +119,7 @@ function DocumentCard({ entry, index, isPinned }: { entry: TrailEntry<DocumentNo
 ## 4. Scoped Subsystems Architecture
 
 Scoped instances isolate popover state across different UI regions:
-* **Schema Enforcement**: `createPopoverTrail<TData, TContext, TPopoverKey>()` locks down component props and hook return types to exact schemas.
-* **Independent Stores**: Each `PopoverProvider` created from a factory maintains its own store instance, so closing popovers in one zone never affects another.
-* **Reusable Exports**: Export named scopes (e.g. `DocumentTrail`, `SidebarTrail`) for clean team adoption across large codebases.
+
+- **Schema Enforcement**: `createPopoverTrail<TData, TContext, TPopoverKey>()` locks down component props and hook return types to exact schemas.
+- **Independent Stores**: Each `PopoverProvider` created from a factory maintains its own store instance, so closing popovers in one zone never affects another.
+- **Reusable Exports**: Export named scopes (e.g. `DocumentTrail`, `SidebarTrail`) for clean team adoption across large codebases.

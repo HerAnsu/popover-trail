@@ -38,7 +38,13 @@ When a user clicks a root trigger, any existing unpinned trail is unmounted, and
 The recommended declarative approach uses compound components (`<PopoverCard>`, `<PopoverTrail>`) without manual hook wiring:
 
 ```tsx
-import { PopoverCard, PopoverTrail, PopoverTrigger, isResolvedEntry, type TrailEntry } from 'popover-trail';
+import {
+  PopoverCard,
+  PopoverTrail,
+  PopoverTrigger,
+  isResolvedEntry,
+  type TrailEntry,
+} from 'popover-trail';
 
 interface CardData {
   title: string;
@@ -56,7 +62,12 @@ export function App() {
       {/* High-level portal renderer */}
       <PopoverTrail
         renderCard={(entry: TrailEntry<CardData>, index, isPinned) => (
-          <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned} className="card">
+          <PopoverCard
+            key={entry.key}
+            entry={entry}
+            index={index}
+            isPinned={isPinned}
+            className="card">
             <PopoverCard.Handle className="card-header">
               <span>{entry.key}</span>
               <PopoverCard.PinButton />
@@ -89,6 +100,7 @@ export function App() {
 When building custom trigger elements, low-level hooks are available:
 
 #### Root Triggers (`usePopoverTrigger`)
+
 ```tsx
 import { usePopoverTrigger } from 'popover-trail';
 
@@ -110,6 +122,7 @@ export function UserListRow({ userId, name }: { userId: string; name: string }) 
 ```
 
 #### Nested Triggers (`usePopoverNestedTrigger`)
+
 ```tsx
 import { usePopoverNestedTrigger, type TrailEntry } from 'popover-trail';
 
@@ -117,7 +130,7 @@ export function UserPopoverCard({ entry }: { entry: TrailEntry<{ id: string; org
   const orgTriggerProps = usePopoverNestedTrigger(
     `org-card-${entry.data?.orgId}`,
     entry.key, // parentKey ties org card to this user card
-    { placement: 'right-top' }
+    { placement: 'right-top' },
   );
 
   return (
@@ -156,7 +169,7 @@ const resolveData = async (
   key: string,
   parentData?: unknown,
   context?: unknown,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   const response = await fetch(`/api/details/${key}`, { signal });
   return response.json();
@@ -184,6 +197,7 @@ If you prefer closing pinned children when a parent is closed, set `closePinnedD
 ## 5. Path Lifecycle & State Management
 
 When managing cascading popover paths, the library handles node relationships automatically:
-* **Root Triggers**: Initiating a new root popover starts a fresh linear trail and unmounts previous unpinned trails.
-* **Child Triggers**: Nested triggers pass `parentKey` to link child nodes directly to their parent in the hierarchy tree.
-* **Request Cancellation**: Asynchronous data resolvers receive an `AbortSignal`, allowing pending network requests to abort cleanly when a parent popover closes before child data finishes loading.
+
+- **Root Triggers**: Initiating a new root popover starts a fresh linear trail and unmounts previous unpinned trails.
+- **Child Triggers**: Nested triggers pass `parentKey` to link child nodes directly to their parent in the hierarchy tree.
+- **Request Cancellation**: Asynchronous data resolvers receive an `AbortSignal`, allowing pending network requests to abort cleanly when a parent popover closes before child data finishes loading.

@@ -13,10 +13,5 @@
   "insertFinalNewline": true,
   "experimentalSortPackageJson": true,
   "embeddedLanguageFormatting": "auto",
-  "ignorePatterns": [
-    "node_modules/**",
-    "dist/**",
-    "package-lock.json",
-    "pnpm-lock.yaml"
-  ]
+  "ignorePatterns": ["node_modules/**", "dist/**", "package-lock.json", "pnpm-lock.yaml"]
 }

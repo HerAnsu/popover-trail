@@ -51,8 +51,7 @@ export function App() {
         const response = await fetch(`/api/items/${key}`, { signal });
         return response.json();
       }}
-      cache={cache}
-    >
+      cache={cache}>
       <Workspace />
     </PopoverProvider>
   );
@@ -96,7 +95,7 @@ const workerResolver = createWorkerResolver(
   {
     timeoutMs: 10000,
     autoRestart: true,
-  }
+  },
 );
 
 export function App() {
@@ -121,7 +120,15 @@ When a resolver throws an Error, `isErrorEntry(entry)` evaluates to `true`. Use 
 ```tsx
 import { PopoverCard, isErrorEntry, usePopoverActions, type TrailEntry } from 'popover-trail';
 
-export function Card({ entry, index, isPinned }: { entry: TrailEntry; index: number; isPinned: boolean }) {
+export function Card({
+  entry,
+  index,
+  isPinned,
+}: {
+  entry: TrailEntry;
+  index: number;
+  isPinned: boolean;
+}) {
   const { retryPopover } = usePopoverActions();
 
   return (
@@ -144,6 +151,7 @@ export function Card({ entry, index, isPinned }: { entry: TrailEntry; index: num
 ## 5. Hydration & Error Recovery Architecture
 
 Data hydration is decoupled from component rendering loops:
-* **Caching Layer**: `SimplePopoverCache` eliminates redundant network requests by returning cached payloads synchronously on cache hits.
-* **Worker Offloading**: `createWorkerResolver` runs data parsing tasks in a background thread, preventing main-thread UI jank during heavy computations.
-* **Error Resilience**: Failed async operations set `entry.error`, allowing components to display custom error UI and trigger re-fetching via `actions.retryPopover(key)`.
+
+- **Caching Layer**: `SimplePopoverCache` eliminates redundant network requests by returning cached payloads synchronously on cache hits.
+- **Worker Offloading**: `createWorkerResolver` runs data parsing tasks in a background thread, preventing main-thread UI jank during heavy computations.
+- **Error Resilience**: Failed async operations set `entry.error`, allowing components to display custom error UI and trigger re-fetching via `actions.retryPopover(key)`.

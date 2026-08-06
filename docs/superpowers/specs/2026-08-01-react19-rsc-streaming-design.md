@@ -1,7 +1,8 @@
 # React 19 RSC Async Streaming & Stream Abort Pipeline Specification
 
 ## Overview
-The **React 19 RSC Async Streaming & Stream Abort Pipeline** (`popover-trail/rsc`) integrates React 19 Server Components (RSC), Server Actions, and `ReadableStream` async iterators directly into `popover-trail`'s FSM state machine and data resolver architecture. 
+
+The **React 19 RSC Async Streaming & Stream Abort Pipeline** (`popover-trail/rsc`) integrates React 19 Server Components (RSC), Server Actions, and `ReadableStream` async iterators directly into `popover-trail`'s FSM state machine and data resolver architecture.
 
 It allows popover cards to mount instantly with 0ms client latency while streaming rich server-rendered HTML/React component chunks over HTTP, with automatic server-side `AbortController` cancellation when a popover subtree is closed during streaming.
 
@@ -10,11 +11,13 @@ It allows popover cards to mount instantly with 0ms client latency while streami
 ## 1. Business & Technical Rationale
 
 ### The Problem
+
 1. **Initial Open Latency in RSC Apps**: In React 19 Next.js / Vite RSC apps, fetching full server-rendered HTML for a popover delays the initial popover open event until the entire server component finishes rendering.
 2. **Client Bundle Inflation**: Converting popovers into pure Client Components forces developers to ship heavy client-side markdown parsers, syntax highlighters, and data formatting libraries in the browser JavaScript bundle.
 3. **Wasted Server CPU Cycles**: When a user quickly opens and closes a cascading trail of popovers, background server rendering requests continue executing on Node.js/Edge servers, wasting CPU and memory.
 
 ### The Solution
+
 - **Instant Client Shell (0ms Latency)**: Popover card container mounts immediately with an optimistic skeleton layout.
 - **Incremental Stream Chunk Hydration**: Server Actions stream HTML/RSC chunks over HTTP via `ReadableStream` / `AsyncIterable`.
 - **FSM-Integrated Abort Cancellation**: Closing a parent popover instantly triggers an `AbortSignal` that propagates to the Node.js/Edge server, cancelling active RSC stream rendering threads immediately.
@@ -34,9 +37,9 @@ export interface PopoverRSCSchemaNode<TParentData = unknown, TContext = unknown>
     key: string,
     parentData?: TParentData,
     context?: TContext,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ) => AsyncIterable<React.ReactNode> | Promise<ReadableStream<React.ReactNode>>;
-  
+
   children?: ReadonlyArray<string>;
   placement?: PopoverPlacement;
 }

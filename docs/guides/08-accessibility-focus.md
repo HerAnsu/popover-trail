@@ -8,10 +8,10 @@ Popover Trail provides accessibility attributes (WAI-ARIA), focus trapping (Focu
 
 Triggers and cards attach accessibility attributes automatically:
 
-* **`aria-expanded`**: Evaluates to `true` when the popover card is open.
-* **`aria-haspopup`**: Set to `"dialog"` to inform screen readers of dialog content.
-* **`role`**: Set to `"dialog"` on `<PopoverCard>` containers.
-* **`aria-describedby`**: Linked when `ariaDescribedby` option is specified.
+- **`aria-expanded`**: Evaluates to `true` when the popover card is open.
+- **`aria-haspopup`**: Set to `"dialog"` to inform screen readers of dialog content.
+- **`role`**: Set to `"dialog"` on `<PopoverCard>` containers.
+- **`aria-describedby`**: Linked when `ariaDescribedby` option is specified.
 
 ```tsx
 <PopoverTrigger popoverKey="item-1">
@@ -28,9 +28,9 @@ To trap keyboard focus inside an active popover card (ideal for modal-like popov
 ```tsx
 const triggerProps = usePopoverTrigger('modal-popover-1', {
   focusLockOptions: {
-    enabled: true,              // Enable focus trap inside popover
-    returnFocus: true,          // Restore focus to trigger button on close
-    lockScroll: true,           // Prevent body background scrolling
+    enabled: true, // Enable focus trap inside popover
+    returnFocus: true, // Restore focus to trigger button on close
+    lockScroll: true, // Prevent body background scrolling
     autoFocusElement: '#first-input', // Element to receive initial focus
   },
 });
@@ -38,12 +38,12 @@ const triggerProps = usePopoverTrigger('modal-popover-1', {
 
 ### Options Breakdown (`FocusLockOptions`)
 
-| Property | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `enabled` | `boolean` | `false` | Enables focus lock (focus trapping) inside the card. |
-| `returnFocus` | `boolean` | `true` | Restores focus to the element that held focus before opening. |
-| `lockScroll` | `boolean` | `false` | Prevents scrolling on `document.body` while active. |
-| `autoFocusElement` | `string \| (() => HTMLElement)` | `undefined` | Target element to receive initial focus upon mount. |
+| Property           | Type                            | Default     | Description                                                   |
+| :----------------- | :------------------------------ | :---------- | :------------------------------------------------------------ |
+| `enabled`          | `boolean`                       | `false`     | Enables focus lock (focus trapping) inside the card.          |
+| `returnFocus`      | `boolean`                       | `true`      | Restores focus to the element that held focus before opening. |
+| `lockScroll`       | `boolean`                       | `false`     | Prevents scrolling on `document.body` while active.           |
+| `autoFocusElement` | `string \| (() => HTMLElement)` | `undefined` | Target element to receive initial focus upon mount.           |
 
 ---
 
@@ -68,6 +68,7 @@ const triggerProps = usePopoverTrigger('card-shortcut-demo', {
 ## 4. Accessibility & Focus Locking Architecture
 
 Accessibility and keyboard navigation are built into the card lifecycle:
-* **WAI-ARIA Roles**: Cards render with `role="dialog"` and `aria-expanded` attributes for screen reader compatibility.
-* **Focus Trapping**: `FocusLockOptions` traps focus within the topmost card and restores focus to the trigger on close.
-* **Keyboard Hotkeys**: `keyboardShortcuts` maps custom hotkeys (`Mod+s`, `Escape`, `Alt+r`) to store action dispatchers.
+
+- **WAI-ARIA Roles**: Cards render with `role="dialog"` and `aria-expanded` attributes for screen reader compatibility.
+- **Focus Trapping**: `FocusLockOptions` traps focus within the topmost card and restores focus to the trigger on close.
+- **Keyboard Hotkeys**: `keyboardShortcuts` maps custom hotkeys (`Mod+s`, `Escape`, `Alt+r`) to store action dispatchers.

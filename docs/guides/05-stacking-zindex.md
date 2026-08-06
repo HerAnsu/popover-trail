@@ -10,8 +10,8 @@ For any card, its `z-index` depth is computed as:
 
 $$\text{Final Z-Index} = \text{Base Z-Index} + (\text{Depth Index} \times 10) + (\text{isPinned} ? 50 : 0)$$
 
-* **Anchored Popovers**: Increment by depth step (1000, 1010, 1020, ...).
-* **Pinned Floating Cards**: Boosted by an additional +50 offset so pinned cards float visually above anchored cards.
+- **Anchored Popovers**: Increment by depth step (1000, 1010, 1020, ...).
+- **Pinned Floating Cards**: Boosted by an additional +50 offset so pinned cards float visually above anchored cards.
 
 ---
 
@@ -22,12 +22,22 @@ Pass `index`, `isPinned`, and an optional `baseZIndex` to `usePopoverZIndex`:
 ```tsx
 import { usePopoverZIndex, type TrailEntry } from 'popover-trail';
 
-export function PopoverCardContainer({ entry, index, isPinned }: { entry: TrailEntry; index: number; isPinned: boolean }) {
+export function PopoverCardContainer({
+  entry,
+  index,
+  isPinned,
+}: {
+  entry: TrailEntry;
+  index: number;
+  isPinned: boolean;
+}) {
   const zIndex = usePopoverZIndex(index, isPinned, 1000);
 
   return (
     <div style={{ zIndex, position: 'absolute' }} className="popover-card">
-      <div>Card Key: {entry.key} (Z-Index: {zIndex})</div>
+      <div>
+        Card Key: {entry.key} (Z-Index: {zIndex})
+      </div>
     </div>
   );
 }
@@ -41,12 +51,12 @@ In modern CSS, certain properties on parent elements create a **new Stacking Con
 
 ### CSS Properties That Create Stacking Context Traps
 
-* `transform` or `perspective` not `none`
-* `filter` or `backdrop-filter` not `none`
-* `contain: paint` or `contain: layout`
-* `will-change` specifying any property that creates a stacking context
-* `opacity` less than `1`
-* `mix-blend-mode` not `normal`
+- `transform` or `perspective` not `none`
+- `filter` or `backdrop-filter` not `none`
+- `contain: paint` or `contain: layout`
+- `will-change` specifying any property that creates a stacking context
+- `opacity` less than `1`
+- `mix-blend-mode` not `normal`
 
 ### How Popover Trail Solves Stacking Context Traps
 
@@ -54,9 +64,11 @@ By using `<PopoverTrail>` or `<PopoverPortal>` to render cards directly into `do
 
 ```tsx
 // Ensures cards render outside any transformed parent containers
-<PopoverTrail renderCard={(entry, index, isPinned) => (
-  <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned} />
-)} />
+<PopoverTrail
+  renderCard={(entry, index, isPinned) => (
+    <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned} />
+  )}
+/>
 ```
 
 ---
@@ -110,6 +122,7 @@ export function App() {
 ## 6. Stacking Architecture
 
 Depth calculation and stacking behavior follow explicit rules:
-* **Escaping Traps**: Rendering through `<PopoverTrail>` or `<PopoverPortal>` places cards directly under `document.body`, avoiding CSS stacking context traps.
-* **Top-Most Detection**: `useIsPopoverTopMost(key)` tracks the active card on top of the visual stack for focus management and active UI styling.
-* **Multi-Zone Grouping**: `zIndexBaseMap` defines custom base layers for complex UI zones like sidebars and modals.
+
+- **Escaping Traps**: Rendering through `<PopoverTrail>` or `<PopoverPortal>` places cards directly under `document.body`, avoiding CSS stacking context traps.
+- **Top-Most Detection**: `useIsPopoverTopMost(key)` tracks the active card on top of the visual stack for focus management and active UI styling.
+- **Multi-Zone Grouping**: `zIndexBaseMap` defines custom base layers for complex UI zones like sidebars and modals.

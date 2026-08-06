@@ -8,23 +8,23 @@ Guide for developers contributing to or testing the `popover-trail` library code
 
 The library uses a modern, high-performance toolchain:
 
-* **TypeScript 7**: Static type checker with strict declaration emit rules (`tsc --noEmit`, `tsc -p tsconfig.lib.json --emitDeclarationOnly`).
-* **Tsup**: Fast TypeScript library bundler generating ESM and CJS bundles.
-* **Vitest**: Unit testing framework for unit and integration test suites.
-* **Oxlint**: High-performance Rust-based static linter.
-* **Oxfmt**: High-performance Rust-based code formatter.
-* **GitHub Actions**: Continuous Integration pipeline (`.github/workflows/ci.yml`).
+- **TypeScript 7**: Static type checker with strict declaration emit rules (`tsc --noEmit`, `tsc -p tsconfig.lib.json --emitDeclarationOnly`).
+- **Tsup**: Fast TypeScript library bundler generating ESM and CJS bundles.
+- **Vitest**: Unit testing framework for unit and integration test suites.
+- **Oxlint**: High-performance Rust-based static linter.
+- **Oxfmt**: High-performance Rust-based code formatter.
+- **GitHub Actions**: Continuous Integration pipeline (`.github/workflows/ci.yml`).
 
 ### Available npm Commands
 
-| Command | Action | Description |
-| :--- | :--- | :--- |
-| `npm run dev` | Dev Server | Starts Vite dev server with example workspace app. |
+| Command             | Action        | Description                                                                |
+| :------------------ | :------------ | :------------------------------------------------------------------------- |
+| `npm run dev`       | Dev Server    | Starts Vite dev server with example workspace app.                         |
 | `npm run build:lib` | Library Build | Bundles ESM, CJS, and `.d.ts` outputs into `dist/` via Tsup and TS7 `tsc`. |
-| `npm run test` | Unit Tests | Executes the Vitest unit and integration test suite. |
-| `npm run typecheck` | Type Check | Validates TypeScript types across codebase without emitting files. |
-| `npm run lint` | Code Quality | Runs Oxlint static code analyzer. |
-| `npm run format` | Code Format | Formats codebase using Oxfmt. |
+| `npm run test`      | Unit Tests    | Executes the Vitest unit and integration test suite.                       |
+| `npm run typecheck` | Type Check    | Validates TypeScript types across codebase without emitting files.         |
+| `npm run lint`      | Code Quality  | Runs Oxlint static code analyzer.                                          |
+| `npm run format`    | Code Format   | Formats codebase using Oxfmt.                                              |
 
 ---
 
@@ -35,7 +35,13 @@ When testing components that utilize `popover-trail`:
 ```tsx
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { PopoverProvider, PopoverTrigger, PopoverTrail, PopoverCard, isResolvedEntry } from 'popover-trail';
+import {
+  PopoverProvider,
+  PopoverTrigger,
+  PopoverTrail,
+  PopoverCard,
+  isResolvedEntry,
+} from 'popover-trail';
 
 describe('Popover Trail Integration', () => {
   it('opens popover card and resolves data on trigger click', async () => {
@@ -57,14 +63,19 @@ describe('Popover Trail Integration', () => {
             </PopoverCard>
           )}
         />
-      </PopoverProvider>
+      </PopoverProvider>,
     );
 
     // Click trigger
     fireEvent.click(screen.getByText('Open Card'));
 
     // Assert resolver execution
-    expect(mockResolver).toHaveBeenCalledWith('test-card-1', undefined, undefined, expect.any(AbortSignal));
+    expect(mockResolver).toHaveBeenCalledWith(
+      'test-card-1',
+      undefined,
+      undefined,
+      expect.any(AbortSignal),
+    );
 
     // Assert resolved state UI render
     await waitFor(() => {
@@ -116,6 +127,7 @@ export function PopoverDebugInspector() {
 ## 4. Development & Build Verification Pipeline
 
 The verification pipeline ensures code quality across all release channels:
-* **Static Verification**: `npm run typecheck` validates types using TypeScript 7, and `npm run lint` checks quality rules via Oxlint.
-* **Automated Testing**: `npm test` runs the unit and integration test suite via Vitest.
-* **Continuous Integration**: GitHub Actions (`ci.yml`) automatically builds and tests every commit pushed to the repository.
+
+- **Static Verification**: `npm run typecheck` validates types using TypeScript 7, and `npm run lint` checks quality rules via Oxlint.
+- **Automated Testing**: `npm test` runs the unit and integration test suite via Vitest.
+- **Continuous Integration**: GitHub Actions (`ci.yml`) automatically builds and tests every commit pushed to the repository.

@@ -91,6 +91,7 @@ export function WebSocketSync() {
 ## 4. Imperative Controller Architecture
 
 The controller operates directly on the underlying Zustand store:
-* **Off-Tree Execution**: Methods like `closeByKey`, `togglePin`, and `clear` execute synchronously outside React component render cycles.
-* **External Integration**: Easily connect popover state updates to Redux middleware, RxJS streams, WebSockets, or global DOM events.
-* **Direct State Inspection**: `controller.getState()` provides immediate access to current `trail` and `floating` arrays.
+
+- **Off-Tree Execution**: Methods like `closeByKey`, `togglePin`, and `clear` execute synchronously outside React component render cycles.
+- **External Integration**: Easily connect popover state updates to Redux middleware, RxJS streams, WebSockets, or global DOM events.
+- **Direct State Inspection**: `controller.getState()` provides immediate access to current `trail` and `floating` arrays.

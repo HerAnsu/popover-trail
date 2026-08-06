@@ -18,7 +18,13 @@ npm install @dnd-kit/core react-focus-lock
 ```
 
 ```tsx
-import { PopoverProvider, PopoverTrail, PopoverCard, isResolvedEntry, createPopoverSchema } from 'popover-trail';
+import {
+  PopoverProvider,
+  PopoverTrail,
+  PopoverCard,
+  isResolvedEntry,
+  createPopoverSchema,
+} from 'popover-trail';
 
 // 1. Define typed schema
 export const schema = createPopoverSchema({
@@ -63,6 +69,7 @@ export function App() {
 - **[Feature guides index](docs/GUIDES.md)**: Manuals for cascading paths, pinning, Web Workers, hover buffers, and focus locking.
 
 ### Technical manuals
+
 1. [Cascading paths](docs/guides/01-cascading-paths.md)
 2. [Draggable pinning](docs/guides/02-draggable-pinning.md)
 3. [Web Worker data hydration](docs/guides/03-data-hydration.md)
