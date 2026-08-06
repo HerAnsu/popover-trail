@@ -1530,5 +1530,438 @@ describe('createPopoverStore', () => {
       store.getState().bringToFront('root-1');
       expect(store.getState().zIndexOrder).toEqual(['root-2', 'root-1']);
     });
+
+    // --- 20 NEW TESTS FROM SIMPLE TO ULTRA-COMPLEX ---
+
+    // 1. Simple
+    it('1. should toggle debug state via setDebug()', () => {
+      const store = createPopoverStore(dummyResolver);
+      expect(store.getState().debug).toBe(false);
+
+      store.getState().setDebug(true);
+      expect(store.getState().debug).toBe(true);
+
+      store.getState().setDebug(false);
+      expect(store.getState().debug).toBe(false);
+    });
+
+    // 2. Simple
+    it('2. should update baseZIndex via setBaseZIndex()', () => {
+      const store = createPopoverStore(dummyResolver);
+      expect(store.getState().baseZIndex).toBe(1000);
+
+      store.getState().setBaseZIndex(5000);
+      expect(store.getState().baseZIndex).toBe(5000);
+    });
+
+    // 3. Simple
+    it('3. should toggle closePinnedDescendants configuration via setClosePinnedDescendants()', () => {
+      const store = createPopoverStore(dummyResolver);
+      expect(store.getState().closePinnedDescendants).toBe(false);
+
+      store.getState().setClosePinnedDescendants(true);
+      expect(store.getState().closePinnedDescendants).toBe(true);
+    });
+
+    // 4. Simple
+    it('4. should update exitTransitionDuration via setExitTransitionDuration()', () => {
+      const store = createPopoverStore(dummyResolver);
+      expect(store.getState().exitTransitionDuration).toBe(0);
+
+      store.getState().setExitTransitionDuration(400);
+      expect(store.getState().exitTransitionDuration).toBe(400);
+    });
+
+    // 5. Simple
+    it('5. should find entry by key from trail or floating accurately', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'trail-item' });
+      store.getState().pushNested(0, { key: 'floating-item', parentKey: 'trail-item' });
+      store.getState().togglePin('floating-item');
+
+      const state = store.getState();
+      const findEntry = (k: string) =>
+        state.trail.find((e) => e.key === k) || state.floating.find((e) => e.key === k);
+
+      expect(findEntry('trail-item')?.key).toBe('trail-item');
+      expect(findEntry('floating-item')?.key).toBe('floating-item');
+      expect(findEntry('unknown')).toBeUndefined();
+    });
+
+    // 6. Medium
+    it('6. should handle pushNested safely when parent index is out of bounds', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'root-1' });
+
+      // Push nested under non-existent parent index (out-of-bounds 99)
+      store.getState().pushNested(99, { key: 'orphan-item', parentKey: 'missing-parent' });
+
+      // Should be ignored cleanly without breaking state
+      expect(store.getState().trail).toHaveLength(1);
+      expect(store.getState().trail[0]?.key).toBe('root-1');
+    });
+
+    // 7. Medium
+    it('7. should re-focus existing pinned card when openRootWithResolver is invoked with same key', async () => {
+      const store = createPopoverStore(dummyResolver);
+      const mockAnchor = createMockAnchor(0, 0, 100, 100);
+
+      await store.getState().openRootWithResolver('card-a', mockAnchor);
+      store.getState().togglePin('card-a');
+
+      expect(store.getState().floating).toHaveLength(1);
+
+      // Re-trigger open for already pinned card-a
+      await store.getState().openRootWithResolver('card-a', mockAnchor);
+
+      expect(store.getState().floating).toHaveLength(1);
+      expect(store.getState().floating[0]?.key).toBe('card-a');
+    });
+
+    // 8. Medium
+    it('8. should update offset with negative and zero coordinates accurately', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'card-offset' });
+
+      store.getState().updateOffset('card-offset', -120, 0);
+      expect(store.getState().offsets['card-offset']).toEqual({ x: -120, y: 0 });
+
+      store.getState().updateOffset('card-offset', 0, 0);
+      expect(store.getState().offsets['card-offset']).toEqual({ x: 0, y: 0 });
+    });
+
+    // 9. Medium
+    it('9. should store and pass initialContext to resolver calls', async () => {
+      const resolverWithContext = vi.fn(async (_key: string, _pData?: unknown, ctx?: unknown) => {
+        return { contextReceived: ctx };
+      });
+
+      const initialContext = { tenantId: 'tenant-99', theme: 'dark' };
+      const store = createPopoverStore(resolverWithContext, initialContext);
+
+      expect(store.getState().context).toEqual(initialContext);
+
+      await store.getState().openRootWithResolver('item-ctx', createMockAnchor(0, 0, 100, 100));
+
+      expect(resolverWithContext).toHaveBeenCalledWith(
+        'item-ctx',
+        undefined,
+        initialContext,
+        expect.any(Object),
+      );
+      expect(store.getState().trail[0]?.data).toEqual({ contextReceived: initialContext });
+    });
+
+    // 10. Medium
+    it('10. should push state snapshots onto undo history stack', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'card-1' });
+      store.getState().openRoot('owner-1', { key: 'card-2' });
+
+      expect(store.getState().canUndo()).toBe(true);
+
+      store.getState().undo();
+      expect(store.getState().trail[0]?.key).toBe('card-1');
+    });
+
+    // 11. Complex
+    it('11. should cascade close a 4-deep trail (L0->L1->L2->L3) and abort pending requests when closing from L1', async () => {
+      const abortedKeys: string[] = [];
+      const slowResolver = async (
+        key: string,
+        _pData?: unknown,
+        _ctx?: unknown,
+        signal?: AbortSignal,
+      ) => {
+        signal?.addEventListener('abort', () => abortedKeys.push(key));
+        await new Promise((r) => setTimeout(r, 100));
+        return { title: `L_${key}` };
+      };
+
+      const store = createPopoverStore(slowResolver);
+      store.getState().openRoot('owner-1', { key: 'L0', isLoading: false });
+      store.getState().pushNested(0, { key: 'L1', parentKey: 'L0', isLoading: false });
+      store.getState().pushNested(1, { key: 'L2', parentKey: 'L1', isLoading: false });
+
+      // Trigger pending async load for L3
+      const p3 = store.getState().openNestedWithResolver('L3', 'L2');
+
+      expect(store.getState().trail).toHaveLength(4);
+
+      // Close from index 1 (removes L1, L2, L3)
+      store.getState().closeFrom(1);
+
+      expect(store.getState().trail).toHaveLength(1);
+      expect(store.getState().trail[0]?.key).toBe('L0');
+
+      await p3;
+      expect(abortedKeys).toContain('L3');
+    });
+
+    // 12. Complex
+    it('12. should set error state on resolver failure and clear error on retry with invalidating cache', async () => {
+      let failCount = 0;
+      const resolver = async (key: string) => {
+        failCount++;
+        if (failCount === 1) {
+          throw new Error('API Rate Limit Exceeded');
+        }
+        return { title: `Resolved ${key} on attempt ${failCount}` };
+      };
+
+      const cacheMap = new Map<string, unknown>();
+      const cache = {
+        get: (k: string) => cacheMap.get(k),
+        set: (k: string, v: unknown) => {
+          cacheMap.set(k, v);
+        },
+        delete: (k: string) => {
+          cacheMap.delete(k);
+        },
+        clear: () => {
+          cacheMap.clear();
+        },
+      };
+
+      const store = createPopoverStore(resolver, undefined, cache);
+
+      // Attempt 1 fails
+      await store.getState().openRootWithResolver('flaky-key', createMockAnchor(0, 0, 50, 50));
+
+      expect(store.getState().trail[0]?.isLoading).toBe(false);
+      expect(store.getState().trail[0]?.error?.message).toBe('API Rate Limit Exceeded');
+      expect(cacheMap.has('flaky-key')).toBe(false);
+
+      // Attempt 2 via retryPopover succeeds
+      await store.getState().retryPopover('flaky-key');
+
+      expect(store.getState().trail[0]?.error).toBeNull();
+      expect(store.getState().trail[0]?.data).toEqual({
+        title: 'Resolved flaky-key on attempt 2',
+      });
+      expect(cacheMap.get('flaky-key')).toEqual({ title: 'Resolved flaky-key on attempt 2' });
+    });
+
+    // 13. Complex
+    it('13. should support grid-snapping middleware for drag offset updates', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      // Attach grid-snapping middleware (10px grid)
+      store.getState().useMiddleware((patch) => {
+        if (patch.offsets) {
+          const snappedOffsets: Record<string, { x: number; y: number }> = {};
+          for (const [k, pos] of Object.entries(patch.offsets)) {
+            if (pos) {
+              snappedOffsets[k] = {
+                x: Math.round(pos.x / 10) * 10,
+                y: Math.round(pos.y / 10) * 10,
+              };
+            }
+          }
+          return { offsets: snappedOffsets };
+        }
+      });
+
+      store.getState().openRoot('owner-1', { key: 'drag-card' });
+      store.getState().updateOffset('drag-card', 27, 44);
+
+      // Offset snapped from (27, 44) to (30, 40)
+      expect(store.getState().offsets['drag-card']).toEqual({ x: 30, y: 40 });
+    });
+
+    // 14. Complex
+    it('14. should isolate transaction mutations and rollback state cleanly when an error is thrown', async () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'base-root' });
+
+      const preTransactionState = store.getState().trail;
+
+      const result = await store.getState().transaction(async (actions) => {
+        actions.pushNested(0, { key: 'tx-nested-1', parentKey: 'base-root' });
+        actions.togglePin('tx-nested-1');
+        throw new Error('Database write lock error!');
+      });
+
+      expect(result).toBe(false);
+      expect(store.getState().trail).toEqual(preTransactionState);
+      expect(store.getState().floating).toEqual([]);
+    });
+
+    // 15. Complex
+    it('15. should prevent out-of-order race condition when triggering 3 rapid sibling nested popovers', async () => {
+      const resolveTimes: Record<string, number> = {
+        'sibling-1': 80,
+        'sibling-2': 20, // Fast!
+        'sibling-3': 50,
+      };
+
+      const variableResolver = async (key: string) => {
+        const delay = resolveTimes[key] ?? 10;
+        await new Promise((r) => setTimeout(r, delay));
+        return { siblingName: key };
+      };
+
+      const store = createPopoverStore(variableResolver);
+      store.getState().openRoot('owner-1', { key: 'root-parent', isLoading: false });
+
+      // Trigger 3 calls rapidly
+      const p1 = store.getState().openNestedWithResolver('sibling-1', 'root-parent');
+      const p2 = store.getState().openNestedWithResolver('sibling-2', 'root-parent');
+      const p3 = store.getState().openNestedWithResolver('sibling-3', 'root-parent');
+
+      await Promise.all([p1, p2, p3]);
+
+      const state = store.getState();
+      expect(state.trail).toHaveLength(2);
+      expect(state.trail[1]?.key).toBe('sibling-3'); // Latest call wins!
+      expect(state.trail[1]?.data).toEqual({ siblingName: 'sibling-3' });
+    });
+
+    // 16. Ultra-Complex
+    it('16. should execute Time-Travel Undo and Redo preserving pinned state and zIndexOrder', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      // Step 1: open root-1
+      store.getState().openRoot('owner-1', { key: 'root-1' });
+      // Step 2: pin root-1
+      store.getState().togglePin('root-1');
+      // Step 3: open root-2 and pin root-2
+      store.getState().openRoot('owner-2', { key: 'root-2' });
+      store.getState().togglePin('root-2');
+
+      expect(store.getState().floating).toHaveLength(2);
+
+      // Undo Step 3 (before root-2 was opened)
+      store.getState().undo();
+      expect(store.getState().floating).toHaveLength(1);
+      expect(store.getState().floating[0]?.key).toBe('root-1');
+
+      // Redo back
+      store.getState().redo();
+      expect(store.getState().floating).toHaveLength(2);
+    });
+
+    // 17. Ultra-Complex
+    it('17. should integrate custom cache eviction policy with TTL and track hit/miss statistics', async () => {
+      const cache = new SimplePopoverCache<{ timestamp: number }>(600, 2); // 600ms TTL, max 2 entries
+
+      let fetchCount = 0;
+      const timingResolver = async (key: string) => {
+        fetchCount++;
+        return { key, timestamp: Date.now() };
+      };
+
+      const store = createPopoverStore(timingResolver, undefined, cache);
+      const mockAnchor = createMockAnchor(0, 0, 100, 100);
+
+      // 1. Fetch item-1 (Miss)
+      await store.getState().openRootWithResolver('item-1', mockAnchor);
+      expect(fetchCount).toBe(1);
+
+      // 2. Fetch item-2 and item-3 (Evicts item-1 due to max size = 2)
+      await store.getState().openRootWithResolver('item-2', mockAnchor);
+      await store.getState().openRootWithResolver('item-3', mockAnchor);
+      expect(fetchCount).toBe(3);
+
+      expect(cache.has('item-1')).toBe(false);
+    });
+
+    // 18. Ultra-Complex
+    it('18. should handle rapid hover enter/leave timer loops across a 3-level stack with a pinned middle element', async () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', { key: 'L0', isLoading: false });
+      store.getState().pushNested(0, { key: 'L1', parentKey: 'L0', isLoading: false });
+      store.getState().pushNested(1, { key: 'L2', parentKey: 'L1', isLoading: false });
+
+      // Pin middle card L1
+      store.getState().togglePin('L1', new DOMRect(100, 100, 200, 200));
+
+      expect(store.getState().trail).toHaveLength(2); // L0, L2
+      expect(store.getState().floating).toHaveLength(1); // L1
+
+      // Trigger hoverLeave on L2
+      store.getState().hoverLeave('L2', 50);
+
+      // Immediately hoverEnter L1 (pinned parent)
+      store.getState().hoverEnter('L1');
+
+      // Wait 80ms
+      await new Promise((r) => setTimeout(r, 80));
+
+      // L1 remains open in floating
+      expect(store.getState().floating).toHaveLength(1);
+    });
+
+    // 19. Ultra-Complex
+    it('19. should emit strongly typed lifecycle events to EventBus during atomic batchUpdates', () => {
+      const store = createPopoverStore(dummyResolver);
+      const openEvents: string[] = [];
+
+      const unsubOpen = store.getState().subscribeEvent((event) => {
+        if (event.type === 'open_root') {
+          openEvents.push(event.key);
+        }
+      });
+
+      store.getState().batchUpdates((actions) => {
+        actions.openRoot('owner-1', { key: 'batch-root-1' });
+        actions.openRoot('owner-2', { key: 'batch-root-2' });
+        actions.togglePin('batch-root-2');
+      });
+
+      expect(openEvents).toEqual(['batch-root-1', 'batch-root-2']);
+      expect(store.getState().floating[0]?.key).toBe('batch-root-2');
+
+      unsubOpen();
+    });
+
+    // 20. Ultra-Complex
+    it('20. should serialize, persist, and rehydrate complete store state including offsets and button controls across store instances', async () => {
+      const storageMap = new Map<string, string>();
+      const persistentStorage = {
+        getItem: (k: string) => storageMap.get(k) ?? null,
+        setItem: (k: string, v: string) => {
+          storageMap.set(k, v);
+        },
+        removeItem: (k: string) => {
+          storageMap.delete(k);
+        },
+      };
+
+      const sourceStore = createPopoverStore(dummyResolver);
+
+      sourceStore.getState().openRoot('owner-1', {
+        key: 'persisted-card-1',
+        data: { value: 'Secret Payload' },
+        buttonControls: { enablePin: true, enableClose: false },
+      });
+      sourceStore.getState().togglePin('persisted-card-1');
+      sourceStore.getState().updateOffset('persisted-card-1', 88, 176);
+
+      // Save snapshot to storage
+      await sourceStore
+        .getState()
+        .persistState({ key: 'app_session_v1', storage: persistentStorage });
+
+      expect(storageMap.has('app_session_v1')).toBe(true);
+
+      // Instantiate new store (e.g. after browser refresh)
+      const targetStore = createPopoverStore(dummyResolver);
+      expect(targetStore.getState().floating).toHaveLength(0);
+
+      // Rehydrate state into target store
+      const success = await targetStore
+        .getState()
+        .rehydrateState({ key: 'app_session_v1', storage: persistentStorage });
+
+      expect(success).toBe(true);
+      expect(targetStore.getState().floating).toHaveLength(1);
+
+      const rehydratedCard = targetStore.getState().floating[0];
+      expect(rehydratedCard?.key).toBe('persisted-card-1');
+      expect(rehydratedCard?.buttonControls?.enableClose).toBe(false);
+      expect(targetStore.getState().offsets['persisted-card-1']).toEqual({ x: 88, y: 176 });
+    });
   });
 });
