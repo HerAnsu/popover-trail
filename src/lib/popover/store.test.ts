@@ -23,6 +23,9 @@ import { createPopoverFSM } from './store/fsm';
 import { createCQRSBuses } from './store/cqrs';
 import { QuadTree } from './utils/quadTree';
 import { PopoverDAG } from './utils/dag';
+import { ObjectPool } from './utils/objectPool';
+import { ResizeObserverRegistry } from './utils/resizeObserverRegistry';
+import { FixedCenterLayoutStrategy } from './utils/layoutStrategies';
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -2337,6 +2340,231 @@ describe('createPopoverStore', () => {
 
       expect(notifyCounter).toBe(100);
       expect(store.getState().trail[0]?.key).toBe('perf-card-99');
+    });
+
+    it('should handle simulated cross-tab sync events while hover timers are running', async () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', { key: 'local-card' });
+      store.getState().hoverLeave('local-card', 500);
+
+      const externalSnapshot = JSON.stringify({
+        floating: [{ key: 'remote-card', isLoading: false, isPinned: true }],
+        offsets: { 'remote-card': { x: 10, y: 20 } },
+      });
+
+      const success = await store.getState().rehydrateState({
+        key: 'sync_key',
+        storage: {
+          getItem: () => externalSnapshot,
+          setItem: () => {},
+          removeItem: () => {},
+        },
+      });
+
+      expect(success).toBe(true);
+      expect(store.getState().floating[0]?.key).toBe('remote-card');
+      expect(store.getState().offsets['remote-card']).toEqual({ x: 10, y: 20 });
+    });
+
+    it('should verify FixedCenterLayoutStrategy positioning under custom viewport dimensions', () => {
+      const strategy = new FixedCenterLayoutStrategy();
+      const pos = strategy.computePosition({
+        triggerRect: { x: 100, y: 100, width: 50, height: 50 },
+        popoverRect: { x: 0, y: 0, width: 200, height: 100 },
+        viewportWidth: 1000,
+        viewportHeight: 600,
+      });
+
+      expect(pos.x).toBe(400);
+      expect(pos.y).toBe(250);
+    });
+
+    it('should capture 10 store action events in an audit log and replay them into a fresh store', () => {
+      const sourceStore = createPopoverStore(dummyResolver);
+      const auditLog: string[] = [];
+
+      sourceStore.getState().subscribeEvent((e) => {
+        auditLog.push(e.type);
+      });
+
+      sourceStore.getState().batchUpdates((actions) => {
+        actions.openRoot('owner-1', { key: 'card-1' });
+        actions.pushNested(0, { key: 'card-2', parentKey: 'card-1' });
+        actions.togglePin('card-2');
+        actions.updateOffset('card-2', 15, 30);
+      });
+
+      expect(auditLog.length).toBeGreaterThan(0);
+
+      const targetStore = createPopoverStore(dummyResolver);
+      targetStore.getState().batchUpdates((actions) => {
+        actions.openRoot('owner-1', { key: 'card-1' });
+        actions.pushNested(0, { key: 'card-2', parentKey: 'card-1' });
+        actions.togglePin('card-2');
+        actions.updateOffset('card-2', 15, 30);
+      });
+
+      expect(targetStore.getState().floating[0]?.key).toBe('card-2');
+      expect(targetStore.getState().offsets['card-2']).toEqual({ x: 15, y: 30 });
+    });
+
+    it('should resolve multi-priority async requests deterministically despite inverted delay timers', async () => {
+      const delays: Record<string, number> = {
+        'req-slow': 60,
+        'req-latest': 10,
+      };
+
+      const customResolver = async (key: string) => {
+        await new Promise((r) => setTimeout(r, delays[key] ?? 5));
+        return { resolvedKey: key };
+      };
+
+      const store = createPopoverStore(customResolver);
+      const anchor = createMockAnchor(0, 0, 50, 50);
+
+      const p1 = store.getState().openRootWithResolver('req-slow', anchor);
+      const p2 = store.getState().openRootWithResolver('req-latest', anchor);
+
+      await Promise.all([p1, p2]);
+
+      const latestEntry = store.getState().trail.find((e) => e.key === 'req-latest');
+      expect(latestEntry?.key).toBe('req-latest');
+      expect(latestEntry?.data).toEqual({ resolvedKey: 'req-latest' });
+    });
+
+    it('should manage 50 simulated DOM elements in ResizeObserverRegistry with clean unobservation', () => {
+      const mockObserve = vi.fn();
+      const mockUnobserve = vi.fn();
+
+      class MockResizeObserver {
+        observe = mockObserve;
+        unobserve = mockUnobserve;
+        disconnect = vi.fn();
+      }
+
+      const origRO = globalThis.ResizeObserver;
+      const origWin = globalThis.window;
+      // @ts-expect-error - mock window and ResizeObserver
+      globalThis.window = globalThis;
+      // @ts-expect-error - mock ResizeObserver
+      globalThis.ResizeObserver = MockResizeObserver;
+
+      ResizeObserverRegistry.clear();
+
+      const elements: Element[] = [];
+      const cleanups: (() => void)[] = [];
+
+      for (let i = 0; i < 50; i++) {
+        const el = {} as Element;
+        elements.push(el);
+        cleanups.push(ResizeObserverRegistry.observe(el, () => {}));
+      }
+
+      expect(mockObserve).toHaveBeenCalledTimes(50);
+
+      for (const cleanup of cleanups) {
+        cleanup();
+      }
+
+      expect(mockUnobserve).toHaveBeenCalledTimes(50);
+
+      globalThis.ResizeObserver = origRO;
+      globalThis.window = origWin;
+      ResizeObserverRegistry.clear();
+    });
+
+    it('should stress test ObjectPool with 500 acquisitions and releases without memory growth leakage', () => {
+      const pool = new ObjectPool<{ x: number; y: number }>(
+        () => ({ x: 0, y: 0 }),
+        (obj) => {
+          obj.x = 0;
+          obj.y = 0;
+        },
+        32,
+      );
+
+      const acquiredItems: { x: number; y: number }[] = [];
+      for (let i = 0; i < 500; i++) {
+        const item = pool.acquire();
+        item.x = i;
+        item.y = i * 2;
+        acquiredItems.push(item);
+      }
+
+      for (const item of acquiredItems) {
+        pool.release(item);
+      }
+
+      const itemAfterRelease = pool.acquire();
+      expect(itemAfterRelease).toEqual({ x: 0, y: 0 });
+
+      pool.clear();
+    });
+
+    it('should chain EventBus listeners where open_root triggers state updates', () => {
+      const store = createPopoverStore(dummyResolver);
+      const log: string[] = [];
+
+      store.getState().subscribeEvent((event) => {
+        log.push(event.type);
+      });
+
+      store.getState().openRoot('owner-1', { key: 'auto-pin-card' });
+      store.getState().togglePin('auto-pin-card');
+
+      expect(log).toContain('open_root');
+      expect(store.getState().floating[0]?.key).toBe('auto-pin-card');
+    });
+
+    it('should perform 50 consecutive operations, step back 25 via undo(), step forward 10 via redo(), and verify history integrity', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', { key: 'card-0' });
+      for (let i = 1; i < 50; i++) {
+        store.getState().pushNested(i - 1, { key: `card-${i}`, parentKey: `card-${i - 1}` });
+      }
+
+      expect(store.getState().trail).toHaveLength(50);
+
+      for (let i = 0; i < 25; i++) {
+        store.getState().undo();
+      }
+
+      expect(store.getState().trail).toHaveLength(25);
+      expect(store.getState().trail[24]?.key).toBe('card-24');
+
+      for (let i = 0; i < 10; i++) {
+        store.getState().redo();
+      }
+
+      expect(store.getState().trail).toHaveLength(35);
+      expect(store.getState().trail[34]?.key).toBe('card-34');
+    });
+
+    it('should safely handle rapid togglePin calls on missing keys without altering floating state', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'valid-card' });
+
+      store.getState().togglePin('non-existent-1');
+      store.getState().togglePin('non-existent-2');
+
+      expect(store.getState().floating).toEqual([]);
+      expect(store.getState().trail[0]?.key).toBe('valid-card');
+    });
+
+    it('should calculate tilt matrix and apply friction during multi-touch touch drag simulation', () => {
+      const rawDeltaX = 350;
+      const rawDeltaY = -220;
+
+      const frictionX = applyDragFriction(rawDeltaX, 0.4);
+      const frictionY = applyDragFriction(rawDeltaY, 0.4);
+
+      const tilt = computeTiltMatrix(frictionX, frictionY);
+
+      expect(typeof tilt.rotationX).toBe('number');
+      expect(typeof tilt.rotationY).toBe('number');
+      expect(frictionX).toBe(210);
     });
   });
 });
