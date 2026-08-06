@@ -2674,5 +2674,204 @@ describe('createPopoverStore', () => {
       expect(store.getState().trail[0]?.isLoading).toBe(false);
       expect(store.getState().trail[0]?.error?.message).toBe('500 Internal Server Error');
     });
+
+    it('should rollback transaction cleanly if an error occurs while async resolvers are pending', async () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'base-card' });
+
+      const initialTrail = store.getState().trail;
+
+      const result = await store.getState().transaction(async (actions) => {
+        actions.pushNested(0, { key: 'nested-tx-1', parentKey: 'base-card' });
+        actions.updateOffset('nested-tx-1', 100, 200);
+        throw new Error('Transaction Validation Failure');
+      });
+
+      expect(result).toBe(false);
+      expect(store.getState().trail).toEqual(initialTrail);
+      expect(store.getState().offsets['nested-tx-1']).toBeUndefined();
+    });
+
+    it('should retain focusLockOptions when toggling pin state and moving entries between trail and floating', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', {
+        key: 'focus-card',
+        focusLockOptions: { enabled: true, returnFocusOnClose: true, autoFocusElement: '#input' },
+      });
+
+      expect(store.getState().trail[0]?.focusLockOptions?.autoFocusElement).toBe('#input');
+
+      store.getState().togglePin('focus-card');
+
+      expect(store.getState().floating[0]?.focusLockOptions?.autoFocusElement).toBe('#input');
+
+      store.getState().togglePin('focus-card');
+
+      expect(store.getState().trail[0]?.focusLockOptions?.autoFocusElement).toBe('#input');
+    });
+
+    it('should maintain distinct zIndexOrder elevations across 3 owners with interleaved pinning', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-a', { key: 'a1' });
+      store.getState().togglePin('a1');
+
+      store.getState().openRoot('owner-b', { key: 'b1' });
+      store.getState().togglePin('b1');
+
+      store.getState().openRoot('owner-c', { key: 'c1' });
+      store.getState().togglePin('c1');
+
+      expect(store.getState().zIndexOrder).toEqual(['a1', 'b1', 'c1']);
+
+      store.getState().bringToFront('a1');
+      expect(store.getState().zIndexOrder).toEqual(['b1', 'c1', 'a1']);
+
+      store.getState().bringToFront('b1');
+      expect(store.getState().zIndexOrder).toEqual(['c1', 'a1', 'b1']);
+    });
+
+    it('should calculate topological z-index map for deep hierarchies using PopoverDAG', () => {
+      const dag = new PopoverDAG();
+
+      dag.addNode('root');
+      dag.addNode('child-1', 'root');
+      dag.addNode('child-2', 'root');
+      dag.addNode('grandchild-1', 'child-1');
+
+      const zMap = dag.getTopologicalZIndexOrder(2000);
+
+      expect(zMap.get('root')).toBe(2000);
+      expect(zMap.get('child-1')).toBe(2001);
+      expect(zMap.get('grandchild-1')).toBe(2002);
+      expect(zMap.get('child-2')).toBe(2003);
+    });
+
+    it('should combine friction reduction and coordinate clamping within bounding limits', () => {
+      const rawX = 400;
+      const rawY = -300;
+
+      const frictionX = applyDragFriction(rawX, 0.5);
+      const frictionY = applyDragFriction(rawY, 0.5);
+
+      const clamped = clampDragCoordinates(frictionX, frictionY, {
+        minX: -100,
+        maxX: 150,
+        minY: -100,
+        maxY: 100,
+      });
+
+      expect(clamped.x).toBe(150);
+      expect(clamped.y).toBe(-100);
+    });
+
+    it('should abort all in-flight resolver controllers when clear() is invoked', async () => {
+      const abortedKeys: string[] = [];
+
+      const cancellableResolver = async (
+        key: string,
+        _pData?: unknown,
+        _ctx?: unknown,
+        signal?: AbortSignal,
+      ) => {
+        signal?.addEventListener('abort', () => abortedKeys.push(key));
+        await new Promise((r) => setTimeout(r, 200));
+        return { data: key };
+      };
+
+      const store = createPopoverStore(cancellableResolver);
+      const anchor = createMockAnchor(0, 0, 50, 50);
+
+      const promise = store.getState().openRootWithResolver('async-card-1', anchor);
+
+      store.getState().clear();
+
+      await promise;
+      expect(abortedKeys).toContain('async-card-1');
+      expect(store.getState().trail).toEqual([]);
+    });
+
+    it('should execute EventBus once listeners exactly one time', () => {
+      const store = createPopoverStore(dummyResolver);
+      let callCount = 0;
+
+      store.getState().subscribeEvent((event) => {
+        if (event.type === 'open_root') {
+          callCount++;
+        }
+      });
+
+      store.getState().openRoot('owner-1', { key: 'card-1' });
+      store.getState().openRoot('owner-1', { key: 'card-2' });
+
+      expect(callCount).toBe(2);
+    });
+
+    it('should maintain active trail when hovering child elements before parent hoverLeave expires', async () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', { key: 'parent-card' });
+      store.getState().pushNested(0, { key: 'child-card', parentKey: 'parent-card' });
+
+      store.getState().hoverLeave('parent-card', 200);
+
+      store.getState().hoverEnter('child-card');
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(store.getState().trail).toHaveLength(2);
+    });
+
+    it('should clear redo stack when a mutation is performed after undo steps', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', { key: 'step-1' });
+      store.getState().pushNested(0, { key: 'step-2', parentKey: 'step-1' });
+      store.getState().pushNested(1, { key: 'step-3', parentKey: 'step-2' });
+
+      expect(store.getState().canUndo()).toBe(true);
+
+      store.getState().undo();
+      store.getState().undo();
+
+      expect(store.getState().canRedo()).toBe(true);
+
+      store.getState().pushNested(0, { key: 'step-2-fork', parentKey: 'step-1' });
+
+      expect(store.getState().canRedo()).toBe(false);
+      expect(store.getState().trail[1]?.key).toBe('step-2-fork');
+    });
+
+    it('should serialize and rehydrate buttonControls and custom offsets without loss of precision', async () => {
+      const storageMap = new Map<string, string>();
+      const storage = {
+        getItem: (k: string) => storageMap.get(k) ?? null,
+        setItem: (k: string, v: string) => storageMap.set(k, v),
+        removeItem: (k: string) => storageMap.delete(k),
+      };
+
+      const store1 = createPopoverStore(dummyResolver);
+      store1.getState().openRoot('owner-1', {
+        key: 'custom-btn-card',
+        buttonControls: { enableClose: true, enablePin: false, enableDrag: true },
+      });
+      store1.getState().togglePin('custom-btn-card');
+      store1.getState().updateOffset('custom-btn-card', 123.45, 678.9);
+
+      await store1.getState().persistState({ key: 'btn_ctrl_key', storage });
+
+      const store2 = createPopoverStore(dummyResolver);
+      await store2.getState().rehydrateState({ key: 'btn_ctrl_key', storage });
+
+      const floatingCard = store2.getState().floating[0];
+      expect(floatingCard?.key).toBe('custom-btn-card');
+      expect(floatingCard?.buttonControls).toEqual({
+        enableClose: true,
+        enablePin: false,
+        enableDrag: true,
+      });
+      expect(store2.getState().offsets['custom-btn-card']).toEqual({ x: 123.45, y: 678.9 });
+    });
   });
 });
