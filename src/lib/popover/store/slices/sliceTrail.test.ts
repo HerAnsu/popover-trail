@@ -96,4 +96,21 @@ describe('sliceTrail module', () => {
     trailSlice.closeByKey('non-existent');
     expect(getState().trail).toHaveLength(2);
   });
+
+  it('closes topmost card via closeTopmost', () => {
+    const { ctx, getState } = createMockContext();
+    const trailSlice = createTrailSlice(ctx);
+
+    trailSlice.closeTopmost();
+    expect(getState().trail).toHaveLength(1);
+    expect(getState().trail[0]?.key).toBe('root-1');
+  });
+
+  it('clears trail entries via clearTrail', () => {
+    const { ctx, getState } = createMockContext();
+    const trailSlice = createTrailSlice(ctx);
+
+    trailSlice.clearTrail();
+    expect(getState().trail).toHaveLength(0);
+  });
 });

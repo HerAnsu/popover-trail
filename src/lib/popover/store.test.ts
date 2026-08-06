@@ -1481,5 +1481,54 @@ describe('createPopoverStore', () => {
       expect(store.getState().trail).toHaveLength(1);
       expect(store.getState().trail[0]?.key).toBe('root-card');
     });
+
+    it('should update mobileBreakpoint and activeStackGroup dynamically', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      expect(store.getState().mobileBreakpoint).toBe(768);
+      store.getState().setMobileBreakpoint(640);
+      expect(store.getState().mobileBreakpoint).toBe(640);
+
+      expect(store.getState().activeStackGroup).toBeNull();
+      store.getState().setStackGroupFilter('dialogs');
+      expect(store.getState().activeStackGroup).toBe('dialogs');
+      store.getState().setStackGroupFilter(null);
+      expect(store.getState().activeStackGroup).toBeNull();
+    });
+
+    it('should handle rehydrateState failure gracefully when storage returns invalid data', async () => {
+      const corruptStorage = {
+        getItem: () => 'INVALID_JSON_PAYLOAD_(((',
+        setItem: () => {},
+        removeItem: () => {},
+      };
+
+      const store = createPopoverStore(dummyResolver);
+      const rehydrated = await store
+        .getState()
+        .rehydrateState({ key: 'corrupt_key', storage: corruptStorage });
+
+      expect(rehydrated).toBe(false);
+      expect(store.getState().floating).toEqual([]);
+    });
+
+    it('should handle retryPopover safely when key is not found in trail or floating', async () => {
+      const store = createPopoverStore(dummyResolver);
+      await expect(store.getState().retryPopover('unknown-key')).resolves.toBeUndefined();
+    });
+
+    it('should update zIndexOrder correctly when bringToFront is called on pinned card', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().openRoot('owner-1', { key: 'root-1' });
+      store.getState().togglePin('root-1');
+
+      store.getState().openRoot('owner-2', { key: 'root-2' });
+      store.getState().togglePin('root-2');
+
+      expect(store.getState().zIndexOrder).toEqual(['root-1', 'root-2']);
+
+      store.getState().bringToFront('root-1');
+      expect(store.getState().zIndexOrder).toEqual(['root-2', 'root-1']);
+    });
   });
 });

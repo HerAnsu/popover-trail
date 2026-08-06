@@ -54,4 +54,12 @@ describe('sliceResolver module', () => {
     const data = await resolverSlice.prefetchPopover('card-2');
     expect(data).toEqual({ title: 'Prefetched Data' });
   });
+
+  it('retries popover data resolution via retryPopover slice method', async () => {
+    const { ctx, resolvePopoverEntry } = createMockContext();
+    const resolverSlice = createResolverSlice(ctx);
+
+    await resolverSlice.retryPopover('root-1');
+    expect(resolvePopoverEntry).toHaveBeenCalled();
+  });
 });
