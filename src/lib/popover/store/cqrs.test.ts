@@ -70,5 +70,6 @@ describe('cqrs module', () => {
     expect(queryBus.trail).toHaveLength(1);
     expect(queryBus.floating).toHaveLength(1);
     expect(queryBus.getEntry('pinned-1')?.key).toBe('pinned-1');
+    expect(queryBus.getEntry('missing-key')).toBeUndefined();
   });
 });

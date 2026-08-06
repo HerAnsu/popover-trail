@@ -39,4 +39,22 @@ describe('eventBus module', () => {
     expect(isPopoverCustomEvent(ev, 'popover:unpin')).toBe(false);
     expect(isPopoverCustomEvent(new Event('custom'))).toBe(false);
   });
+
+  it('unsubscribes listeners returned from on() and once()', () => {
+    const bus = new PopoverEventBus();
+    const l1 = vi.fn();
+    const l2 = vi.fn();
+
+    const unsub1 = bus.on('popover:open', l1);
+    const unsub2 = bus.once('popover:close', l2);
+
+    unsub1();
+    unsub2();
+
+    bus.emit('popover:open', { key: 'c1' });
+    bus.emit('popover:close', { key: 'c2' });
+
+    expect(l1).not.toHaveBeenCalled();
+    expect(l2).not.toHaveBeenCalled();
+  });
 });

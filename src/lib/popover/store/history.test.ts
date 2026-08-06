@@ -115,4 +115,12 @@ describe('HistoryManager', () => {
 
     expect(history.undoStack).toHaveLength(1);
   });
+
+  it('returns null safely when undo() or redo() is called on empty stacks', () => {
+    const history = createHistoryManager(5);
+    const mockState = {} as unknown as PopoverStore;
+
+    expect(history.undo(mockState)).toBeNull();
+    expect(history.redo(mockState)).toBeNull();
+  });
 });

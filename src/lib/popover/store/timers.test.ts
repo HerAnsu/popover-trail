@@ -47,4 +47,10 @@ describe('TimerManager', () => {
     expect(manager.hoverCloseTimers.size).toBe(0);
     expect(manager.transitionTimers.size).toBe(0);
   });
+
+  it('safely handles clear hover or transition timer calls for unmapped popover keys', () => {
+    const manager = createTimerManager();
+    expect(() => manager.clearHoverTimer('unmapped-key')).not.toThrow();
+    expect(() => manager.clearTransitionTimer('unmapped-key')).not.toThrow();
+  });
 });
