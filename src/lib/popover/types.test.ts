@@ -104,4 +104,22 @@ describe('Type Safety Guards & Event Predicates', () => {
     expect(err.error.message).toBe('Failed');
     expect(ok.data.title).toBe('Success');
   });
+
+  it('supports PopoverCSSProperties for CSS variable styling', () => {
+    const cssVars: import('./index').PopoverCSSProperties = {
+      '--popover-z-index': 1000,
+      '--popover-offset-x': '20px',
+      '--popover-offset-y': 15,
+      color: 'red',
+    };
+
+    expect(cssVars['--popover-z-index']).toBe(1000);
+    expect(cssVars.color).toBe('red');
+  });
+
+  it('validates DeepReadonly type helper immutability', () => {
+    type Sample = { a: { b: number } };
+    const sample: import('./index').DeepReadonly<Sample> = { a: { b: 42 } };
+    expect(sample.a.b).toBe(42);
+  });
 });

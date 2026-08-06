@@ -6,17 +6,15 @@
 
 import type { Placement, Boundary } from '@floating-ui/react';
 import type { TrailEntry } from './entryTypes';
-import type { Brand, StackGroupId } from './storeTypes';
+import type { Brand, StackGroupId, ReadonlyDeep, PopoverKey } from './storeTypes';
 
 export type { Brand, StackGroupId };
 
 /** Branded popover key identifier type. */
-export type PopoverKeyId = Brand<string, 'PopoverKeyId'>;
+export type PopoverKeyId = PopoverKey<string>;
 
 /** Deep readonly type helper for immutable state guarantees. */
-export type DeepReadonly<T> = {
-  readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K];
-};
+export type DeepReadonly<T> = ReadonlyDeep<T>;
 
 /**
  * Valid shift directions for cascade stacking offsets.
@@ -63,7 +61,7 @@ export type KnownKeyboardKey =
 export type KeyboardShortcutMap = Partial<Record<KnownKeyboardKey, (key: string) => void>>;
 
 /** Map of base z-index layering depth offsets per stack group ID. */
-export type ZIndexBaseMap = Record<string, number>;
+export type ZIndexBaseMap = Record<StackGroupId | string, number>;
 
 /**
  * Click-outside detection configuration options.

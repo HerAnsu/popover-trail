@@ -77,6 +77,12 @@ export type {
   PopoverStoreDiscriminatedState,
   DomainPopoverKey,
   PopoverConfig,
+  TypedPopoverStoreApi,
+  StoreActionPayload,
+  OnlyDataState,
+  PopoverCSSProperties,
+  PolymorphicProps,
+  PopoverKeyId,
 } from './types';
 
 export type { ValidatedAnchorRef } from './types';

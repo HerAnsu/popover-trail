@@ -3,11 +3,13 @@
  * Synchronizes popover actions across multiple open browser tabs using BroadcastChannel.
  */
 
+import type { TabId } from '../types/storeTypes';
+
 export interface PopoverSyncMessage {
   type: 'OPEN' | 'CLOSE' | 'PIN' | 'UNPIN' | 'RESET';
   key?: string;
   timestamp: number;
-  tabId: string;
+  tabId: string | TabId;
 }
 
 export type PopoverSyncListener = (message: PopoverSyncMessage) => void;

@@ -208,7 +208,7 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   readonly trail: readonly TrailEntry<TData>[];
   readonly floating: readonly TrailEntry<TData>[];
   readonly ownerId: string | null;
-  readonly offsets: Readonly<Record<string, Readonly<{ x: number; y: number }>>>;
+  readonly offsets: Readonly<Record<string, Readonly<DragOffset>>>;
   readonly pinnedStates: Readonly<Record<string, boolean>>;
   readonly zIndexOrder: readonly string[];
   readonly rootHydrationRequestCounter: number;
@@ -229,7 +229,7 @@ export interface PopoverStateData<TData = unknown, TContext = unknown> {
   readonly mountingClassName: string;
   readonly unmountingClassName: string;
   readonly mountedClassName: string;
-  readonly activeStackGroup: string | null;
+  readonly activeStackGroup: StackGroupId | string | null;
   readonly responsiveMode: PopoverResponsiveMode;
   readonly mobileBreakpoint: number;
   readonly components: PopoverSlotComponents | null;
@@ -389,7 +389,7 @@ export interface UsePopoverResult<TData = unknown> {
   isPinned: boolean;
   zIndex: number;
   isTop: boolean;
-  offset: { x: number; y: number };
+  offset: DragOffset;
   isLoading: boolean;
   data: TData | null | undefined;
   error: Error | null | undefined;
