@@ -21,6 +21,8 @@ import { invariant } from './utils/invariant';
 import { clampDragCoordinates, computeTiltMatrix, applyDragFriction } from './utils/dragMath';
 import { createPopoverFSM } from './store/fsm';
 import { createCQRSBuses } from './store/cqrs';
+import { QuadTree } from './utils/quadTree';
+import { PopoverDAG } from './utils/dag';
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -2220,6 +2222,227 @@ describe('createPopoverStore', () => {
       expect(events).toContain('open_root');
       expect(store.getState().floating[0]?.key).toBe('b-card-1');
       expect(store.getState().offsets['b-card-1']).toEqual({ x: 50, y: 100 });
+    });
+
+    // --- 10 UNUSUAL & ULTRA-COMPLEX TESTS ---
+
+    // 31. Unusual & Ultra-Complex
+    it('31. should execute QuadTree 2D spatial indexing for 20 pinned cards and perform collision queries', () => {
+      const bounds = { x: 0, y: 0, width: 1000, height: 1000 };
+      const tree = new QuadTree(bounds);
+
+      // Insert 20 pinned card bounding boxes into QuadTree
+      for (let i = 0; i < 20; i++) {
+        tree.insert({
+          id: `pinned-card-${i}`,
+          bounds: {
+            x: i * 40,
+            y: i * 40,
+            width: 100,
+            height: 100,
+          },
+        });
+      }
+
+      // Query collision range at (50, 50, 100, 100)
+      const collisions = tree.retrieve([], { x: 50, y: 50, width: 100, height: 100 });
+      expect(collisions.length).toBeGreaterThan(0);
+      expect(collisions.some((c) => c.id === 'pinned-card-1')).toBe(true);
+    });
+
+    // 32. Unusual & Ultra-Complex
+    it('32. should build PopoverDAG Dependency Graph for nested popovers and calculate topological execution order', () => {
+      const dag = new PopoverDAG();
+
+      dag.addNode('L0');
+      dag.addNode('L1', 'L0');
+      dag.addNode('L2', 'L1');
+
+      const order = dag.getTopologicalZIndexOrder(1000);
+      expect(order.get('L0')).toBe(1000);
+      expect(order.get('L1')).toBe(1001);
+      expect(order.get('L2')).toBe(1002);
+    });
+
+    // 33. Unusual & Ultra-Complex
+    it('33. should invalidate redo stack branch when a new action is performed after undo', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', { key: 'action-1' });
+      store.getState().pushNested(0, { key: 'action-2', parentKey: 'action-1' });
+
+      expect(store.getState().canUndo()).toBe(true);
+
+      // Undo to action-1
+      store.getState().undo();
+      expect(store.getState().canRedo()).toBe(true);
+
+      // Perform a new action (forks history tree, invalidating redo stack)
+      store.getState().pushNested(0, { key: 'action-3-fork', parentKey: 'action-1' });
+
+      expect(store.getState().canRedo()).toBe(false); // Redo stack cleared!
+      expect(store.getState().trail[1]?.key).toBe('action-3-fork');
+    });
+
+    // 34. Unusual & Ultra-Complex
+    it('34. should simulate flaky exponential backoff resolver with 3 failures before final success', async () => {
+      let attempts = 0;
+      const flakyResolver = async (key: string) => {
+        attempts++;
+        if (attempts < 3) {
+          throw new Error(`Attempt ${attempts} failed`);
+        }
+        return { data: `Success on attempt ${attempts} for ${key}` };
+      };
+
+      const store = createPopoverStore(flakyResolver);
+      const mockAnchor = createMockAnchor(0, 0, 100, 100);
+
+      // Initial attempt fails
+      await store.getState().openRootWithResolver('flaky-card', mockAnchor);
+      expect(store.getState().trail[0]?.error?.message).toBe('Attempt 1 failed');
+
+      // Retry 1 fails
+      await store.getState().retryPopover('flaky-card');
+      expect(store.getState().trail[0]?.error?.message).toBe('Attempt 2 failed');
+
+      // Retry 2 succeeds!
+      await store.getState().retryPopover('flaky-card');
+      expect(store.getState().trail[0]?.error).toBeNull();
+      expect(store.getState().trail[0]?.data).toEqual({
+        data: 'Success on attempt 3 for flaky-card',
+      });
+    });
+
+    // 35. Unusual & Ultra-Complex
+    it('35. should cascade close a 10-level deep popover hierarchy with closePinnedDescendants enabled', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().setClosePinnedDescendants(true);
+
+      // Create 10-level nested hierarchy: L0 -> L1 -> ... -> L9
+      store.getState().openRoot('owner-1', { key: 'L0', isLoading: false });
+      for (let i = 1; i < 10; i++) {
+        store
+          .getState()
+          .pushNested(i - 1, { key: `L${i}`, parentKey: `L${i - 1}`, isLoading: false });
+        if (i % 2 === 1) {
+          // Pin odd levels
+          store.getState().togglePin(`L${i}`);
+        }
+      }
+
+      expect(store.getState().floating.length).toBe(5);
+
+      // Close L0 by key (closes L0 and recursively purges all pinned descendants)
+      store.getState().closeByKey('L0');
+
+      expect(store.getState().trail).toEqual([]);
+      expect(store.getState().floating).toEqual([]);
+    });
+
+    // 36. Unusual & Ultra-Complex
+    it('36. should run 4 independent store sandboxes concurrently without cross-talk leakage', async () => {
+      const s1 = createPopoverStore(async () => ({ storeId: 1 }), { name: 'S1' });
+      const s2 = createPopoverStore(async () => ({ storeId: 2 }), { name: 'S2' });
+      const s3 = createPopoverStore(async () => ({ storeId: 3 }), { name: 'S3' });
+      const s4 = createPopoverStore(async () => ({ storeId: 4 }), { name: 'S4' });
+
+      const anchor = createMockAnchor(0, 0, 100, 100);
+
+      await Promise.all([
+        s1.getState().openRootWithResolver('card-1', anchor),
+        s2.getState().openRootWithResolver('card-2', anchor),
+        s3.getState().openRootWithResolver('card-3', anchor),
+        s4.getState().openRootWithResolver('card-4', anchor),
+      ]);
+
+      expect(s1.getState().trail[0]?.data).toEqual({ storeId: 1 });
+      expect(s2.getState().trail[0]?.data).toEqual({ storeId: 2 });
+      expect(s3.getState().trail[0]?.data).toEqual({ storeId: 3 });
+      expect(s4.getState().trail[0]?.data).toEqual({ storeId: 4 });
+
+      expect(s1.getState().context).toEqual({ name: 'S1' });
+      expect(s4.getState().context).toEqual({ name: 'S4' });
+    });
+
+    // 37. Unusual & Ultra-Complex
+    it('37. should calculate drag math including friction, bounding box clamp, and 3D tilt matrix', () => {
+      const frictionX = applyDragFriction(200, 0.5);
+      expect(frictionX).toBe(100);
+
+      const clampedPos = clampDragCoordinates(180, -50, { minX: 0, maxX: 100, minY: 0, maxY: 100 });
+      expect(clampedPos).toEqual({ x: 100, y: 0 });
+
+      const tilt = computeTiltMatrix(25, -15);
+      expect(typeof tilt.rotationX).toBe('number');
+      expect(typeof tilt.rotationY).toBe('number');
+    });
+
+    // 38. Unusual & Ultra-Complex
+    it('38. should hijack openRoot actions via middleware to automatically attach default buttonControls', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      // Middleware: Inject buttonControls onto openRoot state patches
+      store.getState().useMiddleware((patch) => {
+        if (patch.trail && patch.trail.length > 0) {
+          const updatedTrail = patch.trail.map((e) => ({
+            ...e,
+            buttonControls: { enablePin: true, enableClose: true, enableDrag: false },
+          }));
+          return { trail: updatedTrail };
+        }
+      });
+
+      store.getState().openRoot('owner-1', { key: 'hijacked-card' });
+
+      const entry = store.getState().trail[0];
+      expect(entry?.buttonControls).toEqual({
+        enablePin: true,
+        enableClose: true,
+        enableDrag: false,
+      });
+    });
+
+    // 39. Unusual & Ultra-Complex
+    it('39. should perform self-healing rehydration when stored JSON state has corrupt or missing fields', async () => {
+      const corruptPayload = JSON.stringify({
+        floating: [{ key: 'damaged-card' }], // Missing isLoading, parentKey etc.
+        offsets: { 'damaged-card': 'invalid_string_offset' }, // Corrupt offset!
+      });
+
+      const storage = {
+        getItem: () => corruptPayload,
+        setItem: () => {},
+        removeItem: () => {},
+      };
+
+      const store = createPopoverStore(dummyResolver);
+      const success = await store.getState().rehydrateState({ key: 'corrupt_key', storage });
+
+      expect(success).toBe(true);
+      // Restored cleanly without throwing exceptions!
+      expect(store.getState().floating[0]?.key).toBe('damaged-card');
+    });
+
+    // 40. Unusual & Ultra-Complex
+    it('40. should run 100 high-frequency batch update cycles and verify store subscriber notifications', () => {
+      const store = createPopoverStore(dummyResolver);
+      let notifyCounter = 0;
+
+      store.subscribe(() => {
+        notifyCounter++;
+      });
+
+      for (let i = 0; i < 100; i++) {
+        store.getState().batchUpdates((actions) => {
+          actions.openRoot(`owner-${i}`, { key: `perf-card-${i}` });
+          actions.updateOffset(`perf-card-${i}`, i, i * 2);
+        });
+      }
+
+      // Exactly 100 notifications for 100 batch updates
+      expect(notifyCounter).toBe(100);
+      expect(store.getState().trail[0]?.key).toBe('perf-card-99');
     });
   });
 });
