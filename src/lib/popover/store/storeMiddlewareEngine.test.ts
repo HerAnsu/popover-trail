@@ -78,4 +78,18 @@ describe('storeMiddlewareEngine module', () => {
     unsub2();
     expect(engine.size).toBe(0);
   });
+
+  it('returns initial patch without copying when no middlewares are registered', () => {
+    const engine = new PopoverMiddlewareEngine();
+    const patch = { ownerId: 'owner-1' };
+    expect(engine.apply(patch, {} as PopoverStore)).toBe(patch);
+  });
+
+  it('ignores non-object return values from middleware without crashing', () => {
+    const engine = new PopoverMiddlewareEngine();
+    // @ts-expect-error Returning string literal
+    engine.use(() => 'invalid_patch');
+    const result = engine.apply({ ownerId: 'owner-1' }, {} as PopoverStore);
+    expect(result).toEqual({ ownerId: 'owner-1' });
+  });
 });

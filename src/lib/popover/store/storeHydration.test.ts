@@ -35,4 +35,9 @@ describe('storeHydration module', () => {
     expect(manager.getRootCounter()).toBe(0);
     expect(manager.getNestedCounters()).toEqual({});
   });
+
+  it('returns true for isNestedStale when checking unmapped parent key', () => {
+    const manager = createHydrationManager();
+    expect(manager.isNestedStale('unmapped-parent', 1)).toBe(true);
+  });
 });
