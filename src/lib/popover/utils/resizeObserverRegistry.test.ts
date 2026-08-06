@@ -69,4 +69,32 @@ describe('resizeObserverRegistry utility', () => {
 
     expect(() => observerCallback([mockEntry])).not.toThrow();
   });
+
+  it('notifies multiple listeners attached to the same element', () => {
+    const el = {} as Element;
+    const cb1 = vi.fn();
+    const cb2 = vi.fn();
+
+    const cleanup1 = ResizeObserverRegistry.observe(el, cb1);
+    const cleanup2 = ResizeObserverRegistry.observe(el, cb2);
+
+    const mockEntry = { target: el } as unknown as ResizeObserverEntry;
+    observerCallback([mockEntry]);
+
+    expect(cb1).toHaveBeenCalledWith(mockEntry);
+    expect(cb2).toHaveBeenCalledWith(mockEntry);
+
+    cleanup1();
+    cleanup2();
+  });
+
+  it('gracefully handles missing ResizeObserver in SSR environments', () => {
+    Reflect.deleteProperty(globalThis, 'ResizeObserver');
+
+    const el = {} as Element;
+    const cleanup = ResizeObserverRegistry.observe(el, () => {});
+
+    expect(typeof cleanup).toBe('function');
+    expect(() => cleanup()).not.toThrow();
+  });
 });

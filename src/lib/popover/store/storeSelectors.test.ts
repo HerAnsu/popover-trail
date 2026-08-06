@@ -52,4 +52,14 @@ describe('Pure Store State Selectors', () => {
     expect(selectActiveTrail(state)).toHaveLength(0);
     expect(selectOffset('card-1')(state)).toEqual({ x: 45, y: 90 });
   });
+
+  it('returns fallback empty values for unmapped popover keys', () => {
+    const store = createPopoverStore();
+    const state = store.getState();
+
+    expect(selectEntryByKey('missing')(state)).toBeUndefined();
+    expect(selectTopmostEntry(state)).toBeUndefined();
+    expect(selectIsPinned('missing')(state)).toBe(false);
+    expect(selectOffset('missing')(state)).toEqual({ x: 0, y: 0 });
+  });
 });
