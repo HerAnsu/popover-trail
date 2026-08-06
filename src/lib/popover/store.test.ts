@@ -2566,5 +2566,113 @@ describe('createPopoverStore', () => {
       expect(typeof tilt.rotationY).toBe('number');
       expect(frictionX).toBe(210);
     });
+
+    it('should prefetch nested popovers ahead of time and fulfill openNestedWithResolver synchronously from cache', async () => {
+      let networkFetchCount = 0;
+      const prefetchResolver = async (key: string) => {
+        networkFetchCount++;
+        return { title: `Fetched ${key}` };
+      };
+
+      const cache = new SimplePopoverCache<unknown>();
+      const store = createPopoverStore(prefetchResolver, undefined, cache);
+
+      await store.getState().prefetchPopover('nested-preview-1');
+      expect(networkFetchCount).toBe(1);
+
+      store.getState().openRoot('owner-1', { key: 'root-1' });
+      await store.getState().openNestedWithResolver('nested-preview-1', 'root-1');
+
+      expect(networkFetchCount).toBe(1);
+      expect(store.getState().trail[1]?.data).toEqual({ title: 'Fetched nested-preview-1' });
+    });
+
+    it('should manage zIndexOrder correctly when unpinning elevated middle cards', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', { key: 'card-a' });
+      store.getState().togglePin('card-a');
+
+      store.getState().openRoot('owner-2', { key: 'card-b' });
+      store.getState().togglePin('card-b');
+
+      store.getState().openRoot('owner-3', { key: 'card-c' });
+      store.getState().togglePin('card-c');
+
+      expect(store.getState().zIndexOrder).toEqual(['card-a', 'card-b', 'card-c']);
+
+      store.getState().bringToFront('card-a');
+      expect(store.getState().zIndexOrder).toEqual(['card-b', 'card-c', 'card-a']);
+
+      store.getState().togglePin('card-b');
+      expect(store.getState().floating.some((e) => e.key === 'card-b')).toBe(false);
+      expect(store.getState().zIndexOrder).toContain('card-a');
+    });
+
+    it('should scope closeFrom operations to unpinned trail without removing floating pinned cards from other owners', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-a', { key: 'card-a' });
+      store.getState().togglePin('card-a');
+
+      store.getState().openRoot('owner-b', { key: 'card-b0' });
+      store.getState().pushNested(1, { key: 'card-b1', parentKey: 'card-b0' });
+
+      expect(store.getState().floating).toHaveLength(1);
+      expect(store.getState().trail).toHaveLength(2);
+
+      store.getState().closeFrom(1);
+
+      expect(store.getState().trail).toHaveLength(0);
+      expect(store.getState().floating).toHaveLength(1);
+      expect(store.getState().floating[0]?.key).toBe('card-a');
+    });
+
+    it('should cap undo history stack at maximum capacity limit of 30 snapshots', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', { key: 'step-0' });
+      for (let i = 1; i < 50; i++) {
+        store.getState().pushNested(i - 1, { key: `step-${i}`, parentKey: `step-${i - 1}` });
+      }
+
+      let undoCount = 0;
+      while (store.getState().canUndo()) {
+        store.getState().undo();
+        undoCount++;
+      }
+
+      expect(undoCount).toBeLessThanOrEqual(30);
+      expect(undoCount).toBeGreaterThan(0);
+    });
+
+    it('should cancel hoverLeave timers cleanly if hoverEnter is triggered before duration expires', async () => {
+      const store = createPopoverStore(dummyResolver);
+
+      store.getState().openRoot('owner-1', { key: 'card-hover' });
+
+      store.getState().hoverLeave('card-hover', 150);
+
+      await new Promise((r) => setTimeout(r, 30));
+      store.getState().hoverEnter('card-hover');
+
+      await new Promise((r) => setTimeout(r, 150));
+
+      expect(store.getState().trail[0]?.key).toBe('card-hover');
+    });
+
+    it('should set error state when openRootWithResolver fails due to network exception', async () => {
+      const failingResolver = async () => {
+        throw new Error('500 Internal Server Error');
+      };
+
+      const store = createPopoverStore(failingResolver);
+      const mockAnchor = createMockAnchor(0, 0, 100, 100);
+
+      await store.getState().openRootWithResolver('error-card', mockAnchor);
+
+      expect(store.getState().trail[0]?.isLoading).toBe(false);
+      expect(store.getState().trail[0]?.error?.message).toBe('500 Internal Server Error');
+    });
   });
 });
