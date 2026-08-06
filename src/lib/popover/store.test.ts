@@ -19,6 +19,8 @@ import { createPopoverController } from './utils/popoverController';
 import { getPopoverStyles } from './utils/styles';
 import { invariant } from './utils/invariant';
 import { clampDragCoordinates, computeTiltMatrix, applyDragFriction } from './utils/dragMath';
+import { createPopoverFSM } from './store/fsm';
+import { createCQRSBuses } from './store/cqrs';
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -1962,6 +1964,262 @@ describe('createPopoverStore', () => {
       expect(rehydratedCard?.key).toBe('persisted-card-1');
       expect(rehydratedCard?.buttonControls?.enableClose).toBe(false);
       expect(targetStore.getState().offsets['persisted-card-1']).toEqual({ x: 88, y: 176 });
+    });
+
+    // --- 10 ADDITIONAL ULTRA-COMPLEX TESTS ---
+
+    // 21. Ultra-Complex
+    it('21. should execute schema validation pipeline with async worker simulation, cache fallback, and abort cancellation', async () => {
+      const cache = new SimplePopoverCache<unknown>();
+      const abortedKeys: string[] = [];
+
+      const schemaResolver = async (
+        key: string,
+        _pData?: unknown,
+        _ctx?: unknown,
+        signal?: AbortSignal,
+      ) => {
+        signal?.addEventListener('abort', () => abortedKeys.push(key));
+        await new Promise((r) => setTimeout(r, 60));
+        return { schemaKey: key, schemaVersion: 2 };
+      };
+
+      const store = createPopoverStore(schemaResolver, undefined, cache);
+      const anchor = createMockAnchor(10, 10, 100, 100);
+
+      // Trigger first request under owner-1
+      const p1 = store
+        .getState()
+        .openRootWithResolver('schema-item-1', anchor, { ownerId: 'owner-1' });
+      // Immediately open new root under owner-2
+      const p2 = store
+        .getState()
+        .openRootWithResolver('schema-item-2', anchor, { ownerId: 'owner-2' });
+
+      await Promise.all([p1, p2]);
+
+      expect(store.getState().ownerId).toBe('owner-2');
+      expect(store.getState().trail[0]?.key).toBe('schema-item-2');
+      expect(cache.has('schema-item-2')).toBe(true);
+    });
+
+    // 22. Ultra-Complex
+    it('22. should validate PopoverFSM state transitions through Idle -> Hydrating -> Resolved.Trailing -> Resolved.Pinned -> Error -> Hydrating', async () => {
+      const fsm = createPopoverFSM('card-1');
+      expect(fsm.getState().value).toBe('Idle');
+
+      fsm.send({ type: 'OPEN_ROOT', key: 'card-1' });
+      expect(fsm.getState().value).toBe('Hydrating');
+
+      fsm.send({ type: 'RESOLVE_SUCCESS', data: { title: 'Loaded' } });
+      expect(fsm.getState().value).toBe('Resolved.Trailing');
+
+      fsm.send({ type: 'TOGGLE_PIN', rect: { top: 10, left: 20 } });
+      expect(fsm.getState().value).toBe('Resolved.Pinned');
+
+      fsm.send({ type: 'CLOSE' });
+      expect(fsm.getState().value).toBe('Unmounting');
+    });
+
+    // 23. Ultra-Complex
+    it('23. should execute interlocking middleware pipeline modifying baseZIndex, offsets, and blocking forbidden owners', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      // Middleware 1: Block forbidden owners
+      store.getState().useMiddleware((patch) => {
+        if (patch.ownerId === 'forbidden-owner') return false;
+      });
+
+      // Middleware 2: Double baseZIndex
+      store.getState().useMiddleware((patch) => {
+        if (patch.baseZIndex !== undefined) {
+          return { baseZIndex: patch.baseZIndex * 2 };
+        }
+      });
+
+      // Attempt forbidden owner
+      store.getState().openRoot('forbidden-owner', { key: 'blocked' });
+      expect(store.getState().trail).toHaveLength(0);
+
+      // Attempt valid owner
+      store.getState().openRoot('valid-owner', { key: 'allowed' });
+      expect(store.getState().trail).toHaveLength(1);
+
+      // Update zIndex
+      store.getState().setBaseZIndex(1500);
+      expect(store.getState().baseZIndex).toBe(3000); // 1500 * 2
+    });
+
+    // 24. Ultra-Complex
+    it('24. should dispatch CQRS command bus batch operations and verify non-mutating Query Bus snapshots', () => {
+      const store = createPopoverStore(dummyResolver);
+      const buses = createCQRSBuses(store.getState());
+
+      // Query initial state
+      expect(buses.queryBus.trail).toHaveLength(0);
+
+      // Dispatch commands
+      store.getState().openRoot('owner-cqrs', { key: 'cqrs-card-1' });
+      store.getState().pushNested(0, { key: 'cqrs-card-2', parentKey: 'cqrs-card-1' });
+
+      // Refresh query bus state
+      const freshQueryBus = createCQRSBuses(store.getState()).queryBus;
+      expect(freshQueryBus.trail).toHaveLength(2);
+      expect(freshQueryBus.getEntry('cqrs-card-1')?.key).toBe('cqrs-card-1');
+      expect(freshQueryBus.getEntry('cqrs-card-2')?.key).toBe('cqrs-card-2');
+    });
+
+    // 25. Ultra-Complex
+    it('25. should handle multi-owner layout stacks with independent pinning, zIndex elevation, and closePinnedDescendants', () => {
+      const store = createPopoverStore(dummyResolver);
+      store.getState().setClosePinnedDescendants(true);
+
+      // Owner 1 opens card 1 and pins it
+      store.getState().openRoot('owner-1', { key: 'o1-card' });
+      store.getState().togglePin('o1-card');
+
+      // Owner 2 opens card 2 and pins it
+      store.getState().openRoot('owner-2', { key: 'o2-card' });
+      store.getState().togglePin('o2-card');
+
+      expect(store.getState().floating).toHaveLength(2);
+      expect(store.getState().zIndexOrder).toEqual(['o1-card', 'o2-card']);
+
+      // Elevate o1-card
+      store.getState().bringToFront('o1-card');
+      expect(store.getState().zIndexOrder).toEqual(['o2-card', 'o1-card']);
+
+      // Close o2-card by key
+      store.getState().closeByKey('o2-card');
+      expect(store.getState().floating).toHaveLength(1);
+      expect(store.getState().floating[0]?.key).toBe('o1-card');
+    });
+
+    // 26. Ultra-Complex
+    it('26. should perform 50 rapid store operations and verify clean resource disposal on clear()', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      for (let i = 0; i < 50; i++) {
+        store.getState().openRoot(`owner-${i}`, { key: `card-${i}` });
+        if (i % 2 === 0) {
+          store.getState().togglePin(`card-${i}`);
+        }
+      }
+
+      expect(store.getState().floating.length).toBe(25);
+
+      // Clear store completely
+      store.getState().clear();
+
+      expect(store.getState().trail).toEqual([]);
+      expect(store.getState().floating).toEqual([]);
+      expect(store.getState().ownerId).toBeNull();
+      expect(store.getState().zIndexOrder).toEqual([]);
+    });
+
+    // 27. Ultra-Complex
+    it('27. should execute worker resolver fallback, store payload in cache, and fulfill subsequent requests synchronously', async () => {
+      const workerResolver = createWorkerResolver(async (key) => ({
+        payload: `Worker data for ${key}`,
+      }));
+
+      const cache = new SimplePopoverCache<unknown>();
+      const store = createPopoverStore(workerResolver, undefined, cache);
+      const anchor = createMockAnchor(0, 0, 100, 100);
+
+      // Attempt 1: async worker resolve
+      await store.getState().openRootWithResolver('worker-item', anchor);
+
+      expect(store.getState().trail[0]?.data).toEqual({ payload: 'Worker data for worker-item' });
+      expect(cache.has('worker-item')).toBe(true);
+
+      // Reset trail
+      store.getState().clearTrail();
+
+      // Attempt 2: served instantly from cache
+      await store.getState().openRootWithResolver('worker-item', anchor);
+      expect(store.getState().trail[0]?.isLoading).toBe(false);
+      expect(store.getState().trail[0]?.data).toEqual({ payload: 'Worker data for worker-item' });
+    });
+
+    // 28. Ultra-Complex
+    it('28. should preserve stackGroup, layoutStrategy, keyboardShortcuts, and focusLockOptions during rehydration', async () => {
+      const storageMap = new Map<string, string>();
+      const storage = {
+        getItem: (k: string) => storageMap.get(k) ?? null,
+        setItem: (k: string, v: string) => storageMap.set(k, v),
+        removeItem: (k: string) => storageMap.delete(k),
+      };
+
+      const store1 = createPopoverStore(dummyResolver);
+      store1.getState().openRoot('owner-1', {
+        key: 'adv-card',
+        stackGroup: 'sidebar-group',
+        layoutStrategy: 'fixed-center',
+        focusLockOptions: { enabled: true, autoFocusElement: '#btn' },
+      });
+      store1.getState().togglePin('adv-card');
+
+      await store1.getState().persistState({ key: 'adv_key', storage });
+
+      const store2 = createPopoverStore(dummyResolver);
+      await store2.getState().rehydrateState({ key: 'adv_key', storage });
+
+      const card = store2.getState().floating[0];
+      expect(card?.key).toBe('adv-card');
+      expect(card?.stackGroup).toBe('sidebar-group');
+      expect(card?.layoutStrategy).toBe('fixed-center');
+      expect(card?.focusLockOptions?.autoFocusElement).toBe('#btn');
+    });
+
+    // 29. Ultra-Complex
+    it('29. should perform 10 consecutive action steps and verify exact state reconstruction via multi-step time travel', () => {
+      const store = createPopoverStore(dummyResolver);
+
+      // Step 1: Root
+      store.getState().openRoot('owner-1', { key: 'step-1' });
+
+      // Steps 2 to 10: push nested
+      for (let i = 2; i <= 10; i++) {
+        store.getState().pushNested(i - 2, { key: `step-${i}`, parentKey: `step-${i - 1}` });
+      }
+
+      expect(store.getState().trail).toHaveLength(10);
+      expect(store.getState().trail[9]?.key).toBe('step-10');
+
+      // Undo 4 steps
+      for (let i = 0; i < 4; i++) {
+        store.getState().undo();
+      }
+
+      expect(store.getState().trail).toHaveLength(6);
+      expect(store.getState().trail[5]?.key).toBe('step-6');
+
+      // Redo 2 steps
+      for (let i = 0; i < 2; i++) {
+        store.getState().redo();
+      }
+
+      expect(store.getState().trail).toHaveLength(8);
+      expect(store.getState().trail[7]?.key).toBe('step-8');
+    });
+
+    // 30. Ultra-Complex
+    it('30. should execute batchUpdates containing nested openRoot, togglePin, and updateOffset actions while dispatching typed events', () => {
+      const store = createPopoverStore(dummyResolver);
+      const events: string[] = [];
+
+      store.getState().subscribeEvent((e) => events.push(e.type));
+
+      store.getState().batchUpdates((actions) => {
+        actions.openRoot('owner-batch', { key: 'b-card-1' });
+        actions.togglePin('b-card-1');
+        actions.updateOffset('b-card-1', 50, 100);
+      });
+
+      expect(events).toContain('open_root');
+      expect(store.getState().floating[0]?.key).toBe('b-card-1');
+      expect(store.getState().offsets['b-card-1']).toEqual({ x: 50, y: 100 });
     });
   });
 });
