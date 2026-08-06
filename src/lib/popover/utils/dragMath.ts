@@ -5,6 +5,8 @@
  * @module dragMath
  */
 
+import { Point2D } from './valueObjects';
+
 /**
  * Options parameters for coordinate clamping bounds.
  */
@@ -28,31 +30,18 @@ export function clampDragCoordinates(
   y: number,
   bounds?: ClampBounds,
 ): { x: number; y: number } {
-  const safeX = Number.isFinite(x) ? x : 0;
-  const safeY = Number.isFinite(y) ? y : 0;
-  if (!bounds) return { x: safeX, y: safeY };
+  const pt = new Point2D(x, y);
+  if (!bounds) return pt.toObject();
 
-  let clampedX = safeX;
-  let clampedY = safeY;
+  let minX = bounds.minX !== undefined && Number.isFinite(bounds.minX) ? bounds.minX : -Infinity;
+  let maxX = bounds.maxX !== undefined && Number.isFinite(bounds.maxX) ? bounds.maxX : Infinity;
+  let minY = bounds.minY !== undefined && Number.isFinite(bounds.minY) ? bounds.minY : -Infinity;
+  let maxY = bounds.maxY !== undefined && Number.isFinite(bounds.maxY) ? bounds.maxY : Infinity;
 
-  let minX = bounds.minX !== undefined && Number.isFinite(bounds.minX) ? bounds.minX : undefined;
-  let maxX = bounds.maxX !== undefined && Number.isFinite(bounds.maxX) ? bounds.maxX : undefined;
-  let minY = bounds.minY !== undefined && Number.isFinite(bounds.minY) ? bounds.minY : undefined;
-  let maxY = bounds.maxY !== undefined && Number.isFinite(bounds.maxY) ? bounds.maxY : undefined;
+  if (minX > maxX) [minX, maxX] = [maxX, minX];
+  if (minY > maxY) [minY, maxY] = [maxY, minY];
 
-  if (minX !== undefined && maxX !== undefined && minX > maxX) {
-    [minX, maxX] = [maxX, minX];
-  }
-  if (minY !== undefined && maxY !== undefined && minY > maxY) {
-    [minY, maxY] = [maxY, minY];
-  }
-
-  if (minX !== undefined) clampedX = Math.max(minX, clampedX);
-  if (maxX !== undefined) clampedX = Math.min(maxX, clampedX);
-  if (minY !== undefined) clampedY = Math.max(minY, clampedY);
-  if (maxY !== undefined) clampedY = Math.min(maxY, clampedY);
-
-  return { x: clampedX, y: clampedY };
+  return pt.clamp(minX, maxX, minY, maxY).toObject();
 }
 
 /**

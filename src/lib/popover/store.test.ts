@@ -230,7 +230,7 @@ describe('createPopoverStore', () => {
     let state = store.getState();
     expect(state.trail[0]?.error).toBeDefined();
     expect(state.trail[0]?.error?.message).toBe('Network failure');
-    expect(state.trail[0]?.data).toBeUndefined();
+    expect(state.trail[0]?.data).toBeNull();
 
     // Retry resolves successfully
     await store.getState().retryPopover('item-a');

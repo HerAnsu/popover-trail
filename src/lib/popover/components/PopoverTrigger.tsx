@@ -1,5 +1,7 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useMemo, useRef, useEffect } from 'react';
 import { clsx } from '../utils/storeHelpers';
+import { useMergedRef } from '../hooks/useHookUtils';
+import { TriggerRegistry } from '../utils/triggerRegistry';
 import {
   PopoverCardContext,
   usePopoverTrigger,
@@ -26,14 +28,11 @@ export interface PopoverTriggerChildProps extends Record<string, unknown> {
   onMouseLeave?: (e: React.MouseEvent<HTMLElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLElement>) => void;
   onFocus?: (e: React.FocusEvent<HTMLElement>) => void;
+  ref?: React.Ref<HTMLElement>;
 }
 
-/**
- * Prop types for the `<PopoverTrigger>` component.
- *
- * @template TPopoverKey - Union of valid popover keys.
- */
-export interface PopoverTriggerProps<TPopoverKey extends string = string> {
+/** Base prop types for the `<PopoverTrigger>` component. */
+export interface BasePopoverTriggerProps<TPopoverKey extends string = string> {
   /** The unique key of the popover card that this trigger opens. */
   popoverKey: TPopoverKey;
   /** Layout placement direction preference relative to the trigger. */
@@ -50,16 +49,39 @@ export interface PopoverTriggerProps<TPopoverKey extends string = string> {
   children: React.ReactElement | ((props: PopoverTriggerChildProps) => React.ReactNode);
 }
 
+/** Prop types for a Root Trigger (spawns a new trail stack). */
+export interface RootPopoverTriggerProps<
+  TPopoverKey extends string = string,
+> extends BasePopoverTriggerProps<TPopoverKey> {
+  /** Root triggers cannot specify a parentKey. */
+  parentKey?: never;
+}
+
+/** Prop types for a Nested Child Trigger (pushes child popover onto parent stack). */
+export interface NestedPopoverTriggerProps<
+  TPopoverKey extends string = string,
+> extends BasePopoverTriggerProps<TPopoverKey> {
+  /** The parent popover key that spawned this nested trigger. */
+  parentKey: string;
+}
+
+/** Discriminated union representation of PopoverTriggerProps. */
+export type PopoverTriggerProps<TPopoverKey extends string = string> =
+  | RootPopoverTriggerProps<TPopoverKey>
+  | NestedPopoverTriggerProps<TPopoverKey>;
+
 /**
  * Shared rendering logic for trigger components. Clones the child element
  * or delegates to a render prop with merged trigger props, className, and event handlers.
  */
 function TriggerRenderer({
+  popoverKey,
   triggerProps,
   isOpen,
   activeClassName,
   children,
 }: {
+  popoverKey: string;
   triggerProps: Record<string, unknown>;
   isOpen: boolean;
   activeClassName?: string;
@@ -139,6 +161,24 @@ function TriggerRenderer({
     [triggerOnFocus, childOnFocus],
   );
 
+  const nodeRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const el = nodeRef.current;
+    if (el) {
+      TriggerRegistry.register(popoverKey, el);
+    }
+    return () => {
+      TriggerRegistry.unregister(popoverKey);
+    };
+  }, [popoverKey]);
+
+  const childRef =
+    typeof children !== 'function' && React.isValidElement(children)
+      ? (children as React.ReactElement<Record<string, unknown>> & { ref?: React.Ref<unknown> }).ref
+      : undefined;
+  const mergedRef = useMergedRef(nodeRef, childRef);
+
   if (typeof children === 'function') {
     const rawControls = triggerProps['aria-controls'];
     const ariaControls = typeof rawControls === 'string' ? rawControls : '';
@@ -153,6 +193,7 @@ function TriggerRenderer({
       'aria-expanded': isOpen,
       'aria-controls': ariaControls,
       className,
+      ref: mergedRef,
     };
     return children(fullProps);
   }
@@ -164,12 +205,17 @@ function TriggerRenderer({
     'aria-expanded': isOpen,
     ...triggerProps,
     ...validChild.props,
-    className: clsx(validChild.props.className as string, isOpen && activeClassName) || undefined,
+    className:
+      clsx(
+        typeof validChild.props.className === 'string' ? validChild.props.className : undefined,
+        isOpen && activeClassName,
+      ) || undefined,
     onClick,
     onMouseEnter,
     onMouseLeave,
     onKeyDown,
     onFocus,
+    ref: mergedRef,
   };
 
   return React.cloneElement(validChild, mergedProps);
@@ -197,6 +243,7 @@ function RootTriggerInner({
   const triggerProps = usePopoverTrigger(popoverKey, mergedOptions);
   return (
     <TriggerRenderer
+      popoverKey={popoverKey}
       triggerProps={triggerProps}
       isOpen={isOpen}
       activeClassName={activeClassName}
@@ -230,6 +277,7 @@ function NestedTriggerInner({
   const triggerProps = usePopoverNestedTrigger(popoverKey, parentKey, mergedOptions);
   return (
     <TriggerRenderer
+      popoverKey={popoverKey}
       triggerProps={triggerProps}
       isOpen={isOpen}
       activeClassName={activeClassName}
@@ -277,7 +325,7 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
       <NestedTriggerInner
         popoverKey={popoverKey}
         parentKey={parentKey}
-        mergedOptions={mergedOptions as OpenNestedOptions}
+        mergedOptions={mergedOptions}
         isOpen={isOpen}
         activeClassName={activeClassName}
         asChild={asChild}>
@@ -289,7 +337,7 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
   return (
     <RootTriggerInner
       popoverKey={popoverKey}
-      mergedOptions={mergedOptions as OpenRootOptions}
+      mergedOptions={mergedOptions}
       isOpen={isOpen}
       activeClassName={activeClassName}
       asChild={asChild}>

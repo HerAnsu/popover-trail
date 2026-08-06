@@ -1,11 +1,12 @@
 /**
  * Pure Action State Reducers and Predicates for popover-trail store.
- * Encapsulates state transitions into pure, 100% testable functions.
+ * Encapsulates state transitions into pure, 100% testable functions following the Step-Down Rule.
  *
  * @module storeActions
  */
 
-import type { PopoverStore } from '../types';
+import type { PopoverStore, StatePatch } from '../types';
+import type { TrailEntry } from '../types/entryTypes';
 import { bringToFrontPatch } from '../utils/storeHelpers';
 
 /**
@@ -23,42 +24,70 @@ export function isKeyInZIndexOrder(zIndexOrder: readonly string[], key: string):
 }
 
 /**
+ * Helper locating an entry by key in either trail or floating lists.
+ */
+function findEntryInLists<TData>(
+  state: { trail: readonly TrailEntry<TData>[]; floating: readonly TrailEntry<TData>[] },
+  key: string,
+): { targetEntry: TrailEntry<TData> | undefined; inTrail: boolean; inFloating: boolean } {
+  const targetInTrail = state.trail.find((e) => e.key === key);
+  const targetInFloating = state.floating.find((e) => e.key === key);
+  return {
+    targetEntry: targetInTrail ?? targetInFloating,
+    inTrail: Boolean(targetInTrail),
+    inFloating: Boolean(targetInFloating),
+  };
+}
+
+/**
+ * Helper partitioning trail and floating arrays upon toggling pin state.
+ */
+function partitionListsOnPinToggle<TData>(
+  state: { trail: readonly TrailEntry<TData>[]; floating: readonly TrailEntry<TData>[] },
+  key: string,
+  nextPinState: boolean,
+  inTrail: boolean,
+  inFloating: boolean,
+  targetEntry: TrailEntry<TData>,
+): { nextTrail: readonly TrailEntry<TData>[]; nextFloating: readonly TrailEntry<TData>[] } {
+  if (nextPinState && inTrail) {
+    return {
+      nextTrail: state.trail.filter((e) => e.key !== key),
+      nextFloating: [...state.floating, targetEntry],
+    };
+  }
+  if (!nextPinState && inFloating) {
+    return {
+      nextTrail: [...state.trail, targetEntry],
+      nextFloating: state.floating.filter((e) => e.key !== key),
+    };
+  }
+  return { nextTrail: state.trail, nextFloating: state.floating };
+}
+
+/**
  * Pure reducer function calculating state patch for toggling pin status on a popover entry.
  */
 export function reduceTogglePinState<TData, TContext, TPopoverKey extends string>(
   state: PopoverStore<TData, TContext, TPopoverKey>,
   key: string,
-): Partial<PopoverStore<TData, TContext, TPopoverKey>> {
-  const currentPinState = Boolean(state.pinnedStates[key]);
-  const nextPinState = !currentPinState;
+): StatePatch<TData, TContext, TPopoverKey> {
+  const nextPinState = !state.pinnedStates[key];
+  const nextPinnedStates = { ...state.pinnedStates, [key]: nextPinState };
 
-  const nextPinnedStates = {
-    ...state.pinnedStates,
-    [key]: nextPinState,
-  };
-
-  const targetInTrail = state.trail.find((e) => e.key === key);
-  const targetInFloating = state.floating.find((e) => e.key === key);
-  const targetEntry = targetInTrail ?? targetInFloating;
-
+  const { targetEntry, inTrail, inFloating } = findEntryInLists(state, key);
   if (!targetEntry) {
     return { pinnedStates: nextPinnedStates };
   }
 
-  let nextTrail = state.trail;
-  let nextFloating = state.floating;
-
-  if (nextPinState) {
-    if (targetInTrail) {
-      nextTrail = state.trail.filter((e) => e.key !== key);
-      nextFloating = [...state.floating, targetEntry];
-    }
-  } else {
-    if (targetInFloating) {
-      nextFloating = state.floating.filter((e) => e.key !== key);
-      nextTrail = [...state.trail, targetEntry];
-    }
-  }
+  const { nextTrail, nextFloating } = partitionListsOnPinToggle(
+    state,
+    key,
+    nextPinState,
+    inTrail,
+    inFloating,
+    targetEntry,
+  );
 
   const bringToFrontState: PopoverStore<TData, TContext, TPopoverKey> = {
     ...state,
@@ -80,7 +109,7 @@ export function reduceUpdateOffsetState<TData, TContext, TPopoverKey extends str
   state: PopoverStore<TData, TContext, TPopoverKey>,
   key: string,
   offset: { x: number; y: number },
-): Partial<PopoverStore<TData, TContext, TPopoverKey>> {
+): StatePatch<TData, TContext, TPopoverKey> {
   return {
     offsets: {
       ...state.offsets,

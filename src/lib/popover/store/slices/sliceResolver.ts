@@ -13,11 +13,14 @@ import {
   pushNestedState,
 } from '../../utils/storeHelpers';
 import { selectEntryByKey } from '../storeSelectors';
+import { invokeResolverSafely } from '../storeResolverPipeline';
 import type { SliceContext } from './sliceContext';
 
-export function createResolverSlice<TData = unknown, TContext = unknown>(
-  ctx: SliceContext<TData, TContext>,
-) {
+export function createResolverSlice<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(ctx: SliceContext<TData, TContext, TPopoverKey>) {
   const { set, get, deps } = ctx;
   const {
     activeControllers,
@@ -64,9 +67,14 @@ export function createResolverSlice<TData = unknown, TContext = unknown>(
         return;
       }
 
+      const target =
+        anchorEvent && 'currentTarget' in anchorEvent ? anchorEvent.currentTarget : null;
       const triggerEl =
-        anchorEvent && 'currentTarget' in anchorEvent
-          ? (anchorEvent.currentTarget as HTMLElement)
+        target &&
+        typeof target === 'object' &&
+        'getBoundingClientRect' in target &&
+        typeof target.getBoundingClientRect === 'function'
+          ? (target as Element)
           : null;
       const optRect = options?.triggerRect;
       const triggerRect = optRect ?? triggerEl?.getBoundingClientRect() ?? null;
@@ -113,7 +121,7 @@ export function createResolverSlice<TData = unknown, TContext = unknown>(
       const sourceEntry = findEntryInStore(floating, trail, sourceKey);
       if (!sourceEntry || sourceEntry.transitionStatus === 'unmounting') return;
 
-      const optRect = (options as { triggerRect?: DOMRect })?.triggerRect;
+      const optRect = options?.triggerRect;
       const rect = optRect ?? sourceEntry.rect;
 
       await resolvePopoverEntry(
@@ -209,8 +217,8 @@ export function createResolverSlice<TData = unknown, TContext = unknown>(
     },
 
     prefetchPopover: async (key: string, parentData?: TData) => {
-      const activeResolver = get().resolveData;
-      if (cache?.get(key)) return cache.get(key) as TData;
+      const cached = cache?.get(key);
+      if (cached !== undefined) return cached;
 
       let controller = activeControllers.get(key);
       if (!controller) {
@@ -219,31 +227,17 @@ export function createResolverSlice<TData = unknown, TContext = unknown>(
       }
 
       try {
-        let res: unknown;
-        try {
-          res = (
-            activeResolver as (k: string, p?: TData, c?: TContext, s?: AbortSignal) => unknown
-          )(key, parentData, get().context ?? undefined, controller.signal);
-          if (res && typeof (res as Promise<unknown>).then === 'function') {
-            res = await res;
-          }
-        } catch {
-          res = await (
-            activeResolver as unknown as (args: {
-              key: string;
-              parentData?: TData;
-              context?: TContext;
-              signal: AbortSignal;
-            }) => unknown
-          )({
-            key,
-            parentData,
-            context: get().context ?? undefined,
-            signal: controller.signal,
-          });
-        }
-        cache?.set(key, res as TData);
-        return res as TData;
+        const resolveData = get().resolveData;
+        const activeCtx = get().context ?? undefined;
+        const res = await invokeResolverSafely(
+          resolveData,
+          key,
+          parentData,
+          activeCtx,
+          controller.signal,
+        );
+        cache?.set(key, res);
+        return res;
       } finally {
         activeControllers.delete(key);
       }

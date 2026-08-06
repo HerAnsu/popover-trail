@@ -1,4 +1,5 @@
-import type { TrailEntry } from '../types';
+import type { TrailEntry, OpenRootOptions, OpenNestedOptions } from '../types';
+import { toFiniteNumber } from './styles';
 
 export {
   updateEntryInLists,
@@ -18,8 +19,31 @@ export {
 export function isPromise<T>(value: unknown): value is Promise<T> {
   return (
     ((typeof value === 'object' && value !== null) || typeof value === 'function') &&
-    typeof (value as Record<string, unknown>).then === 'function'
+    'then' in value &&
+    typeof (value as { then?: unknown }).then === 'function'
   );
+}
+
+/**
+ * Shallow equality comparison utility for plain objects and arrays.
+ */
+export function shallowEqual<T>(objA: T, objB: T): boolean {
+  if (Object.is(objA, objB)) return true;
+  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+    return false;
+  }
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+  if (keysA.length !== keysB.length) return false;
+  for (const key of keysA) {
+    if (
+      !Object.prototype.hasOwnProperty.call(objB, key) ||
+      !Object.is(Reflect.get(objA, key), Reflect.get(objB, key))
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -92,7 +116,7 @@ export function isDeepEqual<T>(a: T, b: T): boolean {
     if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     if (
       !Object.prototype.hasOwnProperty.call(b, key) ||
-      !isDeepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])
+      !isDeepEqual(Reflect.get(a, key), Reflect.get(b, key))
     ) {
       return false;
     }
@@ -174,13 +198,6 @@ export function findEntryInStore<TData>(
 }
 
 /**
- * Sanitizes a numeric coordinate value, defaulting NaN to 0.
- */
-function sanitizeNum(val: number): number {
-  return Number.isNaN(val) ? 0 : val;
-}
-
-/**
  * Sanitizes a DOMRect or DOMRectReadOnly object, ensuring valid numeric properties.
  */
 export function sanitizeRect(
@@ -188,10 +205,10 @@ export function sanitizeRect(
 ): DOMRect | null {
   if (!rawRect) return null;
   return new DOMRect(
-    sanitizeNum(rawRect.x ?? 0),
-    sanitizeNum(rawRect.y ?? 0),
-    sanitizeNum(rawRect.width ?? 0),
-    sanitizeNum(rawRect.height ?? 0),
+    toFiniteNumber(rawRect.x),
+    toFiniteNumber(rawRect.y),
+    toFiniteNumber(rawRect.width),
+    toFiniteNumber(rawRect.height),
   );
 }
 
@@ -202,51 +219,59 @@ export function createTrailEntry<TData>(
   key: string,
   parentKey: string | undefined,
   rect: DOMRect | null,
-  options: (import('../types').OpenRootOptions & import('../types').OpenNestedOptions) | undefined,
+  options: (OpenRootOptions & OpenNestedOptions) | undefined,
   existingEntry?: TrailEntry<TData>,
   data?: TData,
   error: Error | null = null,
   isLoading = false,
 ): TrailEntry<TData> {
   return {
-    key,
-    parentKey,
-    originalParentKey: parentKey ?? existingEntry?.originalParentKey,
-    rect: rect ?? existingEntry?.rect,
-    originalRect: rect ?? existingEntry?.originalRect,
-    data,
-    error,
-    isLoading,
-    collision: options?.collision,
+    key: key,
+    parentKey: parentKey ?? undefined,
+    rect: rect ?? existingEntry?.rect ?? undefined,
+    pinnedLayoutPos: existingEntry?.pinnedLayoutPos ?? undefined,
+    originalParentKey: parentKey ?? existingEntry?.originalParentKey ?? undefined,
+    originalRect: rect ?? existingEntry?.originalRect ?? undefined,
     transitionStatus: 'mounting',
-    hover: options?.hover,
-    ariaDescribedby: options?.ariaDescribedby,
-    allowDragWhenPinned: options?.allowDragWhenPinned,
-    allowDragWhenUnpinned: options?.allowDragWhenUnpinned,
-    placement: options?.placement,
-    offset: options?.offset,
-    exitTransitionDuration: options?.exitTransitionDuration,
-    baseZIndex: options?.baseZIndex,
-    cascadeOffsetStep: options?.cascadeOffsetStep,
-    cascadeOffsetDirection: options?.cascadeOffsetDirection,
-    enableTilt: options?.enableTilt,
-    maxTiltAngle: options?.maxTiltAngle,
-    tiltSensitivity: options?.tiltSensitivity,
-    dragAxis: options?.dragAxis,
-    tiltFriction: options?.tiltFriction,
-    tiltDecay: options?.tiltDecay,
-    mountingClassName: options?.mountingClassName,
-    unmountingClassName: options?.unmountingClassName,
-    mountedClassName: options?.mountedClassName,
-    buttonControls: options?.buttonControls ?? existingEntry?.buttonControls,
-    stackGroup: options?.stackGroup ?? existingEntry?.stackGroup,
-    responsiveMode: options?.responsiveMode ?? existingEntry?.responsiveMode,
-    layoutStrategy: options?.layoutStrategy ?? existingEntry?.layoutStrategy,
-    keyboardShortcuts: options?.keyboardShortcuts ?? existingEntry?.keyboardShortcuts,
-    focusLockOptions: options?.focusLockOptions ?? existingEntry?.focusLockOptions,
-    onOpen: options?.onOpen ?? existingEntry?.onOpen,
-    onClose: options?.onClose ?? existingEntry?.onClose,
-    onPin: options?.onPin ?? existingEntry?.onPin,
-    onError: options?.onError ?? existingEntry?.onError,
+    status: existingEntry?.status ?? undefined,
+    isLoading: isLoading ?? false,
+    error: error ?? null,
+    data: data ?? existingEntry?.data ?? null,
+    dataPromise: existingEntry?.dataPromise ?? undefined,
+    collision: options?.collision ?? existingEntry?.collision ?? undefined,
+    hover: options?.hover ?? existingEntry?.hover ?? undefined,
+    ariaDescribedby: options?.ariaDescribedby ?? existingEntry?.ariaDescribedby ?? undefined,
+    allowDragWhenPinned:
+      options?.allowDragWhenPinned ?? existingEntry?.allowDragWhenPinned ?? undefined,
+    allowDragWhenUnpinned:
+      options?.allowDragWhenUnpinned ?? existingEntry?.allowDragWhenUnpinned ?? undefined,
+    placement: options?.placement ?? existingEntry?.placement ?? undefined,
+    offset: options?.offset ?? existingEntry?.offset ?? undefined,
+    exitTransitionDuration:
+      options?.exitTransitionDuration ?? existingEntry?.exitTransitionDuration ?? undefined,
+    baseZIndex: options?.baseZIndex ?? existingEntry?.baseZIndex ?? undefined,
+    cascadeOffsetStep: options?.cascadeOffsetStep ?? existingEntry?.cascadeOffsetStep ?? undefined,
+    cascadeOffsetDirection:
+      options?.cascadeOffsetDirection ?? existingEntry?.cascadeOffsetDirection ?? undefined,
+    enableTilt: options?.enableTilt ?? existingEntry?.enableTilt ?? undefined,
+    maxTiltAngle: options?.maxTiltAngle ?? existingEntry?.maxTiltAngle ?? undefined,
+    tiltSensitivity: options?.tiltSensitivity ?? existingEntry?.tiltSensitivity ?? undefined,
+    dragAxis: options?.dragAxis ?? existingEntry?.dragAxis ?? undefined,
+    tiltFriction: options?.tiltFriction ?? existingEntry?.tiltFriction ?? undefined,
+    tiltDecay: options?.tiltDecay ?? existingEntry?.tiltDecay ?? undefined,
+    mountingClassName: options?.mountingClassName ?? existingEntry?.mountingClassName ?? undefined,
+    unmountingClassName:
+      options?.unmountingClassName ?? existingEntry?.unmountingClassName ?? undefined,
+    mountedClassName: options?.mountedClassName ?? existingEntry?.mountedClassName ?? undefined,
+    buttonControls: options?.buttonControls ?? existingEntry?.buttonControls ?? undefined,
+    stackGroup: options?.stackGroup ?? existingEntry?.stackGroup ?? undefined,
+    responsiveMode: options?.responsiveMode ?? existingEntry?.responsiveMode ?? undefined,
+    layoutStrategy: options?.layoutStrategy ?? existingEntry?.layoutStrategy ?? undefined,
+    keyboardShortcuts: options?.keyboardShortcuts ?? existingEntry?.keyboardShortcuts ?? undefined,
+    focusLockOptions: options?.focusLockOptions ?? existingEntry?.focusLockOptions ?? undefined,
+    onOpen: options?.onOpen ?? existingEntry?.onOpen ?? undefined,
+    onClose: options?.onClose ?? existingEntry?.onClose ?? undefined,
+    onPin: options?.onPin ?? existingEntry?.onPin ?? undefined,
+    onError: options?.onError ?? existingEntry?.onError ?? undefined,
   };
 }

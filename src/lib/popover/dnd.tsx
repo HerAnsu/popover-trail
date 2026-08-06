@@ -23,6 +23,7 @@ import {
 import FocusLock from 'react-focus-lock';
 import { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCard';
 import { usePopoverDragAndDrop } from './hooks/useDragAndDrop';
+import { useMergedRef } from './hooks/useHookUtils';
 import {
   DEFAULT_DRAG_DISTANCE_THRESHOLD,
   DEFAULT_TOUCH_DELAY_MS,
@@ -39,6 +40,7 @@ import {
 } from './context';
 import { getPopoverStyles } from './utils/styles';
 import { clsx } from './utils/storeHelpers';
+import { extractNumericStyle } from './utils/typeGuards';
 import type { TrailEntry, PopoverPlacement } from './types';
 
 const FIXED_CONTAINER_STYLE: React.CSSProperties = {
@@ -143,8 +145,8 @@ export function usePopoverDraggableCard({
   const offset = usePopoverOffset(entry.key);
   const style = getPopoverStyles({
     finalLayoutPos: {
-      top: (card.style.top as number) || 0,
-      left: (card.style.left as number) || 0,
+      top: extractNumericStyle(card.style.top),
+      left: extractNumericStyle(card.style.left),
     },
     offset: isDragAllowed ? offset : { x: 0, y: 0 },
     dragX: isDragAllowed ? dragX : 0,
@@ -152,21 +154,12 @@ export function usePopoverDraggableCard({
     rotation: isDragAllowed ? rotation : 0,
     rotationX: isDragAllowed ? rotationX : 0,
     rotationY: isDragAllowed ? rotationY : 0,
-    zIndex: card.style.zIndex as number,
+    zIndex: extractNumericStyle(card.style.zIndex),
   });
 
   const domRef = useRef<HTMLDivElement | null>(null);
 
-  const setCombinedRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      card.ref(node);
-      domRef.current = node;
-      if (isDragAllowed) {
-        setNodeRef(node);
-      }
-    },
-    [card, setNodeRef, isDragAllowed],
-  );
+  const setCombinedRef = useMergedRef(card.ref, domRef, isDragAllowed ? setNodeRef : undefined);
 
   const handlePinToggle = useCallback(() => {
     if (domRef.current) {
@@ -434,7 +427,7 @@ function PopoverCardInner<TData = unknown>({
     onKeyDown,
     transitionClassName,
   } = usePopoverDraggableCard({
-    entry: entry as TrailEntry,
+    entry,
     index,
     isPinned,
     placement,

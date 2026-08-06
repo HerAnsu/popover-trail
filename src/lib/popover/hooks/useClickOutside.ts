@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, ClickOutsideConfig } from '../types';
 import { isPortalOrExcludedTarget, getEventPath, getEventTarget } from '../utils/storeHelpers';
+import { TriggerRegistry } from '../utils/triggerRegistry';
 
 export interface UseClickOutsideOptions<TData = unknown, TContext = unknown> {
   store: StoreApi<PopoverStore<TData, TContext>>;
@@ -55,10 +56,8 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
 
       if (clickedInside) return;
 
-      if (
-        state.anchorElement &&
-        (path.includes(state.anchorElement) || state.anchorElement.contains(target))
-      ) {
+      const anchorEl = TriggerRegistry.get(state.ownerId ?? '') ?? state.anchorElement;
+      if (anchorEl && (path.includes(anchorEl) || anchorEl.contains(target))) {
         return;
       }
 

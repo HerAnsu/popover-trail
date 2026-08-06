@@ -259,7 +259,8 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
       }
 
       const payload = { action: 'resolve', id: requestId, key, parentData, context };
-      const transferableItems = transferables ? transferables(payload as unknown as TData) : [];
+      const transferableItems =
+        transferables && parentData !== undefined ? transferables(parentData as TData) : [];
 
       if (transferableItems.length > 0) {
         currentWorker.postMessage(payload, transferableItems);
@@ -283,4 +284,66 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
   Object.assign(resolver, { terminate, destroy: terminate });
 
   return resolver;
+}
+
+/**
+ * Helper to define a CSP-compliant Worker script listener for popover-trail RPC resolvers.
+ * Use inside a dedicated Web Worker module file (e.g. `myWorker.ts`).
+ *
+ * @example
+ * ```ts
+ * // worker.ts
+ * import { definePopoverWorkerRPC } from 'popover-trail';
+ *
+ * definePopoverWorkerRPC(async (key, parentData, context) => {
+ *   const res = await fetch(`/api/card/${key}`);
+ *   return res.json();
+ * });
+ * ```
+ */
+export function definePopoverWorkerRPC<TData = unknown, TContext = unknown>(
+  handler: (key: string, parentData?: unknown, context?: TContext) => TData | Promise<TData>,
+): void {
+  if (typeof self === 'undefined') return;
+
+  const activeTasks = new Map<number, AbortController>();
+
+  self.addEventListener('message', async (e: Event) => {
+    const ev = e as MessageEvent;
+    const { action, id, key, parentData, context } = ev.data || {};
+
+    if (action === 'abort') {
+      const controller = activeTasks.get(id);
+      if (controller) {
+        controller.abort();
+        activeTasks.delete(id);
+      }
+      return;
+    }
+
+    if (action === 'resolve' || !action) {
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      if (controller) {
+        activeTasks.set(id, controller);
+      }
+
+      try {
+        const result = await handler(key, parentData, context as TContext);
+
+        if (controller && controller.signal.aborted) {
+          return;
+        }
+
+        self.postMessage({ id, success: true, data: result });
+      } catch (err) {
+        self.postMessage({
+          id,
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      } finally {
+        activeTasks.delete(id);
+      }
+    }
+  });
 }

@@ -50,9 +50,20 @@ export type PopoverSchemaDefinition = Record<string, PopoverSchemaNode>;
 /** Helper to extract valid key union from a schema definition. */
 export type SchemaKeys<TSchema extends PopoverSchemaDefinition> = Extract<keyof TSchema, string>;
 
+/** Type helper extracting inferred key union from a schema definition. */
+export type InferSchemaKeys<TSchema extends PopoverSchemaDefinition> = SchemaKeys<TSchema>;
+
+/**
+ * Type helper mapping every popover key in a schema to its exact resolved data payload type.
+ * Generates an application-wide data map interface for type-safe caching and telemetry.
+ */
+export type InferSchemaDataMap<TSchema extends PopoverSchemaDefinition> = {
+  [K in SchemaKeys<TSchema>]: SchemaData<TSchema, K>;
+};
+
 /** Type helper extracting inferred global context type from schema node resolvers. */
 export type InferSchemaContext<TSchema extends PopoverSchemaDefinition> =
-  TSchema[keyof TSchema] extends PopoverSchemaNode<any, any, infer TC> ? TC : unknown;
+  TSchema[keyof TSchema] extends PopoverSchemaNode<unknown, unknown, infer TC> ? TC : unknown;
 
 /**
  * Ergonomic helper to define an individual schema node with full type inference and autocompletion.
@@ -114,7 +125,7 @@ export interface PopoverSchemaInstance<
     Omit<PopoverTriggerProps, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }
   >;
   /** Strongly typed hook for accessing resolved data by schema key. */
-  useData: <K extends SchemaKeys<TSchema>>(key: K) => SchemaData<TSchema, K> | undefined;
+  useData: <K extends SchemaKeys<TSchema>>(key: K) => SchemaData<TSchema, K> | null | undefined;
   /** Strongly typed hook for accessing active trail entry by schema key. */
   useEntry<K extends SchemaKeys<TSchema>>(key: K): TrailEntry<SchemaData<TSchema, K>> | undefined;
   /** Strongly typed hook for dispatching store actions with schema key autocompletion and ancestry validation. */
@@ -152,9 +163,11 @@ export function createPopoverSchema<
   const TSchema extends PopoverSchemaDefinition,
   TContext = InferSchemaContext<TSchema>,
 >(definition: TSchema): PopoverSchemaInstance<TSchema, TContext> {
-  const keys = Object.fromEntries(Object.keys(definition).map((k) => [k, k])) as {
-    [K in SchemaKeys<TSchema>]: K;
-  };
+  const keysMap = {} as { [K in SchemaKeys<TSchema>]: K };
+  for (const k of Object.keys(definition)) {
+    (keysMap as Record<string, string>)[k] = k;
+  }
+  const keys = keysMap;
 
   const createResolver = <TC = TContext,>(): PopoverResolver<
     SchemaData<TSchema, SchemaKeys<TSchema>>,
@@ -165,7 +178,7 @@ export function createPopoverSchema<
       const node = hasNode ? definition[key] : undefined;
       validateSchemaKey(Boolean(node), key);
       if (node && typeof node.resolver === 'function') {
-        return node.resolver(key, parentData, context, signal) as ReturnType<
+        return Promise.resolve(node.resolver(key, parentData, context, signal)) as ReturnType<
           PopoverResolver<SchemaData<TSchema, SchemaKeys<TSchema>>, TC>
         >;
       }
@@ -208,7 +221,9 @@ export function createPopoverSchema<
   };
   SchemaTrigger.displayName = 'PopoverSchemaTrigger';
 
-  const useData = <K extends SchemaKeys<TSchema>>(key: K): SchemaData<TSchema, K> | undefined => {
+  const useData = <K extends SchemaKeys<TSchema>>(
+    key: K,
+  ): SchemaData<TSchema, K> | null | undefined => {
     return usePopoverData<SchemaData<TSchema, K>>(key);
   };
 
@@ -228,7 +243,8 @@ export function createPopoverSchema<
           options?: OpenRootOptions,
         ) => {
           const node = definition[key];
-          validateSchemaKey(Boolean(node), key as string);
+          const strKey = String(key);
+          validateSchemaKey(Boolean(node), strKey);
           const mergedOptions = {
             placement: node?.placement,
             offset: node?.offset,
@@ -238,15 +254,17 @@ export function createPopoverSchema<
             allowDragWhenUnpinned: node?.allowDragWhenUnpinned,
             ...options,
           };
-          return actions.openRootWithResolver(key, anchorEvent, mergedOptions);
+          return actions.openRootWithResolver(strKey, anchorEvent, mergedOptions);
         },
         pushNested: <SK extends SchemaKeys<TSchema>>(
           key: AllowedChildrenOf<TSchema, SK>,
           sourceKey: SK,
           options?: OpenNestedOptions,
         ) => {
-          const node = definition[key as string];
-          validateSchemaKey(Boolean(node), key as string);
+          const strKey = String(key);
+          const strSourceKey = String(sourceKey);
+          const node = definition[strKey];
+          validateSchemaKey(Boolean(node), strKey);
           const mergedOptions = {
             placement: node?.placement,
             offset: node?.offset,
@@ -256,7 +274,7 @@ export function createPopoverSchema<
             allowDragWhenUnpinned: node?.allowDragWhenUnpinned,
             ...options,
           };
-          return actions.openNestedWithResolver(key, sourceKey as string, mergedOptions);
+          return actions.openNestedWithResolver(strKey, strSourceKey, mergedOptions);
         },
         close: (key: SchemaKeys<TSchema>) => actions.closeByKey(key),
         closeAll: () => actions.closeAll(),
@@ -281,3 +299,13 @@ export function createPopoverSchema<
     useActions,
   };
 }
+
+/** Utility mapped type extracting all valid string keys from a schema definition. */
+export type SchemaKeyOf<TSchema extends PopoverSchemaDefinition> = Extract<keyof TSchema, string>;
+
+/** Utility mapped type extracting a record of key-to-data-payload types from a schema definition. */
+export type SchemaDataMap<TSchema extends PopoverSchemaDefinition> = {
+  [K in keyof TSchema]: TSchema[K] extends PopoverSchemaNode<infer TD, infer _TP, infer _TC>
+    ? TD
+    : never;
+};

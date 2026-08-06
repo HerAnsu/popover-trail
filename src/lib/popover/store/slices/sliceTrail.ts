@@ -17,9 +17,11 @@ import {
 import { selectTopmostEntry } from '../storeSelectors';
 import type { SliceContext } from './sliceContext';
 
-export function createTrailSlice<TData = unknown, TContext = unknown>(
-  ctx: SliceContext<TData, TContext>,
-) {
+export function createTrailSlice<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(ctx: SliceContext<TData, TContext, TPopoverKey>) {
   const { set, get, deps } = ctx;
   const {
     activeControllers,
@@ -35,7 +37,7 @@ export function createTrailSlice<TData = unknown, TContext = unknown>(
   const emitEvent = (event: PopoverStoreEvent<TData>) => {
     for (const listener of eventListeners) {
       try {
-        listener(event as PopoverStoreEvent<TData>);
+        listener(event);
       } catch (err) {
         console.error('[popover-trail]: Exception in store event listener:', err);
       }

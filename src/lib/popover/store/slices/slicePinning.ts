@@ -10,9 +10,11 @@ import { reduceUpdateOffsetState } from '../storeActions';
 import { selectIsPinned } from '../storeSelectors';
 import type { SliceContext } from './sliceContext';
 
-export function createPinningSlice<TData = unknown, TContext = unknown>(
-  ctx: SliceContext<TData, TContext>,
-) {
+export function createPinningSlice<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(ctx: SliceContext<TData, TContext, TPopoverKey>) {
   const { set, get, deps } = ctx;
   const { clearHoverTimer, findEntryByKey, pushSnapshot } = deps;
 

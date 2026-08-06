@@ -8,15 +8,13 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { usePopoverGeometry } from './useGeometry';
-import {
-  usePopoverOffset,
-  usePopoverZIndex,
-  useIsPopoverTopMost,
-  usePopoverActions,
-  usePopoverStore,
-} from '../context';
+import { usePopoverActions, usePopoverStore } from '../context';
 import { getPopoverStyles } from '../utils/styles';
-import type { TrailEntry, PopoverPlacement } from '../types';
+import { shallowEqual } from '../utils/storeHelpers';
+import { FOCUSABLE_ELEMENTS_SELECTOR } from '../constants';
+import type { TrailEntry, PopoverPlacement, PopoverStore } from '../types';
+
+const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
 /**
  * Options parameters for the `usePopoverCard` unified hook.
@@ -112,18 +110,8 @@ export function handleCardKeyboardNavigation(
     if (isEditingText) return;
 
     if (!cardElement) return;
-    const focusableSelectors = [
-      'a[href]',
-      'area[href]',
-      'input:not([disabled])',
-      'select:not([disabled])',
-      'textarea:not([disabled])',
-      'button:not([disabled])',
-      "[tabindex]:not([tabindex='-1'])",
-    ].join(',');
-
     const elements = Array.from(
-      cardElement.querySelectorAll<HTMLElement>(focusableSelectors),
+      cardElement.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR),
     ).filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0);
     if (elements.length === 0) return;
 
@@ -262,17 +250,43 @@ export function usePopoverCard({
   });
 
   // Select state coordinates and actions
-  const offset = usePopoverOffset(entry.key);
-  const zIndex = usePopoverZIndex(entry.key);
-  const isTop = useIsPopoverTopMost(entry.key);
+  const storeSlice = usePopoverStore(
+    useCallback(
+      (state: PopoverStore) => ({
+        offset: state.offsets[entry.key] ?? DEFAULT_OFFSET,
+        zIndex: state.zIndexOrder.indexOf(entry.key),
+        isTop:
+          state.zIndexOrder.length > 0 &&
+          state.zIndexOrder[state.zIndexOrder.length - 1] === entry.key,
+        enableArrowNavigation: state.enableArrowNavigation,
+        trail: state.trail,
+        floating: state.floating,
+        baseZIndex: state.baseZIndex,
+        mountingClassName: state.mountingClassName,
+        unmountingClassName: state.unmountingClassName,
+        mountedClassName: state.mountedClassName,
+        zIndexBaseMap: state.zIndexBaseMap,
+      }),
+      [entry.key],
+    ),
+    shallowEqual,
+  );
+
+  const {
+    offset,
+    zIndex,
+    isTop,
+    enableArrowNavigation,
+    trail,
+    floating,
+    baseZIndex,
+    mountingClassName: globalMounting,
+    unmountingClassName: globalUnmounting,
+    mountedClassName: globalMounted,
+    zIndexBaseMap,
+  } = storeSlice;
+
   const actions = usePopoverActions();
-  const enableArrowNavigation = usePopoverStore((state) => state.enableArrowNavigation);
-  const trail = usePopoverStore((state) => state.trail);
-  const floating = usePopoverStore((state) => state.floating);
-  const baseZIndex = usePopoverStore((state) => state.baseZIndex);
-  const globalMounting = usePopoverStore((state) => state.mountingClassName);
-  const globalUnmounting = usePopoverStore((state) => state.unmountingClassName);
-  const globalMounted = usePopoverStore((state) => state.mountedClassName);
 
   // Handle transition state automatically (mounting -> mounted) using requestAnimationFrame for frame-adaptive rendering
   useEffect(() => {
@@ -306,7 +320,6 @@ export function usePopoverCard({
     transitionClassName = unmountingClass;
   }
 
-  const zIndexBaseMap = usePopoverStore((state) => state.zIndexBaseMap);
   const groupBaseZIndex = entry.stackGroup ? zIndexBaseMap?.[entry.stackGroup] : undefined;
   const effectiveBaseZIndex = entry.baseZIndex ?? groupBaseZIndex ?? baseZIndex ?? 1000;
 

@@ -6,12 +6,13 @@
  */
 
 import type {
-  PopoverStore,
   PopoverActions,
   OpenRootOptions,
   OpenNestedOptions,
   PopoverStoreEvent,
   TrailEntry,
+  StatePatch,
+  StoreState,
 } from '../types';
 import { createTrailSlice } from './slices/sliceTrail';
 import { createPinningSlice } from './slices/slicePinning';
@@ -22,7 +23,11 @@ import type { PopoverMiddlewareEngine } from './storeMiddlewareEngine';
 import type { SliceContext } from './slices/sliceContext';
 import type { StoreSetFn, StoreGetFn } from './storeTypes';
 
-export interface ActionRegistryDependencies<TData = unknown, TContext = unknown> {
+export interface ActionRegistryDependencies<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
   activeControllers: Map<string, AbortController>;
   inFlightPromises: Map<string, Promise<TData>>;
   hoverCloseTimers: Map<string, ReturnType<typeof setTimeout>>;
@@ -43,7 +48,7 @@ export interface ActionRegistryDependencies<TData = unknown, TContext = unknown>
     key: string,
     parentKey: string | undefined,
     rect: DOMRect | null,
-    parentData: TData | undefined,
+    parentData: TData | null | undefined,
     options: (OpenRootOptions & OpenNestedOptions) | undefined,
     controllerKey: string,
     incrementCounter: () => number,
@@ -51,8 +56,10 @@ export interface ActionRegistryDependencies<TData = unknown, TContext = unknown>
     insertStatePatch: (
       entry: TrailEntry<TData>,
     ) =>
-      | Partial<PopoverStore<TData, TContext>>
-      | ((state: PopoverStore<TData, TContext>) => Partial<PopoverStore<TData, TContext>>),
+      | StatePatch<TData, TContext, TPopoverKey>
+      | ((
+          state: StoreState<TData, TContext, TPopoverKey>,
+        ) => StatePatch<TData, TContext, TPopoverKey>),
   ) => Promise<void>;
   pushSnapshot: (state: import('../types').PopoverStateData<TData, TContext>) => void;
   clearHistory: () => void;
@@ -61,24 +68,35 @@ export interface ActionRegistryDependencies<TData = unknown, TContext = unknown>
   historyManager?: ReturnType<typeof import('./history').createHistoryManager<TData>>;
   startBatch: () => void;
   endBatch: () => void;
-  middlewareEngine: PopoverMiddlewareEngine<TData, TContext>;
+  middlewareEngine: PopoverMiddlewareEngine<TData, TContext, TPopoverKey>;
   cache?: import('../types').PopoverCache<TData>;
 }
 
 /**
  * Creates and registers all store actions bound to set/get Zustand methods via SliceContext.
  */
-export function createStoreActions<TData = unknown, TContext = unknown>(
-  set: StoreSetFn<TData, TContext>,
-  get: StoreGetFn<TData, TContext>,
-  deps: ActionRegistryDependencies<TData, TContext>,
-): PopoverActions<TData, TContext> {
-  const ctx: SliceContext<TData, TContext> = { set, get, deps };
-  return {
-    ...createTrailSlice<TData, TContext>(ctx),
-    ...createPinningSlice<TData, TContext>(ctx),
-    ...createResolverSlice<TData, TContext>(ctx),
-    ...createConfigSlice<TData, TContext>(ctx),
-    ...createPersistenceSlice<TData, TContext>(ctx),
+export function createStoreActions<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  set: StoreSetFn<TData, TContext, TPopoverKey>,
+  get: StoreGetFn<TData, TContext, TPopoverKey>,
+  deps: ActionRegistryDependencies<TData, TContext, TPopoverKey>,
+): PopoverActions<TData, TContext, TPopoverKey> {
+  const ctx: SliceContext<TData, TContext, TPopoverKey> = { set, get, deps };
+  const trailSlice = createTrailSlice<TData, TContext, TPopoverKey>(ctx);
+  const pinningSlice = createPinningSlice<TData, TContext, TPopoverKey>(ctx);
+  const resolverSlice = createResolverSlice<TData, TContext, TPopoverKey>(ctx);
+  const configSlice = createConfigSlice<TData, TContext, TPopoverKey>(ctx);
+  const persistenceSlice = createPersistenceSlice<TData, TContext, TPopoverKey>(ctx);
+
+  const actions: PopoverActions<TData, TContext, TPopoverKey> = {
+    ...trailSlice,
+    ...pinningSlice,
+    ...resolverSlice,
+    ...configSlice,
+    ...persistenceSlice,
   };
+  return actions;
 }

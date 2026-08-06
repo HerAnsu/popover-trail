@@ -1,0 +1,61 @@
+/**
+ * Type Guards, Type Predicates, and Key Constructor Helpers for popover-trail.
+ *
+ * @module types/guardTypes
+ */
+
+import {
+  isResolvedEntry,
+  isLoadingEntry,
+  isErrorEntry,
+  getEntryState,
+  createPopoverKey,
+  definePopoverResolver,
+  createPopoverResolver,
+  isVirtualElementAnchor,
+  isEventAnchor,
+  toValidatedAnchorRef,
+  toViewportX,
+  toViewportY,
+  createVirtualElement,
+  isOpenRootEvent,
+  isPushNestedEvent,
+  isCloseEvent,
+  isPinEvent,
+  isUnpinEvent,
+  isResolveStartEvent,
+  isResolveSuccessEvent,
+  isResolveErrorEvent,
+  isClearEvent,
+  isStoreEvent,
+  definePopoverConfig,
+  definePopoverMiddleware,
+} from '../utils/typeGuards';
+
+export {
+  isResolvedEntry,
+  isLoadingEntry,
+  isErrorEntry,
+  getEntryState,
+  createPopoverKey,
+  definePopoverResolver,
+  createPopoverResolver,
+  isVirtualElementAnchor,
+  isEventAnchor,
+  toValidatedAnchorRef,
+  toViewportX,
+  toViewportY,
+  createVirtualElement,
+  isOpenRootEvent,
+  isPushNestedEvent,
+  isCloseEvent,
+  isPinEvent,
+  isUnpinEvent,
+  isResolveStartEvent,
+  isResolveSuccessEvent,
+  isResolveErrorEvent,
+  isClearEvent,
+  isStoreEvent,
+  definePopoverConfig,
+  definePopoverMiddleware,
+};

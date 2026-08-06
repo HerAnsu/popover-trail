@@ -23,7 +23,7 @@ import {
   type PopoverSchemaInstance,
 } from './schema';
 import { validateFactoryPlacement } from './utils/devWarnings';
-
+import type { RegisteredKeys, RegisteredDataMap } from './types/registerTypes';
 interface ReactInternals {
   __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?: {
     ReactCurrentDispatcher?: { current?: unknown };
@@ -35,8 +35,7 @@ interface ReactInternals {
  */
 function isCurrentlyRenderingInReact(): boolean {
   try {
-    const secret = (React as unknown as ReactInternals)
-      .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    const secret = (React as ReactInternals).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
     return Boolean(secret?.ReactCurrentDispatcher?.current);
   } catch {
     return false;
@@ -73,15 +72,15 @@ export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
  * @see {@link PopoverProvider}
  */
 export function createPopoverTrail<
-  TData = unknown,
+  TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
-  TPopoverKey extends string = string,
+  TPopoverKey extends string = RegisteredKeys,
 >(): {
   PopoverProvider: React.ComponentType<PopoverProviderProps<TData, TContext>>;
   PopoverPortal: typeof CorePopoverPortal;
   PopoverTrigger: React.ComponentType<PopoverTriggerProps<TPopoverKey>>;
   usePopover: (key: TPopoverKey) => UsePopoverResult<TData>;
-  usePopoverActions: () => ReturnType<typeof coreUsePopoverActions<TData, TContext>>;
+  usePopoverActions: () => ReturnType<typeof coreUsePopoverActions<TData, TContext, TPopoverKey>>;
   usePopoverContext: () => TContext;
 };
 

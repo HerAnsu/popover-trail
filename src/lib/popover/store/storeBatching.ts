@@ -17,13 +17,31 @@ export interface BatchingManager {
 }
 
 /**
+ * Executes a callback within an atomic batch update scope, returning its exact return value `R`.
+ */
+export function batchUpdatesScope<R>(
+  manager: BatchingManager,
+  fn: () => R,
+  getState?: () => unknown,
+): R {
+  manager.startBatch();
+  try {
+    return fn();
+  } finally {
+    manager.endBatch(getState);
+  }
+}
+
+/**
  * Instantiates a batching manager instance that coordinates batching state
  * and subscriber notification suppression during batchUpdates execution.
  */
+type BatchListener = (state: unknown, prevState: unknown) => void;
+
 export function createBatchingManager(): BatchingManager {
   let isBatching = false;
   let isBatchDirty = false;
-  const batchListeners = new Set<(state: unknown, prevState: unknown) => void>();
+  const batchListeners = new Set<BatchListener>();
 
   const startBatch = () => {
     isBatching = true;
@@ -53,12 +71,20 @@ export function createBatchingManager(): BatchingManager {
     ) => {
       const rawSubscribe = store.subscribe;
 
-      store.subscribe = ((listener: (state: unknown, prevState: unknown) => void) => {
-        batchListeners.add(listener);
-        return () => {
-          batchListeners.delete(listener);
+      store.subscribe = (listener) => {
+        const handler: BatchListener = (s, p) => {
+          if (s && p) {
+            listener(
+              s as PopoverStore<TData, TContext, TPopoverKey>,
+              p as PopoverStore<TData, TContext, TPopoverKey>,
+            );
+          }
         };
-      }) as never;
+        batchListeners.add(handler);
+        return () => {
+          batchListeners.delete(handler);
+        };
+      };
 
       rawSubscribe((state, prevState) => {
         if (isBatching) {

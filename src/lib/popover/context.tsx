@@ -12,7 +12,6 @@ import {
   useMemo,
   useCallback,
   useEffect,
-  useRef,
   type ReactNode,
 } from 'react';
 import { useStore } from 'zustand';
@@ -152,62 +151,187 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
 }
 
 /**
+ * Internal hook encapsulating keyboard event handling for the provider (SRP).
+ */
+function usePopoverKeyboardShortcuts<TData, TContext>(
+  store: StoreApi<PopoverStore<TData, TContext>>,
+  enableKeyboardClose: boolean,
+) {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!enableKeyboardClose || e.defaultPrevented) return;
+      if (e.key === 'Escape') {
+        const state = store.getState();
+        const hasActive = state.trail.length > 0 || state.floating.length > 0;
+        if (hasActive) {
+          e.preventDefault();
+          e.stopPropagation();
+          state.closeTopmost();
+        }
+      }
+    },
+    [enableKeyboardClose, store],
+  );
+
+  useEventListener('keydown', handleKeyDown);
+}
+
+/**
+ * Internal hook managing efficient prop synchronization into store state (SRP & Performance).
+ */
+function usePopoverPropSync<TData, TContext>(
+  store: StoreApi<PopoverStore<TData, TContext>>,
+  props: PopoverProviderProps<TData, TContext>,
+  activeResolver: PopoverResolver<TData, TContext>,
+) {
+  useEffect(() => {
+    store.getState().batchUpdates(() => {
+      const state = store.getState();
+      const enableArrowNav = Boolean(props.enableArrowNavigation ?? true);
+      if (state.enableArrowNavigation !== enableArrowNav) {
+        state.setEnableArrowNavigation(enableArrowNav);
+      }
+
+      const dragPinned = Boolean(props.allowDragWhenPinned ?? true);
+      if (state.allowDragWhenPinned !== dragPinned) {
+        state.setAllowDragWhenPinned(dragPinned);
+      }
+
+      const dragUnpinned = Boolean(props.allowDragWhenUnpinned ?? true);
+      if (state.allowDragWhenUnpinned !== dragUnpinned) {
+        state.setAllowDragWhenUnpinned(dragUnpinned);
+      }
+
+      const dbg = Boolean(props.debug ?? false);
+      if (state.debug !== dbg) {
+        state.setDebug(dbg);
+      }
+
+      const cascadeStep = Number(props.cascadeOffsetStep ?? 8);
+      if (state.cascadeOffsetStep !== cascadeStep) {
+        state.setCascadeOffsetStep(cascadeStep);
+      }
+
+      const exitDur = Number(props.exitTransitionDuration ?? 0);
+      if (state.exitTransitionDuration !== exitDur) {
+        state.setExitTransitionDuration(exitDur);
+      }
+
+      const defOffset = Number(props.defaultOffset ?? 8);
+      if (state.defaultOffset !== defOffset) {
+        state.setDefaultOffset(defOffset);
+      }
+
+      const zIndex = Number(props.baseZIndex ?? 1000);
+      if (state.baseZIndex !== zIndex) {
+        state.setBaseZIndex(zIndex);
+      }
+
+      const mountingName = String(props.mountingClassName ?? 'mounting');
+      const unmountingName = String(props.unmountingClassName ?? 'unmounting');
+      const mountedName = String(props.mountedClassName ?? 'mounted');
+      if (
+        state.mountingClassName !== mountingName ||
+        state.unmountingClassName !== unmountingName ||
+        state.mountedClassName !== mountedName
+      ) {
+        state.setGlobalAnimationClassNames(mountingName, unmountingName, mountedName);
+      }
+
+      if (state.context !== props.initialContext) {
+        state.setContext(props.initialContext as TContext);
+      }
+
+      if (state.resolveData !== activeResolver) {
+        state.setResolveData(activeResolver);
+      }
+
+      const closePinned = Boolean(props.closePinnedDescendants ?? false);
+      if (state.closePinnedDescendants !== closePinned) {
+        state.setClosePinnedDescendants(closePinned);
+      }
+
+      const respMode = props.responsiveMode ?? 'auto';
+      if (state.responsiveMode !== respMode) {
+        state.setResponsiveMode(respMode);
+      }
+
+      const mobBreakpoint = Number(props.mobileBreakpoint ?? 640);
+      if (state.mobileBreakpoint !== mobBreakpoint) {
+        state.setMobileBreakpoint(mobBreakpoint);
+      }
+
+      const stackGroupFilter = props.stackGroup ?? null;
+      if (state.activeStackGroup !== stackGroupFilter) {
+        state.setStackGroupFilter(stackGroupFilter);
+      }
+
+      if (props.focusLockOptions && !isDeepEqual(state.focusLockOptions, props.focusLockOptions)) {
+        state.setFocusLockOptions(props.focusLockOptions);
+      }
+
+      const collisionConfig = props.collision ?? null;
+      if (!isDeepEqual(state.collisionConfig, collisionConfig)) {
+        state.setCollisionConfig(collisionConfig);
+      }
+
+      const slotComponents = props.components ?? null;
+      if (state.components !== slotComponents) {
+        state.setSlotComponents(slotComponents);
+      }
+
+      const zIndexMap = props.zIndexBaseMap ?? null;
+      if (!isDeepEqual(state.zIndexBaseMap, zIndexMap)) {
+        state.setZIndexBaseMap(zIndexMap);
+      }
+    });
+  }, [
+    store,
+    props.enableArrowNavigation,
+    props.allowDragWhenPinned,
+    props.allowDragWhenUnpinned,
+    props.debug,
+    props.cascadeOffsetStep,
+    props.exitTransitionDuration,
+    props.defaultOffset,
+    props.baseZIndex,
+    props.mountingClassName,
+    props.unmountingClassName,
+    props.mountedClassName,
+    props.initialContext,
+    activeResolver,
+    props.closePinnedDescendants,
+    props.collision,
+    props.responsiveMode,
+    props.mobileBreakpoint,
+    props.stackGroup,
+    props.focusLockOptions,
+    props.components,
+    props.zIndexBaseMap,
+  ]);
+}
+
+/**
  * PopoverProvider component that instantiates the Zustand store and injects it
  * into the React context tree.
- *
- * @remarks
- * Instantiates the store once using `useState` and manages global event listeners for
- * Escape key closings (consolidated to avoid event duplication) and click-outside closures.
- *
- * @template TData - The type of resolved data payloads.
- * @template TContext - The type of global shared context.
- *
- * @param props - Provider configuration properties.
- * @returns The provider element wrapping children.
- *
- * @example
- * ```tsx
- * import { PopoverProvider, PopoverTrail } from 'popover-trail';
- * import { appSchema } from './schema';
- *
- * export function App() {
- *   return (
- *     <PopoverProvider schema={appSchema} clickOutside={{ enabled: true }}>
- *       <MainView />
- *       <PopoverTrail />
- *     </PopoverProvider>
- *   );
- * }
- * ```
  */
-export function PopoverProvider<TData = unknown, TContext = unknown>({
-  children,
-  schema,
-  resolveData,
-  initialContext,
-  clickOutside,
-  enableKeyboardClose = true,
-  closePinnedDescendants = false,
-  cache,
-  collision,
-  enableArrowNavigation = true,
-  allowDragWhenPinned = true,
-  allowDragWhenUnpinned = true,
-  debug = false,
-  cascadeOffsetStep = 8,
-  exitTransitionDuration = 0,
-  defaultOffset = 8,
-  baseZIndex = 1000,
-  mountingClassName = 'mounting',
-  unmountingClassName = 'unmounting',
-  mountedClassName = 'mounted',
-  responsiveMode = 'auto',
-  mobileBreakpoint = 640,
-  stackGroup = null,
-  focusLockOptions,
-  components,
-  zIndexBaseMap,
-}: PopoverProviderProps<TData, TContext>) {
+export function PopoverProvider<TData = unknown, TContext = unknown>(
+  props: PopoverProviderProps<TData, TContext>,
+) {
+  const {
+    children,
+    schema,
+    resolveData,
+    initialContext,
+    clickOutside,
+    enableKeyboardClose = true,
+    cascadeOffsetStep = 8,
+    exitTransitionDuration = 0,
+    defaultOffset = 8,
+    baseZIndex = 1000,
+    cache,
+  } = props;
+
   validateProviderResolver(Boolean(resolveData || schema));
   validateCascadeStep(cascadeOffsetStep);
   validateDefaultOffset(defaultOffset);
@@ -231,67 +355,8 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
     createPopoverStore<TData, TContext>(activeResolver, initialContext, cache),
   );
 
-  // Synchronize all provider props to the store in a single effect
-  useEffect(() => {
-    store.getState().batchUpdates(() => {
-      const state = store.getState();
-      state.setEnableArrowNavigation(Boolean(enableArrowNavigation));
-      state.setAllowDragWhenPinned(Boolean(allowDragWhenPinned));
-      state.setAllowDragWhenUnpinned(Boolean(allowDragWhenUnpinned));
-      state.setDebug(Boolean(debug));
-      state.setCascadeOffsetStep(Number(cascadeOffsetStep));
-      state.setExitTransitionDuration(Number(exitTransitionDuration));
-      state.setDefaultOffset(Number(defaultOffset));
-      state.setBaseZIndex(Number(baseZIndex));
-      state.setGlobalAnimationClassNames(
-        String(mountingClassName),
-        String(unmountingClassName),
-        String(mountedClassName),
-      );
-      state.setContext(initialContext as TContext);
-      state.setResolveData(activeResolver);
-      state.setClosePinnedDescendants(Boolean(closePinnedDescendants));
-      state.setResponsiveMode(responsiveMode);
-      state.setMobileBreakpoint(Number(mobileBreakpoint));
-      state.setStackGroupFilter(stackGroup);
-
-      if (focusLockOptions) {
-        state.setFocusLockOptions(focusLockOptions);
-      }
-      if (!isDeepEqual(state.collisionConfig, collision ?? null)) {
-        state.setCollisionConfig(collision ?? null);
-      }
-      if (state.components !== (components ?? null)) {
-        state.setSlotComponents(components ?? null);
-      }
-      if (!isDeepEqual(state.zIndexBaseMap, zIndexBaseMap ?? null)) {
-        state.setZIndexBaseMap(zIndexBaseMap ?? null);
-      }
-    });
-  }, [
-    store,
-    enableArrowNavigation,
-    allowDragWhenPinned,
-    allowDragWhenUnpinned,
-    debug,
-    cascadeOffsetStep,
-    exitTransitionDuration,
-    defaultOffset,
-    baseZIndex,
-    mountingClassName,
-    unmountingClassName,
-    mountedClassName,
-    initialContext,
-    activeResolver,
-    closePinnedDescendants,
-    collision,
-    responsiveMode,
-    mobileBreakpoint,
-    stackGroup,
-    focusLockOptions,
-    components,
-    zIndexBaseMap,
-  ]);
+  // Synchronize all provider props efficiently
+  usePopoverPropSync(store, props, activeResolver);
 
   // Cleanup on Provider unmount: abort all in-flight requests and reset state
   useEffect(() => {
@@ -301,50 +366,20 @@ export function PopoverProvider<TData = unknown, TContext = unknown>({
   }, [store]);
 
   // Handle Escape key closing globally
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (!enableKeyboardClose || e.defaultPrevented) return;
-      if (e.key === 'Escape') {
-        const state = store.getState();
-        const hasActive = state.trail.length > 0 || state.floating.length > 0;
-        if (hasActive) {
-          e.preventDefault();
-          e.stopPropagation();
-          state.closeTopmost();
-        }
-      }
-    },
-    [enableKeyboardClose, store],
-  );
-
-  useEventListener('keydown', handleKeyDown);
-
-  useEventListener('keydown', handleKeyDown);
+  usePopoverKeyboardShortcuts(store, enableKeyboardClose);
 
   // Setup click outside logic using custom hook
   useClickOutside({
-    store: store as unknown as StoreApi<PopoverStore<unknown, unknown>>,
+    store: store as StoreApi<PopoverStore<unknown, unknown>>,
     clickOutside,
   });
 
   return (
-    <PopoverStoreContext value={store as unknown as StoreApi<PopoverStore>}>
+    <PopoverStoreContext value={store as StoreApi<PopoverStore<unknown, unknown>>}>
       {children}
     </PopoverStoreContext>
   );
 }
-
-/**
- * Custom selector hook for direct access to reactive slices of the Popover Zustand store.
- *
- * @template TData - The type of resolved data payloads.
- * @template TContext - The type of global shared context.
- * @template TSelected - The selected slice type.
- *
- * @param selector - Selector function extracting values from state.
- * @returns The reactive value slice.
- * @throws {Error} If called outside a PopoverProvider.
- */
 
 /**
  * Custom selector hook for direct access to reactive slices of the Popover Zustand store.
@@ -371,14 +406,23 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
   equalityFn?: (a: TSelected, b: TSelected) => boolean,
 ): TSelected {
   const store = usePopoverStoreApi<TData, TContext>();
-  const slice = useStore(store, selector as (state: PopoverStore<TData, TContext>) => TSelected);
-  const prevRef = useRef<TSelected>(slice);
 
-  if (equalityFn && prevRef.current !== slice && !equalityFn(prevRef.current, slice)) {
-    prevRef.current = slice;
-  }
+  const memoizedSelector = useMemo(() => {
+    if (!equalityFn) return selector;
+    let hasPrev = false;
+    let prevSelected: TSelected | undefined;
+    return (state: PopoverStore<TData, TContext>): TSelected => {
+      const nextSelected = selector(state);
+      if (hasPrev && equalityFn(prevSelected as TSelected, nextSelected)) {
+        return prevSelected as TSelected;
+      }
+      hasPrev = true;
+      prevSelected = nextSelected;
+      return nextSelected;
+    };
+  }, [selector, equalityFn]);
 
-  return equalityFn ? prevRef.current : slice;
+  return useStore(store, memoizedSelector);
 }
 
 /**
@@ -408,6 +452,8 @@ export function usePopoverStoreApi<TData = unknown, TContext = unknown>(): Store
   return store as StoreApi<PopoverStore<TData, TContext>>;
 }
 
+import type { RegisteredKeys, RegisteredDataMap } from './types/registerTypes';
+
 /**
  * Hook to retrieve public popover store action dispatch methods.
  *
@@ -419,9 +465,9 @@ export function usePopoverStoreApi<TData = unknown, TContext = unknown>(): Store
  * @returns Object containing dispatch actions.
  */
 export function usePopoverActions<
-  TData = unknown,
+  TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
-  TPopoverKey extends string = string,
+  TPopoverKey extends string = RegisteredKeys,
 >(): Readonly<PopoverStore<TData, TContext, TPopoverKey>['actions']> {
   const store = useContext(PopoverStoreContext);
   if (!store) {

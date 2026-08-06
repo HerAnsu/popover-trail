@@ -31,3 +31,40 @@ export const DEFAULT_TOUCH_TOLERANCE_PX = 5;
 
 /** Default maximum history stack depth for undo/redo */
 export const DEFAULT_MAX_HISTORY_DEPTH = 30;
+
+/** Single source of truth for valid Floating UI placement direction strings */
+export const VALID_PLACEMENTS_SET: ReadonlySet<string> = new Set([
+  'top',
+  'top-start',
+  'top-end',
+  'bottom',
+  'bottom-start',
+  'bottom-end',
+  'left',
+  'left-start',
+  'left-end',
+  'right',
+  'right-start',
+  'right-end',
+]);
+
+/** CSS selector string querying focusable DOM elements for keyboard navigation */
+export const FOCUSABLE_ELEMENTS_SELECTOR = [
+  'a[href]',
+  'area[href]',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'button:not([disabled])',
+  "[tabindex]:not([tabindex='-1'])",
+].join(',');
+
+/** Physics drag defaults */
+export const DEFAULT_MAX_TILT_ANGLE = 5;
+export const DEFAULT_TILT_SENSITIVITY = 8;
+export const DEFAULT_TILT_FRICTION = 0.95;
+export const DEFAULT_TILT_DECAY = 0.82;
+export const TILT_ZERO_THRESHOLD = 0.05;
+
+/** Default hover close delay fallback in milliseconds */
+export const DEFAULT_HOVER_CLOSE_DELAY_MS = 300;

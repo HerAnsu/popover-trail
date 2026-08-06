@@ -18,26 +18,10 @@ import {
   selectHasEntry,
 } from '../store/storeSelectors';
 
-const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
+import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
+import { shallowEqual } from '../utils/storeHelpers';
 
-function shallowEqual<T>(objA: T, objB: T): boolean {
-  if (Object.is(objA, objB)) return true;
-  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
-    return false;
-  }
-  const keysA = Object.keys(objA);
-  const keysB = Object.keys(objB);
-  if (keysA.length !== keysB.length) return false;
-  for (const key of keysA) {
-    if (
-      !Object.prototype.hasOwnProperty.call(objB, key) ||
-      !Object.is((objA as Record<string, unknown>)[key], (objB as Record<string, unknown>)[key])
-    ) {
-      return false;
-    }
-  }
-  return true;
-}
+const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
 /**
  * Hook to retrieve the active trailing popover cascade array.
@@ -45,10 +29,10 @@ function shallowEqual<T>(objA: T, objB: T): boolean {
  * @template TData - The type of resolved data payloads.
  * @returns Array of trailing popover entries in order.
  */
-export function usePopoverTrail<TData = unknown>(): readonly TrailEntry<TData>[] {
-  return usePopoverStore(
-    selectActiveTrail as (state: PopoverStore<TData>) => readonly TrailEntry<TData>[],
-  );
+export function usePopoverTrail<
+  TData = RegisteredDataMap[RegisteredKeys],
+>(): readonly TrailEntry<TData>[] {
+  return usePopoverStore(selectActiveTrail<TData>);
 }
 
 /**
@@ -57,10 +41,10 @@ export function usePopoverTrail<TData = unknown>(): readonly TrailEntry<TData>[]
  * @template TData - The type of resolved data payloads.
  * @returns Array of floating popover entries.
  */
-export function usePopoverFloating<TData = unknown>(): readonly TrailEntry<TData>[] {
-  return usePopoverStore(
-    selectFloatingEntries as (state: PopoverStore<TData>) => readonly TrailEntry<TData>[],
-  );
+export function usePopoverFloating<
+  TData = RegisteredDataMap[RegisteredKeys],
+>(): readonly TrailEntry<TData>[] {
+  return usePopoverStore(selectFloatingEntries<TData>);
 }
 
 /**
@@ -78,7 +62,7 @@ export function usePopoverOffsets() {
  * @param key - The unique identifier key of the popover.
  * @returns True if the popover is currently pinned/floating.
  */
-export function useIsPopoverPinned(key: string) {
+export function useIsPopoverPinned<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore(selectIsPinned(key));
 }
 
@@ -89,10 +73,11 @@ export function useIsPopoverPinned(key: string) {
  * @param key - The unique identifier key of the popover.
  * @returns The matching TrailEntry or undefined if not found.
  */
-export function usePopoverEntry<TData = unknown>(key: string): TrailEntry<TData> | undefined {
-  return usePopoverStore(
-    selectEntryByKey<TData>(key) as (state: PopoverStore<TData>) => TrailEntry<TData> | undefined,
-  );
+export function usePopoverEntry<
+  TData = RegisteredDataMap[RegisteredKeys],
+  TPopoverKey extends string = RegisteredKeys,
+>(key: TPopoverKey): TrailEntry<TData> | undefined {
+  return usePopoverStore(selectEntryByKey<TData>(key));
 }
 
 /**
@@ -105,10 +90,11 @@ export function usePopoverEntry<TData = unknown>(key: string): TrailEntry<TData>
  * @returns The matching narrowed entry or undefined if not found or status mismatch.
  */
 export function usePopoverEntryStatus<
-  TData = unknown,
+  TData = RegisteredDataMap[RegisteredKeys],
   S extends 'loading' | 'error' | 'success' = 'success',
->(key: string, expectedStatus: S = 'success' as S): NarrowTrailEntry<TData, S> | undefined {
-  const entry = usePopoverEntry<TData>(key);
+  TPopoverKey extends string = RegisteredKeys,
+>(key: TPopoverKey, expectedStatus: S = 'success' as S): NarrowTrailEntry<TData, S> | undefined {
+  const entry = usePopoverEntry<TData, TPopoverKey>(key);
   if (!entry) return undefined;
   const currentStatus =
     entry.status ?? (entry.isLoading ? 'loading' : entry.error ? 'error' : 'success');
@@ -124,7 +110,7 @@ export function usePopoverEntryStatus<
  * @param key - The unique identifier key of the popover.
  * @returns The 0-based z-index depth index, or -1 if not found.
  */
-export function usePopoverZIndex(key: string) {
+export function usePopoverZIndex<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore((state) => state.zIndexOrder.indexOf(key));
 }
 
@@ -134,7 +120,7 @@ export function usePopoverZIndex(key: string) {
  * @param key - The unique identifier key of the popover.
  * @returns True if the popover is topmost.
  */
-export function useIsPopoverTopMost(key: string) {
+export function useIsPopoverTopMost<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore(
     (state) =>
       state.zIndexOrder.length > 0 && state.zIndexOrder[state.zIndexOrder.length - 1] === key,
@@ -147,7 +133,7 @@ export function useIsPopoverTopMost(key: string) {
  * @param key - The unique identifier key of the popover.
  * @returns The coordinate offset object.
  */
-export function usePopoverOffset(key: string) {
+export function usePopoverOffset<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore(selectOffset(key));
 }
 
@@ -176,7 +162,9 @@ export function usePopoverCollisionConfig() {
  * @param key - The unique identifier key of the popover.
  * @returns True if the popover is active and open.
  */
-export function useIsPopoverOpen(key: string): boolean {
+export function useIsPopoverOpen<TPopoverKey extends string = RegisteredKeys>(
+  key: TPopoverKey,
+): boolean {
   return usePopoverStore(selectHasEntry(key));
 }
 
@@ -202,9 +190,9 @@ export function useIsPopoverOpen(key: string): boolean {
  * ```
  */
 export function usePopover<
-  TData = unknown,
+  TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
-  TPopoverKey extends string = string,
+  TPopoverKey extends string = RegisteredKeys,
 >(key: TPopoverKey): UsePopoverResult<TData> {
   const slice = usePopoverStore(
     useCallback(
@@ -232,7 +220,7 @@ export function usePopover<
     shallowEqual,
   );
 
-  const actions = usePopoverActions<TData, TContext>();
+  const actions = usePopoverActions<TData, TContext, TPopoverKey>();
 
   const close = useCallback(() => actions.closeByKey(key, { transition: true }), [actions, key]);
   const pin = useCallback((rect: DOMRect) => actions.togglePin(key, rect), [actions, key]);
@@ -283,7 +271,7 @@ export function usePopover<
 export type PopoverHydrationState<TData = unknown> =
   | { status: 'idle'; isHydrating: false; isHydrated: false; data: undefined; error: null }
   | { status: 'hydrating'; isHydrating: true; isHydrated: false; data: undefined; error: null }
-  | { status: 'hydrated'; isHydrating: false; isHydrated: true; data: TData; error: null }
+  | { status: 'hydrated'; isHydrating: false; isHydrated: true; data: TData | null; error: null }
   | { status: 'error'; isHydrating: false; isHydrated: false; data: undefined; error: Error };
 
 /**
@@ -293,9 +281,12 @@ export type PopoverHydrationState<TData = unknown> =
  * @param key - The unique identifier key of the popover card.
  * @returns Object containing state discriminated union, isLoading status, error, and reload trigger callback.
  */
-export function usePopoverHydration<TData = unknown>(key: string) {
+export function usePopoverHydration<
+  TData = RegisteredDataMap[RegisteredKeys],
+  TPopoverKey extends string = RegisteredKeys,
+>(key: TPopoverKey) {
   const actions = usePopoverActions();
-  const entry = usePopoverEntry<TData>(key);
+  const entry = usePopoverEntry<TData, TPopoverKey>(key);
   const reload = useCallback(() => {
     void actions.retryPopover(key);
   }, [actions, key]);
@@ -370,12 +361,14 @@ export function usePopoverHydration<TData = unknown>(key: string) {
  * }
  * ```
  */
-export function usePopoverData<TData = unknown>(key: string): TData | undefined {
-  const entry = usePopoverEntry<TData>(key);
+export function usePopoverData<
+  TData = RegisteredDataMap[RegisteredKeys],
+  TPopoverKey extends string = RegisteredKeys,
+>(key: TPopoverKey): TData | null | undefined {
+  const entry = usePopoverEntry<TData, TPopoverKey>(key);
   if (entry?.error) return entry.data;
-  const ReactUse = (React as unknown as Record<string, unknown>).use as
-    | (<T>(p: Promise<T>) => T)
-    | undefined;
+  const ReactUse =
+    'use' in React ? (React as { use: <T>(promise: Promise<T>) => T }).use : undefined;
 
   if (entry?.dataPromise && typeof ReactUse === 'function') {
     return ReactUse(entry.dataPromise);

@@ -1,5 +1,26 @@
 import type { PopoverCache } from '../types';
 
+function hasUnrefMethod(timer: unknown): timer is { unref: () => void } {
+  return (
+    typeof timer === 'object' &&
+    timer !== null &&
+    'unref' in timer &&
+    typeof (timer as Record<string, unknown>).unref === 'function'
+  );
+}
+
+/**
+ * Strongly typed cache interface mapping popover keys to their exact resolved data payload types.
+ * Eliminates the need for manual type assertions (`as TData`) when retrieving cached entries.
+ */
+export interface TypedPopoverCache<TCacheMap extends Record<string, unknown>> {
+  get<K extends Extract<keyof TCacheMap, string>>(key: K): TCacheMap[K] | undefined;
+  set<K extends Extract<keyof TCacheMap, string>>(key: K, data: TCacheMap[K]): void;
+  has<K extends Extract<keyof TCacheMap, string>>(key: K): boolean;
+  delete<K extends Extract<keyof TCacheMap, string>>(key: K): void;
+  clear(): void;
+}
+
 /**
  * A standard, generic in-memory cache implementation of PopoverCache
  * supporting automatic time-to-live (TTL) record expiration, maximum size
@@ -35,11 +56,8 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
 
     if (autoPruneIntervalMs > 0 && typeof setInterval !== 'undefined') {
       this.autoPruneTimer = setInterval(() => this.pruneExpired(), autoPruneIntervalMs);
-      if (
-        this.autoPruneTimer &&
-        typeof (this.autoPruneTimer as unknown as { unref?: () => void }).unref === 'function'
-      ) {
-        (this.autoPruneTimer as unknown as { unref: () => void }).unref();
+      if (hasUnrefMethod(this.autoPruneTimer)) {
+        this.autoPruneTimer.unref();
       }
     }
   }

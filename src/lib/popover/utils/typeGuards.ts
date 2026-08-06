@@ -1,17 +1,19 @@
+import type { VirtualElement } from '@floating-ui/react';
 import type {
   AnchorEventLike,
   PopoverDisplayOptions,
   PopoverEntryDiscriminatedState,
   PopoverKey,
   PopoverMiddleware,
+  PopoverPlacement,
   PopoverResolver,
   PopoverStoreEvent,
   TrailEntry,
   ValidatedAnchorRef,
   ViewportX,
   ViewportY,
-  VirtualElement,
 } from '../types';
+import { VALID_PLACEMENTS_SET } from '../constants';
 
 /**
  * Type Guard function checking if a TrailEntry has finished resolving data successfully.
@@ -145,10 +147,11 @@ export function definePopoverResolver<TData = unknown, TContext = unknown>(
   return resolver;
 }
 
+/** Alias for definePopoverResolver for backward compatibility. */
 export function createPopoverResolver<TData = unknown, TContext = unknown>(
   resolver: PopoverResolver<TData, TContext>,
 ): PopoverResolver<TData, TContext> {
-  return resolver;
+  return definePopoverResolver(resolver);
 }
 
 /** Type guard checking if an AnchorEventLike source is a Floating UI VirtualElement. */
@@ -361,4 +364,56 @@ export function definePopoverMiddleware<
   middleware: PopoverMiddleware<TData, TContext, TPopoverKey>,
 ): PopoverMiddleware<TData, TContext, TPopoverKey> {
   return middleware;
+}
+
+/**
+ * Safely extracts a numeric value from a style property (number, CSS pixel string like '120px', or undefined),
+ * avoiding unsafe 'as number' type assertions.
+ */
+export function extractNumericStyle(val: unknown): number {
+  if (typeof val === 'number') return Number.isNaN(val) ? 0 : val;
+  if (typeof val === 'string') {
+    const parsed = parseFloat(val);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+/**
+ * Assertion guard verifying a value is a valid TrailEntry object.
+ */
+export function assertIsTrailEntry<TData = unknown>(
+  value: unknown,
+): asserts value is TrailEntry<TData> {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('key' in value) ||
+    typeof value.key !== 'string'
+  ) {
+    throw new TypeError(`Expected TrailEntry object, received: ${typeof value}`);
+  }
+}
+
+/**
+ * Assertion guard verifying a value is a valid DOMRect object.
+ */
+export function assertIsDOMRect(value: unknown): asserts value is DOMRect {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('width' in value) ||
+    !('height' in value) ||
+    typeof value.width !== 'number' ||
+    typeof value.height !== 'number'
+  ) {
+    throw new TypeError(`Expected DOMRect object, received: ${typeof value}`);
+  }
+}
+
+/**
+ * Type guard checking if a string value is a valid Floating UI PopoverPlacement direction.
+ */
+export function isPopoverPlacement(val: unknown): val is PopoverPlacement {
+  return typeof val === 'string' && VALID_PLACEMENTS_SET.has(val);
 }

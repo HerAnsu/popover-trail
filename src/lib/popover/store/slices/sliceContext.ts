@@ -13,9 +13,14 @@ import type { ActionRegistryDependencies } from '../storeActionRegistry';
  *
  * @template TData - Resolved data payload type.
  * @template TContext - Global shared context type.
+ * @template TPopoverKey - Union of valid popover keys.
  */
-export interface SliceContext<TData = unknown, TContext = unknown> {
-  set: StoreSetFn<TData, TContext>;
-  get: StoreGetFn<TData, TContext>;
-  deps: ActionRegistryDependencies<TData, TContext>;
+export interface SliceContext<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
+  set: StoreSetFn<TData, TContext, TPopoverKey>;
+  get: StoreGetFn<TData, TContext, TPopoverKey>;
+  deps: ActionRegistryDependencies<TData, TContext, TPopoverKey>;
 }

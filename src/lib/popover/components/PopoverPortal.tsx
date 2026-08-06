@@ -45,7 +45,7 @@ export function PopoverPortal({ children, container }: PopoverPortalProps) {
 
   const renderedContent =
     typeof children === 'function'
-      ? (children as (entries: Array<TrailEntry & { isPinned: boolean }>) => ReactNode)([
+      ? children([
           ...floating.map((entry) => ({ ...entry, isPinned: true })),
           ...trail.map((entry) => ({ ...entry, isPinned: false })),
         ])

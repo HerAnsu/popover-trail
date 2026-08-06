@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, useDebugValue } from 'react';
+import React, { useEffect, useRef, useMemo, useDebugValue } from 'react';
 import type { DragAxis } from '../types';
 import { computeTiltMatrix } from '../utils/dragMath';
 import { validateDragOffset } from '../utils/devWarnings';
@@ -23,6 +23,8 @@ interface UsePopoverDragAndDropOptions {
   tiltFriction?: number;
   /** Spring inertia decay ratio when drag stops (default: 0.82). */
   tiltDecay?: number;
+  /** Ref to the card DOM element for direct CSS manipulation. */
+  cardRef?: React.RefObject<HTMLElement | null>;
 }
 
 /**
@@ -44,28 +46,6 @@ export interface UsePopoverDragAndDropResult {
 /**
  * Custom hook to track active coordinate offsets and calculate drag velocity
  * to apply dynamic physics-based spring rotation (tilt/swing) styles during drag events.
- * Supports locking drag dimensions to specific axes and custom damping/decay friction ratios.
- * Calculates full 3D Euler rotation angles (rotateX, rotateY, rotateZ) for a premium card feel.
- *
- * @remarks
- * Batches rotation state updates into a single atomic object state per frame
- * to reduce React re-renders by 66% during fast dragging physics.
- *
- * @param options - Hook configuration settings.
- * @returns Object containing computed rotation angles and active drag x/y coordinates.
- *
- * @example
- * ```tsx
- * const { rotation, rotationX, rotationY, dragX, dragY } = usePopoverDragAndDrop({
- *   isDragging: true,
- *   transform: { x: 10, y: 20 },
- *   enableTilt: true,
- *   dragAxis: 'both',
- * });
- * ```
- *
- * @see {@link computeTiltMatrix}
- * @see {@link PopoverCard}
  */
 export function usePopoverDragAndDrop({
   isDragging,
@@ -76,6 +56,7 @@ export function usePopoverDragAndDrop({
   dragAxis = 'both',
   tiltFriction = 0.95,
   tiltDecay = 0.82,
+  cardRef,
 }: UsePopoverDragAndDropOptions): UsePopoverDragAndDropResult {
   const lastDragX = useRef(0);
   const lastDragY = useRef(0);
@@ -86,9 +67,6 @@ export function usePopoverDragAndDrop({
 
   const rotationRef = useRef({ z: 0, x: 0, y: 0 });
 
-  const [tilt, setTilt] = useState({ rotation: 0, rotationX: 0, rotationY: 0 });
-
-  // Update transform references inside an effect to ensure React Concurrent Mode safety
   useEffect(() => {
     transformXRef.current = dragAxis === 'y' ? 0 : (transform?.x ?? 0);
     transformYRef.current = dragAxis === 'x' ? 0 : (transform?.y ?? 0);
@@ -102,85 +80,99 @@ export function usePopoverDragAndDrop({
   useEffect(() => {
     let rafId: number;
 
-    if (isDragging && enableTilt && !prefersReducedMotion) {
-      const updateRotation = () => {
-        const now = performance.now();
-        const dt = Math.max(1, now - lastTime.current);
-        const frameRatio = dt / 16.667;
+    // Early Guard Clause 1: Handle inertia decay when drag stops or tilt is disabled
+    if (!isDragging || !enableTilt || prefersReducedMotion) {
+      const curr = rotationRef.current;
+      if (curr.x === 0 && curr.y === 0 && curr.z === 0) return;
 
-        const currentDragX = transformXRef.current;
-        const currentDragY = transformYRef.current;
+      const returnToZero = () => {
+        const c = rotationRef.current;
+        if (c.x === 0 && c.y === 0 && c.z === 0) return;
 
-        const velocityX = (currentDragX - lastDragX.current) / dt;
-        const velocityY = (currentDragY - lastDragY.current) / dt;
+        const safeDecay = Math.min(Math.max(tiltDecay, 0.1), 0.99);
+        const finalX = Math.abs(c.x * safeDecay) < 0.05 ? 0 : c.x * safeDecay;
+        const finalY = Math.abs(c.y * safeDecay) < 0.05 ? 0 : c.y * safeDecay;
+        const finalZ = Math.abs(c.z * safeDecay) < 0.05 ? 0 : c.z * safeDecay;
 
-        const curr = rotationRef.current;
+        const done = finalX === 0 && finalY === 0 && finalZ === 0;
+        rotationRef.current = { z: finalZ, x: finalX, y: finalY };
 
-        const tiltMatrix = computeTiltMatrix(
-          velocityX * (1 - tiltFriction) * 1.5,
-          velocityY * (1 - tiltFriction) * 1.5,
-          maxTiltAngle,
-          tiltSensitivity,
-        );
-        const safeFriction = Math.pow(tiltFriction, frameRatio);
-        const boundedX = curr.x * safeFriction + tiltMatrix.rotationX;
-        const boundedY = curr.y * safeFriction + tiltMatrix.rotationY;
+        const el = cardRef?.current;
+        if (el) {
+          el.style.setProperty('--pt-rotate-z', done ? '0deg' : `${finalZ}deg`);
+          el.style.setProperty('--pt-rotate-x', done ? '0deg' : `${finalX}deg`);
+          el.style.setProperty('--pt-rotate-y', done ? '0deg' : `${finalY}deg`);
+        }
 
-        // rotateZ is a slight flat tilt based on X velocity
-        const nextZ =
-          curr.z * safeFriction + velocityX * (tiltSensitivity / 2) * (1 - tiltFriction);
-        const boundedZ = Math.max(-maxTiltAngle / 2, Math.min(maxTiltAngle / 2, nextZ));
-
-        const nextTilt = { rotation: boundedZ, rotationX: boundedX, rotationY: boundedY };
-        rotationRef.current = { z: boundedZ, x: boundedX, y: boundedY };
-        setTilt(nextTilt);
-
-        lastDragX.current = currentDragX;
-        lastDragY.current = currentDragY;
-        lastTime.current = now;
-        rafId = requestAnimationFrame(updateRotation);
+        if (!done) {
+          rafId = requestAnimationFrame(returnToZero);
+        }
       };
 
-      lastTime.current = performance.now();
-      lastDragX.current = transformXRef.current;
-      lastDragY.current = transformYRef.current;
-      rafId = requestAnimationFrame(updateRotation);
-    } else {
-      // Smoothly return rotation back to 0 (inertia decay) when dragging stops or tilt is disabled
-      const curr = rotationRef.current;
-      if (curr.x !== 0 || curr.y !== 0 || curr.z !== 0) {
-        const returnToZero = () => {
-          const c = rotationRef.current;
-          if (c.x === 0 && c.y === 0 && c.z === 0) return;
-
-          const safeDecay = Math.min(Math.max(tiltDecay, 0.1), 0.99);
-          const nextXVal = c.x * safeDecay;
-          const nextYVal = c.y * safeDecay;
-          const nextZVal = c.z * safeDecay;
-
-          const finalX = Math.abs(nextXVal) < 0.05 ? 0 : nextXVal;
-          const finalY = Math.abs(nextYVal) < 0.05 ? 0 : nextYVal;
-          const finalZ = Math.abs(nextZVal) < 0.05 ? 0 : nextZVal;
-
-          const done = finalX === 0 && finalY === 0 && finalZ === 0;
-
-          rotationRef.current = { z: finalZ, x: finalX, y: finalY };
-          setTilt({ rotation: finalZ, rotationX: finalX, rotationY: finalY });
-
-          if (!done) {
-            rafId = requestAnimationFrame(returnToZero);
-          }
-        };
-        rafId = requestAnimationFrame(returnToZero);
-      }
+      rafId = requestAnimationFrame(returnToZero);
+      return () => {
+        if (rafId) cancelAnimationFrame(rafId);
+      };
     }
 
-    return () => {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
+    // Active Drag Spring Rotation Animation Frame Loop
+    const updateRotation = () => {
+      const now = performance.now();
+      const dt = Math.max(1, now - lastTime.current);
+      const frameRatio = dt / 16.667;
+
+      const currentDragX = transformXRef.current;
+      const currentDragY = transformYRef.current;
+
+      const velocityX = (currentDragX - lastDragX.current) / dt;
+      const velocityY = (currentDragY - lastDragY.current) / dt;
+
+      const curr = rotationRef.current;
+      const tiltMatrix = computeTiltMatrix(
+        velocityX * (1 - tiltFriction) * 1.5,
+        velocityY * (1 - tiltFriction) * 1.5,
+        maxTiltAngle,
+        tiltSensitivity,
+      );
+      const safeFriction = Math.pow(tiltFriction, frameRatio);
+      const boundedX = curr.x * safeFriction + tiltMatrix.rotationX;
+      const boundedY = curr.y * safeFriction + tiltMatrix.rotationY;
+
+      const nextZ = curr.z * safeFriction + velocityX * (tiltSensitivity / 2) * (1 - tiltFriction);
+      const boundedZ = Math.max(-maxTiltAngle / 2, Math.min(maxTiltAngle / 2, nextZ));
+
+      rotationRef.current = { z: boundedZ, x: boundedX, y: boundedY };
+      const el = cardRef?.current;
+      if (el) {
+        el.style.setProperty('--pt-rotate-z', `${boundedZ}deg`);
+        el.style.setProperty('--pt-rotate-x', `${boundedX}deg`);
+        el.style.setProperty('--pt-rotate-y', `${boundedY}deg`);
       }
+
+      lastDragX.current = currentDragX;
+      lastDragY.current = currentDragY;
+      lastTime.current = now;
+      rafId = requestAnimationFrame(updateRotation);
     };
-  }, [isDragging, enableTilt, maxTiltAngle, tiltSensitivity, tiltFriction, tiltDecay]);
+
+    lastTime.current = performance.now();
+    lastDragX.current = transformXRef.current;
+    lastDragY.current = transformYRef.current;
+    rafId = requestAnimationFrame(updateRotation);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [
+    isDragging,
+    enableTilt,
+    maxTiltAngle,
+    tiltSensitivity,
+    tiltFriction,
+    tiltDecay,
+    cardRef,
+    prefersReducedMotion,
+  ]);
 
   const dragX = dragAxis === 'y' ? 0 : (transform?.x ?? 0);
   const dragY = dragAxis === 'x' ? 0 : (transform?.y ?? 0);
@@ -188,14 +180,14 @@ export function usePopoverDragAndDrop({
   validateDragOffset(dragX, dragY);
   useDebugValue(
     isDragging
-      ? `Dragging [x: ${dragX.toFixed(0)}, y: ${dragY.toFixed(0)}, tilt: ${tilt.rotation.toFixed(1)}°]`
+      ? `Dragging [x: ${dragX.toFixed(0)}, y: ${dragY.toFixed(0)}, tilt: ${rotationRef.current.z.toFixed(1)}°]`
       : 'Idle',
   );
 
   return {
-    rotation: tilt.rotation,
-    rotationX: tilt.rotationX,
-    rotationY: tilt.rotationY,
+    rotation: rotationRef.current.z,
+    rotationX: rotationRef.current.x,
+    rotationY: rotationRef.current.y,
     dragX,
     dragY,
   };

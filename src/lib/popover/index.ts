@@ -53,6 +53,10 @@ export type {
   Brand,
   ViewportX,
   ViewportY,
+  OwnerId,
+  StackGroupId,
+  TabId,
+  ReadonlyDeep,
   DragOffset,
   KnownKeyboardKey,
   TypedPopoverCache,
@@ -72,6 +76,7 @@ export type {
   PinnedOnlyStoreState,
   PopoverStoreDiscriminatedState,
   DomainPopoverKey,
+  PopoverConfig,
 } from './types';
 
 export type { ValidatedAnchorRef } from './types';
@@ -104,7 +109,11 @@ export {
   isEventAnchor,
 } from './types';
 
-export { createWorkerResolver, type WorkerResolverOptions } from './utils/workerResolver';
+export {
+  createWorkerResolver,
+  definePopoverWorkerRPC,
+  type WorkerResolverOptions,
+} from './utils/workerResolver';
 
 export { createPopoverController, type PopoverController } from './utils/popoverController';
 
@@ -217,3 +226,59 @@ export {
 } from './components/PopoverTimeline';
 export { type HistorySnapshot } from './store/history';
 export { createPopoverTrail } from './factory';
+export { useMergedRef, useStableCallback } from './hooks/useHookUtils';
+export { TriggerRegistry } from './utils/triggerRegistry';
+export { ResizeObserverRegistry } from './utils/resizeObserverRegistry';
+export { PopoverError, PopoverErrorCode, createPopoverError } from './utils/errors';
+export { Point2D, RectBounds } from './utils/valueObjects';
+export {
+  Ok,
+  Err,
+  isOk,
+  isErr,
+  mapResult,
+  flatMapResult,
+  unwrapOr,
+  wrapResult,
+  wrapAsyncResult,
+  type Result,
+} from './utils/result';
+export { createDisposable, type ScopeDisposable } from './utils/disposable';
+export {
+  LayoutStrategyRegistry,
+  globalLayoutStrategyRegistry,
+  FixedCenterLayoutStrategy,
+  DockedBottomLayoutStrategy,
+  RelativeFloatingLayoutStrategy,
+} from './utils/layoutStrategies';
+export { PopoverQueryBus, PopoverCommandBus, createCQRSBuses } from './store/cqrs';
+export {
+  assertNonNullable,
+  assertValidPopoverKey,
+  assertValidOwnerId,
+  assertValidRect,
+} from './utils/assertions';
+export { fastClone } from './utils/clone';
+export { createBroadcastSync, type PopoverSyncMessage } from './utils/broadcastSync';
+export {
+  PopoverEventBus,
+  globalPopoverEventBus,
+  PopoverCustomEvent,
+  type PopoverEventType,
+} from './store/eventBus';
+export { trackMemoryCleanup, untrackMemoryCleanup } from './utils/memorySentinel';
+export { applyThemeTokens, type PopoverThemeTokens } from './utils/themeTokens';
+export { ObjectPool } from './utils/objectPool';
+export { sanitizeRect } from './utils/storeHelpers';
+export { isKeyInZIndexOrder, reduceTogglePinState } from './store/storeActions';
+export { closeFromState } from './store/storeReducers';
+export {
+  validateSchemaCircularChild,
+  validateResolverTimeout,
+  validatePortalExclusion,
+  markPerformance,
+  measurePerformance,
+} from './utils/devWarnings';
+export type { HydrationState } from './store/storeHydration';
+export type { InternalPopoverState, InternalPopoverStore } from './store/storeTypes';
+export * from './constants';

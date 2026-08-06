@@ -102,3 +102,22 @@ export function selectHasEntry<TData = unknown>(key: string) {
     trail: readonly TrailEntry<TData>[];
   }): boolean => hasEntryWithKey(state.floating, state.trail, key);
 }
+
+/**
+ * Functional mapper type for pure store selectors operating on PopoverStore state tree.
+ *
+ * @template TData - Resolved payload type.
+ * @template TContext - Global shared context type.
+ * @template TResult - Return type computed by selector.
+ */
+export type StoreSelectorMapper<TData = unknown, TContext = unknown, TResult = unknown> = (
+  state: import('../types').PopoverStore<TData, TContext>,
+) => TResult;
+
+/**
+ * Factory creating a strongly typed selector helper bound to specific TData and TContext types.
+ * Eliminates redundant generic signatures when defining custom selectors.
+ */
+export function createTypedStoreSelector<TData = unknown, TContext = unknown>() {
+  return <TSelected>(selector: StoreSelectorMapper<TData, TContext, TSelected>) => selector;
+}

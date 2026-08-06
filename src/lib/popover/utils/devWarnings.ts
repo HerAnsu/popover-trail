@@ -1,5 +1,6 @@
 import type { PopoverPlacement } from '../types';
 import { toError } from './storeHelpers';
+import { VALID_PLACEMENTS_SET } from '../constants';
 
 export interface DevWarningDetails {
   /** Unique error code identifier. */
@@ -8,29 +9,20 @@ export interface DevWarningDetails {
   message: string;
 }
 
-const VALID_PLACEMENTS: ReadonlySet<string> = new Set([
-  'top',
-  'top-start',
-  'top-end',
-  'bottom',
-  'bottom-start',
-  'bottom-end',
-  'left',
-  'left-start',
-  'left-end',
-  'right',
-  'right-start',
-  'right-end',
-  'auto',
-]);
-
 const IS_DEV =
   typeof globalThis !== 'undefined' &&
-  (globalThis as unknown as { process?: { env?: { NODE_ENV?: string } } }).process?.env
-    ?.NODE_ENV !== 'production';
+  Boolean(
+    (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process
+      ?.env?.NODE_ENV !== 'production',
+  );
 
 function isDevEnv(): boolean {
   return IS_DEV;
+}
+
+/** Single Source of Truth for logging warnings to console in dev mode */
+export function emitDevWarning(code: string, message: string): void {
+  console.warn(`[popover-trail warning ${code}]: ${message}`);
 }
 
 /**
@@ -47,7 +39,7 @@ export function warnDev(condition: boolean, message: string): void {
  */
 export function warnDevDetails(condition: boolean, details: DevWarningDetails): void {
   if (isDevEnv() && condition) {
-    console.warn(`[popover-trail warning ${details.code}]: ${details.message}`);
+    emitDevWarning(details.code, details.message);
   }
 }
 
@@ -76,10 +68,10 @@ export function validatePopoverKey(key: string | undefined): void {
 export function validatePlacement(placement: PopoverPlacement | undefined): void {
   if (!isDevEnv() || !placement) return;
 
-  if (!VALID_PLACEMENTS.has(placement)) {
+  if (!VALID_PLACEMENTS_SET.has(placement)) {
     warnDevDetails(true, {
       code: 'PT-102',
-      message: `Invalid layout placement "${placement}" provided. Supported values are: ${Array.from(VALID_PLACEMENTS).join(', ')}.`,
+      message: `Invalid layout placement "${placement}" provided. Supported values are: ${Array.from(VALID_PLACEMENTS_SET).join(', ')}.`,
     });
   }
 }
@@ -413,4 +405,24 @@ export function validatePortalExclusion(elementName: string): void {
     code: 'PT-130',
     message: `Element <${elementName}> is marked with data-popover-portal and will be excluded from click-outside teardown.`,
   });
+}
+
+export function markPerformance(name: string): void {
+  if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+    try {
+      performance.mark(name);
+    } catch {
+      // Ignore performance mark errors in restricted environments
+    }
+  }
+}
+
+export function measurePerformance(name: string, startMark: string, endMark?: string): void {
+  if (typeof performance !== 'undefined' && typeof performance.measure === 'function') {
+    try {
+      performance.measure(name, startMark, endMark);
+    } catch {
+      // Ignore performance measure errors
+    }
+  }
 }

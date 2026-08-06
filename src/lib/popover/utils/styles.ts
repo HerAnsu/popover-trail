@@ -26,6 +26,13 @@ const styleMemoCache = new Map<string, CSSProperties>();
 const MAX_MEMO_CACHE_SIZE = 128;
 
 /**
+ * Safely converts an unknown value to a finite number with an optional fallback (default: 0).
+ */
+export function toFiniteNumber(val: unknown, fallback = 0): number {
+  return typeof val === 'number' && Number.isFinite(val) ? val : fallback;
+}
+
+/**
  * Computes the absolute layout coordinates, drag-and-drop translations,
  * and rotation physics angles into a single React CSSProperties style object.
  *
@@ -49,16 +56,16 @@ export function getPopoverStyles({
   rotationY = 0,
   zIndex = 1000,
 }: GetPopoverStylesParams): CSSProperties {
-  const safeTopPos = Number.isFinite(finalLayoutPos.top) ? finalLayoutPos.top : 0;
-  const safeLeftPos = Number.isFinite(finalLayoutPos.left) ? finalLayoutPos.left : 0;
-  const safeDragX = typeof dragX === 'number' && Number.isFinite(dragX) ? dragX : 0;
-  const safeDragY = typeof dragY === 'number' && Number.isFinite(dragY) ? dragY : 0;
-  const safeOffsetX = Number.isFinite(offset?.x) ? offset.x : 0;
-  const safeOffsetY = Number.isFinite(offset?.y) ? offset.y : 0;
-  const safeRotation = Number.isFinite(rotation) ? rotation : 0;
-  const safeRotationX = Number.isFinite(rotationX) ? rotationX : 0;
-  const safeRotationY = Number.isFinite(rotationY) ? rotationY : 0;
-  const safeZIndex = Number.isFinite(zIndex) ? zIndex : 1000;
+  const safeTopPos = toFiniteNumber(finalLayoutPos.top);
+  const safeLeftPos = toFiniteNumber(finalLayoutPos.left);
+  const safeDragX = toFiniteNumber(dragX);
+  const safeDragY = toFiniteNumber(dragY);
+  const safeOffsetX = toFiniteNumber(offset?.x);
+  const safeOffsetY = toFiniteNumber(offset?.y);
+  const safeRotation = toFiniteNumber(rotation);
+  const safeRotationX = toFiniteNumber(rotationX);
+  const safeRotationY = toFiniteNumber(rotationY);
+  const safeZIndex = toFiniteNumber(zIndex, 1000);
 
   const top = Math.round(safeTopPos);
   const left = Math.round(safeLeftPos);

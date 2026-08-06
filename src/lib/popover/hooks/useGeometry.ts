@@ -8,10 +8,12 @@ import {
   autoUpdate,
   size,
   type Boundary,
+  type Placement,
 } from '@floating-ui/react';
 import type { TrailEntry, PopoverPlacement } from '../types';
 import { usePopoverCollisionConfig, usePopoverStore, usePopoverStoreApi } from '../context';
 import { QuadTree, type BoundingBox } from '../utils/quadTree';
+import { ResizeObserverRegistry } from '../utils/resizeObserverRegistry';
 
 /**
  * Helper to safely measure current viewport bounds across SSR and browser environments.
@@ -22,6 +24,20 @@ function getViewportBounds(): { width: number; height: number } {
     width: isClient ? window.innerWidth : 1024,
     height: isClient ? window.innerHeight : 768,
   };
+}
+
+/** Pure calculation helper for resolving auto placement based on viewport coordinates. */
+function calculateAutoPlacement(
+  placement: string | undefined,
+  anchorRect: DOMRect | null | undefined,
+) {
+  if (placement !== 'auto') return placement as Placement | undefined;
+  if (!anchorRect) return 'right' as Placement;
+
+  const screenCenterX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500;
+  const anchorCenterX = anchorRect.left + anchorRect.width / 2;
+
+  return (anchorCenterX > screenCenterX ? 'left' : 'right') as Placement;
 }
 
 /**
@@ -182,15 +198,8 @@ export function usePopoverGeometry({
     return list;
   }, [entry?.offset, defaultOffset, flipOption, shiftOption, sizeOption, boundaryOption, padding]);
 
-  // Resolve placement dynamically if set to 'auto' based on trigger screen coordinates
   const resolvedAutoPlacement = useMemo(() => {
-    if (placement !== 'auto') return placement;
-    if (!anchorRect) return 'right';
-
-    const screenCenterX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500;
-    const anchorCenterX = anchorRect.left + anchorRect.width / 2;
-
-    return anchorCenterX > screenCenterX ? 'left' : 'right';
+    return calculateAutoPlacement(placement, anchorRect);
   }, [placement, anchorRect]);
 
   const {
@@ -208,6 +217,17 @@ export function usePopoverGeometry({
   useEffect(() => {
     refs.setReference(virtualElement);
   }, [virtualElement, refs]);
+
+  useEffect(() => {
+    if (isPinned || isDragging) return;
+    const floatingEl = refs.floating.current;
+    if (!floatingEl) return;
+
+    const unobserve = ResizeObserverRegistry.observe(floatingEl, () => {
+      void update();
+    });
+    return unobserve;
+  }, [isPinned, isDragging, update, refs.floating]);
 
   useEffect(() => {
     if (!isPinned && !isDragging) {

@@ -14,6 +14,11 @@ export type PopoverStateValue =
   | 'Error'
   | 'Unmounting';
 
+/** Valid transition matrix mapping state to allowed next states. */
+export type ValidStateTransitions = Readonly<
+  Record<PopoverStateValue, ReadonlyArray<PopoverStateValue>>
+>;
+
 /**
  * Context payload held within an FSM state node.
  *
@@ -110,6 +115,7 @@ export type TransitionTable<TData> = {
 
 /**
  * Pure reducer computing the next FSM state given current state and event.
+ * Natively narrows discriminated unions without any type assertions.
  *
  * @template TData - The resolved data payload type.
  * @param state - Current FSM state node.
@@ -120,101 +126,80 @@ export function popoverFSMReducer<TData = unknown>(
   state: PopoverFSMState<TData>,
   event: PopoverFSMEvent<TData>,
 ): PopoverFSMState<TData> {
-  const { value, context } = state;
-
-  switch (value) {
+  switch (state.value) {
     case 'Idle':
       if (event.type === 'OPEN_ROOT' || event.type === 'PUSH_NESTED') {
-        return {
-          value: 'Hydrating',
-          context: { ...context, key: event.key },
-        };
+        return { value: 'Hydrating', context: { ...state.context, key: event.key } };
       }
-      break;
+      return state;
 
     case 'Hydrating':
       if (event.type === 'RESOLVE_SUCCESS') {
         return {
           value: 'Resolved.Trailing',
-          context: { ...context, data: event.data, error: undefined },
+          context: { ...state.context, data: event.data, error: undefined },
         };
       }
       if (event.type === 'RESOLVE_FAILURE') {
-        return {
-          value: 'Error',
-          context: { ...context, error: event.error },
-        };
+        return { value: 'Error', context: { ...state.context, error: event.error } };
       }
       if (event.type === 'CLOSE') {
-        return {
-          value: 'Unmounting',
-          context,
-        };
+        return { value: 'Unmounting', context: state.context };
       }
-      break;
+      return state;
 
     case 'Resolved.Trailing':
       if (event.type === 'TOGGLE_PIN') {
         return {
           value: 'Resolved.Pinned',
-          context: { ...context, pinnedPos: event.rect },
+          context: {
+            key: state.context.key,
+            data: state.context.data,
+            error: state.context.error,
+            pinnedPos: event.rect,
+          },
         };
       }
       if (event.type === 'CLOSE') {
-        return {
-          value: 'Unmounting',
-          context,
-        };
+        return { value: 'Unmounting', context: state.context };
       }
-      break;
+      return state;
 
     case 'Resolved.Pinned':
       if (event.type === 'TOGGLE_PIN') {
         return {
           value: 'Resolved.Trailing',
-          context: { ...context, pinnedPos: undefined },
+          context: {
+            key: state.context.key,
+            data: state.context.data,
+            error: state.context.error,
+            pinnedPos: undefined,
+          },
         };
       }
       if (event.type === 'CLOSE') {
-        return {
-          value: 'Unmounting',
-          context,
-        };
+        return { value: 'Unmounting', context: state.context };
       }
-      break;
+      return state;
 
     case 'Error':
       if (event.type === 'RETRY') {
-        return {
-          value: 'Hydrating',
-          context: { ...context, error: undefined },
-        };
+        return { value: 'Hydrating', context: { ...state.context, error: undefined } };
       }
       if (event.type === 'CLOSE') {
-        return {
-          value: 'Unmounting',
-          context,
-        };
+        return { value: 'Unmounting', context: state.context };
       }
-      break;
+      return state;
 
     case 'Unmounting':
       if (event.type === 'TRANSITION_END') {
-        return {
-          value: 'Idle',
-          context: { key: context.key },
-        };
+        return { value: 'Idle', context: { key: state.context.key } };
       }
       if (event.type === 'OPEN_ROOT' || event.type === 'PUSH_NESTED') {
-        return {
-          value: 'Hydrating',
-          context: { ...context, key: event.key },
-        };
+        return { value: 'Hydrating', context: { ...state.context, key: event.key } };
       }
-      break;
+      return state;
   }
-
-  return state;
 }
 
 /**

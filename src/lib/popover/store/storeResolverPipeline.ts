@@ -13,17 +13,17 @@ import type {
   PopoverCache,
   OpenRootOptions,
   OpenNestedOptions,
+  StatePatch,
+  StoreState,
 } from '../types';
-import {
-  isPromise,
-  toError,
-  findEntryInStore,
-  createTrailEntry,
-  updateEntryInLists,
-} from '../utils/storeHelpers';
+import { isPromise, toError, findEntryInStore, createTrailEntry } from '../utils/storeHelpers';
 import type { PopoverDAG } from '../utils/dag';
 
-export interface ResolverPipelineDependencies<TData = unknown, TContext = unknown> {
+export interface ResolverPipelineDependencies<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
   popoverDAG: PopoverDAG;
   cache?: PopoverCache<TData>;
   resolveData: PopoverResolver<TData, TContext>;
@@ -33,21 +33,64 @@ export interface ResolverPipelineDependencies<TData = unknown, TContext = unknow
   removeController: (key: string) => void;
   safeSet: (
     partial:
-      | Partial<PopoverStore<TData, TContext>>
-      | ((state: PopoverStore<TData, TContext>) => Partial<PopoverStore<TData, TContext>>),
+      | StatePatch<TData, TContext, TPopoverKey>
+      | ((
+          state: StoreState<TData, TContext, TPopoverKey>,
+        ) => StatePatch<TData, TContext, TPopoverKey>),
   ) => void;
   findEntryByKey: (key: string) => TrailEntry<TData> | undefined;
+}
+
+export function invokeResolverSafely<TData, TContext>(
+  resolver: PopoverResolver<TData, TContext>,
+  key: string,
+  parentData: TData | null | undefined,
+  context: TContext | undefined,
+  signal: AbortSignal,
+): TData | Promise<TData> {
+  if (typeof resolver === 'function') {
+    try {
+      const res = (
+        resolver as (
+          k: string,
+          pd?: TData | null,
+          ctx?: TContext,
+          sig?: AbortSignal,
+        ) => TData | Promise<TData>
+      )(key, parentData, context, signal);
+      if (res !== undefined) return res;
+    } catch {
+      return (
+        resolver as unknown as (args: {
+          key: string;
+          parentData?: TData | null;
+          context?: TContext;
+          signal?: AbortSignal;
+        }) => TData | Promise<TData>
+      )({
+        key,
+        parentData: parentData ?? undefined,
+        context,
+        signal,
+      });
+    }
+  }
+  return undefined as unknown as TData;
 }
 
 /**
  * Resolves popover entry data asynchronously or synchronously and commits state patches to the store.
  */
-export async function resolvePopoverEntry<TData = unknown, TContext = unknown>(
-  get: StoreApi<PopoverStore<TData, TContext>>['getState'],
+export async function resolvePopoverEntry<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  get: StoreApi<PopoverStore<TData, TContext, TPopoverKey>>['getState'],
   key: string,
   parentKey: string | undefined,
   rect: DOMRect | null,
-  parentData: TData | undefined,
+  parentData: TData | null | undefined,
   options: (OpenRootOptions & OpenNestedOptions) | undefined,
   controllerKey: string,
   incrementCounter: () => number,
@@ -55,9 +98,11 @@ export async function resolvePopoverEntry<TData = unknown, TContext = unknown>(
   insertStatePatch: (
     entry: TrailEntry<TData>,
   ) =>
-    | Partial<PopoverStore<TData, TContext>>
-    | ((state: PopoverStore<TData, TContext>) => Partial<PopoverStore<TData, TContext>>),
-  deps: ResolverPipelineDependencies<TData, TContext>,
+    | StatePatch<TData, TContext, TPopoverKey>
+    | ((
+        state: StoreState<TData, TContext, TPopoverKey>,
+      ) => StatePatch<TData, TContext, TPopoverKey>),
+  deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
 ): Promise<void> {
   const {
     popoverDAG,
@@ -76,17 +121,53 @@ export async function resolvePopoverEntry<TData = unknown, TContext = unknown>(
   const existingEntry = findEntryInStore(floating, trail, key);
 
   const buildEntry = (
-    data?: TData,
+    data?: TData | null,
     error: Error | null = null,
     isLoading = false,
   ): TrailEntry<TData> =>
-    createTrailEntry(key, parentKey, rect, options, existingEntry, data, error, isLoading);
+    createTrailEntry(
+      key,
+      parentKey,
+      rect,
+      options,
+      existingEntry,
+      data ?? undefined,
+      error,
+      isLoading,
+    );
 
   const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
     safeSet((state) => ({
       floating: state.floating.map((e) => (e.key === key ? { ...e, ...patch } : e)),
       trail: state.trail.map((e) => (e.key === key ? { ...e, ...patch } : e)),
     }));
+  };
+
+  const commitResolverError = (objErr: unknown) => {
+    const error = toError(objErr);
+    if (error.name === 'AbortError') return;
+    const currentEntry = findEntryByKey(key);
+    currentEntry?.onError?.(error, key);
+    if (currentEntry) {
+      updateEntryStateInLists({ status: 'error', isLoading: false, error });
+    } else {
+      const errorEntry = buildEntry(undefined, error, false);
+      safeSet(insertStatePatch(errorEntry));
+    }
+  };
+
+  const commitResolverSuccess = (data: TData) => {
+    (cache || storeCache)?.set(key, data);
+    const successEntry = buildEntry(data, null, false);
+    safeSet((state) => {
+      const patchOrFn = insertStatePatch(successEntry);
+      const computedPatch = typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
+      return findEntryInStore(state.floating, state.trail, key)
+        ? state.floating.some((e) => e.key === key)
+          ? { floating: state.floating.map((e) => (e.key === key ? successEntry : e)) }
+          : { trail: state.trail.map((e) => (e.key === key ? successEntry : e)) }
+        : computedPatch;
+    });
   };
 
   const requestCounter = incrementCounter();
@@ -97,7 +178,7 @@ export async function resolvePopoverEntry<TData = unknown, TContext = unknown>(
       const resolvedCachedData = isPromise(cachedData) ? await cachedData : cachedData;
       if (resolvedCachedData !== undefined) {
         if (isStale(requestCounter)) return;
-        const cachedEntry = buildEntry(resolvedCachedData as TData, null, false);
+        const cachedEntry = buildEntry(resolvedCachedData, null, false);
         safeSet(insertStatePatch(cachedEntry));
         return;
       }
@@ -106,7 +187,7 @@ export async function resolvePopoverEntry<TData = unknown, TContext = unknown>(
     }
   }
 
-  const forceRefresh = (options as { forceRefresh?: boolean })?.forceRefresh;
+  const forceRefresh = options?.forceRefresh;
 
   if (
     existingEntry &&
@@ -129,9 +210,15 @@ export async function resolvePopoverEntry<TData = unknown, TContext = unknown>(
   if (!inFlightPromises.has(key) || forceRefresh) {
     const controller = registerController(controllerKey);
     try {
-      const res = (activeResolver as Function)(key, parentData, currentContext, controller.signal);
+      const res = invokeResolverSafely(
+        activeResolver,
+        key,
+        parentData,
+        currentContext,
+        controller.signal,
+      );
       if (isPromise(res)) {
-        const promise = (async () => {
+        const promise: Promise<TData> = (async () => {
           try {
             return await res;
           } finally {
@@ -139,69 +226,28 @@ export async function resolvePopoverEntry<TData = unknown, TContext = unknown>(
             removeController(controllerKey);
           }
         })();
-        inFlightPromises.set(key, promise as Promise<TData>);
+        inFlightPromises.set(key, promise);
       } else {
         rawSyncResult = res;
         isSync = true;
         removeController(controllerKey);
       }
-    } catch {
-      try {
-        const res = (activeResolver as Function)({
-          key,
-          parentData,
-          context: currentContext,
-          signal: controller.signal,
-        });
-        if (isPromise(res)) {
-          const promise = (async () => {
-            try {
-              return await res;
-            } finally {
-              inFlightPromises.delete(key);
-              removeController(controllerKey);
-            }
-          })();
-          inFlightPromises.set(key, promise as Promise<TData>);
-        } else {
-          rawSyncResult = res;
-          isSync = true;
-          removeController(controllerKey);
-        }
-      } catch (objErr) {
-        removeController(controllerKey);
-        const error = toError(objErr as never);
-        const currentEntry = findEntryByKey(key);
-        currentEntry?.onError?.(error, key);
-        if (currentEntry) {
-          updateEntryStateInLists({ status: 'error', isLoading: false, error });
-        } else {
-          const errorEntry = buildEntry(undefined, error, false);
-          safeSet(insertStatePatch(errorEntry));
-        }
-        return;
-      }
+    } catch (objErr) {
+      removeController(controllerKey);
+      commitResolverError(objErr);
+      return;
     }
   }
 
   if (isSync) {
     if (isStale(requestCounter)) return;
-    const data = rawSyncResult as TData;
-    (cache || storeCache)?.set(key, data as never);
-    const successEntry = buildEntry(data, null, false);
-    safeSet((state) => {
-      const patchOrFn = insertStatePatch(successEntry);
-      const computedPatch = typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
-      return findEntryInStore(state.floating, state.trail, key)
-        ? updateEntryInLists(state.floating, state.trail, key, successEntry)
-        : computedPatch;
-    });
+    commitResolverSuccess(rawSyncResult as TData);
     return;
   }
 
   const inFlight = inFlightPromises.get(key);
   if (inFlight) {
-    if (!existingEntry || (existingEntry as { status?: string }).status === 'idle') {
+    if (!existingEntry || existingEntry.status !== 'success') {
       const loadingEntry = buildEntry(undefined, null, true);
       safeSet(insertStatePatch(loadingEntry));
     }
@@ -209,30 +255,10 @@ export async function resolvePopoverEntry<TData = unknown, TContext = unknown>(
     try {
       const data = await inFlight;
       if (isStale(requestCounter)) return;
-
-      (cache || storeCache)?.set(key, data as never);
-      const successEntry = buildEntry(data, null, false);
-      safeSet((state) => {
-        const patchOrFn = insertStatePatch(successEntry);
-        const computedPatch = typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
-        return findEntryInStore(state.floating, state.trail, key)
-          ? updateEntryInLists(state.floating, state.trail, key, successEntry)
-          : computedPatch;
-      });
+      commitResolverSuccess(data);
     } catch (err) {
       if (isStale(requestCounter)) return;
-      const error = toError(err as never);
-      if (error.name === 'AbortError') return;
-
-      const currentEntry = findEntryByKey(key);
-      currentEntry?.onError?.(error, key);
-
-      if (currentEntry) {
-        updateEntryStateInLists({ status: 'error', isLoading: false, error });
-      } else {
-        const errorEntry = buildEntry(undefined, error, false);
-        safeSet(insertStatePatch(errorEntry));
-      }
+      commitResolverError(err);
     }
   }
 }

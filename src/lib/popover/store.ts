@@ -9,11 +9,12 @@ import { createStore } from 'zustand/vanilla';
 import { PopoverMiddlewareEngine } from './store/storeMiddlewareEngine';
 import type {
   PopoverStore,
-  PopoverActions,
   PopoverResolver,
   TrailEntry,
   PopoverCache,
   PopoverStoreEvent,
+  OpenRootOptions,
+  OpenNestedOptions,
 } from './types';
 import { findEntryInStore } from './utils/storeHelpers';
 import { createHistoryManager } from './store/history';
@@ -94,9 +95,9 @@ export function createPopoverStore<
     ) => {
       set((state) => {
         const patch = typeof partial === 'function' ? partial(state) : partial;
-        const nextPatch = middlewareEngine.apply(patch as never, state as never);
+        const nextPatch = middlewareEngine.apply(patch, state);
         if (nextPatch === false) return {};
-        return nextPatch ? (nextPatch as Partial<PopoverStore<TData, TContext, TPopoverKey>>) : {};
+        return nextPatch;
       });
     };
 
@@ -133,24 +134,30 @@ export function createPopoverStore<
       key: string,
       parentKey: string | undefined,
       rect: DOMRect | null,
-      parentData: TData | undefined,
-      options: unknown,
+      parentData: TData | null | undefined,
+      options: (OpenRootOptions & OpenNestedOptions) | undefined,
       controllerKey: string,
       incrementCounter: () => number,
       isStale: (counter: number) => boolean,
-      insertStatePatch: (entry: TrailEntry<TData>) => unknown,
+      insertStatePatch: (
+        entry: TrailEntry<TData>,
+      ) =>
+        | Partial<PopoverStore<TData, TContext, TPopoverKey>>
+        | ((
+            state: PopoverStore<TData, TContext, TPopoverKey>,
+          ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>),
     ) =>
       resolvePopoverEntry(
-        get as never,
+        get,
         key,
         parentKey,
         rect,
         parentData,
-        options as never,
+        options,
         controllerKey,
         incrementCounter,
         isStale,
-        insertStatePatch as never,
+        insertStatePatch,
         {
           popoverDAG,
           cache,
@@ -159,12 +166,12 @@ export function createPopoverStore<
           inFlightPromises,
           registerController,
           removeController,
-          safeSet: safeSet as never,
-          findEntryByKey: findEntryByKey as never,
+          safeSet,
+          findEntryByKey,
         },
       );
 
-    const actions = createStoreActions<TData, TContext>(safeSet as never, get as never, {
+    const actions = createStoreActions<TData, TContext, TPopoverKey>(safeSet, get, {
       activeControllers,
       inFlightPromises,
       hoverCloseTimers,
@@ -197,14 +204,14 @@ export function createPopoverStore<
 
     return {
       ...initialState,
-      ...(actions as unknown as PopoverActions<TData, TContext, TPopoverKey>),
+      ...actions,
       get actions() {
-        return actions as unknown as PopoverActions<TData, TContext, TPopoverKey>;
+        return actions;
       },
     };
   });
 
-  batchingManager.attachSubscriber(store as never);
+  batchingManager.attachSubscriber<TData, TContext, TPopoverKey>(store);
 
   return store;
 }

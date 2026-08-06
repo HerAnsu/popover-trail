@@ -21,9 +21,11 @@ import { isValidTransitionStatusChange } from '../fsm';
 import { validateBaseZIndex } from '../../utils/devWarnings';
 import type { SliceContext } from './sliceContext';
 
-export function createConfigSlice<TData = unknown, TContext = unknown>(
-  ctx: SliceContext<TData, TContext>,
-) {
+export function createConfigSlice<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(ctx: SliceContext<TData, TContext, TPopoverKey>) {
   const { set, get, deps } = ctx;
   const { activeControllers, inFlightPromises, hoverCloseTimers, clearHoverTimer, findEntryByKey } =
     deps;

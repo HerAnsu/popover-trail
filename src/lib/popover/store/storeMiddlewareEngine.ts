@@ -1,4 +1,10 @@
-import type { PopoverMiddleware, PopoverStateData, TypedMiddlewarePatch } from '../types';
+import type { PopoverMiddleware, PopoverStore } from '../types';
+
+function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
+  val: unknown,
+): val is Partial<PopoverStore<TData, TContext, TPopoverKey>> {
+  return typeof val === 'object' && val !== null;
+}
 
 /**
  * Middleware Engine managing store interceptor subscriptions and patch processing pipeline.
@@ -32,12 +38,12 @@ export class PopoverMiddlewareEngine<
    * If any middleware returns false, the update is cancelled (returns false).
    */
   public apply(
-    initialPatch: TypedMiddlewarePatch<TData, TContext, TPopoverKey>,
-    currentState: PopoverStateData<TData, TContext>,
-  ): TypedMiddlewarePatch<TData, TContext, TPopoverKey> | false {
+    initialPatch: Partial<PopoverStore<TData, TContext, TPopoverKey>>,
+    currentState: PopoverStore<TData, TContext, TPopoverKey>,
+  ): Partial<PopoverStore<TData, TContext, TPopoverKey>> | false {
     if (this.middlewares.size === 0) return initialPatch;
 
-    const patch: TypedMiddlewarePatch<TData, TContext, TPopoverKey> = { ...initialPatch };
+    const patch: Partial<PopoverStore<TData, TContext, TPopoverKey>> = { ...initialPatch };
 
     for (const mw of this.middlewares) {
       try {
@@ -45,7 +51,7 @@ export class PopoverMiddlewareEngine<
         if (result === false) {
           return false;
         }
-        if (result && typeof result === 'object') {
+        if (isStorePatchObject(result)) {
           Object.assign(patch, result);
         }
       } catch (err) {

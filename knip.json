@@ -3,6 +3,10 @@
   "project": [
     "src/**/*.{ts,tsx}"
   ],
+  "rules": {
+    "exports": "off",
+    "types": "off"
+  },
   "ignoreDependencies": [
     "@changesets/cli"
   ],

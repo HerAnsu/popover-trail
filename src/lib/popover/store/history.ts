@@ -6,6 +6,7 @@
  */
 
 import type { TrailEntry, PopoverStateData } from '../types';
+import { DEFAULT_MAX_HISTORY_DEPTH } from '../constants';
 
 /**
  * Snapshot of popover store state used for undo/redo history operations.
@@ -22,18 +23,84 @@ export type HistorySnapshot<TData = unknown> = {
 };
 
 /**
+ * Internal Ring Buffer for O(1) history state management.
+ */
+class RingBuffer<T> {
+  private buffer: (T | undefined)[];
+  private head: number;
+  private tail: number;
+  private _length: number;
+  private capacity: number;
+
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.buffer = Array.from({ length: capacity });
+    this.head = 0;
+    this.tail = 0;
+    this._length = 0;
+  }
+
+  get length() {
+    return this._length;
+  }
+
+  push(item: T) {
+    this.buffer[this.tail] = item;
+    this.tail = (this.tail + 1) % this.capacity;
+    if (this._length < this.capacity) {
+      this._length++;
+    } else {
+      this.head = (this.head + 1) % this.capacity;
+    }
+  }
+
+  pop(): T | undefined {
+    if (this._length === 0) return undefined;
+    this.tail = (this.tail - 1 + this.capacity) % this.capacity;
+    const item = this.buffer[this.tail];
+    this.buffer[this.tail] = undefined;
+    this._length--;
+    return item;
+  }
+
+  peekLast(): T | undefined {
+    if (this._length === 0) return undefined;
+    const index = (this.tail - 1 + this.capacity) % this.capacity;
+    return this.buffer[index];
+  }
+
+  clear() {
+    this.head = 0;
+    this.tail = 0;
+    this._length = 0;
+    this.buffer.fill(undefined);
+  }
+
+  toArray(): T[] {
+    const arr: T[] = [];
+    for (let i = 0; i < this._length; i++) {
+      const item = this.buffer[(this.head + i) % this.capacity];
+      if (item !== undefined) {
+        arr.push(item);
+      }
+    }
+    return arr;
+  }
+}
+
+/**
  * Creates an isolated history state manager for undo/redo snapshots.
  *
  * @template TData - Resolved data payload type.
  * @param maxHistory - Maximum number of history snapshots to retain (default: 30).
  * @returns History manager instance containing undo/redo stacks and push/clear methods.
  */
-export function createHistoryManager<TData = unknown>(maxHistory = 30) {
-  const undoStack: HistorySnapshot<TData>[] = [];
-  const redoStack: HistorySnapshot<TData>[] = [];
+export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_HISTORY_DEPTH) {
+  const undoBuffer = new RingBuffer<HistorySnapshot<TData>>(maxHistory);
+  const redoBuffer = new RingBuffer<HistorySnapshot<TData>>(maxHistory);
 
   const pushSnapshot = <TContext>(state: PopoverStateData<TData, TContext>) => {
-    const lastSnapshot = undoStack[undoStack.length - 1];
+    const lastSnapshot = undoBuffer.peekLast();
     if (
       lastSnapshot &&
       lastSnapshot.trail === state.trail &&
@@ -43,10 +110,7 @@ export function createHistoryManager<TData = unknown>(maxHistory = 30) {
       return;
     }
 
-    if (undoStack.length >= maxHistory) {
-      undoStack.shift();
-    }
-    undoStack.push({
+    undoBuffer.push({
       trail: state.trail,
       floating: state.floating,
       offsets: { ...state.offsets },
@@ -54,22 +118,20 @@ export function createHistoryManager<TData = unknown>(maxHistory = 30) {
       zIndexOrder: [...state.zIndexOrder],
       ownerId: state.ownerId,
     });
-    redoStack.length = 0;
+    redoBuffer.clear();
   };
 
-  const canUndo = () => undoStack.length > 0;
-  const canRedo = () => redoStack.length > 0;
+  const canUndo = () => undoBuffer.length > 0;
+  const canRedo = () => redoBuffer.length > 0;
 
   const undo = <TContext>(
     current: PopoverStateData<TData, TContext>,
   ): HistorySnapshot<TData> | null => {
-    if (undoStack.length === 0) return null;
-    const prev = undoStack.pop();
+    if (undoBuffer.length === 0) return null;
+    const prev = undoBuffer.pop();
     if (!prev) return null;
-    if (redoStack.length >= maxHistory) {
-      redoStack.shift();
-    }
-    redoStack.push({
+
+    redoBuffer.push({
       trail: current.trail,
       floating: current.floating,
       offsets: current.offsets,
@@ -83,13 +145,11 @@ export function createHistoryManager<TData = unknown>(maxHistory = 30) {
   const redo = <TContext>(
     current: PopoverStateData<TData, TContext>,
   ): HistorySnapshot<TData> | null => {
-    if (redoStack.length === 0) return null;
-    const next = redoStack.pop();
+    if (redoBuffer.length === 0) return null;
+    const next = redoBuffer.pop();
     if (!next) return null;
-    if (undoStack.length >= maxHistory) {
-      undoStack.shift();
-    }
-    undoStack.push({
+
+    undoBuffer.push({
       trail: current.trail,
       floating: current.floating,
       offsets: current.offsets,
@@ -101,13 +161,17 @@ export function createHistoryManager<TData = unknown>(maxHistory = 30) {
   };
 
   const clearHistory = () => {
-    undoStack.length = 0;
-    redoStack.length = 0;
+    undoBuffer.clear();
+    redoBuffer.clear();
   };
 
   return {
-    undoStack,
-    redoStack,
+    get undoStack() {
+      return undoBuffer.toArray();
+    },
+    get redoStack() {
+      return redoBuffer.toArray();
+    },
     canUndo,
     canRedo,
     pushSnapshot,

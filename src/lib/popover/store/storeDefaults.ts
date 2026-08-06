@@ -14,7 +14,7 @@ export function getInitialStoreState<TData = unknown, TContext = unknown>(
   resolveData: PopoverResolver<TData, TContext>,
   initialContext?: TContext,
   cache?: PopoverCache<TData>,
-): PopoverStateData<TData, TContext> {
+): Readonly<PopoverStateData<TData, TContext>> {
   return {
     trail: [],
     floating: [],

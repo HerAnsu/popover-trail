@@ -71,7 +71,7 @@ describe('Advanced TypeScript Store Types & Status Narrowing', () => {
     };
 
     const element = (
-      <PopoverProvider resolveData={async (key) => ({ id: 42 })}>
+      <PopoverProvider resolveData={async (_key) => ({ id: 42 })}>
         <TestComponent />
       </PopoverProvider>
     );
