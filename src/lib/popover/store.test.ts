@@ -894,13 +894,13 @@ describe('createPopoverStore', () => {
         return { data: `Parent payload for ${key}` };
       };
 
-      const store = createPopoverStore(resolver);
-      const parent: TrailEntry = {
+      const store = createPopoverStore<{ data?: string; title?: string }>(resolver);
+      const parent: TrailEntry<{ data?: string; title?: string }> = {
         key: 'parent',
         data: { title: 'Parent Data Payload' },
         isLoading: false,
       };
-      const child: TrailEntry = {
+      const child: TrailEntry<{ data?: string; title?: string }> = {
         key: 'pinned-child',
         parentKey: 'parent',
         error: new Error('Failed initial load'),
