@@ -26,6 +26,7 @@ import { PopoverDAG } from './utils/dag';
 import { ObjectPool } from './utils/objectPool';
 import { ResizeObserverRegistry } from './utils/resizeObserverRegistry';
 import { FixedCenterLayoutStrategy } from './utils/layoutStrategies';
+import { RectBounds } from './utils/valueObjects';
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -893,13 +894,13 @@ describe('createPopoverStore', () => {
         return { data: `Parent payload for ${key}` };
       };
 
-      const store = createPopoverStore<unknown>(resolver);
-      const parent: TrailEntry<unknown> = {
+      const store = createPopoverStore(resolver);
+      const parent: TrailEntry = {
         key: 'parent',
         data: { title: 'Parent Data Payload' },
         isLoading: false,
       };
-      const child: TrailEntry<unknown> = {
+      const child: TrailEntry = {
         key: 'pinned-child',
         parentKey: 'parent',
         error: new Error('Failed initial load'),
@@ -1167,16 +1168,7 @@ describe('createPopoverStore', () => {
     });
 
     it('should support persistState and rehydrateState for storing and restoring pinned cards', async () => {
-      const storageMap = new Map<string, string>();
-      const mockStorage = {
-        getItem: (k: string) => storageMap.get(k) ?? null,
-        setItem: (k: string, v: string) => {
-          storageMap.set(k, v);
-        },
-        removeItem: (k: string) => {
-          storageMap.delete(k);
-        },
-      };
+      const mockStorage = createMockStorage();
 
       const store1 = createPopoverStore(dummyResolver);
 
@@ -1189,7 +1181,7 @@ describe('createPopoverStore', () => {
 
       // Persist state to mockStorage
       await store1.getState().persistState({ key: 'test_storage_key', storage: mockStorage });
-      expect(storageMap.has('test_storage_key')).toBe(true);
+      expect(mockStorage.getItem('test_storage_key')).not.toBeNull();
 
       // Create a fresh store instance (simulating page reload)
       const store2 = createPopoverStore(dummyResolver);
@@ -1526,11 +1518,7 @@ describe('createPopoverStore', () => {
     });
 
     it('should handle rehydrateState failure gracefully when storage returns invalid data', async () => {
-      const corruptStorage = {
-        getItem: () => 'INVALID_JSON_PAYLOAD_(((',
-        setItem: () => {},
-        removeItem: () => {},
-      };
+      const corruptStorage = createMockStorage({ corrupt_key: 'INVALID_JSON_PAYLOAD_(((' });
 
       const store = createPopoverStore(dummyResolver);
       const rehydrated = await store
@@ -1767,6 +1755,7 @@ describe('createPopoverStore', () => {
           }
           return { offsets: snappedOffsets };
         }
+        return patch;
       });
 
       store.getState().openRoot('owner-1', { key: 'drag-card' });
@@ -1904,16 +1893,7 @@ describe('createPopoverStore', () => {
     });
 
     it('should serialize, persist, and rehydrate complete store state including offsets and button controls across store instances', async () => {
-      const storageMap = new Map<string, string>();
-      const persistentStorage = {
-        getItem: (k: string) => storageMap.get(k) ?? null,
-        setItem: (k: string, v: string) => {
-          storageMap.set(k, v);
-        },
-        removeItem: (k: string) => {
-          storageMap.delete(k);
-        },
-      };
+      const persistentStorage = createMockStorage();
 
       const sourceStore = createPopoverStore(dummyResolver);
 
@@ -1929,7 +1909,7 @@ describe('createPopoverStore', () => {
         .getState()
         .persistState({ key: 'app_session_v1', storage: persistentStorage });
 
-      expect(storageMap.has('app_session_v1')).toBe(true);
+      expect(persistentStorage.getItem('app_session_v1')).not.toBeNull();
 
       const targetStore = createPopoverStore(dummyResolver);
       expect(targetStore.getState().floating).toHaveLength(0);
@@ -2001,12 +1981,14 @@ describe('createPopoverStore', () => {
 
       store.getState().useMiddleware((patch) => {
         if (patch.ownerId === 'forbidden-owner') return false;
+        return patch;
       });
 
       store.getState().useMiddleware((patch) => {
         if (patch.baseZIndex !== undefined) {
           return { baseZIndex: patch.baseZIndex * 2 };
         }
+        return patch;
       });
 
       store.getState().openRoot('forbidden-owner', { key: 'blocked' });
@@ -2076,7 +2058,7 @@ describe('createPopoverStore', () => {
     });
 
     it('should execute worker resolver fallback, store payload in cache, and fulfill subsequent requests synchronously', async () => {
-      const workerResolver = createWorkerResolver(async (key) => ({
+      const workerResolver = createWorkerResolver<unknown>(async (key) => ({
         payload: `Worker data for ${key}`,
       }));
 
@@ -2310,6 +2292,7 @@ describe('createPopoverStore', () => {
           }));
           return { trail: updatedTrail };
         }
+        return patch;
       });
 
       store.getState().openRoot('owner-1', { key: 'hijacked-card' });
@@ -2380,8 +2363,8 @@ describe('createPopoverStore', () => {
     it('should verify FixedCenterLayoutStrategy positioning under custom viewport dimensions', () => {
       const strategy = new FixedCenterLayoutStrategy();
       const pos = strategy.computePosition({
-        triggerRect: { x: 100, y: 100, width: 50, height: 50 },
-        popoverRect: { x: 0, y: 0, width: 200, height: 100 },
+        triggerRect: RectBounds.of(100, 100, 50, 50),
+        popoverRect: RectBounds.of(0, 0, 200, 100),
         viewportWidth: 1000,
         viewportHeight: 600,
       });
@@ -2446,18 +2429,18 @@ describe('createPopoverStore', () => {
     it('should manage 50 simulated DOM elements in ResizeObserverRegistry with clean unobservation', () => {
       const mockObserve = vi.fn();
       const mockUnobserve = vi.fn();
+      const mockDisconnect = vi.fn();
 
       class MockResizeObserver {
         observe = mockObserve;
         unobserve = mockUnobserve;
-        disconnect = vi.fn();
+        disconnect = mockDisconnect;
       }
 
       const origRO = globalThis.ResizeObserver;
       const origWin = globalThis.window;
       // @ts-expect-error - mock window and ResizeObserver
       globalThis.window = globalThis;
-      // @ts-expect-error - mock ResizeObserver
       globalThis.ResizeObserver = MockResizeObserver;
 
       ResizeObserverRegistry.clear();
@@ -2472,6 +2455,7 @@ describe('createPopoverStore', () => {
       }
 
       expect(mockObserve).toHaveBeenCalledTimes(50);
+      expect(elements).toHaveLength(50);
 
       for (const cleanup of cleanups) {
         cleanup();
