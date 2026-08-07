@@ -52,12 +52,14 @@ Complete technical specification for components, hooks, schema builders, core en
    - [createWorkerResolver](#createworkerresolver)
    - [createPopoverController](#createpopovercontroller)
 9. [Guardrail warnings registry (PT-101 to PT-127)](#9-guardrail-warnings-registry)
+10. [CSS custom variables and theme tokens](#10-css-custom-variables-and-theme-tokens)
+11. [Keyboard accessibility and ARIA matrix](#11-keyboard-accessibility-and-aria-matrix)
 
 ---
 
 ## 1. Typed schema builder and factory
 
-### `createPopoverSchema(definition)`
+### `createPopoverSchema`
 
 Factory function creating a typed schema instance. Consolidates data resolvers, placement defaults, key unions, typed triggers, and typed hooks into a single declaration.
 
@@ -86,46 +88,50 @@ export const appSchema = createPopoverSchema({
 
 #### Node options (`PopoverSchemaNode<TData, TParentData, TContext>`)
 
-- `resolver`: Async or synchronous data fetcher function `(key, parentData?, context?) => TData | Promise<TData>`.
-- `placement`: Default alignment placement (`'top'`, `'bottom'`, `'left'`, `'right'`, `'auto'`, or aligned variants like `'bottom-start'`).
-- `offset`: Gap distance in pixels between trigger element and card container.
-- `collision`: Boundary collision settings object `{ boundary?, padding?, flip?, shift?, size? }`.
-- `hover`: Hover trigger configuration `{ openDelay?: number, closeDelay?: number, closeOnMouseLeave?: boolean }`.
-- `allowDragWhenPinned`: Allow mouse dragging when card is pinned (default: `true`).
-- `allowDragWhenUnpinned`: Allow mouse dragging when card is in trailing stack (default: `true`).
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `resolver` | `(key, parentData?, context?) => TData \| Promise<TData>` | Required | Data fetcher function resolving state for the popover key. |
+| `placement` | `PopoverPlacement` | `'right'` | Preferred alignment placement relative to anchor element. |
+| `offset` | `number` | `8` | Distance gap in pixels between anchor element and popover container. |
+| `collision` | `CollisionConfig` | `undefined` | Boundary collision settings (`boundary`, `padding`, `flip`, `shift`). |
+| `hover` | `HoverConfig` | `undefined` | Hover trigger delay parameters (`openDelay`, `closeDelay`, `closeOnMouseLeave`). |
+| `allowDragWhenPinned` | `boolean` | `true` | Enable pointer dragging when card is pinned floating window. |
+| `allowDragWhenUnpinned` | `boolean` | `true` | Enable pointer dragging when card is in trailing stack. |
 
 #### Schema instance properties (`PopoverSchemaInstance<TSchema>`)
 
-- `definition`: Raw input definition object.
-- `keys`: Map of schema key strings (e.g. `appSchema.keys.userProfile`).
-- `createResolver()`: Factory function generating the unified `resolveData` callback for `<PopoverProvider schema={appSchema}>`.
-- `Trigger`: Typed trigger component `<appSchema.Trigger popoverKey="userProfile">`.
-- `useData(key)`: Hook returning typed data payload for the specified key.
-- `useEntry(key)`: Hook returning full `TrailEntry<TData>` for the specified key.
-- `useActions()`: Hook returning store dispatch methods bound to schema keys.
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `definition` | `TSchema` | Raw input definition object. |
+| `keys` | `Record<keyof TSchema, string>` | Typed key mapping object (`appSchema.keys.userProfile`). |
+| `createResolver()` | `PopoverResolver` | Factory function generating unified resolver for `<PopoverProvider>`. |
+| `Trigger` | `React.ComponentType` | Typed trigger component `<appSchema.Trigger popoverKey="...">`. |
+| `useData(key)` | `(key) => TData` | Hook returning typed data payload for specified schema key. |
+| `useEntry(key)` | `(key) => TrailEntry<TData>` | Hook returning active `TrailEntry<TData>` for specified schema key. |
+| `useActions()` | `() => PopoverActions` | Hook returning store dispatch methods bound to schema keys. |
 
 ---
 
-### `createPopoverTrail(definition?)`
+### `createPopoverTrail`
 
 Overloaded factory supporting schema-driven definitions and generic type bindings.
 
 ```tsx
-// 1. Schema Mode:
+// 1. Schema Mode
 const schemaInstance = createPopoverTrail({
   accountCard: {
     resolver: (key) => fetchAccount(key),
   },
 });
 
-// 2. Generic Mode:
+// 2. Generic Mode
 const trailHelpers = createPopoverTrail<UserData, GlobalContextType>();
 const { PopoverProvider, PopoverTrigger, usePopover } = trailHelpers;
 ```
 
 ---
 
-### `definePopoverContext<TContext>()`
+### `definePopoverContext`
 
 Factory function generating pre-bound React Context hooks and provider components typed for a specific global `TContext` structure. Eliminates repeating generic parameter types across application components.
 
@@ -162,30 +168,30 @@ Instantiates the Zustand store, injects context into the React tree, and manages
 
 #### Provider properties (`PopoverProviderProps<TData, TContext>`)
 
-| Prop                     | Type                                               | Default             | Description                                                                                    |
-| ------------------------ | -------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------- |
-| `schema`                 | `PopoverSchemaInstance`                            | `undefined`         | Typed schema instance generated by `createPopoverSchema`.                                      |
-| `resolveData`            | `PopoverResolver`                                  | `undefined`         | Custom data resolver function `(key, parentData, context, signal) => TData \| Promise<TData>`. |
-| `initialContext`         | `TContext`                                         | `undefined`         | Initial global shared context object passed to all resolvers.                                  |
-| `clickOutside`           | `ClickOutsideConfig`                               | `{ enabled: true }` | Configuration object for click-outside auto-closing.                                           |
-| `enableKeyboardClose`    | `boolean`                                          | `true`              | Close topmost popover when Escape key is pressed.                                              |
-| `enableArrowNavigation`  | `boolean`                                          | `true`              | Enable keyboard arrow key navigation between active popovers.                                  |
-| `closePinnedDescendants` | `boolean`                                          | `false`             | Close pinned floating child popovers when a parent closes.                                     |
-| `allowDragWhenPinned`    | `boolean`                                          | `true`              | Allow mouse/touch dragging when card is pinned/floating.                                       |
-| `allowDragWhenUnpinned`  | `boolean`                                          | `true`              | Allow mouse/touch dragging when card is unpinned/trailing.                                     |
-| `cache`                  | `PopoverCache<TData>`                              | `undefined`         | Custom synchronous or asynchronous data cache implementation.                                  |
-| `collision`              | `CollisionConfig`                                  | `undefined`         | Global boundary collision configuration.                                                       |
-| `baseZIndex`             | `number`                                           | `1000`              | Base z-index depth factor.                                                                     |
-| `cascadeOffsetStep`      | `number`                                           | `8`                 | Pixel offset shift added per level of nesting.                                                 |
-| `exitTransitionDuration` | `number`                                           | `0`                 | Unmount delay in milliseconds for CSS exit animations.                                         |
-| `defaultOffset`          | `number`                                           | `8`                 | Default gap offset distance in pixels.                                                         |
-| `responsiveMode`         | `'auto' \| 'popover' \| 'bottom-sheet' \| 'modal'` | `'auto'`            | Responsive layout transformation mode.                                                         |
-| `mobileBreakpoint`       | `number`                                           | `640`               | Viewport width threshold in pixels for mobile layout transformation.                           |
-| `stackGroup`             | `string \| null`                                   | `null`              | Active stack group zone ID filter.                                                             |
-| `focusLockOptions`       | `FocusLockOptions`                                 | `undefined`         | Focus trap configuration options.                                                              |
-| `components`             | `PopoverSlotComponents`                            | `undefined`         | Custom UI slot component overrides.                                                            |
-| `zIndexBaseMap`          | `ZIndexBaseMap`                                    | `undefined`         | Per-stack-group base z-index mapping.                                                          |
-| `debug`                  | `boolean`                                          | `false`             | Log Zustand state mutations to console.                                                        |
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `schema` | `PopoverSchemaInstance` | `undefined` | Typed schema instance generated by `createPopoverSchema`. |
+| `resolveData` | `PopoverResolver` | `undefined` | Data resolver function `(key, parentData, context, signal) => TData \| Promise<TData>`. |
+| `initialContext` | `TContext` | `undefined` | Global shared context object passed to all resolvers. |
+| `clickOutside` | `ClickOutsideConfig` | `{ enabled: true }` | Configuration object for click-outside auto-closing. |
+| `enableKeyboardClose` | `boolean` | `true` | Close topmost popover when Escape key is pressed. |
+| `enableArrowNavigation` | `boolean` | `true` | Enable keyboard arrow key navigation between active popovers. |
+| `closePinnedDescendants` | `boolean` | `false` | Close pinned floating child popovers when a parent closes. |
+| `allowDragWhenPinned` | `boolean` | `true` | Allow mouse/touch dragging when card is pinned/floating. |
+| `allowDragWhenUnpinned` | `boolean` | `true` | Allow mouse/touch dragging when card is unpinned/trailing. |
+| `cache` | `PopoverCache<TData>` | `undefined` | Data cache implementation for caching resolver promises. |
+| `collision` | `CollisionConfig` | `undefined` | Global boundary collision configuration. |
+| `baseZIndex` | `number` | `1000` | Base z-index depth factor. |
+| `cascadeOffsetStep` | `number` | `8` | Pixel offset shift added per level of nesting. |
+| `exitTransitionDuration` | `number` | `0` | Unmount delay in milliseconds for CSS exit animations. |
+| `defaultOffset` | `number` | `8` | Default gap offset distance in pixels. |
+| `responsiveMode` | `'auto' \| 'popover' \| 'bottom-sheet' \| 'modal'` | `'auto'` | Responsive layout transformation mode. |
+| `mobileBreakpoint` | `number` | `640` | Viewport width threshold in pixels for mobile transformation. |
+| `stackGroup` | `string \| null` | `null` | Active stack group zone ID filter. |
+| `focusLockOptions` | `FocusLockOptions` | `undefined` | Focus trap configuration options. |
+| `components` | `PopoverSlotComponents` | `undefined` | Custom UI slot component overrides. |
+| `zIndexBaseMap` | `ZIndexBaseMap` | `undefined` | Per-stack-group base z-index mapping. |
+| `debug` | `boolean` | `false` | Log Zustand state mutations to console. |
 
 ---
 
@@ -208,18 +214,22 @@ Polymorphic container element for popover cards. Binds coordinates, accessibilit
 
 #### Card properties (`PopoverCardProps<E, TData>`)
 
-- `as`: HTML element tag or React component type (default: `'div'`).
-- `entry`: Active `TrailEntry<TData>` represented by this card.
-- `index`: Virtual depth index of the card.
-- `isPinned`: True if card is pinned to the canvas.
-- `placement`: Preferred placement alignment direction relative to anchor.
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `as` | `React.ElementType` | `'div'` | HTML tag or React component type. |
+| `entry` | `TrailEntry<TData>` | Required | Active entry represented by this card. |
+| `index` | `number` | Required | Virtual depth index of the card in the cascade. |
+| `isPinned` | `boolean` | Required | True if card is pinned to the canvas. |
+| `placement` | `PopoverPlacement` | `undefined` | Preferred placement direction relative to anchor. |
 
 #### Compound subcomponents
 
-- `<PopoverCard.Handle>`: Drag handle element. Attaches ARIA role attributes and drag event listeners.
-- `<PopoverCard.PinButton>`: Toggle button for pinning. Invokes `actions.togglePin(key)`.
-- `<PopoverCard.CloseButton>`: Close button. Invokes `actions.closeByKey(key)`.
-- `<PopoverCard.Content>`: Wrapper container for card content.
+| Subcomponent | Description |
+| :--- | :--- |
+| `<PopoverCard.Handle>` | Drag handle element attaching ARIA attributes and pointer listeners. |
+| `<PopoverCard.PinButton>` | Toggle button for pinning. Invokes `actions.togglePin(key)`. |
+| `<PopoverCard.CloseButton>` | Close button. Invokes `actions.closeByKey(key)`. |
+| `<PopoverCard.Content>` | Wrapper container for card body content. |
 
 ---
 
@@ -263,6 +273,11 @@ Compound component rendering interactive visual breadcrumb steps and history und
 
 Renders children into `document.body` or a specified DOM target container via `ReactDOM.createPortal`. Validates target DOM node presence before rendering.
 
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `container` | `HTMLElement \| null` | `document.body` | Target DOM element container for portal mounting. |
+| `children` | `React.ReactNode \| ((entries: TrailEntry[]) => React.ReactNode)` | Required | Render nodes or render function receiving active entries. |
+
 ---
 
 ### `<PopoverTrigger>`
@@ -275,13 +290,20 @@ Anchor component attaching click and hover event listeners to open popovers. Clo
 </PopoverTrigger>
 ```
 
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `popoverKey` | `string` | Required | Unique key identifier of target popover to open. |
+| `placement` | `PopoverPlacement` | `'right'` | Alignment placement relative to trigger element. |
+| `offset` | `number` | `8` | Distance gap in pixels. |
+| `action` | `'click' \| 'hover' \| 'manual'` | `'click'` | Interaction type triggering popover opening. |
+
 ---
 
 ## 3. Hooks and selectors
 
-### `usePopover<TData>(key)`
+### `usePopover`
 
-Unified facade hook providing data, status flags, layout coordinates, and actions for a popover key.
+Unified facade hook providing data, status flags, layout coordinates, and actions for a single popover key.
 
 ```tsx
 const {
@@ -301,9 +323,27 @@ const {
 } = usePopover<UserData>('userProfile');
 ```
 
+#### Return signature (`UsePopoverResult<TData>`)
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `data` | `TData \| undefined` | Resolved data payload. |
+| `error` | `Error \| null` | Resolution failure error object. |
+| `isLoading` | `boolean` | True if data resolver promise is pending. |
+| `isOpen` | `boolean` | True if popover is active in trail or floating stack. |
+| `isPinned` | `boolean` | True if popover is pinned as floating canvas window. |
+| `isTop` | `boolean` | True if popover is top-most in z-index order. |
+| `zIndex` | `number` | Calculated 0-based depth layer z-index. |
+| `offset` | `{ x: number, y: number }` | Pixel coordinate drag offset. |
+| `entry` | `TrailEntry<TData> \| undefined` | Active state entry object. |
+| `close()` | `() => void` | Closes target popover and its descendants. |
+| `pin()` | `() => void` | Toggles pinned floating state. |
+| `bringToFront()` | `() => void` | Raises popover z-index to top. |
+| `updateOffset(offset)` | `(offset: { x: number, y: number }) => void` | Updates drag coordinate offsets. |
+
 ---
 
-### `usePopoverData<TData>(key)`
+### `usePopoverData`
 
 Data selector hook. Leverages React 19 `use(promise)` for native Suspense support when `entry.dataPromise` is pending.
 
@@ -316,7 +356,7 @@ function UserCard() {
 
 ---
 
-### `usePopoverTimeline()`
+### `usePopoverTimeline`
 
 Hook for interacting with timeline history state and navigation controls.
 
@@ -324,35 +364,86 @@ Hook for interacting with timeline history state and navigation controls.
 const { history, currentIndex, canUndo, canRedo, undo, redo, jumpToStep } = usePopoverTimeline();
 ```
 
----
-
-### `usePopoverCard(options)`
-
-Card positioning and interaction hook. Integrates Floating UI geometry, ARIA focus locking, keyboard arrow navigation, and transition state updates.
-
----
-
-### `usePopoverActions()`
-
-Returns all store dispatcher methods (`closeByKey`, `togglePin`, `retryPopover`, `bringToFront`, `updateOffset`, `undo`, `redo`).
+| Return property | Type | Description |
+| :--- | :--- | :--- |
+| `history` | `PopoverTimelineStep[]` | Recorded history steps array. |
+| `currentIndex` | `number` | Pointer index to active step in history stack. |
+| `canUndo` | `boolean` | True if history undo operation is available. |
+| `canRedo` | `boolean` | True if history redo operation is available. |
+| `undo()` | `() => void` | Rolls back state to previous history step. |
+| `redo()` | `() => void` | Replays next history step. |
+| `jumpToStep(index)` | `(index: number) => void` | Navigates state directly to target step index. |
 
 ---
 
-### `usePopoverGeometry(options)`
+### `usePopoverCard`
+
+Card positioning and interaction hook. Integrates Floating UI geometry, ARIA focus locking, keyboard arrow navigation, and transition status tracking.
+
+```tsx
+const {
+  ref,
+  style,
+  attributes,
+  listeners,
+  isPinned,
+  transitionStatus,
+} = usePopoverCard({ entry, index, isPinned: false });
+```
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `entry` | `TrailEntry<TData>` | Required | Active state entry for the popover card. |
+| `index` | `number` | Required | Virtual depth index in the cascade stack. |
+| `isPinned` | `boolean` | Required | True if card is in pinned floating state. |
+
+---
+
+### `usePopoverActions`
+
+Returns store dispatcher methods (`closeByKey`, `togglePin`, `retryPopover`, `bringToFront`, `updateOffset`, `undo`, `redo`).
+
+---
+
+### `usePopoverGeometry`
 
 Calculates absolute layout coordinates (`top`, `left`). Accepts `enableSpatialCollision: true` to enable 2D QuadTree spatial collision resolution.
 
+```tsx
+const { top, left, width, height, placement } = usePopoverGeometry({
+  entry,
+  enableSpatialCollision: true,
+});
+```
+
 ---
 
-### `usePopoverDragAndDrop(options)`
+### `usePopoverDragAndDrop`
 
-Calculates 3D Euler rotation tilt angles (`rotationX`, `rotationY`, `rotationZ`) and drag offsets based on mouse movement velocity.
+Calculates 3D Euler rotation tilt angles (`rotationX`, `rotationY`, `rotationZ`) and drag offsets based on pointer movement velocity.
+
+```tsx
+const {
+  dragOffset,
+  tiltAngles,
+  isDragging,
+  dragProps,
+} = usePopoverDragAndDrop({
+  key: 'userProfile',
+  isPinned: true,
+  friction: 0.85,
+});
+```
 
 ---
 
-### `usePopoverHydration(key)`
+### `usePopoverHydration`
 
 Tracks async data loading status (`isLoading`, `error`) and provides a `reload()` callback.
+
+```tsx
+const { isLoading, error, reload } = usePopoverHydration('userProfile');
+```
 
 ---
 
@@ -380,7 +471,7 @@ Separate export entry point providing drag-and-drop canvas capabilities powered 
 import { PopoverCanvas, PopoverCard } from 'popover-trail/dnd';
 ```
 
-#### `<PopoverCanvas>`
+### `<PopoverCanvas>`
 
 Drag-and-drop context container for floating cards.
 
@@ -394,7 +485,7 @@ Drag-and-drop context container for floating cards.
 </PopoverCanvas>
 ```
 
-#### `usePopoverDraggableCard(options)`
+### `usePopoverDraggableCard`
 
 Hook attaching `@dnd-kit` drag handles and spring tilt physics to a card component.
 
@@ -413,7 +504,7 @@ Deterministic state machine reducer with static O(1) transition lookup table (`p
 - `ErrorFSMState` (`value: 'Error'`, narrows `context.error` to `Error`)
 - `UnmountingFSMState` (`value: 'Unmounting'`)
 
-```ts
+```typescript
 import { popoverFSMReducer, createPopoverFSM } from 'popover-trail';
 
 const fsmState = fsm.getState();
@@ -428,7 +519,17 @@ if (fsmState.value === 'Resolved.Trailing') {
 
 `PopoverDAG` class for querying topological ancestor and descendant paths. Capped at 500 traversal nodes to prevent circular loops.
 
-```ts
+```mermaid
+graph TD
+    Root["Root Trigger (userCard)"] --> Child1["Nested Card (detailsCard)"]
+    Child1 --> Child2["Sub-Nested Card (statsCard)"]
+    
+    style Root fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff
+    style Child1 fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff
+    style Child2 fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff
+```
+
+```typescript
 import { PopoverDAG } from 'popover-trail';
 
 const dag = new PopoverDAG();
@@ -443,7 +544,16 @@ const descendants = dag.getDescendantKeys('parentCard');
 
 2D spatial index for querying bounding box overlaps in O(log N) time.
 
-```ts
+```mermaid
+graph TB
+    Root["Root Quad (0, 0, 1920, 1080)"]
+    Root --> NW["NW Quarter"]
+    Root --> NE["NE Quarter"]
+    Root --> SW["SW Quarter"]
+    Root --> SE["SE Quarter"]
+```
+
+```typescript
 import { QuadTree } from 'popover-trail';
 
 const tree = new QuadTree({ x: 0, y: 0, width: 1920, height: 1080 });
@@ -457,7 +567,7 @@ const collisions = tree.retrieve([], { x: 120, y: 120, width: 300, height: 200 }
 
 Cross-tab state persistence and synchronization engine via `BroadcastChannel` and `localStorage`. Sanitizes keys against prototype pollution attacks before restoration.
 
-```ts
+```typescript
 import { PopoverSnapshotManager } from 'popover-trail';
 
 const manager = new PopoverSnapshotManager({
@@ -473,7 +583,7 @@ manager.saveSnapshot(snapshot);
 
 ### `TrailEntry<TData = unknown>`
 
-```ts
+```typescript
 export interface TrailEntry<TData = unknown> {
   key: string;
   parentKey?: string;
@@ -503,9 +613,10 @@ export interface TrailEntry<TData = unknown> {
 
 Discriminated union type representing navigation steps in popover timeline history:
 
-```ts
+```typescript
 export type PopoverTimelineStep<TData = unknown> =
-  ActiveTimelineStep<TData> | UndoneTimelineStep<TData>;
+  | ActiveTimelineStep<TData>
+  | UndoneTimelineStep<TData>;
 
 export interface ActiveTimelineStep<TData = unknown> {
   status: 'active';
@@ -538,7 +649,7 @@ export interface UndoneTimelineStep<TData = unknown> {
 
 Discriminated union for asynchronous resolution state pattern matching:
 
-```ts
+```typescript
 export type PopoverEntryDiscriminatedState<TData = unknown> =
   | { status: 'loading'; isLoading: true; data: undefined; error: null }
   | { status: 'error'; isLoading: false; data: undefined; error: Error }
@@ -551,7 +662,7 @@ export type PopoverEntryDiscriminatedState<TData = unknown> =
 
 Helper utility for building custom polymorphic popover card components with element ref inference:
 
-```ts
+```typescript
 export type PolymorphicRef<E extends React.ElementType> = React.ComponentPropsWithRef<E>['ref'];
 
 export type PolymorphicPropsWithRef<E extends React.ElementType, P = {}> = P & { as?: E } & Omit<
@@ -568,7 +679,7 @@ export type PolymorphicPropsWithRef<E extends React.ElementType, P = {}> = P & {
 
 Strongly typed state patch signature returned by store middleware interceptors:
 
-```ts
+```typescript
 export type TypedMiddlewarePatch<
   TData = unknown,
   TContext = unknown,
@@ -617,7 +728,7 @@ All executable type guards and helper converters are exported from `utils/typeGu
 
 Generic in-memory cache implementation with TTL record expiration, maximum size eviction, background garbage collection, and hit/miss statistics.
 
-```ts
+```typescript
 import { SimplePopoverCache } from 'popover-trail';
 
 const cache = new SimplePopoverCache(300000, 50); // 5-minute TTL, max 50 items
@@ -631,7 +742,7 @@ const data = cache.get('userProfile');
 
 Offloads data resolution tasks to a background Web Worker thread. Supports inline resolver functions, worker script URLs, and worker instances.
 
-```ts
+```typescript
 import { createWorkerResolver } from 'popover-trail';
 
 const workerResolver = createWorkerResolver(
@@ -649,7 +760,7 @@ const workerResolver = createWorkerResolver(
 
 Imperative controller for inspecting and dispatching popover actions outside of React component trees (e.g. Redux actions, WebSocket handlers, or Vanilla JS modules).
 
-```ts
+```typescript
 import { createPopoverController } from 'popover-trail';
 
 const controller = createPopoverController(storeApi);
@@ -662,35 +773,81 @@ controller.openRoot('owner-id', { key: 'userProfile' });
 
 In development mode (`NODE_ENV !== 'production'`), `popover-trail` logs structured diagnostic warnings formatted as `[popover-trail warning PT-XXX]: <message>`.
 
-| Code       | Validator name                      | Trigger description                                                                                                |
-| ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **PT-101** | `validatePopoverKey`                | Popover key is missing, null, empty, or uses reserved JS property names (`__proto__`, `constructor`, `prototype`). |
-| **PT-102** | `validatePlacement`                 | Invalid layout placement string provided.                                                                          |
-| **PT-103** | `validateHoverDelays`               | Open hover delay is outside valid range (0ms to 30000ms).                                                          |
-| **PT-104** | `validateHoverDelays`               | Close hover delay is outside valid range (0ms to 30000ms).                                                         |
-| **PT-105** | `validateCascadeAncestry`           | Circular cascade loop detected (popoverKey equals parentKey).                                                      |
-| **PT-106** | `validateCardSubComponentScope`     | `<PopoverCard>` subcomponent rendered outside `<PopoverCard>` container.                                           |
-| **PT-107** | `validateTimelineSubComponentScope` | `<PopoverTimeline>` subcomponent rendered outside `<PopoverTimeline>` container.                                   |
-| **PT-108** | `validateSchemaKey`                 | Key requested is not defined in the schema.                                                                        |
-| **PT-109** | `validateCascadeStep`               | Cascade offset step is outside valid range (0px to 200px).                                                         |
-| **PT-110** | `validateDefaultOffset`             | Default gap offset is outside valid range (0px to 500px).                                                          |
-| **PT-111** | `validateBaseZIndex`                | Base z-index is invalid or negative.                                                                               |
-| **PT-112** | `validateExitDuration`              | Exit duration is outside valid range (0ms to 10000ms).                                                             |
-| **PT-113** | `validateProviderResolver`          | `<PopoverProvider>` initialized without resolver callback or schema.                                               |
-| **PT-114** | `validateDragOffset`                | Drag offset coordinates are NaN or out of bounds.                                                                  |
-| **PT-115** | `validateCascadeDepth`              | Deep cascade stack detected (depth > 10).                                                                          |
-| **PT-116** | `validateStackGroup`                | Stack group ID filter is an empty string.                                                                          |
-| **PT-117** | `validateHistoryCapacity`           | Max history capacity is outside valid range (1 to 500).                                                            |
-| **PT-118** | `validateTriggerEvent`              | Trigger action dispatch called without valid anchor event.                                                         |
-| **PT-119** | `validateSharedMemorySupport`       | `useSharedMemory` requested but `SharedArrayBuffer` is unsupported.                                                |
-| **PT-120** | `validateHydrationError`            | Data resolution promise rejected with error.                                                                       |
-| **PT-121** | `validatePinDragState`              | Drag attempted on unpinned card that disables unpinned dragging.                                                   |
-| **PT-122** | `validateStorageKey`                | Storage key is empty or invalid.                                                                                   |
-| **PT-123** | `validateQuadTreeBounds`            | QuadTree dimensions non-positive or NaN.                                                                           |
-| **PT-124** | `validateFSMTransitionEvent`        | FSM reducer received invalid transition event type.                                                                |
-| **PT-125** | `validatePortalContainer`           | `<PopoverPortal>` container DOM node is null or unmounted.                                                         |
-| **PT-126** | `validateFactoryPlacement`          | `createPopoverTrail()` invoked inside React render pass instead of top-level scope.                                |
-| **PT-127** | `validateStoreControllerInstance`   | `createPopoverController()` received invalid Zustand store instance.                                               |
+| Code | Validator name | Trigger description |
+| :--- | :--- | :--- |
+| **PT-101** | `validatePopoverKey` | Popover key is missing, null, empty, or uses reserved JS property names (`__proto__`, `constructor`, `prototype`). |
+| **PT-102** | `validatePlacement` | Invalid layout placement string provided. |
+| **PT-103** | `validateHoverDelays` | Open hover delay is outside valid range (0ms to 30000ms). |
+| **PT-104** | `validateHoverDelays` | Close hover delay is outside valid range (0ms to 30000ms). |
+| **PT-105** | `validateCascadeAncestry` | Circular cascade loop detected (popoverKey equals parentKey). |
+| **PT-106** | `validateCardSubComponentScope` | `<PopoverCard>` subcomponent rendered outside `<PopoverCard>` container. |
+| **PT-107** | `validateTimelineSubComponentScope` | `<PopoverTimeline>` subcomponent rendered outside `<PopoverTimeline>` container. |
+| **PT-108** | `validateSchemaKey` | Key requested is not defined in the schema. |
+| **PT-109** | `validateCascadeStep` | Cascade offset step is outside valid range (0px to 200px). |
+| **PT-110** | `validateDefaultOffset` | Default gap offset is outside valid range (0px to 500px). |
+| **PT-111** | `validateBaseZIndex` | Base z-index is invalid or negative. |
+| **PT-112** | `validateExitDuration` | Exit duration is outside valid range (0ms to 10000ms). |
+| **PT-113** | `validateProviderResolver` | `<PopoverProvider>` initialized without resolver callback or schema. |
+| **PT-114** | `validateDragOffset` | Drag offset coordinates are NaN or out of bounds. |
+| **PT-115** | `validateCascadeDepth` | Deep cascade stack detected (depth > 10). |
+| **PT-116** | `validateStackGroup` | Stack group ID filter is an empty string. |
+| **PT-117** | `validateHistoryCapacity` | Max history capacity is outside valid range (1 to 500). |
+| **PT-118** | `validateTriggerEvent` | Trigger action dispatch called without valid anchor event. |
+| **PT-119** | `validateSharedMemorySupport` | `useSharedMemory` requested but `SharedArrayBuffer` is unsupported. |
+| **PT-120** | `validateHydrationError` | Data resolution promise rejected with error. |
+| **PT-121** | `validatePinDragState` | Drag attempted on unpinned card that disables unpinned dragging. |
+| **PT-122** | `validateStorageKey` | Storage key is empty or invalid. |
+| **PT-123** | `validateQuadTreeBounds` | QuadTree dimensions non-positive or NaN. |
+| **PT-124** | `validateFSMTransitionEvent` | FSM reducer received invalid transition event type. |
+| **PT-125** | `validatePortalContainer` | `<PopoverPortal>` container DOM node is null or unmounted. |
+| **PT-126** | `validateFactoryPlacement` | `createPopoverTrail()` invoked inside React render pass instead of top-level scope. |
+| **PT-127** | `validateStoreControllerInstance` | `createPopoverController()` received invalid Zustand store instance. |
+
+---
+
+## 10. CSS custom variables and theme tokens
+
+`<PopoverCard>` dynamically exposes hardware-accelerated CSS custom variables on the element root style object for external CSS animations, custom transforms, and tailwind/vanilla CSS overrides:
+
+| Variable | Type | Description |
+| :--- | :--- | :--- |
+| `--popover-translate-x` | `string` (px) | Cumulative drag offset distance along horizontal X-axis. |
+| `--popover-translate-y` | `string` (px) | Cumulative drag offset distance along vertical Y-axis. |
+| `--popover-rotate-x` | `string` (deg) | Spring physics tilt angle around horizontal X-axis. |
+| `--popover-rotate-y` | `string` (deg) | Spring physics tilt angle around vertical Y-axis. |
+| `--popover-rotate-z` | `string` (deg) | Spring physics tilt angle around Z-axis. |
+| `--popover-z-index` | `string` (number) | Calculated z-index stacking depth layer. |
+| `--pt-top` | `string` (px) | Absolute top layout position relative to viewport. |
+| `--pt-left` | `string` (px) | Absolute left layout position relative to viewport. |
+| `--pt-drag-x` | `string` (px) | Active drag displacement along X-axis. |
+| `--pt-drag-y` | `string` (px) | Active drag displacement along Y-axis. |
+| `--pt-tilt-deg` | `string` (deg) | Active rotation tilt in degrees. |
+
+---
+
+## 11. Keyboard accessibility and ARIA matrix
+
+`popover-trail` implements WCAG 2.1 AAA accessibility compliance with automated ARIA role injection and focus management:
+
+### Keyboard shortcuts
+
+| Key | Context | Action |
+| :--- | :--- | :--- |
+| `Escape` | Global Provider scope | Closes top-most popover card in stack order. |
+| `ArrowUp` / `ArrowLeft` | Active PopoverCard | Navigates keyboard focus to previous popover in trail. |
+| `ArrowDown` / `ArrowRight` | Active PopoverCard | Navigates keyboard focus to next popover in trail. |
+| `Tab` / `Shift+Tab` | Inside PopoverCard | Traps focus within active card bounds when `focusLockOptions` enabled. |
+
+### ARIA and DOM attributes
+
+| Attribute | Element | Value / State | Description |
+| :--- | :--- | :--- | :--- |
+| `role` | `<PopoverCard>` | `"dialog"` | Identifies card container as interactive dialog. |
+| `aria-haspopup` | `<PopoverTrigger>` | `"dialog"` | Signals anchored dialog popup capability. |
+| `aria-expanded` | `<PopoverTrigger>` | `"true" \| "false"` | Reflects active state of target popover key. |
+| `data-state` | `<PopoverCard>` | `"mounting" \| "mounted" \| "unmounting"` | Enables CSS enter/exit transition selectors. |
+| `data-pinned` | `<PopoverCard>` | `"true" \| "false"` | True if card is in pinned floating canvas state. |
+| `data-key` | `<PopoverCard>` | `string` | Unique popover key identifier for debugging and testing. |
 
 ---
 

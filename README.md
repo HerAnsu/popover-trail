@@ -2,40 +2,33 @@
 
 [![npm version](https://img.shields.io/npm/v/popover-trail.svg)](https://www.npmjs.com/package/popover-trail)
 [![license](https://img.shields.io/npm/l/popover-trail.svg)](LICENSE)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/popover-trail.svg)](https://bundlephobia.com/package/popover-trail)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://www.typescriptlang.org/)
 
-Headless React 19 library for stateful popover trees, cascading navigation cards, draggable canvas windows, and background Web Worker data hydration.
+Headless React 19 library for cascading popover paths, draggable floating windows, and async data hydration.
 
-Unpinned popovers form a linear cascading trail (`trail`). Pinning a card detaches it into an independent floating canvas window (`floating`) with pointer drag tracking and spring velocity tilt physics.
-
----
+Nested popovers usually mean fragmented state and focus traps. `popover-trail` treats popovers as a stateful tree. Unpinned cards stack in a linear trail. Pinning a card detaches it from the breadcrumb stack into an independent floating canvas window with pointer drag tracking and spring tilt physics.
 
 ## Features
 
-- **Stateful Cascading Trees**: Automatic parent-child breadcrumb tracking with BFS stack teardown.
-- **Draggable Canvas Pinning**: Pin cards into floating windows with physics velocity tilt.
-- **Zero-GC Performance Math**: RingBuffer pre-allocation, QuadTree spatial queries, and fast pixel rounding.
-- **Prototype Pollution Security**: Module-level frozen key guards (`__proto__`, `constructor`, `prototype`).
-- **Web Worker RPC Hydration**: Offload data resolution to background threads for smooth 60–120 FPS UI.
-- **Multi-Tab Sync**: Synchronize state actions across browser tabs via `BroadcastChannel`.
-- **Strict Type Safety**: Schema builder with generic type inference for keys, payloads, and contexts.
-
----
+* **Cascading trails**: Automatic parent-child breadcrumb tracking with BFS teardown when a parent closes.
+* **Floating canvas windows**: Pin cards to drag them anywhere with pointer tracking and velocity tilt.
+* **Async data hydration**: Offload data fetching to background resolvers or Web Workers without blocking the UI thread.
+* **Strict type safety**: Infer keys, payloads, and context types directly from your schema definition.
 
 ## Installation
 
 ```bash
 npm install popover-trail @floating-ui/react zustand
-# Optional: Drag-and-Drop & Focus Locking
+```
+
+Optional dependencies for drag-and-drop or focus locking:
+
+```bash
 npm install @dnd-kit/core react-focus-lock
 ```
 
----
+## Quick start
 
-## Quick Start
-
-### Schema-Driven Popover Trail
+Define your popover schema and wrap your app with the provider:
 
 ```tsx
 import React from 'react';
@@ -46,7 +39,7 @@ import {
   isResolvedEntry,
 } from 'popover-trail';
 
-// 1. Create typed schema definition
+// 1. Define typed popover schema
 export const trail = createPopoverTrail({
   userCard: {
     resolver: async (key) => fetch(`/api/users/${key}`).then((r) => r.json()),
@@ -58,102 +51,90 @@ export const trail = createPopoverTrail({
   },
 });
 
-// 2. Render application container
+// 2. Render provider and trail container
 export function App() {
   return (
     <trail.PopoverProvider>
-      <div className="workspace">
-        <trail.PopoverTrigger popoverKey="userCard">
-          <button type="button">Hover or Click User</button>
-        </trail.PopoverTrigger>
+      <trail.PopoverTrigger popoverKey="userCard">
+        <button type="button">Open User Card</button>
+      </trail.PopoverTrigger>
 
-        <PopoverTrail
-          renderCard={(entry, index, isPinned) => (
-            <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
-              {isResolvedEntry(entry) && (
-                <div>
-                  <h3>{entry.data.name}</h3>
-                  <p>{entry.data.email}</p>
-                </div>
-              )}
-            </PopoverCard>
-          )}
-        />
-      </div>
+      <PopoverTrail
+        renderCard={(entry, index, isPinned) => (
+          <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
+            {isResolvedEntry(entry) && (
+              <div>
+                <h3>{entry.data.name}</h3>
+                <p>{entry.data.email}</p>
+              </div>
+            )}
+          </PopoverCard>
+        )}
+      />
     </trail.PopoverProvider>
   );
 }
 ```
 
----
+## Architecture
 
-## Architecture & Patterns
+State transitions run through a deterministic state machine backed by an isolated Zustand store:
 
-### State Model & FSM Engine
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Hydrating: OPEN_ROOT / PUSH_NESTED
+    Hydrating --> ResolvedTrailing: RESOLVE_SUCCESS
+    Hydrating --> Error: RESOLVE_FAILURE
+    Hydrating --> Unmounting: CLOSE
 
-State transitions are controlled by a deterministic Finite State Machine (FSM) backed by an isolated Zustand store:
+    state Resolved {
+        ResolvedTrailing --> ResolvedPinned: TOGGLE_PIN (Pin)
+        ResolvedPinned --> ResolvedTrailing: TOGGLE_PIN (Unpin)
+    }
 
+    ResolvedTrailing --> Unmounting: CLOSE
+    ResolvedPinned --> Unmounting: CLOSE
+    Error --> Hydrating: RETRY
+    Error --> Unmounting: CLOSE
+
+    Unmounting --> Idle: TRANSITION_END
 ```
-[Idle] ---> (OPEN_ROOT) ---> [Hydrating] ---> (RESOLVE_SUCCESS) ---> [Resolved.Trailing]
-                                   |                                        |
-                            (RESOLVE_FAILURE)                          (TOGGLE_PIN)
-                                   v                                        v
-                                [Error]                            [Resolved.Pinned]
-```
 
-### Result Pattern (`Result<T, E>`)
-
-Data resolution handles errors cleanly using Railway-Oriented Programming:
+Resolvers return a `Result<T, E>` pattern to isolate failures without breaking component render trees:
 
 ```typescript
-import { Ok, Err, isOk, type Result } from 'popover-trail';
+import { isOk, type Result } from 'popover-trail';
 
-function processResult(res: Result<UserData, PopoverError>) {
-  if (isOk(res)) {
-    console.log('Resolved user:', res.data.name);
+function handleUserData(result: Result<UserData, PopoverError>) {
+  if (isOk(result)) {
+    console.log('User loaded:', result.data.name);
   } else {
-    console.error('Resolution failed:', res.error.message);
+    console.error('Failed to load user:', result.error.message);
   }
 }
 ```
 
----
+## API reference
 
-## API Reference
+### Components
 
-### Primary Components
-
-| Component | Description |
+| Component | Purpose |
 | :--- | :--- |
-| `<PopoverProvider>` | Top-level React context container backing Zustand store and state tree. |
-| `<PopoverTrail>` | Cascading container rendering trailing cards and pinned floating windows. |
-| `<PopoverCard>` | Individual popover card container with header, handles, pin, and close buttons. |
-| `<PopoverTrigger>` | Interactive trigger wrapper anchoring popover cards on click/hover. |
-| `<PopoverPortal>` | Portal wrapper embedding popover cards directly into DOM document body. |
+| `<PopoverProvider>` | Top-level context provider managing the Zustand state store. |
+| `<PopoverTrail>` | Renders active trailing cards and pinned floating windows. |
+| `<PopoverCard>` | Card container with handle, pin, and close actions. |
+| `<PopoverTrigger>` | Interactive trigger wrapper anchoring cards on click or hover. |
+| `<PopoverPortal>` | Portal container embedding cards directly into `document.body`. |
 
-### Primary Hooks
+### Hooks
 
 | Hook | Returns | Purpose |
 | :--- | :--- | :--- |
-| `usePopover(key)` | `{ entry, isOpen, isPinned, open, close, togglePin }` | Complete reactive control interface for a single popover key. |
-| `usePopoverActions()` | `PopoverActions` | Imperative dispatcher methods (`closeByKey`, `closeAll`, `togglePin`). |
-| `usePopoverOffsets()` | `Record<string, { x, y }>` | Granular coordinate offsets for all active popovers. |
-| `usePopoverContext()` | `TContext` | Shared context object defined at provider scope. |
-| `usePopoverDragAndDrop()` | `UsePopoverDragAndDropResult` | Physics velocity spring tilt angles and drag coordinates. |
-
----
-
-## Development Commands
-
-```bash
-npm run build:lib    # Build ESM, CJS, and DTS distribution bundles via tsup
-npm test             # Run Vitest test suite (441 tests across 79 suites)
-npm run typecheck    # Validate TypeScript type declarations via tsc --noEmit
-npm run lint         # Execute Oxlint static code analysis
-npm run check:pub    # Verify package export compliance via publint
-```
-
----
+| `usePopover(key)` | `{ entry, isOpen, isPinned, open, close, togglePin }` | Complete reactive control for a single popover key. |
+| `usePopoverActions()` | `PopoverActions` | Imperative action dispatchers (`closeByKey`, `closeAll`, `togglePin`). |
+| `usePopoverOffsets()` | `Record<string, { x, y }>` | Pixel offsets for all active popovers. |
+| `usePopoverDragAndDrop()` | `UsePopoverDragAndDropResult` | Drag coordinates and spring velocity tilt values. |
 
 ## License
 
