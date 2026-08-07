@@ -121,6 +121,6 @@ export class RectBounds {
       x: this.left,
       y: this.top,
       toJSON: () => ({}),
-    } as DOMRect;
+    } satisfies DOMRect;
   }
 }

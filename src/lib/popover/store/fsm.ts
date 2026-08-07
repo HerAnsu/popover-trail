@@ -19,6 +19,26 @@ export type ValidStateTransitions = Readonly<
   Record<PopoverStateValue, ReadonlyArray<PopoverStateValue>>
 >;
 
+/** Declarative statechart matrix mapping each state to allowed target states. */
+export const VALID_STATE_TRANSITIONS_MAP: ValidStateTransitions = Object.freeze({
+  Idle: Object.freeze(['Hydrating'] satisfies PopoverStateValue[]),
+  Hydrating: Object.freeze([
+    'Resolved.Trailing',
+    'Error',
+    'Unmounting',
+  ] satisfies PopoverStateValue[]),
+  'Resolved.Trailing': Object.freeze([
+    'Resolved.Pinned',
+    'Unmounting',
+  ] satisfies PopoverStateValue[]),
+  'Resolved.Pinned': Object.freeze([
+    'Resolved.Trailing',
+    'Unmounting',
+  ] satisfies PopoverStateValue[]),
+  Error: Object.freeze(['Hydrating', 'Unmounting'] satisfies PopoverStateValue[]),
+  Unmounting: Object.freeze(['Idle', 'Hydrating'] satisfies PopoverStateValue[]),
+});
+
 /**
  * Context payload held within an FSM state node.
  *
@@ -196,9 +216,18 @@ export function popoverFSMReducer<TData = unknown>(
         return { value: 'Idle', context: { key: state.context.key } };
       }
       if (event.type === 'OPEN_ROOT' || event.type === 'PUSH_NESTED') {
-        return { value: 'Hydrating', context: { ...state.context, key: event.key } };
+        return {
+          value: 'Hydrating',
+          context:
+            state.context.key === event.key ? state.context : { ...state.context, key: event.key },
+        };
       }
       return state;
+
+    default: {
+      const _exhaustiveCheck: never = state;
+      return _exhaustiveCheck;
+    }
   }
 }
 

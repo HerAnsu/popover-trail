@@ -2,93 +2,155 @@
 
 [![npm version](https://img.shields.io/npm/v/popover-trail.svg)](https://www.npmjs.com/package/popover-trail)
 [![license](https://img.shields.io/npm/l/popover-trail.svg)](LICENSE)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/popover-trail.svg)](https://bundlephobia.com/package/popover-trail)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://www.typescriptlang.org/)
 
-Headless React 19 library for stateful popover trees, floating canvas cards, and background Web Worker data hydration.
+Headless React 19 library for stateful popover trees, cascading navigation cards, draggable canvas windows, and background Web Worker data hydration.
 
-Unpinned popovers form a linear trail (`trail`). Pinning a card detaches it into an independent floating window (`floating`) with pointer drag tracking and velocity spring tilt physics.
+Unpinned popovers form a linear cascading trail (`trail`). Pinning a card detaches it into an independent floating canvas window (`floating`) with pointer drag tracking and spring velocity tilt physics.
 
 ---
 
-## Quick start
+## Features
+
+- **Stateful Cascading Trees**: Automatic parent-child breadcrumb tracking with BFS stack teardown.
+- **Draggable Canvas Pinning**: Pin cards into floating windows with physics velocity tilt.
+- **Zero-GC Performance Math**: RingBuffer pre-allocation, QuadTree spatial queries, and fast pixel rounding.
+- **Prototype Pollution Security**: Module-level frozen key guards (`__proto__`, `constructor`, `prototype`).
+- **Web Worker RPC Hydration**: Offload data resolution to background threads for smooth 60–120 FPS UI.
+- **Multi-Tab Sync**: Synchronize state actions across browser tabs via `BroadcastChannel`.
+- **Strict Type Safety**: Schema builder with generic type inference for keys, payloads, and contexts.
+
+---
+
+## Installation
 
 ```bash
 npm install popover-trail @floating-ui/react zustand
-# Optional for drag-and-drop and focus locking
+# Optional: Drag-and-Drop & Focus Locking
 npm install @dnd-kit/core react-focus-lock
 ```
 
+---
+
+## Quick Start
+
+### Schema-Driven Popover Trail
+
 ```tsx
+import React from 'react';
 import {
-  PopoverProvider,
-  PopoverTrail,
+  createPopoverTrail,
   PopoverCard,
+  PopoverTrail,
   isResolvedEntry,
-  createPopoverSchema,
 } from 'popover-trail';
 
-// 1. Define typed schema
-export const schema = createPopoverSchema({
+// 1. Create typed schema definition
+export const trail = createPopoverTrail({
   userCard: {
     resolver: async (key) => fetch(`/api/users/${key}`).then((r) => r.json()),
     placement: 'right',
   },
+  detailsCard: {
+    resolver: async (key) => fetch(`/api/details/${key}`).then((r) => r.json()),
+    placement: 'bottom',
+  },
 });
 
-// 2. Render provider and card container
+// 2. Render application container
 export function App() {
   return (
-    <PopoverProvider schema={schema}>
-      <Workspace />
-      <PopoverTrail
-        renderCard={(entry, index, isPinned) => (
-          <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
-            {isResolvedEntry(entry) && <div>{entry.data.name}</div>}
-          </PopoverCard>
-        )}
-      />
-    </PopoverProvider>
+    <trail.PopoverProvider>
+      <div className="workspace">
+        <trail.PopoverTrigger popoverKey="userCard">
+          <button type="button">Hover or Click User</button>
+        </trail.PopoverTrigger>
+
+        <PopoverTrail
+          renderCard={(entry, index, isPinned) => (
+            <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
+              {isResolvedEntry(entry) && (
+                <div>
+                  <h3>{entry.data.name}</h3>
+                  <p>{entry.data.email}</p>
+                </div>
+              )}
+            </PopoverCard>
+          )}
+        />
+      </div>
+    </trail.PopoverProvider>
   );
 }
 ```
 
 ---
 
-## Technical architecture
+## Architecture & Patterns
 
-- **State model**: An isolated Zustand vanilla store manages `trail` (cascading path) and `floating` (pinned windows).
-- **BFS teardown**: Closing a parent popover runs a Breadth-First Search across `trail` and `floating` to unmount all descendant keys and trigger `AbortController` signal cancellation on active requests.
-- **Positioning**: `@floating-ui/react` computes relative coordinates. Sub-pixel fractional values are rounded (`Math.round`) to prevent blurry text borders.
-- **Physics**: Pointer drag tracking calculates velocity spring tilt via `requestAnimationFrame` on GPU hardware layers (`willChange: transform`).
-- **Security**: Built-in prototype pollution guards block `__proto__`, `constructor`, and `prototype` keys during storage hydration, state serialization, and schema resolution.
+### State Model & FSM Engine
+
+State transitions are controlled by a deterministic Finite State Machine (FSM) backed by an isolated Zustand store:
+
+```
+[Idle] ---> (OPEN_ROOT) ---> [Hydrating] ---> (RESOLVE_SUCCESS) ---> [Resolved.Trailing]
+                                   |                                        |
+                            (RESOLVE_FAILURE)                          (TOGGLE_PIN)
+                                   v                                        v
+                                [Error]                            [Resolved.Pinned]
+```
+
+### Result Pattern (`Result<T, E>`)
+
+Data resolution handles errors cleanly using Railway-Oriented Programming:
+
+```typescript
+import { Ok, Err, isOk, type Result } from 'popover-trail';
+
+function processResult(res: Result<UserData, PopoverError>) {
+  if (isOk(res)) {
+    console.log('Resolved user:', res.data.name);
+  } else {
+    console.error('Resolution failed:', res.error.message);
+  }
+}
+```
 
 ---
 
-## Documentation index
+## API Reference
 
-- **[Master API reference](docs/API.md)**: Full TypeScript signatures, props, hooks, and core engine specs.
-- **[Feature guides index](docs/GUIDES.md)**: Manuals for cascading paths, pinning, Web Workers, hover buffers, and focus locking.
+### Primary Components
 
-### Technical manuals
+| Component | Description |
+| :--- | :--- |
+| `<PopoverProvider>` | Top-level React context container backing Zustand store and state tree. |
+| `<PopoverTrail>` | Cascading container rendering trailing cards and pinned floating windows. |
+| `<PopoverCard>` | Individual popover card container with header, handles, pin, and close buttons. |
+| `<PopoverTrigger>` | Interactive trigger wrapper anchoring popover cards on click/hover. |
+| `<PopoverPortal>` | Portal wrapper embedding popover cards directly into DOM document body. |
 
-1. [Cascading paths](docs/guides/01-cascading-paths.md)
-2. [Draggable pinning](docs/guides/02-draggable-pinning.md)
-3. [Web Worker data hydration](docs/guides/03-data-hydration.md)
-4. [Hover triggers and buffers](docs/guides/04-hover-triggers.md)
-5. [Stacking and z-index](docs/guides/05-stacking-zindex.md)
-6. [Imperative controller](docs/guides/06-imperative-controller.md)
-7. [Scoped schema instances](docs/guides/07-scoped-instances.md)
-8. [Accessibility and focus](docs/guides/08-accessibility-focus.md)
-9. [Development and testing](docs/guides/09-library-development-testing.md)
+### Primary Hooks
+
+| Hook | Returns | Purpose |
+| :--- | :--- | :--- |
+| `usePopover(key)` | `{ entry, isOpen, isPinned, open, close, togglePin }` | Complete reactive control interface for a single popover key. |
+| `usePopoverActions()` | `PopoverActions` | Imperative dispatcher methods (`closeByKey`, `closeAll`, `togglePin`). |
+| `usePopoverOffsets()` | `Record<string, { x, y }>` | Granular coordinate offsets for all active popovers. |
+| `usePopoverContext()` | `TContext` | Shared context object defined at provider scope. |
+| `usePopoverDragAndDrop()` | `UsePopoverDragAndDropResult` | Physics velocity spring tilt angles and drag coordinates. |
 
 ---
 
-## Commands
+## Development Commands
 
 ```bash
 npm run build:lib    # Build ESM, CJS, and DTS distribution bundles via tsup
-npm test             # Run Vitest unit and integration test suite
-npm run typecheck    # Validate TypeScript types via tsc --noEmit
-npm run lint         # Run Oxlint static code analyzer
+npm test             # Run Vitest test suite (441 tests across 79 suites)
+npm run typecheck    # Validate TypeScript type declarations via tsc --noEmit
+npm run lint         # Execute Oxlint static code analysis
+npm run check:pub    # Verify package export compliance via publint
 ```
 
 ---

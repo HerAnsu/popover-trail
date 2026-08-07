@@ -7,6 +7,7 @@
 
 import type { TrailEntry, PopoverStateData } from '../types';
 import { DEFAULT_MAX_HISTORY_DEPTH } from '../constants';
+import { EMPTY_ARRAY, EMPTY_OBJECT } from './storeDefaults';
 
 /**
  * Snapshot of popover store state used for undo/redo history operations.
@@ -77,11 +78,11 @@ class RingBuffer<T> {
   }
 
   toArray(): T[] {
-    const arr: T[] = [];
+    const arr: T[] = Array.from({ length: this._length });
     for (let i = 0; i < this._length; i++) {
       const item = this.buffer[(this.head + i) % this.capacity];
       if (item !== undefined) {
-        arr.push(item);
+        arr[i] = item;
       }
     }
     return arr;
@@ -113,9 +114,10 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
     undoBuffer.push({
       trail: state.trail,
       floating: state.floating,
-      offsets: { ...state.offsets },
-      pinnedStates: { ...state.pinnedStates },
-      zIndexOrder: [...state.zIndexOrder],
+      offsets: Object.keys(state.offsets).length === 0 ? EMPTY_OBJECT : { ...state.offsets },
+      pinnedStates:
+        Object.keys(state.pinnedStates).length === 0 ? EMPTY_OBJECT : { ...state.pinnedStates },
+      zIndexOrder: state.zIndexOrder.length === 0 ? EMPTY_ARRAY : [...state.zIndexOrder],
       ownerId: state.ownerId,
     });
     redoBuffer.clear();

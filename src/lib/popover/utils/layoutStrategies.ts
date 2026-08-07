@@ -87,15 +87,20 @@ export class RelativeFloatingLayoutStrategy implements PopoverLayoutStrategyEngi
   }
 }
 
+export const relativeFloatingLayoutStrategy = new RelativeFloatingLayoutStrategy();
+export const fixedCenterLayoutStrategy = new FixedCenterLayoutStrategy();
+export const dockedBottomLayoutStrategy = new DockedBottomLayoutStrategy();
+export const dockedTopLayoutStrategy = new DockedTopLayoutStrategy();
+
 /** Strategy Registry Manager for layout positioning. */
 export class LayoutStrategyRegistry {
   private readonly strategies = new Map<string, PopoverLayoutStrategyEngine>();
 
   constructor() {
-    this.register(new RelativeFloatingLayoutStrategy());
-    this.register(new FixedCenterLayoutStrategy());
-    this.register(new DockedBottomLayoutStrategy());
-    this.register(new DockedTopLayoutStrategy());
+    this.register(relativeFloatingLayoutStrategy);
+    this.register(fixedCenterLayoutStrategy);
+    this.register(dockedBottomLayoutStrategy);
+    this.register(dockedTopLayoutStrategy);
   }
 
   register(strategy: PopoverLayoutStrategyEngine): void {
@@ -103,11 +108,7 @@ export class LayoutStrategyRegistry {
   }
 
   get(id: string): PopoverLayoutStrategyEngine {
-    const strategy = this.strategies.get(id);
-    if (strategy) return strategy;
-    const fallback = this.strategies.get('floating-ui');
-    if (fallback) return fallback;
-    return new RelativeFloatingLayoutStrategy();
+    return this.strategies.get(id) ?? relativeFloatingLayoutStrategy;
   }
 }
 

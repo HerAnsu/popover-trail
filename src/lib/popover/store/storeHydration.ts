@@ -38,8 +38,12 @@ export function createHydrationManager() {
 
   const resetHydrationCounters = () => {
     rootCounter = 0;
-    for (const k in nestedCounters) {
-      delete nestedCounters[k];
+    const keys = Object.keys(nestedCounters);
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
+      if (k !== undefined) {
+        delete nestedCounters[k];
+      }
     }
   };
 

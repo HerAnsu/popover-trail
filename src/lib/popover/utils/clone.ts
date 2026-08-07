@@ -16,7 +16,12 @@ export function fastClone<T>(obj: T): T {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(fastClone) as unknown as T;
+    const len = obj.length;
+    const copy = Array.from({ length: len });
+    for (let i = 0; i < len; i++) {
+      copy[i] = fastClone(obj[i]);
+    }
+    return copy as unknown as T;
   }
 
   return { ...obj };

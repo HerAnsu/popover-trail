@@ -23,7 +23,7 @@ import { createHydrationManager } from './store/storeHydration';
 import { createControllerManager } from './store/storeControllers';
 import { createStoreActions } from './store/storeActionRegistry';
 import { PopoverDAG } from './utils/dag';
-import { getInitialStoreState } from './store/storeDefaults';
+import { getInitialStoreState, EMPTY_ARRAY, EMPTY_OBJECT } from './store/storeDefaults';
 import { createBatchingManager } from './store/storeBatching';
 import { resolvePopoverEntry } from './store/storeResolverPipeline';
 
@@ -113,13 +113,13 @@ export function createPopoverStore<
 
       safeSet({
         ownerId: null,
-        trail: [],
-        floating: [],
-        offsets: {},
-        pinnedStates: {},
-        zIndexOrder: [],
+        trail: EMPTY_ARRAY as unknown as readonly [],
+        floating: EMPTY_ARRAY as unknown as readonly [],
+        offsets: EMPTY_OBJECT as Record<string, { x: number; y: number }>,
+        pinnedStates: EMPTY_OBJECT as Record<string, boolean>,
+        zIndexOrder: EMPTY_ARRAY as unknown as readonly [],
         rootHydrationRequestCounter: 0,
-        nestedHydrationRequestCounters: {},
+        nestedHydrationRequestCounters: EMPTY_OBJECT as Record<string, number>,
         anchorElement: null,
         anchorRect: null,
       });
@@ -171,34 +171,36 @@ export function createPopoverStore<
         },
       );
 
-    const actions = createStoreActions<TData, TContext, TPopoverKey>(safeSet, get, {
-      activeControllers,
-      inFlightPromises,
-      hoverCloseTimers,
-      transitionTimers,
-      eventListeners,
-      clearHoverTimer,
-      clearTransitionTimer,
-      scheduleHoverLeave: timerManager.scheduleHoverLeave,
-      scheduleTransitionExit: timerManager.scheduleTransitionExit,
-      abortControllersForKeys,
-      resetStoreState,
-      incrementRootCounter,
-      isRootStale,
-      incrementNestedCounter,
-      isNestedStale,
-      findEntryByKey,
-      resolvePopoverEntry: boundResolvePopoverEntry,
-      pushSnapshot,
-      clearHistory,
-      undoStack,
-      redoStack,
-      historyManager,
-      startBatch: batchingManager.startBatch,
-      endBatch: () => batchingManager.endBatch(get),
-      middlewareEngine,
-      cache,
-    });
+    const actions = Object.freeze(
+      createStoreActions<TData, TContext, TPopoverKey>(safeSet, get, {
+        activeControllers,
+        inFlightPromises,
+        hoverCloseTimers,
+        transitionTimers,
+        eventListeners,
+        clearHoverTimer,
+        clearTransitionTimer,
+        scheduleHoverLeave: timerManager.scheduleHoverLeave,
+        scheduleTransitionExit: timerManager.scheduleTransitionExit,
+        abortControllersForKeys,
+        resetStoreState,
+        incrementRootCounter,
+        isRootStale,
+        incrementNestedCounter,
+        isNestedStale,
+        findEntryByKey,
+        resolvePopoverEntry: boundResolvePopoverEntry,
+        pushSnapshot,
+        clearHistory,
+        undoStack,
+        redoStack,
+        historyManager,
+        startBatch: batchingManager.startBatch,
+        endBatch: () => batchingManager.endBatch(get),
+        middlewareEngine,
+        cache,
+      }),
+    );
 
     const initialState = getInitialStoreState<TData, TContext>(resolveData, initialContext, cache);
 

@@ -15,6 +15,7 @@ import {
   findEntryIndex,
 } from '../../utils/storeHelpers';
 import { selectTopmostEntry } from '../storeSelectors';
+import { EMPTY_ARRAY } from '../storeDefaults';
 import type { SliceContext } from './sliceContext';
 
 export function createTrailSlice<
@@ -101,6 +102,15 @@ export function createTrailSlice<
           };
         });
 
+        let completedCount = 0;
+        const totalCount = removedKeys.size;
+        const safeOnExitComplete = () => {
+          completedCount += 1;
+          if (completedCount >= totalCount) {
+            onExitComplete();
+          }
+        };
+
         const onExitComplete = () => {
           set((state) => {
             const nextFloating = state.floating.filter(
@@ -134,7 +144,7 @@ export function createTrailSlice<
 
         if (deps.scheduleTransitionExit) {
           for (const key of removedKeys) {
-            deps.scheduleTransitionExit(key, maxDuration, onExitComplete);
+            deps.scheduleTransitionExit(key, maxDuration, safeOnExitComplete);
           }
         } else {
           for (const key of removedKeys) {
@@ -213,7 +223,7 @@ export function createTrailSlice<
       );
 
       set({
-        trail: [],
+        trail: EMPTY_ARRAY as unknown as readonly TrailEntry<TData>[],
         floating: nextFloating,
         ...cleanupPatch,
       });

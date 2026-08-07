@@ -43,7 +43,8 @@ export class PopoverMiddlewareEngine<
   ): Partial<PopoverStore<TData, TContext, TPopoverKey>> | false {
     if (this.middlewares.size === 0) return initialPatch;
 
-    const patch: Partial<PopoverStore<TData, TContext, TPopoverKey>> = { ...initialPatch };
+    let patch = initialPatch;
+    let isCloned = false;
 
     for (const mw of this.middlewares) {
       try {
@@ -52,6 +53,10 @@ export class PopoverMiddlewareEngine<
           return false;
         }
         if (isStorePatchObject(result)) {
+          if (!isCloned) {
+            patch = { ...initialPatch };
+            isCloned = true;
+          }
           Object.assign(patch, result);
         }
       } catch (err) {

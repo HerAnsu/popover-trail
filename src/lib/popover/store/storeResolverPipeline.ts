@@ -137,10 +137,19 @@ export async function resolvePopoverEntry<
     );
 
   const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
-    safeSet((state) => ({
-      floating: state.floating.map((e) => (e.key === key ? { ...e, ...patch } : e)),
-      trail: state.trail.map((e) => (e.key === key ? { ...e, ...patch } : e)),
-    }));
+    safeSet((state) => {
+      const floatingHasKey = state.floating.some((e) => e.key === key);
+      const trailHasKey = state.trail.some((e) => e.key === key);
+      if (!floatingHasKey && !trailHasKey) return {};
+      return {
+        floating: floatingHasKey
+          ? state.floating.map((e) => (e.key === key ? { ...e, ...patch } : e))
+          : state.floating,
+        trail: trailHasKey
+          ? state.trail.map((e) => (e.key === key ? { ...e, ...patch } : e))
+          : state.trail,
+      };
+    });
   };
 
   const commitResolverError = (objErr: unknown) => {

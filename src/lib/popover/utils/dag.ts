@@ -64,20 +64,17 @@ export class PopoverDAG {
    */
   getDescendantKeys(parentKey: string): Set<string> {
     const descendants = new Set<string>();
-    const queue: string[] = [parentKey];
-    const visited = new Set<string>([parentKey]);
+    const stack: string[] = [parentKey];
 
-    let head = 0;
-    while (head < queue.length) {
-      const currentKey = queue[head++];
+    while (stack.length > 0) {
+      const currentKey = stack.pop();
       if (!currentKey) continue;
       const node = this.nodes.get(currentKey);
       if (node) {
         for (const childKey of node.childrenKeys) {
-          if (!visited.has(childKey)) {
-            visited.add(childKey);
+          if (!descendants.has(childKey) && childKey !== parentKey) {
             descendants.add(childKey);
-            queue.push(childKey);
+            stack.push(childKey);
           }
         }
       }

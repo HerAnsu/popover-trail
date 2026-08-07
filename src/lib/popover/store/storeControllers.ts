@@ -18,7 +18,6 @@ export function createControllerManager<TData = unknown>() {
     const existing = activeControllers.get(key);
     if (existing) {
       existing.abort();
-      activeControllers.delete(key);
     }
     const controller = new AbortController();
     activeControllers.set(key, controller);

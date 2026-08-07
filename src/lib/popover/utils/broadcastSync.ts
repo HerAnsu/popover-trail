@@ -30,7 +30,9 @@ export function createBroadcastSync(channelName = 'popover-trail-sync') {
       channel = new BroadcastChannel(channelName);
       channel.addEventListener('message', (event: MessageEvent<PopoverSyncMessage>) => {
         if (event.data && event.data.tabId !== tabId) {
-          listeners.forEach((listener) => listener(event.data));
+          for (const listener of listeners) {
+            listener(event.data);
+          }
         }
       });
     } catch {

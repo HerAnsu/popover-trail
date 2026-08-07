@@ -189,7 +189,7 @@ export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRe
       left: 0,
       right: 0,
       toJSON: () => ({}),
-    } as DOMRect;
+    } satisfies DOMRect;
   };
 
   if (!source) {

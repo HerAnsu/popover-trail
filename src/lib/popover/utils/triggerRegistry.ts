@@ -11,10 +11,22 @@
  * Lives outside the Zustand store to keep state 100% serializable.
  */
 const registry = new Map<string, WeakRef<HTMLElement>>();
+const MAX_REGISTRY_SIZE_BEFORE_SWEEP = 100;
+
+function pruneDeadRefs(): void {
+  for (const [key, ref] of registry.entries()) {
+    if (ref.deref() === undefined) {
+      registry.delete(key);
+    }
+  }
+}
 
 export const TriggerRegistry = {
   /** Register an anchor element for a popover key. */
   register(key: string, el: HTMLElement): void {
+    if (registry.size > MAX_REGISTRY_SIZE_BEFORE_SWEEP) {
+      pruneDeadRefs();
+    }
     registry.set(key, new WeakRef(el));
   },
 

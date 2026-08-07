@@ -26,11 +26,14 @@ const DEFAULT_THEME_TOKENS: Required<PopoverThemeTokens> = {
  */
 export function applyThemeTokens(
   element: HTMLElement | null = typeof document !== 'undefined' ? document.documentElement : null,
-  tokens: PopoverThemeTokens = {},
+  tokens?: PopoverThemeTokens,
 ): void {
   if (!element) return;
 
-  const merged = { ...DEFAULT_THEME_TOKENS, ...tokens };
+  const merged =
+    tokens && Object.keys(tokens).length > 0
+      ? { ...DEFAULT_THEME_TOKENS, ...tokens }
+      : DEFAULT_THEME_TOKENS;
 
   element.style.setProperty('--pt-base-z-index', String(merged.baseZIndex));
   element.style.setProperty('--pt-cascade-offset', `${merged.cascadeOffset}px`);

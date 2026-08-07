@@ -42,6 +42,25 @@ function isCurrentlyRenderingInReact(): boolean {
   }
 }
 
+function DefaultPopoverProvider(props: PopoverProviderProps<unknown, unknown>) {
+  return <CorePopoverProvider {...props} />;
+}
+DefaultPopoverProvider.displayName = 'PopoverProvider';
+
+function DefaultPopoverTrigger(props: PopoverTriggerProps<string>) {
+  return <CorePopoverTrigger {...props} />;
+}
+DefaultPopoverTrigger.displayName = 'PopoverTrigger';
+
+const DEFAULT_GENERIC_TRAIL_INSTANCE = Object.freeze({
+  PopoverProvider: DefaultPopoverProvider,
+  PopoverPortal: CorePopoverPortal,
+  PopoverTrigger: DefaultPopoverTrigger,
+  usePopover: coreUsePopover as (key: string) => UsePopoverResult<unknown>,
+  usePopoverActions: coreUsePopoverActions as () => ReturnType<typeof coreUsePopoverActions>,
+  usePopoverContext: coreUsePopoverContext as () => unknown,
+});
+
 /**
  * Unified factory creating popover trail instances from a schema definition.
  *
@@ -91,34 +110,5 @@ export function createPopoverTrail(definition?: PopoverSchemaDefinition): unknow
     return createPopoverSchema(definition);
   }
 
-  function PopoverProvider(props: PopoverProviderProps<unknown, unknown>) {
-    return <CorePopoverProvider {...props} />;
-  }
-  PopoverProvider.displayName = 'PopoverProvider';
-
-  function PopoverTrigger(props: PopoverTriggerProps<string>) {
-    return <CorePopoverTrigger {...props} />;
-  }
-  PopoverTrigger.displayName = 'PopoverTrigger';
-
-  function usePopover(key: string): UsePopoverResult<unknown> {
-    return coreUsePopover(key);
-  }
-
-  function usePopoverActions() {
-    return coreUsePopoverActions();
-  }
-
-  function usePopoverContext() {
-    return coreUsePopoverContext();
-  }
-
-  return {
-    PopoverProvider,
-    PopoverPortal: CorePopoverPortal,
-    PopoverTrigger,
-    usePopover,
-    usePopoverActions,
-    usePopoverContext,
-  };
+  return DEFAULT_GENERIC_TRAIL_INSTANCE;
 }

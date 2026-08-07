@@ -121,13 +121,15 @@ function TriggerRenderer({
     [triggerOnMouseEnter, childOnMouseEnter],
   );
 
-  const triggerOnMouseLeave = triggerProps.onMouseLeave as (() => void) | undefined;
+  const triggerOnMouseLeave = triggerProps.onMouseLeave as
+    | ((e: React.MouseEvent<HTMLElement>) => void)
+    | undefined;
   const childOnMouseLeave = child?.props.onMouseLeave as
     | ((e: React.MouseEvent<HTMLElement>) => void)
     | undefined;
   const onMouseLeave = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      triggerOnMouseLeave?.();
+      triggerOnMouseLeave?.(e);
       childOnMouseLeave?.(e);
     },
     [triggerOnMouseLeave, childOnMouseLeave],

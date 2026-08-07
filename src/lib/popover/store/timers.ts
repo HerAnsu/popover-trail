@@ -41,15 +41,19 @@ export function createTimerManager(): TimerManager {
   };
 
   const clearAllTimers = () => {
-    for (const timer of hoverCloseTimers.values()) {
-      clearTimeout(timer);
+    if (hoverCloseTimers.size > 0) {
+      for (const timer of hoverCloseTimers.values()) {
+        clearTimeout(timer);
+      }
+      hoverCloseTimers.clear();
     }
-    hoverCloseTimers.clear();
 
-    for (const timer of transitionTimers.values()) {
-      clearTimeout(timer);
+    if (transitionTimers.size > 0) {
+      for (const timer of transitionTimers.values()) {
+        clearTimeout(timer);
+      }
+      transitionTimers.clear();
     }
-    transitionTimers.clear();
   };
 
   const scheduleHoverLeave = (key: string, delay: number, callback: () => void) => {

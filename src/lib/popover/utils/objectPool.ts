@@ -10,10 +10,17 @@ export class ObjectPool<T> {
   private pool: T[] = [];
   private factory: () => T;
   private reset?: (item: T) => void;
+  private maxCapacity: number;
 
-  constructor(factory: () => T, reset?: (item: T) => void, initialCapacity = 32) {
+  constructor(
+    factory: () => T,
+    reset?: (item: T) => void,
+    initialCapacity = 32,
+    maxCapacity = 256,
+  ) {
     this.factory = factory;
     this.reset = reset;
+    this.maxCapacity = maxCapacity;
     for (let i = 0; i < initialCapacity; i++) {
       this.pool.push(factory());
     }
@@ -27,7 +34,7 @@ export class ObjectPool<T> {
     if (this.reset) {
       this.reset(item);
     }
-    if (this.pool.length < 256) {
+    if (this.pool.length < this.maxCapacity) {
       this.pool.push(item);
     }
   }

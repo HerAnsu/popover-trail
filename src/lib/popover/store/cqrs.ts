@@ -8,6 +8,9 @@
 import type { PopoverStore, PopoverActions, PopoverStateData } from '../types/storeTypes';
 import type { TrailEntry } from '../types/entryTypes';
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
+import { findEntryInStore } from '../utils/storeHelpers';
+
+const ZERO_OFFSET = Object.freeze({ x: 0, y: 0 });
 
 /**
  * Read-Only Query Bus wrapping PopoverStore. Guaranteed 100% side-effect-free reads.
@@ -41,7 +44,7 @@ export class PopoverQueryBus<
 
   getEntry(key: TPopoverKey): TrailEntry<TData> | undefined {
     const state = this.getStoreState();
-    return state.trail.find((e) => e.key === key) || state.floating.find((e) => e.key === key);
+    return findEntryInStore(state.floating, state.trail, key);
   }
 
   isPinned(key: TPopoverKey): boolean {
@@ -49,7 +52,7 @@ export class PopoverQueryBus<
   }
 
   getOffset(key: TPopoverKey): { x: number; y: number } {
-    return this.getStoreState().offsets[key] ?? { x: 0, y: 0 };
+    return this.getStoreState().offsets[key] ?? ZERO_OFFSET;
   }
 }
 

@@ -110,6 +110,10 @@ export function reduceUpdateOffsetState<TData, TContext, TPopoverKey extends str
   key: string,
   offset: { x: number; y: number },
 ): StatePatch<TData, TContext, TPopoverKey> {
+  const currentOffset = state.offsets[key];
+  if (currentOffset && currentOffset.x === offset.x && currentOffset.y === offset.y) {
+    return {};
+  }
   return {
     offsets: {
       ...state.offsets,

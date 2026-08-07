@@ -34,12 +34,27 @@ function resolveAllRemovedKeys<TData>(
   directClosedKeys: string[],
   closePinnedDescendants: boolean,
 ): Set<string> {
-  let descendants = getAllDescendants(directClosedKeys, floating, trail);
-  if (!closePinnedDescendants) {
-    const floatingKeys = new Set(floating.map((e) => e.key));
-    descendants = new Set([...descendants].filter((key) => !floatingKeys.has(key)));
+  const result = new Set<string>(directClosedKeys);
+  const descendants = getAllDescendants(directClosedKeys, floating, trail);
+
+  if (!closePinnedDescendants && floating.length > 0) {
+    const floatingKeys = new Set<string>();
+    for (let i = 0; i < floating.length; i++) {
+      const e = floating[i];
+      if (e) floatingKeys.add(e.key);
+    }
+    for (const key of descendants) {
+      if (!floatingKeys.has(key)) {
+        result.add(key);
+      }
+    }
+  } else {
+    for (const key of descendants) {
+      result.add(key);
+    }
   }
-  return new Set<string>([...directClosedKeys, ...descendants]);
+
+  return result;
 }
 
 /**

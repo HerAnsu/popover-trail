@@ -62,6 +62,15 @@ function isSnapshotMessageEvent<TData>(
   return typeof event === 'object' && event !== null && 'data' in event;
 }
 
+const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
+
+function generateTabId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2, 9);
+}
+
 /**
  * Manages persisting, loading, and cross-tab broadcasting of popover state snapshots.
  *
@@ -74,7 +83,7 @@ export class PopoverSnapshotManager<TData = unknown> {
   private readonly onSnapshotRestored?: (snapshot: PopoverSnapshotData<TData>) => void;
   private readonly serializer?: (data: PopoverSnapshotData<TData>) => string;
   private readonly deserializer?: (raw: string) => PopoverSnapshotData<TData>;
-  private readonly tabId: string = Math.random().toString(36).substring(2, 9);
+  private readonly tabId: string = generateTabId();
   private messageHandler: EventListener | null = null;
 
   constructor(options: SnapshotManagerOptions<TData> = {}) {
@@ -169,16 +178,15 @@ export class PopoverSnapshotManager<TData = unknown> {
     if (!Array.isArray(trailKeys) || !Array.isArray(pinnedKeys)) return false;
     if (typeof offsets !== 'object' || offsets === null) return false;
 
-    // Protection against Prototype Pollution in stored snapshots
-    const unsafeKeys = new Set(['__proto__', 'constructor', 'prototype']);
+    // Protection against Prototype Pollution in stored snapshots using module-level UNSAFE_KEYS_SET
     for (const key of trailKeys) {
-      if (typeof key !== 'string' || unsafeKeys.has(key)) return false;
+      if (typeof key !== 'string' || UNSAFE_KEYS_SET.has(key)) return false;
     }
     for (const key of pinnedKeys) {
-      if (typeof key !== 'string' || unsafeKeys.has(key)) return false;
+      if (typeof key !== 'string' || UNSAFE_KEYS_SET.has(key)) return false;
     }
-    for (const key of Object.keys(offsets)) {
-      if (unsafeKeys.has(key)) return false;
+    for (const key in offsets) {
+      if (UNSAFE_KEYS_SET.has(key)) return false;
     }
     return true;
   }

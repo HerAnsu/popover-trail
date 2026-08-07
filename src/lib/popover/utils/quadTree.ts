@@ -127,18 +127,21 @@ export class QuadTree {
   }
 
   /** Retrieves items intersecting target bounds. */
-  retrieve(returnItems: QuadItem[], itemBounds: BoundingBox): QuadItem[] {
-    const index = this.getIndex(itemBounds);
+  retrieve(returnItems: QuadItem[] = [], itemBounds?: BoundingBox): QuadItem[] {
+    const targetBounds = itemBounds ?? (returnItems as unknown as BoundingBox);
+    const targetArray = Array.isArray(returnItems) ? returnItems : [];
+
+    const index = this.getIndex(targetBounds);
     if (index !== -1 && this.nodes.length > 0) {
-      this.nodes[index]?.retrieve(returnItems, itemBounds);
+      this.nodes[index]?.retrieve(targetArray, targetBounds);
     }
 
     for (const item of this.items) {
-      if (item && item.id && boxesIntersect(item.bounds, itemBounds)) {
-        returnItems.push(item);
+      if (item && item.id && boxesIntersect(item.bounds, targetBounds)) {
+        targetArray.push(item);
       }
     }
 
-    return returnItems;
+    return targetArray;
   }
 }

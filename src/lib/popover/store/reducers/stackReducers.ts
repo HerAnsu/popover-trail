@@ -5,6 +5,7 @@
  */
 
 import type { TrailEntry, PopoverStateData } from '../../types';
+import { EMPTY_ARRAY, EMPTY_OBJECT } from '../storeDefaults';
 
 /**
  * Filters a Record object, retaining only the keys present in the specified Set.
@@ -15,6 +16,7 @@ export function filterRecord<T>(
 ): Record<string, T> {
   const keys = Object.keys(record);
   if (keys.length === 0) return record;
+  if (allowedKeys.size === 0) return EMPTY_OBJECT as Record<string, T>;
   const nextRecord: Record<string, T> = {};
   let changed = false;
   for (const key of keys) {
@@ -40,8 +42,14 @@ export function getActiveKeys<TData>(
   trail: readonly TrailEntry<TData>[],
 ): Set<string> {
   const activeKeys = new Set<string>();
-  floating.forEach((e) => activeKeys.add(e.key));
-  trail.forEach((e) => activeKeys.add(e.key));
+  for (let i = 0; i < floating.length; i++) {
+    const entry = floating[i];
+    if (entry) activeKeys.add(entry.key);
+  }
+  for (let i = 0; i < trail.length; i++) {
+    const entry = trail[i];
+    if (entry) activeKeys.add(entry.key);
+  }
   return activeKeys;
 }
 
@@ -159,9 +167,10 @@ export function bringToFrontPatch<TData, TContext>(
   const keysToElevate = [key, ...descendants];
   const elevateSet = new Set(keysToElevate);
 
+  const activeKeys = getActiveKeys(state.floating, state.trail);
   const nextOrder = state.zIndexOrder.filter((k) => !elevateSet.has(k));
   for (const k of keysToElevate) {
-    if (state.floating.some((e) => e.key === k) || state.trail.some((e) => e.key === k)) {
+    if (activeKeys.has(k)) {
       nextOrder.push(k);
     }
   }
@@ -208,7 +217,7 @@ export function getCleanupStatePatch<TData, TContext>(
     patch.anchorRect = null;
   }
   if (floating.length === 0 && trail.length === 0) {
-    patch.zIndexOrder = [];
+    patch.zIndexOrder = EMPTY_ARRAY as unknown as readonly string[];
     patch.ownerId = null;
   }
   return patch;

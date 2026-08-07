@@ -53,7 +53,7 @@ export function usePopoverFloating<
  * @returns Record of offset coordinate objects mapped by popover key.
  */
 export function usePopoverOffsets() {
-  return usePopoverStore((state) => state.offsets);
+  return usePopoverStore((state) => state.offsets, shallowEqual);
 }
 
 /**
@@ -134,7 +134,7 @@ export function useIsPopoverTopMost<TPopoverKey extends string = RegisteredKeys>
  * @returns The coordinate offset object.
  */
 export function usePopoverOffset<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
-  return usePopoverStore(selectOffset(key));
+  return usePopoverStore(selectOffset(key), shallowEqual);
 }
 
 /**

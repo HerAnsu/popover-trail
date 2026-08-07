@@ -44,4 +44,4 @@ export type InternalPopoverState = import('../types').PopoverStateData<unknown, 
 /**
  * Erased internal store instance type used across store engine internals.
  */
-export type InternalPopoverStore = PopoverStore<unknown, unknown, string>;
+export type InternalPopoverStore = PopoverStore;

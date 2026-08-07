@@ -78,10 +78,10 @@ export function getPopoverStyles({
     safeRotationY !== 0;
 
   const translateX = isDynamic
-    ? Number((safeDragX + safeOffsetX).toFixed(2))
+    ? Math.round((safeDragX + safeOffsetX) * 100) / 100
     : Math.round(safeDragX + safeOffsetX);
   const translateY = isDynamic
-    ? Number((safeDragY + safeOffsetY).toFixed(2))
+    ? Math.round((safeDragY + safeOffsetY) * 100) / 100
     : Math.round(safeDragY + safeOffsetY);
 
   const cacheKey = isDynamic

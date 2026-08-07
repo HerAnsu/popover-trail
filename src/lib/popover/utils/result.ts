@@ -24,12 +24,12 @@ export type Result<T, E = PopoverError> = OkResult<T> | ErrResult<E>;
 
 /** Constructor for successful Ok Result. */
 export function Ok<T>(data: T): OkResult<T> {
-  return { success: true, data };
+  return Object.freeze({ success: true, data });
 }
 
 /** Constructor for failure Err Result. */
 export function Err<E>(error: E): ErrResult<E> {
-  return { success: false, error };
+  return Object.freeze({ success: false, error });
 }
 
 /** Type guard for Ok Result. */

@@ -62,6 +62,10 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
     }
   }
 
+  private isExpired(entry: { expiry: number }): boolean {
+    return Date.now() > entry.expiry;
+  }
+
   /**
    * Checks if a non-expired entry exists for the given key without retrieving it.
    *
@@ -71,7 +75,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
   has(key: string): boolean {
     const entry = this.cache.get(key);
     if (!entry) return false;
-    if (Date.now() > entry.expiry) {
+    if (this.isExpired(entry)) {
       this.cache.delete(key);
       return false;
     }
@@ -86,13 +90,8 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    */
   get(key: string): TData | undefined {
     const entry = this.cache.get(key);
-    if (!entry) {
-      this.missesCount++;
-      return undefined;
-    }
-
-    if (Date.now() > entry.expiry) {
-      this.cache.delete(key);
+    if (!entry || this.isExpired(entry)) {
+      if (entry) this.cache.delete(key);
       this.missesCount++;
       return undefined;
     }

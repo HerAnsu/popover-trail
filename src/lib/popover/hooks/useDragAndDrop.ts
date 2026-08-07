@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useDebugValue } from 'react';
+import React, { useEffect, useRef, useDebugValue } from 'react';
 import type { DragAxis } from '../types';
 import { computeTiltMatrix } from '../utils/dragMath';
 import { validateDragOffset } from '../utils/devWarnings';
@@ -43,6 +43,29 @@ export interface UsePopoverDragAndDropResult {
   dragY: number;
 }
 
+class ReducedMotionObserverImpl {
+  private matches = false;
+
+  constructor() {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      this.matches = mediaQuery.matches;
+      const listener = (e: MediaQueryListEvent) => {
+        this.matches = e.matches;
+      };
+      if (typeof mediaQuery.addEventListener === 'function') {
+        mediaQuery.addEventListener('change', listener);
+      }
+    }
+  }
+
+  get isReducedMotion(): boolean {
+    return this.matches;
+  }
+}
+
+const ReducedMotionObserver = new ReducedMotionObserverImpl();
+
 /**
  * Custom hook to track active coordinate offsets and calculate drag velocity
  * to apply dynamic physics-based spring rotation (tilt/swing) styles during drag events.
@@ -72,10 +95,7 @@ export function usePopoverDragAndDrop({
     transformYRef.current = dragAxis === 'x' ? 0 : (transform?.y ?? 0);
   }, [transform, dragAxis]);
 
-  const prefersReducedMotion = useMemo(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }, []);
+  const prefersReducedMotion = ReducedMotionObserver.isReducedMotion;
 
   useEffect(() => {
     let rafId: number;

@@ -17,6 +17,15 @@ export function togglePinState<TData, TContext>(
 ): Partial<PopoverStateData<TData, TContext>> {
   const floatingIndex = state.floating.findIndex((e) => e.key === key);
   const wasPinned = floatingIndex !== -1;
+  const trailIndex = wasPinned ? -1 : state.trail.findIndex((e) => e.key === key);
+
+  if (!wasPinned && trailIndex === -1) {
+    return {
+      floating: [...state.floating],
+      trail: [...state.trail],
+    };
+  }
+
   const nextFloating = [...state.floating];
   const nextTrail = [...state.trail];
   const nextPinnedStates = { ...state.pinnedStates };
@@ -24,22 +33,19 @@ export function togglePinState<TData, TContext>(
   let nextZIndexOrder = [...state.zIndexOrder];
 
   if (!wasPinned) {
-    const trailIndex = state.trail.findIndex((e) => e.key === key);
-    if (trailIndex !== -1) {
-      const entry = state.trail[trailIndex];
-      if (!entry) return {};
-      const updatedEntry = {
-        ...entry,
-        rect: rect ?? entry.rect,
-        pinnedLayoutPos: rect ? { top: rect.top, left: rect.left } : undefined,
-        parentKey: undefined,
-      };
-      nextTrail.splice(trailIndex, 1);
-      nextFloating.push(updatedEntry);
-      nextOffsets[key] = { x: 0, y: 0 };
-      nextPinnedStates[key] = true;
-      nextZIndexOrder = [...nextZIndexOrder.filter((k) => k !== key), key];
-    }
+    const entry = state.trail[trailIndex];
+    if (!entry) return {};
+    const updatedEntry = {
+      ...entry,
+      rect: rect ?? entry.rect,
+      pinnedLayoutPos: rect ? { top: rect.top, left: rect.left } : undefined,
+      parentKey: undefined,
+    };
+    nextTrail.splice(trailIndex, 1);
+    nextFloating.push(updatedEntry);
+    nextOffsets[key] = { x: 0, y: 0 };
+    nextPinnedStates[key] = true;
+    nextZIndexOrder = [...nextZIndexOrder.filter((k) => k !== key), key];
   } else {
     const entry = nextFloating[floatingIndex];
     nextFloating.splice(floatingIndex, 1);
