@@ -39,6 +39,8 @@ export interface PopoverController<
   retryPopover: (key: TPopoverKey) => Promise<void>;
   /** Gets current store state. */
   getState: () => PopoverStore<TData, TContext, TPopoverKey>;
+  /** ScopeDisposable compliance handle clearing all active popovers. */
+  dispose: () => void;
 }
 
 /**
@@ -86,6 +88,10 @@ export function createPopoverController<
     return state;
   };
 
+  const clear = () => {
+    getStoreState().clear();
+  };
+
   return {
     openRoot: (ownerId: string, entry: TrailEntry<TData>) => {
       getStoreState().openRoot(ownerId, entry);
@@ -102,13 +108,12 @@ export function createPopoverController<
     closeTopmost: () => {
       getStoreState().closeTopmost();
     },
-    clear: () => {
-      getStoreState().clear();
-    },
+    clear,
     clearTrail: () => {
       getStoreState().clearTrail();
     },
     retryPopover: (key: TPopoverKey) => getStoreState().retryPopover(key),
     getState: () => getStoreState(),
+    dispose: clear,
   };
 }

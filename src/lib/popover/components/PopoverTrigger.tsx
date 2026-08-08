@@ -70,6 +70,16 @@ export type PopoverTriggerProps<TPopoverKey extends string = string> =
   | RootPopoverTriggerProps<TPopoverKey>
   | NestedPopoverTriggerProps<TPopoverKey>;
 
+function composeEventHandlers<E extends React.SyntheticEvent>(
+  handlerA?: (e: E) => void,
+  handlerB?: (e: E) => void,
+): (e: E) => void {
+  return (e: E) => {
+    handlerA?.(e);
+    handlerB?.(e);
+  };
+}
+
 /**
  * Shared rendering logic for trigger components. Clones the child element
  * or delegates to a render prop with merged trigger props, className, and event handlers.
@@ -93,74 +103,54 @@ function TriggerRenderer({
     ? null
     : (React.Children.only(children) as React.ReactElement<Record<string, unknown>>);
 
-  const triggerOnClick = triggerProps.onClick as
-    | ((e: React.MouseEvent<HTMLElement>) => void)
-    | undefined;
-  const childOnClick = child?.props.onClick as
-    | ((e: React.MouseEvent<HTMLElement>) => void)
-    | undefined;
   const onClick = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      triggerOnClick?.(e);
-      childOnClick?.(e);
+      composeEventHandlers(
+        triggerProps.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
+        child?.props.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
+      )(e);
     },
-    [triggerOnClick, childOnClick],
+    [triggerProps.onClick, child?.props.onClick],
   );
 
-  const triggerOnMouseEnter = triggerProps.onMouseEnter as
-    | ((e: React.MouseEvent<HTMLElement>) => void)
-    | undefined;
-  const childOnMouseEnter = child?.props.onMouseEnter as
-    | ((e: React.MouseEvent<HTMLElement>) => void)
-    | undefined;
   const onMouseEnter = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      triggerOnMouseEnter?.(e);
-      childOnMouseEnter?.(e);
+      composeEventHandlers(
+        triggerProps.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
+        child?.props.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
+      )(e);
     },
-    [triggerOnMouseEnter, childOnMouseEnter],
+    [triggerProps.onMouseEnter, child?.props.onMouseEnter],
   );
 
-  const triggerOnMouseLeave = triggerProps.onMouseLeave as
-    | ((e: React.MouseEvent<HTMLElement>) => void)
-    | undefined;
-  const childOnMouseLeave = child?.props.onMouseLeave as
-    | ((e: React.MouseEvent<HTMLElement>) => void)
-    | undefined;
   const onMouseLeave = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      triggerOnMouseLeave?.(e);
-      childOnMouseLeave?.(e);
+      composeEventHandlers(
+        triggerProps.onMouseLeave as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
+        child?.props.onMouseLeave as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
+      )(e);
     },
-    [triggerOnMouseLeave, childOnMouseLeave],
+    [triggerProps.onMouseLeave, child?.props.onMouseLeave],
   );
 
-  const triggerOnKeyDown = triggerProps.onKeyDown as
-    | ((e: React.KeyboardEvent<HTMLElement>) => void)
-    | undefined;
-  const childOnKeyDown = child?.props.onKeyDown as
-    | ((e: React.KeyboardEvent<HTMLElement>) => void)
-    | undefined;
   const onKeyDown = React.useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
-      triggerOnKeyDown?.(e);
-      childOnKeyDown?.(e);
+      composeEventHandlers(
+        triggerProps.onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined,
+        child?.props.onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined,
+      )(e);
     },
-    [triggerOnKeyDown, childOnKeyDown],
+    [triggerProps.onKeyDown, child?.props.onKeyDown],
   );
 
-  const triggerOnFocus = triggerProps.onFocus as
-    | ((e: React.FocusEvent<HTMLElement>) => void)
-    | undefined;
-  const childOnFocus = child?.props.onFocus as
-    | ((e: React.FocusEvent<HTMLElement>) => void)
-    | undefined;
   const onFocus = React.useCallback(
     (e: React.FocusEvent<HTMLElement>) => {
-      triggerOnFocus?.(e);
-      childOnFocus?.(e);
+      composeEventHandlers(
+        triggerProps.onFocus as ((e: React.FocusEvent<HTMLElement>) => void) | undefined,
+        child?.props.onFocus as ((e: React.FocusEvent<HTMLElement>) => void) | undefined,
+      )(e);
     },
-    [triggerOnFocus, childOnFocus],
+    [triggerProps.onFocus, child?.props.onFocus],
   );
 
   const nodeRef = useRef<HTMLElement | null>(null);

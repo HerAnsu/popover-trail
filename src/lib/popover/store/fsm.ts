@@ -19,6 +19,32 @@ export type ValidStateTransitions = Readonly<
   Record<PopoverStateValue, ReadonlyArray<PopoverStateValue>>
 >;
 
+/** Bitwise status flags for sub-nanosecond state checks */
+export const FSMStatusBit = {
+  Idle: 1 << 0, // 1
+  Hydrating: 1 << 1, // 2
+  ResolvedTrailing: 1 << 2, // 4
+  ResolvedPinned: 1 << 3, // 8
+  Error: 1 << 4, // 16
+  Unmounting: 1 << 5, // 32
+
+  Resolved: (1 << 2) | (1 << 3),
+  Active: (1 << 1) | (1 << 2) | (1 << 3),
+} as const;
+
+export type FSMStatusBit = (typeof FSMStatusBit)[keyof typeof FSMStatusBit];
+
+/** Map converting string PopoverStateValue to internal FSMStatusBit */
+export const STATE_VALUE_TO_BIT_MAP: Readonly<Record<PopoverStateValue, FSMStatusBit>> =
+  Object.freeze({
+    Idle: FSMStatusBit.Idle,
+    Hydrating: FSMStatusBit.Hydrating,
+    'Resolved.Trailing': FSMStatusBit.ResolvedTrailing,
+    'Resolved.Pinned': FSMStatusBit.ResolvedPinned,
+    Error: FSMStatusBit.Error,
+    Unmounting: FSMStatusBit.Unmounting,
+  });
+
 /** Declarative statechart matrix mapping each state to allowed target states. */
 export const VALID_STATE_TRANSITIONS_MAP: ValidStateTransitions = Object.freeze({
   Idle: Object.freeze(['Hydrating'] satisfies PopoverStateValue[]),

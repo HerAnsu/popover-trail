@@ -97,7 +97,10 @@ export function createPopoverStore<
         const patch = typeof partial === 'function' ? partial(state) : partial;
         const nextPatch = middlewareEngine.apply(patch, state);
         if (nextPatch === false) return {};
-        return nextPatch;
+        return {
+          ...nextPatch,
+          stateRevision: (state.stateRevision || 0) + 1,
+        };
       });
     };
 
@@ -113,13 +116,13 @@ export function createPopoverStore<
 
       safeSet({
         ownerId: null,
-        trail: EMPTY_ARRAY as unknown as readonly [],
-        floating: EMPTY_ARRAY as unknown as readonly [],
-        offsets: EMPTY_OBJECT as Record<string, { x: number; y: number }>,
-        pinnedStates: EMPTY_OBJECT as Record<string, boolean>,
-        zIndexOrder: EMPTY_ARRAY as unknown as readonly [],
+        trail: EMPTY_ARRAY,
+        floating: EMPTY_ARRAY,
+        offsets: EMPTY_OBJECT,
+        pinnedStates: EMPTY_OBJECT,
+        zIndexOrder: EMPTY_ARRAY,
         rootHydrationRequestCounter: 0,
-        nestedHydrationRequestCounters: EMPTY_OBJECT as Record<string, number>,
+        nestedHydrationRequestCounters: EMPTY_OBJECT,
         anchorElement: null,
         anchorRect: null,
       });

@@ -75,6 +75,53 @@ export interface UsePopoverGeometryResult {
   setFloating: (node: HTMLElement | null) => void;
 }
 
+function calculateResponsivePosition(
+  effectiveResponsiveMode: string | undefined,
+  isMobileViewport: boolean,
+  layoutStrategy: string | undefined,
+  winWidth: number,
+  winHeight: number,
+): { top: number; left: number } | null {
+  if (
+    effectiveResponsiveMode === 'bottom-sheet' ||
+    (effectiveResponsiveMode === 'auto' && isMobileViewport) ||
+    layoutStrategy === 'docked-bottom'
+  ) {
+    return {
+      top: Math.max(0, winHeight - 320),
+      left: Math.max(0, (winWidth - 400) / 2),
+    };
+  }
+
+  if (effectiveResponsiveMode === 'modal' || layoutStrategy === 'fixed-center') {
+    return {
+      top: Math.max(20, (winHeight - 350) / 2),
+      left: Math.max(20, (winWidth - 400) / 2),
+    };
+  }
+
+  if (layoutStrategy === 'docked-top') {
+    return {
+      top: 10,
+      left: Math.max(0, (winWidth - 400) / 2),
+    };
+  }
+
+  return null;
+}
+
+function calculateCascadeOffset(
+  zIndex: number,
+  step: number,
+  direction: 'left' | 'right' | 'top' | 'bottom',
+): { topOffset: number; leftOffset: number } {
+  const offsetVal = zIndex * step;
+  if (direction === 'left') return { topOffset: 0, leftOffset: -offsetVal };
+  if (direction === 'right') return { topOffset: 0, leftOffset: offsetVal };
+  if (direction === 'top') return { topOffset: -offsetVal, leftOffset: 0 };
+  return { topOffset: offsetVal, leftOffset: 0 };
+}
+
 /**
  * Custom hook to calculate and track absolute positioning coordinates.
  * Integrates with Floating UI and supports auto-position updates on viewport scroll or resize.
@@ -272,47 +319,25 @@ export function usePopoverGeometry({
 
     const { width: winWidth, height: winHeight } = getViewportBounds();
 
-    if (
-      effectiveResponsiveMode === 'bottom-sheet' ||
-      (effectiveResponsiveMode === 'auto' && isMobileViewport) ||
-      layoutStrategy === 'docked-bottom'
-    ) {
-      return {
-        top: Math.max(0, winHeight - 320),
-        left: Math.max(0, (winWidth - 400) / 2),
-      };
-    }
-
-    if (effectiveResponsiveMode === 'modal' || layoutStrategy === 'fixed-center') {
-      return {
-        top: Math.max(20, (winHeight - 350) / 2),
-        left: Math.max(20, (winWidth - 400) / 2),
-      };
-    }
-
-    if (layoutStrategy === 'docked-top') {
-      return {
-        top: 10,
-        left: Math.max(0, (winWidth - 400) / 2),
-      };
+    const responsivePos = calculateResponsivePosition(
+      effectiveResponsiveMode,
+      isMobileViewport,
+      layoutStrategy,
+      winWidth,
+      winHeight,
+    );
+    if (responsivePos) {
+      return responsivePos;
     }
 
     const step = entry?.cascadeOffsetStep ?? cascadeOffsetStep;
     const direction =
       entry?.cascadeOffsetDirection ?? (resolvedPlacement.startsWith('left') ? 'left' : 'right');
-    const offsetVal = zIndex * step;
-
-    let topOffset = 0;
-    let leftOffset = 0;
-    if (direction === 'left') {
-      leftOffset = -offsetVal;
-    } else if (direction === 'right') {
-      leftOffset = offsetVal;
-    } else if (direction === 'top') {
-      topOffset = -offsetVal;
-    } else if (direction === 'bottom') {
-      topOffset = offsetVal;
-    }
+    const { topOffset, leftOffset } = calculateCascadeOffset(
+      zIndex,
+      step,
+      direction as 'left' | 'right' | 'top' | 'bottom',
+    );
 
     let calculatedTop = (y ?? 0) + topOffset;
     let calculatedLeft = (x ?? 0) + leftOffset;

@@ -89,6 +89,10 @@ export class PopoverCommandBus<
   updateOffset(key: TPopoverKey, x: number, y: number): void {
     this.actions.updateOffset(key, x, y);
   }
+
+  dispose(): void {
+    this.clearAll();
+  }
 }
 
 /**

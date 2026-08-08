@@ -42,4 +42,8 @@ export class ObjectPool<T> {
   clear(): void {
     this.pool.length = 0;
   }
+
+  dispose(): void {
+    this.clear();
+  }
 }

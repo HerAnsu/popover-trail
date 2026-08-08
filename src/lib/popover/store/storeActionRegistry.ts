@@ -13,6 +13,8 @@ import type {
   TrailEntry,
   StatePatch,
   StoreState,
+  PopoverStateData,
+  PopoverCache,
 } from '../types';
 import { createTrailSlice } from './slices/sliceTrail';
 import { createPinningSlice } from './slices/slicePinning';
@@ -22,6 +24,7 @@ import { createPersistenceSlice } from './slices/slicePersistence';
 import type { PopoverMiddlewareEngine } from './storeMiddlewareEngine';
 import type { SliceContext } from './slices/sliceContext';
 import type { StoreSetFn, StoreGetFn } from './storeTypes';
+import type { HistoryManager } from './history';
 
 export interface ActionRegistryDependencies<
   TData = unknown,
@@ -61,15 +64,15 @@ export interface ActionRegistryDependencies<
           state: StoreState<TData, TContext, TPopoverKey>,
         ) => StatePatch<TData, TContext, TPopoverKey>),
   ) => Promise<void>;
-  pushSnapshot: (state: import('../types').PopoverStateData<TData, TContext>) => void;
+  pushSnapshot: (state: PopoverStateData<TData, TContext>) => void;
   clearHistory: () => void;
   undoStack: unknown[];
   redoStack: unknown[];
-  historyManager?: ReturnType<typeof import('./history').createHistoryManager<TData>>;
+  historyManager?: HistoryManager<TData>;
   startBatch: () => void;
   endBatch: () => void;
   middlewareEngine: PopoverMiddlewareEngine<TData, TContext, TPopoverKey>;
-  cache?: import('../types').PopoverCache<TData>;
+  cache?: PopoverCache<TData>;
 }
 
 /**

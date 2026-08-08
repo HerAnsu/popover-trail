@@ -53,6 +53,7 @@ export class PopoverEventBus<
   TPopoverKey extends string = RegisteredKeys,
 > {
   private target = new EventTarget();
+  private handlerMap = new WeakMap<object, EventListener>();
 
   public emit<K extends PopoverEventType>(
     type: K,
@@ -67,14 +68,22 @@ export class PopoverEventBus<
     listener: (event: PopoverCustomEvent<K, TData, TPopoverKey>) => void,
     options?: AddEventListenerOptions,
   ): () => void {
-    const handler = (e: Event) => {
-      if (isPopoverCustomEvent<K, TData, TPopoverKey>(e, type)) {
-        listener(e);
-      }
-    };
+    let handler = this.handlerMap.get(listener);
+    if (!handler) {
+      handler = ((e: Event) => {
+        if (isPopoverCustomEvent<K, TData, TPopoverKey>(e, type)) {
+          listener(e);
+        }
+      }) as EventListener;
+      this.handlerMap.set(listener, handler);
+    }
+
     this.target.addEventListener(type, handler, options);
     return () => {
-      this.target.removeEventListener(type, handler, options);
+      const activeHandler = this.handlerMap.get(listener) ?? handler;
+      if (activeHandler) {
+        this.target.removeEventListener(type, activeHandler, options);
+      }
     };
   }
 
@@ -83,6 +92,15 @@ export class PopoverEventBus<
     listener: (event: PopoverCustomEvent<K, TData, TPopoverKey>) => void,
   ): () => void {
     return this.on(type, listener, { once: true });
+  }
+
+  public clear(): void {
+    this.target = new EventTarget();
+    this.handlerMap = new WeakMap();
+  }
+
+  public dispose(): void {
+    this.clear();
   }
 }
 

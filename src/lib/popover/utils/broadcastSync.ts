@@ -14,14 +14,18 @@ export interface PopoverSyncMessage {
 
 export type PopoverSyncListener = (message: PopoverSyncMessage) => void;
 
+function generateTabId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2, 9);
+}
+
 /**
  * Creates a tab-sync manager using native BroadcastChannel.
  */
 export function createBroadcastSync(channelName = 'popover-trail-sync') {
-  const tabId =
-    typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : Math.random().toString(36).substring(2, 9);
+  const tabId = generateTabId();
   const listeners = new Set<PopoverSyncListener>();
   let channel: BroadcastChannel | null = null;
 
@@ -74,5 +78,6 @@ export function createBroadcastSync(channelName = 'popover-trail-sync') {
     broadcast,
     subscribe,
     destroy,
+    dispose: destroy,
   };
 }

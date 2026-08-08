@@ -11,6 +11,13 @@ export interface UseClickOutsideOptions<TData = unknown, TContext = unknown> {
   };
 }
 
+function escapeCSSClass(className: string | undefined): string | null {
+  if (!className) return null;
+  return typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+    ? `.${CSS.escape(className)}`
+    : `.${className.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+}
+
 /**
  * Custom hook isolating click-outside capture phase event listener logic for PopoverProvider.
  */
@@ -26,11 +33,7 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
   useEffect(() => {
     if (!enabled) return;
 
-    const escapedIgnoreClass = ignoreClass
-      ? typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
-        ? `.${CSS.escape(ignoreClass)}`
-        : `.${ignoreClass.replace(/[^a-zA-Z0-9_-]/g, '')}`
-      : null;
+    const escapedIgnoreClass = escapeCSSClass(ignoreClass);
 
     const handleClickOutside = (e: PointerEvent | MouseEvent) => {
       if (isPortalOrExcludedTarget(e)) return;

@@ -81,3 +81,21 @@ export function assertValidRect(rect: unknown): asserts rect is DOMRect {
     );
   }
 }
+
+/**
+ * Compile-time exhaustive check guard ensuring all branches of a discriminated union are handled.
+ * If a new variant is added to the union, TypeScript will fail at compile-time on this function call.
+ *
+ * @param value - Value that should be typed as 'never' when all cases are handled.
+ * @param message - Optional custom error message.
+ */
+export function assertUnreachable(
+  value: never,
+  message = 'Unhandled discriminated union branch',
+): never {
+  throw new PopoverError(
+    PopoverErrorCode.INVALID_TRANSITION,
+    `Exhaustive assertion failure: ${message} (received: ${JSON.stringify(value)})`,
+    'Update switch or conditional logic to handle this new union member.',
+  );
+}

@@ -7,6 +7,10 @@
 import type { TrailEntry, PopoverStateData } from '../../types';
 import { EMPTY_ARRAY, EMPTY_OBJECT } from '../storeDefaults';
 
+function isUnsafeProperty(key: string): boolean {
+  return key === '__proto__' || key === 'constructor' || key === 'prototype';
+}
+
 /**
  * Filters a Record object, retaining only the keys present in the specified Set.
  */
@@ -20,7 +24,7 @@ export function filterRecord<T>(
   const nextRecord: Record<string, T> = {};
   let changed = false;
   for (const key of keys) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    if (isUnsafeProperty(key)) {
       changed = true;
       continue;
     }
@@ -217,7 +221,7 @@ export function getCleanupStatePatch<TData, TContext>(
     patch.anchorRect = null;
   }
   if (floating.length === 0 && trail.length === 0) {
-    patch.zIndexOrder = EMPTY_ARRAY as unknown as readonly string[];
+    patch.zIndexOrder = EMPTY_ARRAY;
     patch.ownerId = null;
   }
   return patch;

@@ -12,23 +12,42 @@ class ResizeObserverRegistryImpl {
   private observer: ResizeObserver | null = null;
   private listeners = new Map<Element, Set<ResizeCallback>>();
 
+  private pendingEntries = new Map<Element, ResizeObserverEntry>();
+  private frameId: number | null = null;
+
+  private flushCallbacks = () => {
+    this.frameId = null;
+    const entriesToProcess = Array.from(this.pendingEntries.values());
+    this.pendingEntries.clear();
+
+    for (const entry of entriesToProcess) {
+      const callbackSet = this.listeners.get(entry.target);
+      if (callbackSet) {
+        for (const callback of callbackSet) {
+          try {
+            callback(entry);
+          } catch (err) {
+            if (typeof console !== 'undefined') {
+              console.error('[popover-trail]: Exception in ResizeObserver callback:', err);
+            }
+          }
+        }
+      }
+    }
+  };
+
   private initObserver() {
     if (this.observer || typeof ResizeObserver === 'undefined') return;
 
     this.observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const callbackSet = this.listeners.get(entry.target);
-        if (callbackSet) {
-          for (const callback of callbackSet) {
-            try {
-              callback(entry);
-            } catch (err) {
-              if (typeof console !== 'undefined') {
-                console.error('[popover-trail]: Exception in ResizeObserver callback:', err);
-              }
-            }
-          }
-        }
+        this.pendingEntries.set(entry.target, entry);
+      }
+
+      if (this.frameId === null && typeof requestAnimationFrame !== 'undefined') {
+        this.frameId = requestAnimationFrame(this.flushCallbacks);
+      } else if (this.frameId === null) {
+        this.flushCallbacks();
       }
     });
   }
@@ -72,9 +91,21 @@ class ResizeObserverRegistryImpl {
    * Clear all active observed targets and disconnect the native observer instance.
    */
   clear(): void {
+    if (this.frameId !== null && typeof cancelAnimationFrame !== 'undefined') {
+      cancelAnimationFrame(this.frameId);
+      this.frameId = null;
+    }
+    this.pendingEntries.clear();
     this.observer?.disconnect();
     this.observer = null;
     this.listeners.clear();
+  }
+
+  /**
+   * ScopeDisposable compliance handle clearing all registrations.
+   */
+  dispose(): void {
+    this.clear();
   }
 }
 

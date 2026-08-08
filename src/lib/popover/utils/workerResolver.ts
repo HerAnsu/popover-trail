@@ -281,7 +281,7 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
     }
   };
 
-  Object.assign(resolver, { terminate, destroy: terminate });
+  Object.assign(resolver, { terminate, destroy: terminate, dispose: terminate });
 
   return resolver;
 }

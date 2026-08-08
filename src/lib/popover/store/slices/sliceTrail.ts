@@ -223,7 +223,7 @@ export function createTrailSlice<
       );
 
       set({
-        trail: EMPTY_ARRAY as unknown as readonly TrailEntry<TData>[],
+        trail: EMPTY_ARRAY,
         floating: nextFloating,
         ...cleanupPatch,
       });

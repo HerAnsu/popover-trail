@@ -43,19 +43,19 @@ import { clsx } from './utils/storeHelpers';
 import { extractNumericStyle } from './utils/typeGuards';
 import type { TrailEntry, PopoverPlacement } from './types';
 
-const FIXED_CONTAINER_STYLE: React.CSSProperties = {
+const FIXED_CONTAINER_STYLE = {
   position: 'fixed',
   inset: 0,
   pointerEvents: 'none',
-};
-const AUTO_POINTER_STYLE: React.CSSProperties = { pointerEvents: 'auto' };
-const DISPLAY_NONE_STYLE: React.CSSProperties = { display: 'none' };
-const FULL_FLEX_CONTAINER_STYLE: React.CSSProperties = {
+} satisfies React.CSSProperties;
+const AUTO_POINTER_STYLE = { pointerEvents: 'auto' } satisfies React.CSSProperties;
+const DISPLAY_NONE_STYLE = { display: 'none' } satisfies React.CSSProperties;
+const FULL_FLEX_CONTAINER_STYLE = {
   width: '100%',
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
-};
+} satisfies React.CSSProperties;
 const RETURN_FOCUS_CONFIG = { preventScroll: true };
 
 /**
@@ -204,25 +204,36 @@ export interface PopoverCanvasProps<TData> {
   restrictToContainer?: boolean;
 }
 
-/**
- * Reusable Canvas container that manages drag-and-drop context, coordinate offsets,
- * and z-index ordering for all active floating and trailing popover cards.
- *
- * @template TData - The resolved data payload type.
- * @param props - Component props containing the render prop children.
- * @returns The DndContext wrapper structure.
- */
-function clampToWindowBounds(
-  transform: { x: number; y: number; scaleX?: number; scaleY?: number },
-  activeNodeRect: { left: number; top: number; width: number; height: number },
-) {
-  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
-  const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+interface Transform2D {
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
+}
 
-  const minX = -activeNodeRect.left;
-  const maxX = windowWidth - activeNodeRect.left - activeNodeRect.width;
-  const minY = -activeNodeRect.top;
-  const maxY = windowHeight - activeNodeRect.top - activeNodeRect.height;
+interface NodeRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+interface BoundsRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+function clampCoordinateToBounds(
+  transform: Transform2D,
+  activeNodeRect: NodeRect,
+  bounds: BoundsRect,
+): Transform2D {
+  const minX = bounds.left - activeNodeRect.left;
+  const maxX = bounds.right - activeNodeRect.left - activeNodeRect.width;
+  const minY = bounds.top - activeNodeRect.top;
+  const maxY = bounds.bottom - activeNodeRect.top - activeNodeRect.height;
 
   return {
     ...transform,
@@ -233,23 +244,28 @@ function clampToWindowBounds(
   };
 }
 
-function clampToContainerBounds(
-  transform: { x: number; y: number; scaleX?: number; scaleY?: number },
-  activeNodeRect: { left: number; top: number; width: number; height: number },
-  containerRect: DOMRect,
-) {
-  const minX = containerRect.left - activeNodeRect.left;
-  const maxX = containerRect.right - activeNodeRect.left - activeNodeRect.width;
-  const minY = containerRect.top - activeNodeRect.top;
-  const maxY = containerRect.bottom - activeNodeRect.top - activeNodeRect.height;
+function clampToWindowBounds(transform: Transform2D, activeNodeRect: NodeRect): Transform2D {
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
+  const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+  return clampCoordinateToBounds(transform, activeNodeRect, {
+    left: 0,
+    top: 0,
+    right: windowWidth,
+    bottom: windowHeight,
+  });
+}
 
-  return {
-    ...transform,
-    x: Math.max(minX, Math.min(maxX, transform.x)),
-    y: Math.max(minY, Math.min(maxY, transform.y)),
-    scaleX: transform.scaleX ?? 1,
-    scaleY: transform.scaleY ?? 1,
-  };
+function clampToContainerBounds(
+  transform: Transform2D,
+  activeNodeRect: NodeRect,
+  containerRect: DOMRect,
+): Transform2D {
+  return clampCoordinateToBounds(transform, activeNodeRect, {
+    left: containerRect.left,
+    top: containerRect.top,
+    right: containerRect.right,
+    bottom: containerRect.bottom,
+  });
 }
 
 export function PopoverCanvas<TData = unknown>({
@@ -315,7 +331,7 @@ export function PopoverCanvas<TData = unknown>({
     (event: DragEndEvent) => {
       const { active, delta } = event;
       const key = String(active.id);
-      const currentOffset = store.getState().offsets[key] || { x: 0, y: 0 };
+      const currentOffset = store.getState().offsets[key] ?? { x: 0, y: 0 };
       const safeDeltaX = Number.isFinite(delta?.x) ? delta.x : 0;
       const safeDeltaY = Number.isFinite(delta?.y) ? delta.y : 0;
       updateOffset(key, currentOffset.x + safeDeltaX, currentOffset.y + safeDeltaY);

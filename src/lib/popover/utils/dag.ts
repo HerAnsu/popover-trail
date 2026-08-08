@@ -60,10 +60,9 @@ export class PopoverDAG {
   }
 
   /**
-   * Returns all descendant keys for a given parent key.
+   * Populates target outSet with all descendant keys for a given parent key (Zero-allocation variant).
    */
-  getDescendantKeys(parentKey: string): Set<string> {
-    const descendants = new Set<string>();
+  getDescendantKeysInto(parentKey: string, outSet: Set<string>): Set<string> {
     const stack: string[] = [parentKey];
 
     while (stack.length > 0) {
@@ -72,15 +71,22 @@ export class PopoverDAG {
       const node = this.nodes.get(currentKey);
       if (node) {
         for (const childKey of node.childrenKeys) {
-          if (!descendants.has(childKey) && childKey !== parentKey) {
-            descendants.add(childKey);
+          if (!outSet.has(childKey) && childKey !== parentKey) {
+            outSet.add(childKey);
             stack.push(childKey);
           }
         }
       }
     }
 
-    return descendants;
+    return outSet;
+  }
+
+  /**
+   * Returns all descendant keys for a given parent key.
+   */
+  getDescendantKeys(parentKey: string): Set<string> {
+    return this.getDescendantKeysInto(parentKey, new Set<string>());
   }
 
   /**

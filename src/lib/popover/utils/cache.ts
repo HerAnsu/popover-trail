@@ -172,6 +172,13 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
   }
 
   /**
+   * Disposable resource cleanup handle for TS 5.2+ explicit resource management.
+   */
+  dispose(): void {
+    this.destroy();
+  }
+
+  /**
    * Returns the current number of active cached items.
    */
   get size(): number {

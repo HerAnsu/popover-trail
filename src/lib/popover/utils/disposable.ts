@@ -45,7 +45,7 @@ export function createDisposable(cleanupFn: () => void): ScopeDisposable {
     dispose: doCleanup,
   };
 
-  const disposeSymbol = (Symbol as unknown as { dispose?: symbol }).dispose;
+  const disposeSymbol = (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
   if (disposeSymbol) {
     handle[disposeSymbol] = doCleanup;
   }

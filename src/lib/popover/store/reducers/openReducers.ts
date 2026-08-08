@@ -42,6 +42,29 @@ export function openRootState<TData, TContext>(
   };
 }
 
+function computeNextTrailForNestedPush<TData, TContext>(
+  state: PopoverStateData<TData, TContext>,
+  index: number,
+  finalEntry: TrailEntry<TData>,
+): TrailEntry<TData>[] | null {
+  const isFloating = index < state.floating.length;
+  if (isFloating) {
+    const floatingEntry = state.floating[index];
+    if (!floatingEntry || floatingEntry.key === finalEntry.key) return null;
+    return [finalEntry];
+  }
+
+  const trailIndex = index - state.floating.length;
+  const parentEntry = state.trail[trailIndex];
+  if (!parentEntry || parentEntry.key === finalEntry.key) return null;
+
+  if (finalEntry.parentKey === finalEntry.key) {
+    finalEntry.parentKey = undefined;
+  }
+  const baseTrail = state.trail.slice(0, trailIndex + 1).filter((e) => e.key !== finalEntry.key);
+  return [...baseTrail, finalEntry];
+}
+
 /**
  * Pure state updater for pushing or appending a nested popover into the active path.
  */
@@ -55,28 +78,14 @@ export function pushNestedState<TData, TContext>(
     return bringToFrontPatch(state, entry.key);
   }
 
-  const isFloating = index < state.floating.length;
-  let nextTrail: TrailEntry<TData>[];
   const finalEntry = {
     ...entry,
     originalParentKey: entry.originalParentKey ?? entry.parentKey,
     originalRect: entry.originalRect ?? entry.rect,
   };
 
-  if (isFloating) {
-    const floatingEntry = state.floating[index];
-    if (!floatingEntry || floatingEntry.key === entry.key) return {};
-    nextTrail = [finalEntry];
-  } else {
-    const trailIndex = index - state.floating.length;
-    const parentEntry = state.trail[trailIndex];
-    if (!parentEntry || parentEntry.key === entry.key) return {};
-    if (finalEntry.parentKey === finalEntry.key) {
-      finalEntry.parentKey = undefined;
-    }
-    const baseTrail = state.trail.slice(0, trailIndex + 1).filter((e) => e.key !== entry.key);
-    nextTrail = [...baseTrail, finalEntry];
-  }
+  const nextTrail = computeNextTrailForNestedPush(state, index, finalEntry);
+  if (!nextTrail) return {};
 
   const activeKeys = getActiveKeys(state.floating, nextTrail);
 

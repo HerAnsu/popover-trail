@@ -11,8 +11,27 @@ export interface TimerManager {
   clearHoverTimer: (key: string) => void;
   clearTransitionTimer: (key: string) => void;
   clearAllTimers: () => void;
+  dispose: () => void;
   scheduleHoverLeave: (key: string, delay: number, callback: () => void) => void;
   scheduleTransitionExit: (key: string, duration: number, callback: () => void) => void;
+}
+
+function scheduleNamedTimer(
+  timersMap: Map<string, ReturnType<typeof setTimeout>>,
+  key: string,
+  delay: number,
+  callback: () => void,
+): void {
+  const existing = timersMap.get(key);
+  if (existing) {
+    clearTimeout(existing);
+    timersMap.delete(key);
+  }
+  const timer = setTimeout(() => {
+    timersMap.delete(key);
+    callback();
+  }, delay);
+  timersMap.set(key, timer);
 }
 
 /**
@@ -57,21 +76,11 @@ export function createTimerManager(): TimerManager {
   };
 
   const scheduleHoverLeave = (key: string, delay: number, callback: () => void) => {
-    clearHoverTimer(key);
-    const timer = setTimeout(() => {
-      hoverCloseTimers.delete(key);
-      callback();
-    }, delay);
-    hoverCloseTimers.set(key, timer);
+    scheduleNamedTimer(hoverCloseTimers, key, delay, callback);
   };
 
   const scheduleTransitionExit = (key: string, duration: number, callback: () => void) => {
-    clearTransitionTimer(key);
-    const timer = setTimeout(() => {
-      transitionTimers.delete(key);
-      callback();
-    }, duration);
-    transitionTimers.set(key, timer);
+    scheduleNamedTimer(transitionTimers, key, duration, callback);
   };
 
   return {
@@ -80,6 +89,7 @@ export function createTimerManager(): TimerManager {
     clearHoverTimer,
     clearTransitionTimer,
     clearAllTimers,
+    dispose: clearAllTimers,
     scheduleHoverLeave,
     scheduleTransitionExit,
   };

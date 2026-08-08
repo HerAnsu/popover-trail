@@ -80,9 +80,5 @@ export function useStableCallback<T extends (...args: never[]) => unknown>(fn: T
   ref.current = fn;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useCallback(
-    // Type assertion: wrapping dynamic closure to match original stable function signature
-    ((...args: Parameters<T>) => ref.current(...args)) as unknown as T,
-    [],
-  );
+  return useCallback(((...args: Parameters<T>) => ref.current(...args)) as T, []);
 }

@@ -261,63 +261,63 @@ export function createVirtualElement(x: number, y: number, width = 0, height = 0
 export function isOpenRootEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'open_root' }> {
-  return event.type === 'open_root';
+  return isStoreEvent(event, 'open_root');
 }
 
 /** Type guard for 'push_nested' event. */
 export function isPushNestedEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'push_nested' }> {
-  return event.type === 'push_nested';
+  return isStoreEvent(event, 'push_nested');
 }
 
 /** Type guard for 'close' event. */
 export function isCloseEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'close' }> {
-  return event.type === 'close';
+  return isStoreEvent(event, 'close');
 }
 
 /** Type guard for 'pin' event. */
 export function isPinEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'pin' }> {
-  return event.type === 'pin';
+  return isStoreEvent(event, 'pin');
 }
 
 /** Type guard for 'unpin' event. */
 export function isUnpinEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'unpin' }> {
-  return event.type === 'unpin';
+  return isStoreEvent(event, 'unpin');
 }
 
 /** Type guard for 'resolve_start' event. */
 export function isResolveStartEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_start' }> {
-  return event.type === 'resolve_start';
+  return isStoreEvent(event, 'resolve_start');
 }
 
 /** Type guard for 'resolve_success' event. */
 export function isResolveSuccessEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_success' }> {
-  return event.type === 'resolve_success';
+  return isStoreEvent(event, 'resolve_success');
 }
 
 /** Type guard for 'resolve_error' event. */
 export function isResolveErrorEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_error' }> {
-  return event.type === 'resolve_error';
+  return isStoreEvent(event, 'resolve_error');
 }
 
 /** Type guard for 'clear' event. */
 export function isClearEvent<TData>(
   event: PopoverStoreEvent<TData>,
 ): event is Extract<PopoverStoreEvent<TData>, { type: 'clear' }> {
-  return event.type === 'clear';
+  return isStoreEvent(event, 'clear');
 }
 
 /**

@@ -9,12 +9,9 @@ export interface DevWarningDetails {
   message: string;
 }
 
-const IS_DEV =
-  typeof globalThis !== 'undefined' &&
-  Boolean(
-    (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process
-      ?.env?.NODE_ENV !== 'production',
-  );
+declare const process: { env?: Record<string, string | undefined> } | undefined;
+
+const IS_DEV = typeof process !== 'undefined' && process?.env?.NODE_ENV !== 'production';
 
 function isDevEnv(): boolean {
   return IS_DEV;

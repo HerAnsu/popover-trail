@@ -182,3 +182,5 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
     clearHistory,
   };
 }
+
+export type HistoryManager<TData = unknown> = ReturnType<typeof createHistoryManager<TData>>;

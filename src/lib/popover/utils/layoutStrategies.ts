@@ -24,17 +24,27 @@ export interface PopoverLayoutStrategyEngine {
   computePosition(params: LayoutStrategyParams): Point2D;
 }
 
+function resolveViewportDimensions(params: LayoutStrategyParams): {
+  viewportWidth: number;
+  viewportHeight: number;
+} {
+  const isClient = typeof window !== 'undefined';
+  return {
+    viewportWidth: params.viewportWidth ?? (isClient ? window.innerWidth : 1024),
+    viewportHeight: params.viewportHeight ?? (isClient ? window.innerHeight : 768),
+  };
+}
+
 /** Strategy computing fixed-center viewport overlay positions. */
 export class FixedCenterLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'fixed-center';
 
   computePosition(params: LayoutStrategyParams): Point2D {
-    const vw = params.viewportWidth ?? (typeof window !== 'undefined' ? window.innerWidth : 1024);
-    const vh = params.viewportHeight ?? (typeof window !== 'undefined' ? window.innerHeight : 768);
+    const { viewportWidth, viewportHeight } = resolveViewportDimensions(params);
     const popWidth = params.popoverRect?.width ?? 320;
     const popHeight = params.popoverRect?.height ?? 240;
 
-    return new Point2D((vw - popWidth) / 2, (vh - popHeight) / 2);
+    return new Point2D((viewportWidth - popWidth) / 2, (viewportHeight - popHeight) / 2);
   }
 }
 
@@ -43,10 +53,10 @@ export class DockedBottomLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'docked-bottom';
 
   computePosition(params: LayoutStrategyParams): Point2D {
-    const vh = params.viewportHeight ?? (typeof window !== 'undefined' ? window.innerHeight : 768);
+    const { viewportHeight } = resolveViewportDimensions(params);
     const popHeight = params.popoverRect?.height ?? 240;
 
-    return new Point2D(0, vh - popHeight);
+    return new Point2D(0, viewportHeight - popHeight);
   }
 }
 

@@ -79,6 +79,10 @@ export interface PopoverCardComponent {
   Content: typeof PopoverCardContent;
 }
 
+function resolveCardAriaLabel(userLabel: unknown, entryKey: string): string {
+  return typeof userLabel === 'string' ? userLabel : `Popover ${entryKey}`;
+}
+
 const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, unknown>>(
   function PopoverCard(props, outerRef) {
     const {
@@ -119,10 +123,7 @@ const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, 
     );
 
     const mergedClassName = clsx(className, card.transitionClassName);
-    const ariaLabel =
-      typeof restProps['aria-label'] === 'string'
-        ? restProps['aria-label']
-        : `Popover ${entry.key}`;
+    const ariaLabel = resolveCardAriaLabel(restProps['aria-label'], entry.key);
 
     return (
       <PopoverCardScopeContext.Provider value={scope}>

@@ -24,6 +24,16 @@ export const PopoverErrorCode = {
 
 export type PopoverErrorCode = (typeof PopoverErrorCode)[keyof typeof PopoverErrorCode];
 
+export function formatPopoverErrorMessage(
+  code: PopoverErrorCode,
+  message: string,
+  remediationHint?: string,
+): string {
+  return remediationHint
+    ? `[popover-trail:${code}] ${message}\n  💡 Remediation Hint: ${remediationHint}`
+    : `[popover-trail:${code}] ${message}`;
+}
+
 /**
  * Custom Actionable Error class for PopoverTrail with error code, remediation hints, and optional cause.
  */
@@ -34,10 +44,7 @@ export class PopoverError extends Error {
   public readonly remediationHint?: string;
 
   constructor(code: PopoverErrorCode, message: string, remediationHint?: string, cause?: unknown) {
-    const formattedMessage = remediationHint
-      ? `[popover-trail:${code}] ${message}\n  💡 Remediation Hint: ${remediationHint}`
-      : `[popover-trail:${code}] ${message}`;
-    super(formattedMessage);
+    super(formatPopoverErrorMessage(code, message, remediationHint));
     this.code = code;
     this.remediationHint = remediationHint;
     this.cause = cause;

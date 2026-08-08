@@ -21,6 +21,10 @@ const DEFAULT_THEME_TOKENS: Required<PopoverThemeTokens> = {
   borderRadiusPx: 12,
 };
 
+function injectStyleProperty(element: HTMLElement, propertyName: string, value: string): void {
+  element.style.setProperty(propertyName, value);
+}
+
 /**
  * Applies custom theme tokens to a DOM container (or document.documentElement).
  */
@@ -35,10 +39,10 @@ export function applyThemeTokens(
       ? { ...DEFAULT_THEME_TOKENS, ...tokens }
       : DEFAULT_THEME_TOKENS;
 
-  element.style.setProperty('--pt-base-z-index', String(merged.baseZIndex));
-  element.style.setProperty('--pt-cascade-offset', `${merged.cascadeOffset}px`);
-  element.style.setProperty('--pt-transition-duration', `${merged.transitionDurationMs}ms`);
-  element.style.setProperty('--pt-backdrop-blur', `${merged.backdropBlurPx}px`);
-  element.style.setProperty('--pt-card-shadow', merged.cardShadow);
-  element.style.setProperty('--pt-border-radius', `${merged.borderRadiusPx}px`);
+  injectStyleProperty(element, '--pt-base-z-index', String(merged.baseZIndex));
+  injectStyleProperty(element, '--pt-cascade-offset', `${merged.cascadeOffset}px`);
+  injectStyleProperty(element, '--pt-transition-duration', `${merged.transitionDurationMs}ms`);
+  injectStyleProperty(element, '--pt-backdrop-blur', `${merged.backdropBlurPx}px`);
+  injectStyleProperty(element, '--pt-card-shadow', merged.cardShadow);
+  injectStyleProperty(element, '--pt-border-radius', `${merged.borderRadiusPx}px`);
 }

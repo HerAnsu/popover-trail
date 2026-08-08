@@ -3,12 +3,11 @@
  * Uses native FinalizationRegistry in Dev mode to detect detached popover cards retained in memory.
  */
 
+declare const process: { env?: Record<string, string | undefined> } | undefined;
+
 let sentinelRegistry: FinalizationRegistry<string> | null = null;
 
-const isDevEnv =
-  typeof globalThis !== 'undefined' &&
-  (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env
-    ?.NODE_ENV !== 'production';
+const isDevEnv = typeof process !== 'undefined' && process?.env?.NODE_ENV !== 'production';
 
 if (typeof globalThis !== 'undefined' && typeof FinalizationRegistry !== 'undefined') {
   try {

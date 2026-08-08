@@ -5,7 +5,7 @@
  * @module result
  */
 
-import { PopoverError } from './errors';
+import { PopoverError, PopoverErrorCode } from './errors';
 
 /** Successful Result variant carrying payload data. */
 export interface OkResult<T> {
@@ -76,7 +76,7 @@ export function wrapResult<T>(fn: () => T): Result<T, PopoverError> {
     }
     return Err(
       new PopoverError(
-        'ERR_INVALID_TRANSITION',
+        PopoverErrorCode.INVALID_TRANSITION,
         err instanceof Error ? err.message : String(err),
         undefined,
         err,
@@ -96,7 +96,7 @@ export async function wrapAsyncResult<T>(promise: Promise<T>): Promise<Result<T,
     }
     return Err(
       new PopoverError(
-        'ERR_RESOLVER_TIMEOUT',
+        PopoverErrorCode.RESOLVER_TIMEOUT,
         err instanceof Error ? err.message : String(err),
         undefined,
         err,

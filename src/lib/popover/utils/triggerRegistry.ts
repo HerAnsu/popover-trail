@@ -52,6 +52,11 @@ export const TriggerRegistry = {
     registry.clear();
   },
 
+  /** ScopeDisposable compliance handle clearing all registered anchors. */
+  dispose(): void {
+    registry.clear();
+  },
+
   /** Check if a key has a living (non-GC'd) element. */
   has(key: string): boolean {
     return TriggerRegistry.get(key) !== null;

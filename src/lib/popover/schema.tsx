@@ -186,28 +186,28 @@ export function createPopoverSchema<
     };
   };
 
+  function mergeSchemaNodeOptions<TOptions extends OpenRootOptions | OpenNestedOptions>(
+    node?: PopoverSchemaNode,
+    options?: TOptions,
+  ): TOptions {
+    return {
+      placement: node?.placement,
+      offset: node?.offset,
+      collision: node?.collision,
+      hover: node?.hover,
+      allowDragWhenPinned: node?.allowDragWhenPinned,
+      allowDragWhenUnpinned: node?.allowDragWhenUnpinned,
+      ...options,
+    } as TOptions;
+  }
+
   const SchemaTrigger: React.ComponentType<
     Omit<PopoverTriggerProps, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }
   > = ({ popoverKey, placement, offset, options, ...restProps }) => {
     const node = definition[popoverKey];
     const mergedPlacement = placement ?? node?.placement;
     const mergedOffset = offset ?? node?.offset;
-    const mergedOptions = useMemo(
-      () => ({
-        collision: node?.collision,
-        hover: node?.hover,
-        allowDragWhenPinned: node?.allowDragWhenPinned,
-        allowDragWhenUnpinned: node?.allowDragWhenUnpinned,
-        ...options,
-      }),
-      [
-        node?.collision,
-        node?.hover,
-        node?.allowDragWhenPinned,
-        node?.allowDragWhenUnpinned,
-        options,
-      ],
-    );
+    const mergedOptions = useMemo(() => mergeSchemaNodeOptions(node, options), [node, options]);
 
     return (
       <PopoverTrigger
@@ -245,15 +245,7 @@ export function createPopoverSchema<
           const node = definition[key];
           const strKey = String(key);
           validateSchemaKey(Boolean(node), strKey);
-          const mergedOptions = {
-            placement: node?.placement,
-            offset: node?.offset,
-            collision: node?.collision,
-            hover: node?.hover,
-            allowDragWhenPinned: node?.allowDragWhenPinned,
-            allowDragWhenUnpinned: node?.allowDragWhenUnpinned,
-            ...options,
-          };
+          const mergedOptions = mergeSchemaNodeOptions(node, options);
           return actions.openRootWithResolver(strKey, anchorEvent, mergedOptions);
         },
         pushNested: <SK extends SchemaKeys<TSchema>>(
@@ -265,15 +257,7 @@ export function createPopoverSchema<
           const strSourceKey = String(sourceKey);
           const node = definition[strKey];
           validateSchemaKey(Boolean(node), strKey);
-          const mergedOptions = {
-            placement: node?.placement,
-            offset: node?.offset,
-            collision: node?.collision,
-            hover: node?.hover,
-            allowDragWhenPinned: node?.allowDragWhenPinned,
-            allowDragWhenUnpinned: node?.allowDragWhenUnpinned,
-            ...options,
-          };
+          const mergedOptions = mergeSchemaNodeOptions(node, options);
           return actions.openNestedWithResolver(strKey, strSourceKey, mergedOptions);
         },
         close: (key: SchemaKeys<TSchema>) => actions.closeByKey(key),

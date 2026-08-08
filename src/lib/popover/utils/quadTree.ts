@@ -126,10 +126,10 @@ export class QuadTree {
     }
   }
 
-  /** Retrieves items intersecting target bounds. */
+  /** Retrieves items intersecting target bounds into targetArray without unnecessary allocations. */
   retrieve(returnItems: QuadItem[] = [], itemBounds?: BoundingBox): QuadItem[] {
-    const targetBounds = itemBounds ?? (returnItems as unknown as BoundingBox);
-    const targetArray = Array.isArray(returnItems) ? returnItems : [];
+    const targetBounds = itemBounds ?? this.bounds;
+    const targetArray = returnItems;
 
     const index = this.getIndex(targetBounds);
     if (index !== -1 && this.nodes.length > 0) {

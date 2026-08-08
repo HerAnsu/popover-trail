@@ -6,6 +6,13 @@
  * @module valueObjects
  */
 
+function resolvePointCoordinates(other?: { x?: number; y?: number } | null): {
+  x: number;
+  y: number;
+} {
+  return { x: other?.x ?? 0, y: other?.y ?? 0 };
+}
+
 /**
  * Immutable 2D Spatial Coordinate Vector Value Object.
  */
@@ -27,16 +34,18 @@ export class Point2D {
   }
 
   static fromObject(obj?: { x?: number; y?: number } | null): Point2D {
-    if (!obj) return Point2D.zero();
-    return new Point2D(obj.x ?? 0, obj.y ?? 0);
+    const { x, y } = resolvePointCoordinates(obj);
+    return new Point2D(x, y);
   }
 
   add(other: Point2D | { x: number; y: number }): Point2D {
-    return new Point2D(this.x + (other.x ?? 0), this.y + (other.y ?? 0));
+    const { x, y } = resolvePointCoordinates(other);
+    return new Point2D(this.x + x, this.y + y);
   }
 
   subtract(other: Point2D | { x: number; y: number }): Point2D {
-    return new Point2D(this.x - (other.x ?? 0), this.y - (other.y ?? 0));
+    const { x, y } = resolvePointCoordinates(other);
+    return new Point2D(this.x - x, this.y - y);
   }
 
   clamp(minX: number, maxX: number, minY: number, maxY: number): Point2D {

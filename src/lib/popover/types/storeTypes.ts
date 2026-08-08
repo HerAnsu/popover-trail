@@ -212,6 +212,7 @@ export type TypedPopoverCache<TData = unknown> = PopoverCache<TData>;
  * The inner reactive state managed by the popover Zustand store.
  */
 export interface PopoverStateData<TData = unknown, TContext = unknown> {
+  readonly stateRevision: number;
   readonly trail: readonly TrailEntry<TData>[];
   readonly floating: readonly TrailEntry<TData>[];
   readonly ownerId: string | null;

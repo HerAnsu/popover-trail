@@ -24,6 +24,8 @@ interface GetPopoverStylesParams {
 
 const styleMemoCache = new Map<string, CSSProperties>();
 const MAX_MEMO_CACHE_SIZE = 128;
+const DEFAULT_FALLBACK_Z_INDEX = 1000;
+const DEFAULT_PERSPECTIVE_PX = 1000;
 
 /**
  * Safely converts an unknown value to a finite number with an optional fallback (default: 0).
@@ -31,6 +33,12 @@ const MAX_MEMO_CACHE_SIZE = 128;
 export function toFiniteNumber(val: unknown, fallback = 0): number {
   return typeof val === 'number' && Number.isFinite(val) ? val : fallback;
 }
+
+/** Single source of truth frozen zero offset constant for style generation */
+export const DEFAULT_ZERO_OFFSET: Readonly<{ x: number; y: number }> = Object.freeze({
+  x: 0,
+  y: 0,
+});
 
 /**
  * Computes the absolute layout coordinates, drag-and-drop translations,
@@ -48,13 +56,13 @@ export function toFiniteNumber(val: unknown, fallback = 0): number {
  */
 export function getPopoverStyles({
   finalLayoutPos,
-  offset = { x: 0, y: 0 },
+  offset = DEFAULT_ZERO_OFFSET,
   dragX = 0,
   dragY = 0,
   rotation = 0,
   rotationX = 0,
   rotationY = 0,
-  zIndex = 1000,
+  zIndex = DEFAULT_FALLBACK_Z_INDEX,
 }: GetPopoverStylesParams): CSSProperties {
   const safeTopPos = toFiniteNumber(finalLayoutPos.top);
   const safeLeftPos = toFiniteNumber(finalLayoutPos.left);
@@ -65,7 +73,7 @@ export function getPopoverStyles({
   const safeRotation = toFiniteNumber(rotation);
   const safeRotationX = toFiniteNumber(rotationX);
   const safeRotationY = toFiniteNumber(rotationY);
-  const safeZIndex = toFiniteNumber(zIndex, 1000);
+  const safeZIndex = toFiniteNumber(zIndex, DEFAULT_FALLBACK_Z_INDEX);
 
   const top = Math.round(safeTopPos);
   const left = Math.round(safeLeftPos);
@@ -97,7 +105,7 @@ export function getPopoverStyles({
 
   const hasRotation = rotation !== 0 || rotationX !== 0 || rotationY !== 0;
   const transformStr = hasRotation
-    ? `perspective(1000px) translate3d(${translateX}px, ${translateY}px, 0px) rotateX(${rotationX.toFixed(2)}deg) rotateY(${rotationY.toFixed(2)}deg) rotateZ(${rotation.toFixed(2)}deg)`
+    ? `perspective(${DEFAULT_PERSPECTIVE_PX}px) translate3d(${translateX}px, ${translateY}px, 0px) rotateX(${rotationX.toFixed(2)}deg) rotateY(${rotationY.toFixed(2)}deg) rotateZ(${rotation.toFixed(2)}deg)`
     : `translate3d(${translateX}px, ${translateY}px, 0px)`;
 
   const computedStyle: CSSProperties & Record<`--${string}`, string | number> = {

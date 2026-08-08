@@ -71,6 +71,8 @@ function generateTabId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
 
+export const DEFAULT_SNAPSHOT_STORAGE_KEY = 'pt_popover_trail_snapshot';
+
 /**
  * Manages persisting, loading, and cross-tab broadcasting of popover state snapshots.
  *
@@ -87,7 +89,7 @@ export class PopoverSnapshotManager<TData = unknown> {
   private messageHandler: EventListener | null = null;
 
   constructor(options: SnapshotManagerOptions<TData> = {}) {
-    this.storageKey = options.storageKey ?? 'pt_popover_trail_snapshot';
+    this.storageKey = options.storageKey ?? DEFAULT_SNAPSHOT_STORAGE_KEY;
     validateStorageKey(this.storageKey);
     this.storageType = options.storageType ?? 'none';
     this.onSnapshotRestored = options.onSnapshotRestored;
@@ -236,5 +238,12 @@ export class PopoverSnapshotManager<TData = unknown> {
       this.broadcastChannel.close();
       this.broadcastChannel = null;
     }
+  }
+
+  /**
+   * ScopeDisposable compliance handle for TS 5.2+ explicit resource management using statement.
+   */
+  dispose(): void {
+    this.destroy();
   }
 }

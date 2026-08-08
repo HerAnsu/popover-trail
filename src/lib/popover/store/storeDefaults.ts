@@ -6,9 +6,10 @@
  */
 
 import type { PopoverResolver, PopoverCache, PopoverStateData } from '../types';
+import { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT } from '../types/branded';
 
-export const EMPTY_OBJECT = Object.freeze({});
-export const EMPTY_ARRAY = Object.freeze([]);
+export const EMPTY_OBJECT = EMPTY_READONLY_OBJECT;
+export const EMPTY_ARRAY = EMPTY_READONLY_ARRAY;
 
 /**
  * Returns the default initial state object for PopoverStore.
@@ -19,13 +20,14 @@ export function getInitialStoreState<TData = unknown, TContext = unknown>(
   cache?: PopoverCache<TData>,
 ): Readonly<PopoverStateData<TData, TContext>> {
   return {
-    trail: EMPTY_ARRAY as unknown as readonly [],
-    floating: EMPTY_ARRAY as unknown as readonly [],
-    offsets: EMPTY_OBJECT as Record<string, { x: number; y: number }>,
-    pinnedStates: EMPTY_OBJECT as Record<string, boolean>,
-    zIndexOrder: EMPTY_ARRAY as unknown as readonly [],
+    stateRevision: 0,
+    trail: EMPTY_READONLY_ARRAY,
+    floating: EMPTY_READONLY_ARRAY,
+    offsets: EMPTY_READONLY_OBJECT,
+    pinnedStates: EMPTY_READONLY_OBJECT,
+    zIndexOrder: EMPTY_READONLY_ARRAY,
     rootHydrationRequestCounter: 0,
-    nestedHydrationRequestCounters: EMPTY_OBJECT as Record<string, number>,
+    nestedHydrationRequestCounters: EMPTY_READONLY_OBJECT,
     ownerId: null,
     anchorElement: null,
     anchorRect: null,
@@ -47,7 +49,7 @@ export function getInitialStoreState<TData = unknown, TContext = unknown>(
     responsiveMode: 'auto',
     mobileBreakpoint: 768,
     components: null,
-    zIndexBaseMap: EMPTY_OBJECT as Record<string, number>,
+    zIndexBaseMap: EMPTY_READONLY_OBJECT,
     allowDragWhenPinned: true,
     allowDragWhenUnpinned: true,
     focusLockOptions: null,
