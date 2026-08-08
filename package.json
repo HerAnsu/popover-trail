@@ -83,7 +83,9 @@
     "test": "vitest run",
     "prepublishOnly": "npm run build:lib && npm run check:pub && npm test",
     "knip": "knip",
-    "quality:audit": "npx tsx .gemini/scripts/run-full-audit.ts"
+    "quality:audit": "npx tsx .gemini/scripts/run-full-audit.ts",
+    "change": "changeset",
+    "changelog": "changeset version"
   },
   "dependencies": {},
   "devDependencies": {
