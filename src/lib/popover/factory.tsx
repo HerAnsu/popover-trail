@@ -24,24 +24,18 @@ import {
 } from './schema';
 import { validateFactoryPlacement } from './utils/devWarnings';
 import type { RegisteredKeys, RegisteredDataMap } from './types/registerTypes';
-interface ReactInternals {
-  __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?: {
-    ReactCurrentDispatcher?: { current?: unknown };
-    ReactCurrentOwner?: { current?: unknown };
-    ReactCurrentBatchConfig?: { transition?: unknown };
-  };
-}
 
 /**
  * Safely inspects React internals to detect if a call is executed inside a component render pass.
  */
 function isCurrentlyRenderingInReact(): boolean {
   try {
-    const secret = (React as ReactInternals).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    const secret = (React as unknown as Record<string, Record<string, { current?: unknown }>>)
+      .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
     return Boolean(
       secret?.ReactCurrentDispatcher?.current ||
       secret?.ReactCurrentOwner?.current ||
-      secret?.ReactCurrentBatchConfig?.transition,
+      secret?.ReactCurrentBatchConfig?.current,
     );
   } catch {
     return false;

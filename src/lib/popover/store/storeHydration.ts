@@ -11,10 +11,9 @@ export interface HydrationState {
 }
 
 export function clearRecordKeys(record: Record<string, unknown>): void {
-  for (const k in record) {
-    if (Object.prototype.hasOwnProperty.call(record, k)) {
-      delete record[k];
-    }
+  for (const k of Object.keys(record)) {
+    record[k] = undefined;
+    delete record[k];
   }
 }
 

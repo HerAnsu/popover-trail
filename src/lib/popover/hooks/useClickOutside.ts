@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, ClickOutsideConfig } from '../types';
 import { isPortalOrExcludedTarget, getEventPath, getEventTarget } from '../utils/storeHelpers';
@@ -21,7 +21,7 @@ function escapeCSSClass(className: string | undefined): string | null {
 function isElementMatchingPopover(
   el: HTMLElement,
   selector: string,
-  escapedIgnoreClass?: string,
+  escapedIgnoreClass?: string | null,
   ignoreClass?: string,
 ): boolean {
   try {
@@ -88,5 +88,5 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
       document.removeEventListener(eventType, handleClickOutside as EventListener, {
         capture: true,
       });
-  }, [enabled, ignoreClass, popoverSelector, shouldIgnoreClick, store]);
+  }, [enabled, escapedIgnoreClass, ignoreClass, popoverSelector, shouldIgnoreClick, store]);
 }

@@ -4,6 +4,7 @@
  */
 
 import type { TabId } from '../types/storeTypes';
+import { generateTabId } from './uuid';
 
 export interface PopoverSyncMessage {
   type: 'OPEN' | 'CLOSE' | 'PIN' | 'UNPIN' | 'RESET';
@@ -14,12 +15,8 @@ export interface PopoverSyncMessage {
 
 export type PopoverSyncListener = (message: PopoverSyncMessage) => void;
 
-function generateTabId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return Math.random().toString(36).substring(2, 9);
-}
+const DISPOSE_SYMBOL: symbol =
+  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
 /**
  * Creates a tab-sync manager using native BroadcastChannel.
@@ -86,5 +83,6 @@ export function createBroadcastSync(channelName = 'popover-trail-sync') {
     subscribe,
     destroy,
     dispose: destroy,
+    [DISPOSE_SYMBOL]: destroy,
   };
 }

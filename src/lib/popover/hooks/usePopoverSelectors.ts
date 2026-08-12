@@ -2,7 +2,6 @@ import * as React from 'react';
 import { useCallback, useDebugValue, useMemo } from 'react';
 import {
   getEntryState,
-  type PopoverEntryDiscriminatedState,
   type PopoverStore,
   type TrailEntry,
   type NarrowTrailEntry,

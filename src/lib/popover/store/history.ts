@@ -35,7 +35,7 @@ class RingBuffer<T> {
 
   constructor(capacity: number) {
     this.capacity = capacity;
-    this.buffer = new Array<T | undefined>(capacity).fill(undefined);
+    this.buffer = Array.from({ length: capacity });
     this.head = 0;
     this.tail = 0;
     this._length = 0;

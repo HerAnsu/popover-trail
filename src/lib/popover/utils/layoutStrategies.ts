@@ -69,7 +69,10 @@ export class DockedTopLayoutStrategy implements PopoverLayoutStrategyEngine {
   }
 }
 
-const PLACEMENT_OFFSET_STRATEGIES: Record<string, (trigger: DOMRect, offset: number) => Point2D> = {
+const PLACEMENT_OFFSET_STRATEGIES: Record<
+  string,
+  (trigger: RectBounds, offset: number) => Point2D
+> = {
   bottom: (t, o) => new Point2D(t.left, t.bottom + o),
   'bottom-start': (t, o) => new Point2D(t.left, t.bottom + o),
   top: (t, o) => new Point2D(t.left, t.top - o),
@@ -86,10 +89,11 @@ export class RelativeFloatingLayoutStrategy implements PopoverLayoutStrategyEngi
 
   computePosition(params: LayoutStrategyParams): Point2D {
     const trigger = params.triggerRect;
+    if (!trigger) return new Point2D(0, 0);
     const offset = params.offset ?? 8;
     const placement = params.placement ?? 'bottom';
     const computeFn = PLACEMENT_OFFSET_STRATEGIES[placement] ?? PLACEMENT_OFFSET_STRATEGIES.bottom;
-    return computeFn(trigger, offset);
+    return computeFn ? computeFn(trigger, offset) : new Point2D(0, 0);
   }
 }
 

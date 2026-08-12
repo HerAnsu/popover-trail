@@ -65,11 +65,11 @@ export function PopoverTimeline<E extends ElementType = 'nav'>({
   const mergedClassName = clsx('pt-timeline', className);
 
   return (
-    <PopoverTimelineScopeContext.Provider value={scope}>
+    <PopoverTimelineScopeContext value={scope}>
       <Component className={mergedClassName} aria-label="Popover Trail Timeline" {...restProps}>
         {typeof children === 'function' ? children(scope) : children}
       </Component>
-    </PopoverTimelineScopeContext.Provider>
+    </PopoverTimelineScopeContext>
   );
 }
 

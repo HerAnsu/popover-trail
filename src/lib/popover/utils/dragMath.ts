@@ -5,8 +5,6 @@
  * @module dragMath
  */
 
-import { Point2D } from './valueObjects';
-
 /**
  * Options parameters for coordinate clamping bounds.
  */

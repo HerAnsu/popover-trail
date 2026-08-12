@@ -291,7 +291,15 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
     }
   };
 
-  Object.assign(resolver, { terminate, destroy: terminate, dispose: terminate });
+  const DISPOSE_SYMBOL: symbol =
+    (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
+
+  Object.assign(resolver, {
+    terminate,
+    destroy: terminate,
+    dispose: terminate,
+    [DISPOSE_SYMBOL]: terminate,
+  });
 
   return resolver as WorkerResolver<TData, TContext>;
 }

@@ -5,6 +5,7 @@
  * @module cqrs
  */
 
+import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, PopoverActions, PopoverStateData } from '../types/storeTypes';
 import type { TrailEntry } from '../types/entryTypes';
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
@@ -100,19 +101,41 @@ export class PopoverCommandBus<
 
 /**
  * Factory creating CQRS QueryBus and CommandBus instances for a popover store instance.
+ * Supports passing a static PopoverStore, StoreApi, or a dynamic getState getter function.
  */
 export function createCQRSBuses<
   TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
   TPopoverKey extends string = RegisteredKeys,
 >(
-  store: PopoverStore<TData, TContext, TPopoverKey>,
+  storeOrApi:
+    | PopoverStore<TData, TContext, TPopoverKey>
+    | StoreApi<PopoverStore<TData, TContext, TPopoverKey>>
+    | (() => PopoverStore<TData, TContext, TPopoverKey>),
 ): {
   queryBus: PopoverQueryBus<TData, TContext, TPopoverKey>;
   commandBus: PopoverCommandBus<TData, TContext, TPopoverKey>;
 } {
+  const getState = (): PopoverStore<TData, TContext, TPopoverKey> => {
+    if (typeof storeOrApi === 'function') {
+      return storeOrApi();
+    }
+    if ('getState' in storeOrApi && typeof storeOrApi.getState === 'function') {
+      return storeOrApi.getState();
+    }
+    return storeOrApi as PopoverStore<TData, TContext, TPopoverKey>;
+  };
+
+  const actions =
+    typeof storeOrApi === 'object' &&
+    storeOrApi !== null &&
+    'actions' in storeOrApi &&
+    typeof storeOrApi.actions === 'object'
+      ? storeOrApi.actions
+      : getState().actions;
+
   return {
-    queryBus: new PopoverQueryBus(() => store),
-    commandBus: new PopoverCommandBus(store.actions),
+    queryBus: new PopoverQueryBus(getState),
+    commandBus: new PopoverCommandBus(actions),
   };
 }

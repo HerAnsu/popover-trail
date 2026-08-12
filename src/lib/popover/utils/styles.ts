@@ -33,9 +33,12 @@ const DEFAULT_PERSPECTIVE_PX = 1000;
  * Collision probability is negligible for typical popover position ranges.
  */
 function hashStyleKey(top: number, left: number, tx: number, ty: number, zIndex: number): number {
-  // Multiply each coordinate by a distinct large prime then XOR together
-  let h = ((top * 73856093) ^ (left * 19349663) ^ (tx * 83492791) ^ (ty * 4256233) ^ zIndex) | 0;
-  // Avalanche via Wang hash step
+  let h =
+    Math.imul(Math.round(top), 73856093) ^
+    Math.imul(Math.round(left), 19349663) ^
+    Math.imul(Math.round(tx), 83492791) ^
+    Math.imul(Math.round(ty), 4256233) ^
+    Math.imul(zIndex, 38865001);
   h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
   h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
   return h ^ (h >>> 16);

@@ -261,7 +261,7 @@ export function createTrailEntry<TData>(
           ? 'error'
           : isLoading
             ? 'loading'
-            : (existingEntry?.status ?? 'idle'),
+            : (existingEntry?.status ?? 'loading'),
     isLoading: isLoading ?? false,
     error: error ?? null,
     data: data ?? existingEntry?.data ?? null,

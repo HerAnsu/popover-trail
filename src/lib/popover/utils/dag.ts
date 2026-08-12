@@ -47,6 +47,13 @@ export class PopoverDAG {
       };
       this.nodes.set(key, node);
     } else {
+      const oldParentKey = node.parentKey;
+      if (oldParentKey && oldParentKey !== parentKey) {
+        const oldParentNode = this.nodes.get(oldParentKey);
+        if (oldParentNode) {
+          oldParentNode.childrenKeys.delete(key);
+        }
+      }
       node.parentKey = parentKey;
     }
 

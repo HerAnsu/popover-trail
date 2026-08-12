@@ -50,7 +50,7 @@ export function createConfigSlice<
       const nextFloating = state.floating.filter((e) => e.key !== key);
       const nextTrail = state.trail.filter((e) => e.key !== key);
       const nextPinnedStates = { ...state.pinnedStates, [key]: false };
-      const cleanupPatch = getCleanupStatePatch(
+      const cleanupPatch = getCleanupStatePatch<TData, TContext>(
         nextFloating,
         nextTrail,
         state.offsets,

@@ -5,7 +5,7 @@
  * @module sliceTrail
  */
 
-import type { TrailEntry, PopoverStoreEvent } from '../../types';
+import type { TrailEntry, PopoverStoreEvent, PopoverStore } from '../../types';
 import {
   openRootState,
   pushNestedState,
@@ -81,7 +81,7 @@ export function createTrailSlice<
    */
   const buildCleanupPatch =
     (removedKeys: ReadonlySet<string>, filterUnmountingOnly = false) =>
-    (state: Parameters<Parameters<typeof set>[0]>[0]) => {
+    (state: PopoverStore<TData, TContext, TPopoverKey>) => {
       const keep = filterUnmountingOnly
         ? (e: TrailEntry<TData>) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting'
         : (e: TrailEntry<TData>) => !removedKeys.has(e.key);

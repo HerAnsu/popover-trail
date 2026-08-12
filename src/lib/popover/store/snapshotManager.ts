@@ -7,6 +7,7 @@
  */
 
 import { validateStorageKey } from '../utils/devWarnings';
+import { generateTabId } from '../utils/uuid';
 
 /** Current schema version tag for stored snapshot payloads. */
 export const SNAPSHOT_VERSION = '1.0.3';
@@ -78,14 +79,10 @@ function isSnapshotMessageEvent<TData>(
 
 const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
 
-function generateTabId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return Math.random().toString(36).substring(2, 9);
-}
-
 export const DEFAULT_SNAPSHOT_STORAGE_KEY = 'pt_popover_trail_snapshot';
+
+const DISPOSE_SYMBOL: symbol =
+  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
 /**
  * Manages persisting, loading, and cross-tab broadcasting of popover state snapshots.
@@ -259,6 +256,10 @@ export class PopoverSnapshotManager<TData = unknown> {
    * ScopeDisposable compliance handle for TS 5.2+ explicit resource management using statement.
    */
   dispose(): void {
+    this.destroy();
+  }
+
+  [DISPOSE_SYMBOL](): void {
     this.destroy();
   }
 }

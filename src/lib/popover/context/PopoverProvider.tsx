@@ -67,7 +67,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>(
   // Cleanup on Provider unmount: abort all in-flight requests and reset state
   useEffect(() => {
     return () => {
-      store.getState().reset();
+      store.getState().actions.closeAll();
     };
   }, [store]);
 

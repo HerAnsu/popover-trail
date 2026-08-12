@@ -106,23 +106,18 @@ export class QuadTree {
         this.split();
       }
 
-      let i = 0;
-      while (i < this.items.length) {
-        const currentItem = this.items[i];
-        if (!currentItem) {
-          i++;
-          continue;
-        }
+      const remainingItems: QuadItem[] = [];
+      for (let j = 0; j < this.items.length; j++) {
+        const currentItem = this.items[j];
+        if (!currentItem) continue;
         const index = this.getIndex(currentItem.bounds);
         if (index !== -1) {
-          const removed = this.items.splice(i, 1)[0];
-          if (removed) {
-            this.nodes[index]?.insert(removed);
-          }
+          this.nodes[index]?.insert(currentItem);
         } else {
-          i++;
+          remainingItems.push(currentItem);
         }
       }
+      this.items = remainingItems;
     }
   }
 

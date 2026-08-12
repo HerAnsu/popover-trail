@@ -33,11 +33,18 @@ function resolveAllRemovedKeys<TData>(
   trail: readonly TrailEntry<TData>[],
   directClosedKeys: string[],
   closePinnedDescendants: boolean,
+  pinnedStates?: Record<string, boolean>,
 ): Set<string> {
   const result = new Set<string>(directClosedKeys);
   const descendants = getAllDescendants(directClosedKeys, floating, trail);
 
-  if (!closePinnedDescendants && floating.length > 0) {
+  if (!closePinnedDescendants && pinnedStates) {
+    for (const key of descendants) {
+      if (!pinnedStates[key]) {
+        result.add(key);
+      }
+    }
+  } else if (!closePinnedDescendants && floating.length > 0) {
     const floatingKeys = new Set<string>();
     for (const e of floating) {
       floatingKeys.add(e.key);
@@ -75,6 +82,7 @@ export function closeFromState<TData, TContext>(
     state.trail,
     directClosedKeys,
     state.closePinnedDescendants,
+    state.pinnedStates,
   );
 
   const nextFloating = state.floating.filter((e) => !removedKeys.has(e.key));

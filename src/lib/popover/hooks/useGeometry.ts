@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useEventListener } from './useEventListener';
+import { useEffect, useMemo, useState } from 'react';
 import {
   useFloating,
   offset,
@@ -191,10 +190,10 @@ export function usePopoverGeometry({
   const boundaryOption = resolvedBoundary || undefined;
 
   const anchorRectHash = anchorRect
-    ? (anchorRect.top * 73856093) ^
-      (anchorRect.left * 19349663) ^
-      (anchorRect.width * 83492791) ^
-      (anchorRect.height * 4256233)
+    ? Math.imul(Math.round(anchorRect.top), 73856093) ^
+      Math.imul(Math.round(anchorRect.left), 19349663) ^
+      Math.imul(Math.round(anchorRect.width), 83492791) ^
+      Math.imul(Math.round(anchorRect.height), 4256233)
     : 0;
 
   const virtualElement = useMemo(() => {
@@ -306,17 +305,14 @@ export function usePopoverGeometry({
   const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     const check = () => {
-      if (typeof window !== 'undefined') {
-        const isMobile = window.innerWidth < mobileBreakpoint;
-        setIsMobileViewport((prev) => (prev === isMobile ? prev : isMobile));
-      }
+      const isMobile = window.innerWidth < mobileBreakpoint;
+      setIsMobileViewport((prev) => (prev === isMobile ? prev : isMobile));
     };
     check();
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', check, { passive: true });
-      return () => window.removeEventListener('resize', check);
-    }
+    window.addEventListener('resize', check, { passive: true });
+    return () => window.removeEventListener('resize', check);
   }, [mobileBreakpoint]);
 
   // Calculate the final coordinates with optional QuadTree spatial partitioning

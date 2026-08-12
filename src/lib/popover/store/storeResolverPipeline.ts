@@ -164,11 +164,11 @@ export async function resolvePopoverEntry<
       isLoading,
     );
 
-  function updateEntryInLists<TData>(
-    list: readonly TrailEntry<TData>[],
+  function updateEntryInLists<EData>(
+    list: readonly TrailEntry<EData>[],
     targetKey: string,
-    patch: Partial<TrailEntry<TData>>,
-  ): readonly TrailEntry<TData>[] {
+    patch: Partial<TrailEntry<EData>>,
+  ): readonly TrailEntry<EData>[] {
     let changed = false;
     const result = list.map((item) => {
       if (item.key === targetKey) {

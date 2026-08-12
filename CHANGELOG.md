@@ -5,6 +5,28 @@ All notable changes to the `popover-trail` package will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-13
+
+### Fixed & Hardened
+- **React 19 Rules of Hooks in Portal**: Resolved hook order mismatch in `PopoverPortal.tsx` by moving `useMemo` above conditional return checks.
+- **CQRS QueryBus Dynamism**: Fixed stale initial state capture in `createCQRSBuses` by providing dynamic store state evaluation getters (`getState()`).
+- **Resolver Pipeline & Cancellation**: Fixed aborted promise leakage in `inFlightPromises` to prevent stale promise reuse upon re-resolution.
+- **DAG Parent Cleanup**: Fixed orphaned node references in `PopoverDAG` when reparenting popover cards.
+- **Worker Crash Resilience**: Added task promise rejection upon Web Worker fatal crashes to eliminate hanging promises.
+- **V8 Hidden Classes Protection**: Replaced `delete` key loops in `storeHydration.ts` with safe property clearing to preserve V8 fast-mode hidden classes.
+
+### Performance & Memory Optimizations
+- **Re-render Cascade Prevention**: Memoized scope objects in `usePopoverCard` and `usePopoverTimeline`, preventing unnecessary re-renders across all compound card & timeline subcomponents.
+- **QuadTree $O(N)$ Rebalancing**: Replaced `splice` inside QuadTree redistribution loops with linear array filtering, reducing spatial partitioning complexity from $O(N^2)$ to $O(N)$.
+- **Zero-Allocation Close Resolvers**: Optimized pinned popover checking in `closeReducers.ts` using direct $O(1)$ `pinnedStates[key]` reads without `new Set()` allocations.
+- **Integer Coordinate Hashing**: Enhanced coordinate bitwise hashing in `styles.ts` using `Math.round` and `Math.imul` to prevent float truncation hash collisions.
+
+### Refactored & Standards
+- **React 19 Context & Ref Alignment**: Migrated all Context Providers (`PopoverProvider`, `PopoverCard`, `PopoverTimeline`, `dnd`) to native React 19 `<Context value={...}>` syntax and direct `ref` prop passing.
+- **TS 5.2+ Resource Management**: Added `[Symbol.dispose]` / `[DISPOSE_SYMBOL]` explicit resource disposal handles across `PopoverSnapshotManager`, `BroadcastSync`, and `WorkerResolver`.
+- **DRY Modules**: Centralized session ID generation into `uuid.ts` and polymorphic button helpers into `componentUtils.ts`.
+- **Prototype Pollution Defense**: Added unified `isSafeKey()` type guard across state and snapshot operations.
+
 ## [1.0.9] - 2026-08-12
 
 ### Fixed

@@ -58,10 +58,7 @@ export function usePopoverActions<
   TContext = unknown,
   TPopoverKey extends string = RegisteredKeys,
 >(): Readonly<PopoverStore<TData, TContext, TPopoverKey>['actions']> {
-  const store = useContext(PopoverStoreContext);
-  if (!store) {
-    throw new Error('usePopoverActions must be used within a PopoverProvider');
-  }
+  const store = usePopoverStoreApi<TData, TContext>();
   return store.getState().actions as Readonly<
     PopoverStore<TData, TContext, TPopoverKey>['actions']
   >;

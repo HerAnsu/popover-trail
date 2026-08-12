@@ -127,8 +127,9 @@ const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, 
     );
 
     return (
-      <PopoverCardScopeContext.Provider value={scope}>
+      <PopoverCardScopeContext value={scope}>
         <Component
+          id={restProps.id ?? `popover-card-${entry.key}`}
           ref={handleRef}
           style={combinedStyle}
           className={mergedClassName || undefined}
@@ -145,7 +146,7 @@ const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, 
           {...restProps}>
           {typeof children === 'function' ? children(scope) : children}
         </Component>
-      </PopoverCardScopeContext.Provider>
+      </PopoverCardScopeContext>
     );
   },
 );

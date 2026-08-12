@@ -370,7 +370,14 @@ export function PopoverCanvas<TData = unknown>({
     ];
     if (zIndexOrder.length === 0) return raw;
     const orderMap = new Map<string, number>(zIndexOrder.filter(Boolean).map((key, i) => [key, i]));
-    return raw.sort((a, b) => (orderMap.get(a.entry.key) ?? 0) - (orderMap.get(b.entry.key) ?? 0));
+    return raw.sort((a, b) => {
+      const idxA = orderMap.get(a.entry.key);
+      const idxB = orderMap.get(b.entry.key);
+      if (idxA !== undefined && idxB !== undefined) return idxA - idxB;
+      if (idxA !== undefined) return 1;
+      if (idxB !== undefined) return -1;
+      return a.index - b.index;
+    });
   }, [floating, trail, zIndexOrder]);
 
   if (activeEntries.length === 0) return null;
@@ -521,7 +528,7 @@ function PopoverCardInner<TData = unknown>({
       <FocusLock
         disabled={!enableFocusLock || !isTop || isPinned}
         returnFocus={RETURN_FOCUS_CONFIG}>
-        <PopoverCardContext.Provider value={entry.key}>
+        <PopoverCardContext value={entry.key}>
           {entry.ariaDescribedby && (
             <div id={`desc-${entry.key}`} style={DISPLAY_NONE_STYLE}>
               {entry.ariaDescribedby}
@@ -538,7 +545,7 @@ function PopoverCardInner<TData = unknown>({
               {children}
             </div>
           )}
-        </PopoverCardContext.Provider>
+        </PopoverCardContext>
       </FocusLock>
     </div>
   );

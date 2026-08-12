@@ -29,6 +29,24 @@ export function PopoverPortal({ children, container }: PopoverPortalProps) {
     return () => setMounted(false);
   }, []);
 
+  const formattedEntries = React.useMemo(() => {
+    if (typeof children !== 'function') return null;
+    const result: Array<TrailEntry & { isPinned: boolean }> = [];
+    for (let i = 0; i < floating.length; i++) {
+      const entry = floating[i];
+      if (entry) {
+        result.push({ ...entry, isPinned: true });
+      }
+    }
+    for (let i = 0; i < trail.length; i++) {
+      const entry = trail[i];
+      if (entry) {
+        result.push({ ...entry, isPinned: false });
+      }
+    }
+    return result;
+  }, [children, floating, trail]);
+
   if (!mounted) return null;
 
   let target: HTMLElement | null = null;
@@ -43,23 +61,12 @@ export function PopoverPortal({ children, container }: PopoverPortalProps) {
     validatePortalContainer(target);
   }
 
-  const formattedEntries = React.useMemo(() => {
-    if (typeof children !== 'function') return null;
-    const result: Array<TrailEntry & { isPinned: boolean }> = new Array(
-      floating.length + trail.length,
-    );
-    let idx = 0;
-    for (let i = 0; i < floating.length; i++) {
-      result[idx++] = { ...floating[i], isPinned: true };
-    }
-    for (let i = 0; i < trail.length; i++) {
-      result[idx++] = { ...trail[i], isPinned: false };
-    }
-    return result;
-  }, [children, floating, trail]);
-
   const renderedContent =
-    typeof children === 'function' && formattedEntries ? children(formattedEntries) : children;
+    typeof children === 'function'
+      ? formattedEntries
+        ? children(formattedEntries)
+        : null
+      : children;
 
   return createPortal(renderedContent, target ?? document.body);
 }

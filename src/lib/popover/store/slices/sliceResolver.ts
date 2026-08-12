@@ -5,7 +5,7 @@
  * @module sliceResolver
  */
 
-import type { OpenRootOptions, OpenNestedOptions, AnchorEventLike } from '../../types';
+import type { OpenRootOptions, OpenNestedOptions, AnchorEventLike, TrailEntry } from '../../types';
 import {
   findEntryInStore,
   findEntryIndex,
@@ -15,7 +15,6 @@ import {
 import { selectEntryByKey } from '../storeSelectors';
 import { invokeResolverSafely } from '../storeResolverPipeline';
 import type { SliceContext } from './sliceContext';
-import type { TrailEntry } from '../../types';
 
 /**
  * Extracts display/layout options from an existing TrailEntry to reconstruct

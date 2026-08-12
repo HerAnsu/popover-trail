@@ -64,7 +64,6 @@ export class PopoverEventBus<
   TPopoverKey extends string = RegisteredKeys,
 > {
   private target = new EventTarget();
-  private handlerMap = new WeakMap<object, EventListener>();
 
   public emit<K extends PopoverEventType>(
     type: K,
@@ -100,7 +99,6 @@ export class PopoverEventBus<
 
   public clear(): void {
     this.target = new EventTarget();
-    this.handlerMap = new WeakMap();
   }
 
   public dispose(): void {

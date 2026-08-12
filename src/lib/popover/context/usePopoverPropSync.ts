@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
-import type { PopoverStore, PopoverResolver } from '../types';
+import type { PopoverStore, PopoverResolver, FocusLockOptions } from '../types';
 import { isDeepEqual } from '../utils/storeHelpers';
 import type { PopoverProviderProps } from './PopoverProviderProps';
 
@@ -25,21 +25,23 @@ function syncBehaviorConfigProps<TData, TContext>(
   syncPropIfChanged(
     state.enableArrowNavigation,
     Boolean(props.enableArrowNavigation ?? true),
-    (val) => state.setEnableArrowNavigation(val),
+    (val) => state.setEnableArrowNavigation(Boolean(val)),
   );
   syncPropIfChanged(state.allowDragWhenPinned, Boolean(props.allowDragWhenPinned ?? true), (val) =>
-    state.setAllowDragWhenPinned(val),
+    state.setAllowDragWhenPinned(Boolean(val)),
   );
   syncPropIfChanged(
     state.allowDragWhenUnpinned,
     Boolean(props.allowDragWhenUnpinned ?? true),
-    (val) => state.setAllowDragWhenUnpinned(val),
+    (val) => state.setAllowDragWhenUnpinned(Boolean(val)),
   );
-  syncPropIfChanged(state.debug, Boolean(props.debug ?? false), (val) => state.setDebug(val));
+  syncPropIfChanged(state.debug, Boolean(props.debug ?? false), (val: boolean) =>
+    state.setDebug(val),
+  );
   syncPropIfChanged(
     state.closePinnedDescendants,
     Boolean(props.closePinnedDescendants ?? false),
-    (val) => state.setClosePinnedDescendants(val),
+    (val: boolean) => state.setClosePinnedDescendants(val),
   );
   syncPropIfChanged(state.responsiveMode, props.responsiveMode ?? 'auto', (val) =>
     state.setResponsiveMode(val),
@@ -85,17 +87,19 @@ function syncObjectAndComplexProps<TData, TContext>(
     state.setGlobalAnimationClassNames(mountingName, unmountingName, mountedName);
   }
 
-  syncPropIfChanged(state.context, props.initialContext as TContext, (val) =>
-    state.setContext(val),
-  );
+  if (props.initialContext !== undefined) {
+    syncPropIfChanged(state.context, props.initialContext as TContext, (val) =>
+      state.setContext(val as TContext),
+    );
+  }
   syncPropIfChanged(state.resolveData, activeResolver, (val) => state.setResolveData(val));
   syncPropIfChanged(state.activeStackGroup, props.stackGroup ?? null, (val) =>
     state.setStackGroupFilter(val),
   );
   syncPropIfChanged(
     state.focusLockOptions,
-    props.focusLockOptions ?? null,
-    (val) => state.setFocusLockOptions(val),
+    (props.focusLockOptions ?? null) as FocusLockOptions | null | undefined,
+    (val) => state.setFocusLockOptions(val ?? null),
     isDeepEqual,
   );
   syncPropIfChanged(
