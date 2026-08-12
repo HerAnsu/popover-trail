@@ -10,6 +10,14 @@ export interface HydrationState {
   nestedHydrationRequestCounters: Record<string, number>;
 }
 
+export function clearRecordKeys(record: Record<string, unknown>): void {
+  for (const k in record) {
+    if (Object.prototype.hasOwnProperty.call(record, k)) {
+      delete record[k];
+    }
+  }
+}
+
 /**
  * Creates an isolated request hydration counter manager.
  */
@@ -33,18 +41,13 @@ export function createHydrationManager() {
   };
 
   const isNestedStale = (parentKey: string, startedCounter: number): boolean => {
-    return nestedCounters[parentKey] !== startedCounter;
+    const current = nestedCounters[parentKey];
+    return current === undefined || current !== startedCounter;
   };
 
   const resetHydrationCounters = () => {
     rootCounter = 0;
-    const keys = Object.keys(nestedCounters);
-    for (let i = 0; i < keys.length; i++) {
-      const k = keys[i];
-      if (k !== undefined) {
-        delete nestedCounters[k];
-      }
-    }
+    clearRecordKeys(nestedCounters as Record<string, unknown>);
   };
 
   return {

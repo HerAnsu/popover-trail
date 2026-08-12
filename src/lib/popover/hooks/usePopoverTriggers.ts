@@ -43,6 +43,7 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
       }
       const currentTarget = e.currentTarget;
       const delay = hoverOpts.openDelay ?? 200;
+      e.persist?.();
       openTimerRef.current = setTimeout(() => {
         onOpenHandlerRef.current(e, currentTarget);
       }, delay);

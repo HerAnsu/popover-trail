@@ -70,12 +70,12 @@ export function PopoverTimelineStep<E extends ElementType = 'button'>({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLElement>) => {
-    if (e.key === 'ArrowLeft' && index > 0) {
+    if (e.key === 'ArrowLeft' && timeline.canUndo) {
       e.preventDefault();
-      timeline.jumpToStep(index - 1);
-    } else if (e.key === 'ArrowRight' && index < timeline.history.length - 1) {
+      timeline.jumpToStep(Math.max(0, index - 1));
+    } else if (e.key === 'ArrowRight' && timeline.canRedo) {
       e.preventDefault();
-      timeline.jumpToStep(index + 1);
+      timeline.jumpToStep(Math.min(timeline.history.length - 1, index + 1));
     }
     if (typeof onKeyDown === 'function') {
       onKeyDown(e);

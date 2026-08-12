@@ -48,6 +48,17 @@ export function isPopoverCustomEvent<
   return e instanceof PopoverCustomEvent && (type === undefined || e.type === type);
 }
 
+export function createPopoverEvent<
+  K extends PopoverEventType,
+  TData = RegisteredDataMap[RegisteredKeys],
+  TPopoverKey extends string = RegisteredKeys,
+>(
+  type: K,
+  detail: PopoverEventPayloadMap<TData, TPopoverKey>[K],
+): PopoverCustomEvent<K, TData, TPopoverKey> {
+  return new PopoverCustomEvent(type, detail);
+}
+
 export class PopoverEventBus<
   TData = RegisteredDataMap[RegisteredKeys],
   TPopoverKey extends string = RegisteredKeys,
@@ -59,7 +70,7 @@ export class PopoverEventBus<
     type: K,
     payload: PopoverEventPayloadMap<TData, TPopoverKey>[K],
   ): boolean {
-    const event = new PopoverCustomEvent<K, TData, TPopoverKey>(type, payload);
+    const event = createPopoverEvent<K, TData, TPopoverKey>(type, payload);
     return this.target.dispatchEvent(event);
   }
 
@@ -68,22 +79,15 @@ export class PopoverEventBus<
     listener: (event: PopoverCustomEvent<K, TData, TPopoverKey>) => void,
     options?: AddEventListenerOptions,
   ): () => void {
-    let handler = this.handlerMap.get(listener);
-    if (!handler) {
-      handler = ((e: Event) => {
-        if (isPopoverCustomEvent<K, TData, TPopoverKey>(e, type)) {
-          listener(e);
-        }
-      }) as EventListener;
-      this.handlerMap.set(listener, handler);
-    }
+    const handler = ((e: Event) => {
+      if (isPopoverCustomEvent<K, TData, TPopoverKey>(e, type)) {
+        listener(e);
+      }
+    }) as EventListener;
 
     this.target.addEventListener(type, handler, options);
     return () => {
-      const activeHandler = this.handlerMap.get(listener) ?? handler;
-      if (activeHandler) {
-        this.target.removeEventListener(type, activeHandler, options);
-      }
+      this.target.removeEventListener(type, handler, options);
     };
   }
 

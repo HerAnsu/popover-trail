@@ -96,7 +96,14 @@ export function createPopoverStore<
       set((state) => {
         const patch = typeof partial === 'function' ? partial(state) : partial;
         const nextPatch = middlewareEngine.apply(patch, state);
-        if (nextPatch === false) return {};
+        if (
+          nextPatch === false ||
+          (typeof nextPatch === 'object' &&
+            nextPatch !== null &&
+            Object.keys(nextPatch).length === 0)
+        ) {
+          return {};
+        }
         return {
           ...nextPatch,
           stateRevision: (state.stateRevision || 0) + 1,
@@ -202,6 +209,7 @@ export function createPopoverStore<
         endBatch: () => batchingManager.endBatch(get),
         middlewareEngine,
         cache,
+        popoverDAG,
       }),
     );
 

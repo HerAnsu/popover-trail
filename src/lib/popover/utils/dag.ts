@@ -50,7 +50,7 @@ export class PopoverDAG {
       node.parentKey = parentKey;
     }
 
-    if (parentKey) {
+    if (parentKey && parentKey !== key) {
       const parentNode = this.nodes.get(parentKey);
       if (parentNode) {
         parentNode.childrenKeys.add(key);
@@ -95,7 +95,6 @@ export class PopoverDAG {
   getTopologicalZIndexOrder(baseZIndex = 1000): Map<string, number> {
     const result = new Map<string, number>();
     const visited = new Set<string>();
-
     let currentZIndex = baseZIndex;
 
     const visit = (key: string) => {
@@ -112,15 +111,13 @@ export class PopoverDAG {
       }
     };
 
-    for (const key of this.nodes.keys()) {
-      const node = this.nodes.get(key);
-      if (node && !node.parentKey) {
+    for (const [key, node] of this.nodes.entries()) {
+      if (!node.parentKey) {
         visit(key);
       }
     }
 
-    // Fallback pass for any orphan or disconnected nodes
-    for (const key of this.nodes.keys()) {
+    for (const [key] of this.nodes.entries()) {
       if (!visited.has(key)) {
         visit(key);
       }

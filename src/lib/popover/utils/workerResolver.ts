@@ -76,6 +76,15 @@ export function createPopoverWorkerScript(
   `;
 }
 
+export type WorkerResolver<TData = unknown, TContext = unknown> = PopoverResolver<
+  TData,
+  TContext
+> & {
+  terminate(): void;
+  destroy(): void;
+  dispose(): void;
+};
+
 /**
  * Creates a non-blocking PopoverResolver that executes data resolution in a background Web Worker.
  * Offloads heavy computation, network transformations, or data parsing off the main UI thread.
@@ -114,7 +123,7 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
     | string
     | ((key: string, parentData?: unknown, context?: TContext) => TData | Promise<TData>),
   options: WorkerResolverOptions<TData> = {},
-): PopoverResolver<TData, TContext> {
+): WorkerResolver<TData, TContext> {
   const { timeoutMs = 30000, transferables, onWorkerError, autoRestart = true } = options;
 
   let worker: Worker | null = null;
@@ -160,6 +169,7 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
   worker = initWorker();
 
   let requestIdCounter = 0;
+  const MAX_REQUEST_ID = 0x7fffffff;
 
   const resolver: PopoverResolver<TData, TContext> = (
     key: string,
@@ -178,7 +188,7 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
     const currentWorker = worker;
 
     return new Promise<TData>((resolve, reject) => {
-      const requestId = ++requestIdCounter;
+      const requestId = (requestIdCounter = (requestIdCounter + 1) % MAX_REQUEST_ID) || 1;
       let timer: ReturnType<typeof setTimeout> | null = null;
 
       const cleanup = () => {
@@ -283,7 +293,7 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
 
   Object.assign(resolver, { terminate, destroy: terminate, dispose: terminate });
 
-  return resolver;
+  return resolver as WorkerResolver<TData, TContext>;
 }
 
 /**

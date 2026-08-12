@@ -43,13 +43,23 @@ export function PopoverPortal({ children, container }: PopoverPortalProps) {
     validatePortalContainer(target);
   }
 
+  const formattedEntries = React.useMemo(() => {
+    if (typeof children !== 'function') return null;
+    const result: Array<TrailEntry & { isPinned: boolean }> = new Array(
+      floating.length + trail.length,
+    );
+    let idx = 0;
+    for (let i = 0; i < floating.length; i++) {
+      result[idx++] = { ...floating[i], isPinned: true };
+    }
+    for (let i = 0; i < trail.length; i++) {
+      result[idx++] = { ...trail[i], isPinned: false };
+    }
+    return result;
+  }, [children, floating, trail]);
+
   const renderedContent =
-    typeof children === 'function'
-      ? children([
-          ...floating.map((entry) => ({ ...entry, isPinned: true })),
-          ...trail.map((entry) => ({ ...entry, isPinned: false })),
-        ])
-      : children;
+    typeof children === 'function' && formattedEntries ? children(formattedEntries) : children;
 
   return createPortal(renderedContent, target ?? document.body);
 }

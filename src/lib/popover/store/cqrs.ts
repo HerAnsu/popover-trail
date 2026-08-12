@@ -48,7 +48,10 @@ export class PopoverQueryBus<
   }
 
   isPinned(key: TPopoverKey): boolean {
-    return Boolean(this.getStoreState().pinnedStates[key]);
+    const states = this.getStoreState().pinnedStates;
+    return typeof key === 'string' && Object.prototype.hasOwnProperty.call(states, key)
+      ? Boolean(states[key])
+      : false;
   }
 
   getOffset(key: TPopoverKey): { x: number; y: number } {

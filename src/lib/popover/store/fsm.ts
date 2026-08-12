@@ -20,7 +20,7 @@ export type ValidStateTransitions = Readonly<
 >;
 
 /** Bitwise status flags for sub-nanosecond state checks */
-export const FSMStatusBit = {
+export const FSMStatusBit = Object.freeze({
   Idle: 1 << 0, // 1
   Hydrating: 1 << 1, // 2
   ResolvedTrailing: 1 << 2, // 4
@@ -30,12 +30,12 @@ export const FSMStatusBit = {
 
   Resolved: (1 << 2) | (1 << 3),
   Active: (1 << 1) | (1 << 2) | (1 << 3),
-} as const;
+} as const);
 
-export type FSMStatusBit = (typeof FSMStatusBit)[keyof typeof FSMStatusBit];
+export type FSMStatusBitValue = (typeof FSMStatusBit)[keyof typeof FSMStatusBit];
 
 /** Map converting string PopoverStateValue to internal FSMStatusBit */
-export const STATE_VALUE_TO_BIT_MAP: Readonly<Record<PopoverStateValue, FSMStatusBit>> =
+export const STATE_VALUE_TO_BIT_MAP: Readonly<Record<PopoverStateValue, FSMStatusBitValue>> =
   Object.freeze({
     Idle: FSMStatusBit.Idle,
     Hydrating: FSMStatusBit.Hydrating,

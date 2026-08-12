@@ -18,6 +18,27 @@ function escapeCSSClass(className: string | undefined): string | null {
     : `.${className.replace(/[^a-zA-Z0-9_-]/g, '')}`;
 }
 
+function isElementMatchingPopover(
+  el: HTMLElement,
+  selector: string,
+  escapedIgnoreClass?: string,
+  ignoreClass?: string,
+): boolean {
+  try {
+    if (el.matches(selector)) return true;
+  } catch {
+    // Ignore invalid selector
+  }
+  if (escapedIgnoreClass) {
+    try {
+      if (el.matches(escapedIgnoreClass)) return true;
+    } catch {
+      if (ignoreClass && el.classList.contains(ignoreClass)) return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Custom hook isolating click-outside capture phase event listener logic for PopoverProvider.
  */
@@ -30,10 +51,10 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
   const popoverSelector = clickOutside?.popoverSelector ?? '.popover-card';
   const shouldIgnoreClick = clickOutside?.shouldIgnoreClick;
 
+  const escapedIgnoreClass = useMemo(() => escapeCSSClass(ignoreClass), [ignoreClass]);
+
   useEffect(() => {
     if (!enabled) return;
-
-    const escapedIgnoreClass = escapeCSSClass(ignoreClass);
 
     const handleClickOutside = (e: PointerEvent | MouseEvent) => {
       if (isPortalOrExcludedTarget(e)) return;
@@ -43,16 +64,9 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
       const target = getEventTarget<HTMLElement>(e) ?? (e.target as HTMLElement);
       const state = store.getState();
 
-      if (state.trail.length === 0) return;
-
       const clickedInside = path.some((el) => {
         if (el instanceof HTMLElement) {
-          try {
-            if (el.matches(popoverSelector)) return true;
-            if (escapedIgnoreClass && el.matches(escapedIgnoreClass)) return true;
-          } catch {
-            if (ignoreClass && el.classList.contains(ignoreClass)) return true;
-          }
+          return isElementMatchingPopover(el, popoverSelector, escapedIgnoreClass, ignoreClass);
         }
         return false;
       });

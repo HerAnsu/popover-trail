@@ -69,36 +69,44 @@ export function createBatchingManager(): BatchingManager {
     attachSubscriber: <TData, TContext, TPopoverKey extends string>(
       store: StoreApi<PopoverStore<TData, TContext, TPopoverKey>>,
     ) => {
-      const rawSubscribe = store.subscribe;
+      // Typed alias scoped to this call's generics — no `as` casts needed
+      type TypedListener = (
+        state: PopoverStore<TData, TContext, TPopoverKey>,
+        prevState: PopoverStore<TData, TContext, TPopoverKey>,
+      ) => void;
 
-      store.subscribe = (listener) => {
+      const rawSubscribe = store.subscribe.bind(store);
+
+      store.subscribe = ((listener: unknown, selector?: unknown, equalityFn?: unknown) => {
+        if (typeof selector === 'function') {
+          return (rawSubscribe as Function)(listener, selector, equalityFn);
+        }
+        const typedListener = listener as TypedListener;
         const handler: BatchListener = (s, p) => {
-          if (s && p) {
-            listener(
+          if (s !== undefined && p !== undefined) {
+            typedListener(
               s as PopoverStore<TData, TContext, TPopoverKey>,
               p as PopoverStore<TData, TContext, TPopoverKey>,
             );
           }
         };
         batchListeners.add(handler);
-        return () => {
-          batchListeners.delete(handler);
-        };
-      };
-
-      rawSubscribe((state, prevState) => {
-        if (isBatching) {
-          isBatchDirty = true;
-          return;
-        }
-        for (const listener of batchListeners) {
+        const unsubRaw = rawSubscribe((state, prevState) => {
+          if (isBatching) {
+            isBatchDirty = true;
+            return;
+          }
           try {
-            listener(state, prevState);
+            typedListener(state, prevState);
           } catch (err) {
             console.error('[popover-trail]: Exception in subscriber:', err);
           }
-        }
-      });
+        });
+        return () => {
+          batchListeners.delete(handler);
+          unsubRaw();
+        };
+      }) as typeof store.subscribe;
     },
   };
 }

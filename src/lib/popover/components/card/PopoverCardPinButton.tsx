@@ -1,6 +1,7 @@
 import React, { useCallback, type ReactNode, type ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverCardScope } from './PopoverCardScopeContext';
+import { getPolymorphicProps } from './PopoverCardCloseButton';
 
 /**
  * Sub-component for the Pin/Unpin action button of a `<PopoverCard>`.
@@ -17,7 +18,7 @@ export function PopoverCardPinButton<E extends ElementType = 'button'>({
   disabled,
   ...restProps
 }: PopoverCardPinButtonProps<E>) {
-  const Component = as || 'button';
+  const { Component, buttonProps } = getPolymorphicProps(as);
   const { entry, isPinned, actions } = usePopoverCardScope();
 
   const handleClick = useCallback(
@@ -26,17 +27,17 @@ export function PopoverCardPinButton<E extends ElementType = 'button'>({
         e.preventDefault();
         return;
       }
-      actions.togglePin(entry.key);
+      const cardEl = (e.currentTarget as HTMLElement).closest('.popover-card');
+      const rect = cardEl ? cardEl.getBoundingClientRect() : entry.rect;
+      actions.togglePin(entry.key, rect ?? undefined);
       onClick?.(e);
     },
-    [disabled, actions, entry.key, onClick],
+    [disabled, actions, entry.key, entry.rect, onClick],
   );
-
-  const isNativeButton = Component === 'button';
 
   return (
     <Component
-      {...(isNativeButton ? { type: 'button' as const } : {})}
+      {...buttonProps}
       disabled={disabled}
       onClick={handleClick}
       aria-pressed={isPinned}

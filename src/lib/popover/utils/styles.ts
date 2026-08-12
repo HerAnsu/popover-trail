@@ -22,10 +22,24 @@ interface GetPopoverStylesParams {
   readonly zIndex?: number;
 }
 
-const styleMemoCache = new Map<string, CSSProperties>();
+const styleMemoCache = new Map<number, CSSProperties>();
 const MAX_MEMO_CACHE_SIZE = 128;
 const DEFAULT_FALLBACK_Z_INDEX = 1000;
 const DEFAULT_PERSPECTIVE_PX = 1000;
+
+/**
+ * Computes a 32-bit integer hash from numeric style coordinates.
+ * Uses multiplicative hashing with XOR to spread values across the integer space.
+ * Collision probability is negligible for typical popover position ranges.
+ */
+function hashStyleKey(top: number, left: number, tx: number, ty: number, zIndex: number): number {
+  // Multiply each coordinate by a distinct large prime then XOR together
+  let h = ((top * 73856093) ^ (left * 19349663) ^ (tx * 83492791) ^ (ty * 4256233) ^ zIndex) | 0;
+  // Avalanche via Wang hash step
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  return h ^ (h >>> 16);
+}
 
 /**
  * Safely converts an unknown value to a finite number with an optional fallback (default: 0).
@@ -68,8 +82,8 @@ export function getPopoverStyles({
   const safeLeftPos = toFiniteNumber(finalLayoutPos.left);
   const safeDragX = toFiniteNumber(dragX);
   const safeDragY = toFiniteNumber(dragY);
-  const safeOffsetX = toFiniteNumber(offset?.x);
-  const safeOffsetY = toFiniteNumber(offset?.y);
+  const safeOffsetX = toFiniteNumber(offset.x);
+  const safeOffsetY = toFiniteNumber(offset.y);
   const safeRotation = toFiniteNumber(rotation);
   const safeRotationX = toFiniteNumber(rotationX);
   const safeRotationY = toFiniteNumber(rotationY);
@@ -92,9 +106,7 @@ export function getPopoverStyles({
     ? Math.round((safeDragY + safeOffsetY) * 100) / 100
     : Math.round(safeDragY + safeOffsetY);
 
-  const cacheKey = isDynamic
-    ? ''
-    : `${top}_${left}_${translateX}_${translateY}_${safeRotation}_${safeRotationX}_${safeRotationY}_${safeZIndex}`;
+  const cacheKey = isDynamic ? 0 : hashStyleKey(top, left, translateX, translateY, safeZIndex);
 
   if (!isDynamic) {
     const cachedStyle = styleMemoCache.get(cacheKey);
@@ -103,9 +115,9 @@ export function getPopoverStyles({
     }
   }
 
-  const hasRotation = rotation !== 0 || rotationX !== 0 || rotationY !== 0;
+  const hasRotation = safeRotation !== 0 || safeRotationX !== 0 || safeRotationY !== 0;
   const transformStr = hasRotation
-    ? `perspective(${DEFAULT_PERSPECTIVE_PX}px) translate3d(${translateX}px, ${translateY}px, 0px) rotateX(${rotationX.toFixed(2)}deg) rotateY(${rotationY.toFixed(2)}deg) rotateZ(${rotation.toFixed(2)}deg)`
+    ? `perspective(${DEFAULT_PERSPECTIVE_PX}px) translate3d(${translateX}px, ${translateY}px, 0px) rotateX(${safeRotationX.toFixed(2)}deg) rotateY(${safeRotationY.toFixed(2)}deg) rotateZ(${safeRotation.toFixed(2)}deg)`
     : `translate3d(${translateX}px, ${translateY}px, 0px)`;
 
   const computedStyle: CSSProperties & Record<`--${string}`, string | number> = {

@@ -171,29 +171,33 @@ export function isEventAnchor(
   return Boolean(source && 'currentTarget' in source && source.currentTarget);
 }
 
+function createDefaultDOMRect(): DOMRect {
+  if (typeof DOMRect !== 'undefined') {
+    return new DOMRect(0, 0, 0, 0);
+  }
+  return {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    toJSON: () => ({}),
+  } satisfies DOMRect;
+}
+
+const NULL_ANCHOR_REF: ValidatedAnchorRef = Object.freeze({
+  getBoundingClientRect: createDefaultDOMRect,
+});
+
 /**
  * Validates and converts an AnchorEventLike source into a ValidatedAnchorRef with geometry bounds.
  */
 export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRef {
-  const createDefaultRect = (): DOMRect => {
-    if (typeof DOMRect !== 'undefined') {
-      return new DOMRect(0, 0, 0, 0);
-    }
-    return {
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      top: 0,
-      bottom: 0,
-      left: 0,
-      right: 0,
-      toJSON: () => ({}),
-    } satisfies DOMRect;
-  };
-
   if (!source) {
-    return { getBoundingClientRect: createDefaultRect };
+    return NULL_ANCHOR_REF;
   }
   if ('getBoundingClientRect' in source && typeof source.getBoundingClientRect === 'function') {
     return source as ValidatedAnchorRef;
@@ -209,7 +213,7 @@ export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRe
       getBoundingClientRect: () => el.getBoundingClientRect(),
     };
   }
-  return { getBoundingClientRect: createDefaultRect };
+  return NULL_ANCHOR_REF;
 }
 
 /** Converter creating a branded ViewportX coordinate value. */

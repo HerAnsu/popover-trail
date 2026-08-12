@@ -20,12 +20,10 @@ export function PopoverCardHandle<E extends ElementType = 'header'>({
   const Component = as || 'header';
   const { card } = usePopoverCardScope();
 
+  const handleStyle = card.dragHandleProps?.style as React.CSSProperties | undefined;
   const combinedStyle = useMemo(
-    () => ({
-      ...(card.dragHandleProps.style as React.CSSProperties),
-      ...userStyle,
-    }),
-    [card.dragHandleProps.style, userStyle],
+    () => (userStyle ? { ...handleStyle, ...userStyle } : handleStyle),
+    [handleStyle, userStyle],
   );
 
   return (

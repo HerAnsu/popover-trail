@@ -4,6 +4,17 @@ import type { PopoverStore, PopoverResolver } from '../types';
 import { isDeepEqual } from '../utils/storeHelpers';
 import type { PopoverProviderProps } from './PopoverProviderProps';
 
+export function syncPropIfChanged<T>(
+  currentValue: T,
+  newValue: T,
+  setter: (val: T) => void,
+  isEqual: (a: T, b: T) => boolean = (a, b) => a === b,
+): void {
+  if (!isEqual(currentValue, newValue)) {
+    setter(newValue);
+  }
+}
+
 /**
  * Internal hook managing efficient prop synchronization into store state (SRP & Performance).
  */
@@ -11,65 +22,51 @@ function syncBehaviorConfigProps<TData, TContext>(
   state: PopoverStore<TData, TContext>,
   props: PopoverProviderProps<TData, TContext>,
 ): void {
-  const enableArrowNav = Boolean(props.enableArrowNavigation ?? true);
-  if (state.enableArrowNavigation !== enableArrowNav) {
-    state.setEnableArrowNavigation(enableArrowNav);
-  }
-
-  const dragPinned = Boolean(props.allowDragWhenPinned ?? true);
-  if (state.allowDragWhenPinned !== dragPinned) {
-    state.setAllowDragWhenPinned(dragPinned);
-  }
-
-  const dragUnpinned = Boolean(props.allowDragWhenUnpinned ?? true);
-  if (state.allowDragWhenUnpinned !== dragUnpinned) {
-    state.setAllowDragWhenUnpinned(dragUnpinned);
-  }
-
-  const dbg = Boolean(props.debug ?? false);
-  if (state.debug !== dbg) {
-    state.setDebug(dbg);
-  }
-
-  const closePinned = Boolean(props.closePinnedDescendants ?? false);
-  if (state.closePinnedDescendants !== closePinned) {
-    state.setClosePinnedDescendants(closePinned);
-  }
-
-  const respMode = props.responsiveMode ?? 'auto';
-  if (state.responsiveMode !== respMode) {
-    state.setResponsiveMode(respMode);
-  }
+  syncPropIfChanged(
+    state.enableArrowNavigation,
+    Boolean(props.enableArrowNavigation ?? true),
+    (val) => state.setEnableArrowNavigation(val),
+  );
+  syncPropIfChanged(state.allowDragWhenPinned, Boolean(props.allowDragWhenPinned ?? true), (val) =>
+    state.setAllowDragWhenPinned(val),
+  );
+  syncPropIfChanged(
+    state.allowDragWhenUnpinned,
+    Boolean(props.allowDragWhenUnpinned ?? true),
+    (val) => state.setAllowDragWhenUnpinned(val),
+  );
+  syncPropIfChanged(state.debug, Boolean(props.debug ?? false), (val) => state.setDebug(val));
+  syncPropIfChanged(
+    state.closePinnedDescendants,
+    Boolean(props.closePinnedDescendants ?? false),
+    (val) => state.setClosePinnedDescendants(val),
+  );
+  syncPropIfChanged(state.responsiveMode, props.responsiveMode ?? 'auto', (val) =>
+    state.setResponsiveMode(val),
+  );
 }
 
 function syncNumericConfigProps<TData, TContext>(
   state: PopoverStore<TData, TContext>,
   props: PopoverProviderProps<TData, TContext>,
 ): void {
-  const cascadeStep = Number(props.cascadeOffsetStep ?? 8);
-  if (state.cascadeOffsetStep !== cascadeStep) {
-    state.setCascadeOffsetStep(cascadeStep);
-  }
-
-  const exitDur = Number(props.exitTransitionDuration ?? 0);
-  if (state.exitTransitionDuration !== exitDur) {
-    state.setExitTransitionDuration(exitDur);
-  }
-
-  const defOffset = Number(props.defaultOffset ?? 8);
-  if (state.defaultOffset !== defOffset) {
-    state.setDefaultOffset(defOffset);
-  }
-
-  const zIndex = Number(props.baseZIndex ?? 1000);
-  if (state.baseZIndex !== zIndex) {
-    state.setBaseZIndex(zIndex);
-  }
-
-  const mobBreakpoint = Number(props.mobileBreakpoint ?? 640);
-  if (state.mobileBreakpoint !== mobBreakpoint) {
-    state.setMobileBreakpoint(mobBreakpoint);
-  }
+  syncPropIfChanged(state.cascadeOffsetStep, Number(props.cascadeOffsetStep ?? 8), (val) =>
+    state.setCascadeOffsetStep(val),
+  );
+  syncPropIfChanged(
+    state.exitTransitionDuration,
+    Number(props.exitTransitionDuration ?? 0),
+    (val) => state.setExitTransitionDuration(val),
+  );
+  syncPropIfChanged(state.defaultOffset, Number(props.defaultOffset ?? 8), (val) =>
+    state.setDefaultOffset(val),
+  );
+  syncPropIfChanged(state.baseZIndex, Number(props.baseZIndex ?? 1000), (val) =>
+    state.setBaseZIndex(val),
+  );
+  syncPropIfChanged(state.mobileBreakpoint, Number(props.mobileBreakpoint ?? 640), (val) =>
+    state.setMobileBreakpoint(val),
+  );
 }
 
 function syncObjectAndComplexProps<TData, TContext>(
@@ -88,37 +85,34 @@ function syncObjectAndComplexProps<TData, TContext>(
     state.setGlobalAnimationClassNames(mountingName, unmountingName, mountedName);
   }
 
-  if (state.context !== props.initialContext) {
-    state.setContext(props.initialContext as TContext);
-  }
-
-  if (state.resolveData !== activeResolver) {
-    state.setResolveData(activeResolver);
-  }
-
-  const stackGroupFilter = props.stackGroup ?? null;
-  if (state.activeStackGroup !== stackGroupFilter) {
-    state.setStackGroupFilter(stackGroupFilter);
-  }
-
-  if (props.focusLockOptions && !isDeepEqual(state.focusLockOptions, props.focusLockOptions)) {
-    state.setFocusLockOptions(props.focusLockOptions);
-  }
-
-  const collisionConfig = props.collision ?? null;
-  if (!isDeepEqual(state.collisionConfig, collisionConfig)) {
-    state.setCollisionConfig(collisionConfig);
-  }
-
-  const slotComponents = props.components ?? null;
-  if (state.components !== slotComponents) {
-    state.setSlotComponents(slotComponents);
-  }
-
-  const zIndexMap = props.zIndexBaseMap ?? null;
-  if (!isDeepEqual(state.zIndexBaseMap, zIndexMap)) {
-    state.setZIndexBaseMap(zIndexMap);
-  }
+  syncPropIfChanged(state.context, props.initialContext as TContext, (val) =>
+    state.setContext(val),
+  );
+  syncPropIfChanged(state.resolveData, activeResolver, (val) => state.setResolveData(val));
+  syncPropIfChanged(state.activeStackGroup, props.stackGroup ?? null, (val) =>
+    state.setStackGroupFilter(val),
+  );
+  syncPropIfChanged(
+    state.focusLockOptions,
+    props.focusLockOptions ?? null,
+    (val) => state.setFocusLockOptions(val),
+    isDeepEqual,
+  );
+  syncPropIfChanged(
+    state.collisionConfig,
+    props.collision ?? null,
+    (val) => state.setCollisionConfig(val),
+    isDeepEqual,
+  );
+  syncPropIfChanged(state.components, props.components ?? null, (val) =>
+    state.setSlotComponents(val),
+  );
+  syncPropIfChanged(
+    state.zIndexBaseMap,
+    props.zIndexBaseMap ?? null,
+    (val) => state.setZIndexBaseMap(val),
+    isDeepEqual,
+  );
 }
 
 /**

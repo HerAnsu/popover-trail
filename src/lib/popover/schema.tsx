@@ -173,14 +173,26 @@ export function createPopoverSchema<
     SchemaData<TSchema, SchemaKeys<TSchema>>,
     TC
   > => {
-    return (key: string, parentData?: unknown, context?: TC, signal?: AbortSignal) => {
+    return (rawKey: string | object, parentData?: unknown, context?: TC, signal?: AbortSignal) => {
+      const isObjKey = typeof rawKey === 'object' && rawKey !== null;
+      const key = isObjKey ? String((rawKey as { key?: string }).key ?? '') : String(rawKey);
+      const effectiveParentData = isObjKey
+        ? ((rawKey as { parentData?: unknown }).parentData ?? parentData)
+        : parentData;
+      const effectiveContext = isObjKey
+        ? ((rawKey as { context?: TC }).context ?? context)
+        : context;
+      const effectiveSignal = isObjKey
+        ? ((rawKey as { signal?: AbortSignal }).signal ?? signal)
+        : signal;
+
       const hasNode = Object.prototype.hasOwnProperty.call(definition, key);
       const node = hasNode ? definition[key] : undefined;
       validateSchemaKey(Boolean(node), key);
       if (node && typeof node.resolver === 'function') {
-        return Promise.resolve(node.resolver(key, parentData, context, signal)) as ReturnType<
-          PopoverResolver<SchemaData<TSchema, SchemaKeys<TSchema>>, TC>
-        >;
+        return Promise.resolve(
+          node.resolver(key, effectiveParentData, effectiveContext, effectiveSignal),
+        ) as ReturnType<PopoverResolver<SchemaData<TSchema, SchemaKeys<TSchema>>, TC>>;
       }
       return Promise.reject(new Error(`No schema resolver defined for key: "${key}"`));
     };
@@ -235,6 +247,9 @@ export function createPopoverSchema<
 
   const useActions = () => {
     const actions = usePopoverActions();
+    const actionsRef = React.useRef(actions);
+    actionsRef.current = actions;
+
     return useMemo(
       () => ({
         openRoot: <K extends SchemaKeys<TSchema>>(
@@ -246,7 +261,7 @@ export function createPopoverSchema<
           const strKey = String(key);
           validateSchemaKey(Boolean(node), strKey);
           const mergedOptions = mergeSchemaNodeOptions(node, options);
-          return actions.openRootWithResolver(strKey, anchorEvent, mergedOptions);
+          return actionsRef.current.openRootWithResolver(strKey, anchorEvent, mergedOptions);
         },
         pushNested: <SK extends SchemaKeys<TSchema>>(
           key: AllowedChildrenOf<TSchema, SK>,
@@ -258,18 +273,19 @@ export function createPopoverSchema<
           const node = definition[strKey];
           validateSchemaKey(Boolean(node), strKey);
           const mergedOptions = mergeSchemaNodeOptions(node, options);
-          return actions.openNestedWithResolver(strKey, strSourceKey, mergedOptions);
+          return actionsRef.current.openNestedWithResolver(strKey, strSourceKey, mergedOptions);
         },
-        close: (key: SchemaKeys<TSchema>) => actions.closeByKey(key),
-        closeAll: () => actions.closeAll(),
-        togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) => actions.togglePin(key, rect),
-        bringToFront: (key: SchemaKeys<TSchema>) => actions.bringToFront(key),
-        retryPopover: (key: SchemaKeys<TSchema>) => actions.retryPopover(key),
+        close: (key: SchemaKeys<TSchema>) => actionsRef.current.closeByKey(key),
+        closeAll: () => actionsRef.current.closeAll(),
+        togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) =>
+          actionsRef.current.togglePin(key, rect),
+        bringToFront: (key: SchemaKeys<TSchema>) => actionsRef.current.bringToFront(key),
+        retryPopover: (key: SchemaKeys<TSchema>) => actionsRef.current.retryPopover(key),
         prefetchPopover: (key: SchemaKeys<TSchema>, parentData?: unknown) =>
-          actions.prefetchPopover(key, parentData),
-        clear: () => actions.clear(),
+          actionsRef.current.prefetchPopover(key, parentData),
+        clear: () => actionsRef.current.clear(),
       }),
-      [actions],
+      [],
     );
   };
 

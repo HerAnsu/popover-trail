@@ -115,15 +115,16 @@ const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, 
     );
 
     const combinedStyle = useMemo(
-      () => ({
-        ...card.style,
-        ...userStyle,
-      }),
+      () => (userStyle ? { ...card.style, ...userStyle } : card.style),
       [card.style, userStyle],
     );
 
     const mergedClassName = clsx(className, card.transitionClassName);
-    const ariaLabel = resolveCardAriaLabel(restProps['aria-label'], entry.key);
+    const userAriaLabel = restProps['aria-label'];
+    const ariaLabel = useMemo(
+      () => resolveCardAriaLabel(userAriaLabel, entry.key),
+      [userAriaLabel, entry.key],
+    );
 
     return (
       <PopoverCardScopeContext.Provider value={scope}>

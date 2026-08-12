@@ -28,8 +28,10 @@ function scheduleNamedTimer(
     timersMap.delete(key);
   }
   const timer = setTimeout(() => {
-    timersMap.delete(key);
-    callback();
+    if (timersMap.get(key) === timer) {
+      timersMap.delete(key);
+      callback();
+    }
   }, delay);
   timersMap.set(key, timer);
 }

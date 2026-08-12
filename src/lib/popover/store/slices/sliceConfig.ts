@@ -17,6 +17,7 @@ import type {
 } from '../../types';
 import { isDeepEqual, findEntryInStore } from '../../utils/storeHelpers';
 import { isPinnedEntry } from '../storeActions';
+import { getCleanupStatePatch } from '../reducers/stackReducers';
 import { isValidTransitionStatusChange } from '../fsm';
 import { validateBaseZIndex } from '../../utils/devWarnings';
 import type { SliceContext } from './sliceContext';
@@ -48,7 +49,16 @@ export function createConfigSlice<
     set((state) => {
       const nextFloating = state.floating.filter((e) => e.key !== key);
       const nextTrail = state.trail.filter((e) => e.key !== key);
-      return { floating: nextFloating, trail: nextTrail };
+      const nextPinnedStates = { ...state.pinnedStates, [key]: false };
+      const cleanupPatch = getCleanupStatePatch(
+        nextFloating,
+        nextTrail,
+        state.offsets,
+        state.zIndexOrder,
+        nextPinnedStates,
+        state.nestedHydrationRequestCounters,
+      );
+      return { floating: nextFloating, trail: nextTrail, ...cleanupPatch };
     });
   };
 
@@ -149,10 +159,15 @@ export function createConfigSlice<
     },
 
     setGlobalAnimationClassNames: (mounting: string, unmounting: string, mounted: string) => {
+      const {
+        mountingClassName: currentMounting,
+        unmountingClassName: currentUnmounting,
+        mountedClassName: currentMounted,
+      } = get();
       if (
-        get().mountingClassName !== mounting ||
-        get().unmountingClassName !== unmounting ||
-        get().mountedClassName !== mounted
+        currentMounting !== mounting ||
+        currentUnmounting !== unmounting ||
+        currentMounted !== mounted
       ) {
         set({
           mountingClassName: mounting,

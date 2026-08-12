@@ -15,6 +15,10 @@ import { usePopoverKeyboardShortcuts } from './usePopoverKeyboard';
 import { usePopoverPropSync } from './usePopoverPropSync';
 import type { PopoverProviderProps } from './PopoverProviderProps';
 
+interface SchemaLike<TData, TContext> {
+  createResolver?<TC = TContext>(): PopoverResolver<TData, TC>;
+}
+
 /**
  * PopoverProvider component that instantiates the Zustand store and injects it
  * into the React context tree.
@@ -44,9 +48,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>(
 
   const activeResolver = useMemo<PopoverResolver<TData, TContext>>(() => {
     if (resolveData) return resolveData;
-    const schemaInstance = schema as
-      | { createResolver?: <TC = TContext>() => PopoverResolver<TData, TC> }
-      | undefined;
+    const schemaInstance = schema as SchemaLike<TData, TContext> | undefined;
     if (schemaInstance && typeof schemaInstance.createResolver === 'function') {
       return schemaInstance.createResolver();
     }
@@ -65,7 +67,7 @@ export function PopoverProvider<TData = unknown, TContext = unknown>(
   // Cleanup on Provider unmount: abort all in-flight requests and reset state
   useEffect(() => {
     return () => {
-      store.getState().destroy();
+      store.getState().reset();
     };
   }, [store]);
 

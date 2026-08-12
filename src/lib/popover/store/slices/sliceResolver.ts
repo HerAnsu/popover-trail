@@ -15,6 +15,43 @@ import {
 import { selectEntryByKey } from '../storeSelectors';
 import { invokeResolverSafely } from '../storeResolverPipeline';
 import type { SliceContext } from './sliceContext';
+import type { TrailEntry } from '../../types';
+
+/**
+ * Extracts display/layout options from an existing TrailEntry to reconstruct
+ * the original options object for re-resolution (e.g. retry).
+ * Keeps `retryPopover` free of repetitive field-by-field copy.
+ */
+function extractEntryOptions<TData>(entry: TrailEntry<TData>): OpenRootOptions & OpenNestedOptions {
+  return {
+    collision: entry.collision,
+    hover: entry.hover,
+    ariaDescribedby: entry.ariaDescribedby,
+    allowDragWhenUnpinned: entry.allowDragWhenUnpinned,
+    allowDragWhenPinned: entry.allowDragWhenPinned,
+    placement: entry.placement,
+    offset: entry.offset,
+    exitTransitionDuration: entry.exitTransitionDuration,
+    baseZIndex: entry.baseZIndex,
+    cascadeOffsetStep: entry.cascadeOffsetStep,
+    cascadeOffsetDirection: entry.cascadeOffsetDirection,
+    enableTilt: entry.enableTilt,
+    maxTiltAngle: entry.maxTiltAngle,
+    tiltSensitivity: entry.tiltSensitivity,
+    dragAxis: entry.dragAxis,
+    tiltFriction: entry.tiltFriction,
+    tiltDecay: entry.tiltDecay,
+    mountingClassName: entry.mountingClassName,
+    unmountingClassName: entry.unmountingClassName,
+    mountedClassName: entry.mountedClassName,
+    stackGroup: entry.stackGroup,
+    layoutStrategy: entry.layoutStrategy,
+    keyboardShortcuts: entry.keyboardShortcuts,
+    focusLockOptions: entry.focusLockOptions,
+    buttonControls: entry.buttonControls,
+    responsiveMode: entry.responsiveMode,
+  };
+}
 
 export function createResolverSlice<
   TData = unknown,
@@ -155,27 +192,7 @@ export function createResolverSlice<
         ? findEntryInStore(floating, trail, effectiveParentKey)?.data
         : undefined;
 
-      const options = {
-        collision: entry.collision,
-        hover: entry.hover,
-        ariaDescribedby: entry.ariaDescribedby,
-        allowDragWhenUnpinned: entry.allowDragWhenUnpinned,
-        placement: entry.placement,
-        offset: entry.offset,
-        exitTransitionDuration: entry.exitTransitionDuration,
-        baseZIndex: entry.baseZIndex,
-        cascadeOffsetStep: entry.cascadeOffsetStep,
-        cascadeOffsetDirection: entry.cascadeOffsetDirection,
-        enableTilt: entry.enableTilt,
-        maxTiltAngle: entry.maxTiltAngle,
-        tiltSensitivity: entry.tiltSensitivity,
-        dragAxis: entry.dragAxis,
-        tiltFriction: entry.tiltFriction,
-        tiltDecay: entry.tiltDecay,
-        mountingClassName: entry.mountingClassName,
-        unmountingClassName: entry.unmountingClassName,
-        mountedClassName: entry.mountedClassName,
-      };
+      const options = extractEntryOptions(entry);
 
       if (effectiveParentKey) {
         await resolvePopoverEntry(

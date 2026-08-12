@@ -10,6 +10,18 @@ export type PopoverCardCloseButtonProps<E extends ElementType = 'button'> = Poly
   { children?: ReactNode }
 >;
 
+export function getPolymorphicProps<E extends ElementType>(
+  as?: E,
+  defaultElement: ElementType = 'button',
+) {
+  const Component = (as || defaultElement) as ElementType;
+  const isNativeButton = Component === 'button';
+  return {
+    Component,
+    buttonProps: isNativeButton ? { type: 'button' as const } : {},
+  };
+}
+
 export function createSubComponentClickHandler(
   disabled?: boolean,
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void,
@@ -32,7 +44,7 @@ export function PopoverCardCloseButton<E extends ElementType = 'button'>({
   disabled,
   ...restProps
 }: PopoverCardCloseButtonProps<E>) {
-  const Component = as || 'button';
+  const { Component, buttonProps } = getPolymorphicProps(as);
   const { entry, actions } = usePopoverCardScope();
 
   const handleClick = useCallback(
@@ -47,11 +59,9 @@ export function PopoverCardCloseButton<E extends ElementType = 'button'>({
     [disabled, actions, entry.key, onClick],
   );
 
-  const isNativeButton = Component === 'button';
-
   return (
     <Component
-      {...(isNativeButton ? { type: 'button' as const } : {})}
+      {...buttonProps}
       disabled={disabled}
       onClick={handleClick}
       aria-label="Close popover"

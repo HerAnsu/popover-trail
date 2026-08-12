@@ -24,7 +24,7 @@ import { createPersistenceSlice } from './slices/slicePersistence';
 import type { PopoverMiddlewareEngine } from './storeMiddlewareEngine';
 import type { SliceContext } from './slices/sliceContext';
 import type { StoreSetFn, StoreGetFn } from './storeTypes';
-import type { HistoryManager } from './history';
+import type { HistoryManager, HistorySnapshot } from './history';
 
 export interface ActionRegistryDependencies<
   TData = unknown,
@@ -66,13 +66,14 @@ export interface ActionRegistryDependencies<
   ) => Promise<void>;
   pushSnapshot: (state: PopoverStateData<TData, TContext>) => void;
   clearHistory: () => void;
-  undoStack: unknown[];
-  redoStack: unknown[];
+  undoStack: HistorySnapshot<TData>[];
+  redoStack: HistorySnapshot<TData>[];
   historyManager?: HistoryManager<TData>;
   startBatch: () => void;
   endBatch: () => void;
   middlewareEngine: PopoverMiddlewareEngine<TData, TContext, TPopoverKey>;
   cache?: PopoverCache<TData>;
+  popoverDAG?: import('../utils/dag').PopoverDAG;
 }
 
 /**

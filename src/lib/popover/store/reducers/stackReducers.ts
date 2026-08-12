@@ -46,14 +46,8 @@ export function getActiveKeys<TData>(
   trail: readonly TrailEntry<TData>[],
 ): Set<string> {
   const activeKeys = new Set<string>();
-  for (let i = 0; i < floating.length; i++) {
-    const entry = floating[i];
-    if (entry) activeKeys.add(entry.key);
-  }
-  for (let i = 0; i < trail.length; i++) {
-    const entry = trail[i];
-    if (entry) activeKeys.add(entry.key);
-  }
+  for (const entry of floating) activeKeys.add(entry.key);
+  for (const entry of trail) activeKeys.add(entry.key);
   return activeKeys;
 }
 

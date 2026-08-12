@@ -28,6 +28,11 @@ export interface ScopeDisposable {
  * } // Automatically disposes when exiting block scope!
  * ```
  */
+const DISPOSE_SYMBOL =
+  typeof Symbol !== 'undefined'
+    ? ((Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose'))
+    : undefined;
+
 export function createDisposable(cleanupFn: () => void): ScopeDisposable {
   let disposed = false;
   const doCleanup = () => {
@@ -45,9 +50,8 @@ export function createDisposable(cleanupFn: () => void): ScopeDisposable {
     dispose: doCleanup,
   };
 
-  const disposeSymbol = (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
-  if (disposeSymbol) {
-    handle[disposeSymbol] = doCleanup;
+  if (DISPOSE_SYMBOL) {
+    handle[DISPOSE_SYMBOL] = doCleanup;
   }
 
   return handle;

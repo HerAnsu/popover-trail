@@ -190,9 +190,12 @@ export function usePopoverGeometry({
 
   const boundaryOption = resolvedBoundary || undefined;
 
-  const anchorRectKey = anchorRect
-    ? `${anchorRect.top}_${anchorRect.left}_${anchorRect.width}_${anchorRect.height}`
-    : '';
+  const anchorRectHash = anchorRect
+    ? (anchorRect.top * 73856093) ^
+      (anchorRect.left * 19349663) ^
+      (anchorRect.width * 83492791) ^
+      (anchorRect.height * 4256233)
+    : 0;
 
   const virtualElement = useMemo(() => {
     if (!anchorRect) return null;
@@ -200,7 +203,11 @@ export function usePopoverGeometry({
       getBoundingClientRect: () => anchorRect,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anchorRectKey]);
+  }, [anchorRectHash]);
+
+  function resolveMiddlewareExtraProps(option: unknown): Record<string, unknown> {
+    return typeof option === 'object' && option !== null ? (option as Record<string, unknown>) : {};
+  }
 
   // Configure useFloating positioning middleware dynamically with autoUpdate
   const middleware = useMemo(() => {
@@ -213,7 +220,7 @@ export function usePopoverGeometry({
         flip({
           boundary: boundaryOption,
           padding: padding ?? undefined,
-          ...(typeof flipOption === 'object' ? flipOption : {}),
+          ...resolveMiddlewareExtraProps(flipOption),
         }),
       );
     }
@@ -223,7 +230,7 @@ export function usePopoverGeometry({
         shift({
           boundary: boundaryOption,
           padding: padding ?? 12,
-          ...(typeof shiftOption === 'object' ? shiftOption : {}),
+          ...resolveMiddlewareExtraProps(shiftOption),
         }),
       );
     }
@@ -237,7 +244,7 @@ export function usePopoverGeometry({
             elements.floating.style.setProperty('--popover-max-width', `${availableWidth}px`);
             elements.floating.style.setProperty('--popover-max-height', `${availableHeight}px`);
           },
-          ...(typeof sizeOption === 'object' ? sizeOption : {}),
+          ...resolveMiddlewareExtraProps(sizeOption),
         }),
       );
     }
@@ -298,18 +305,19 @@ export function usePopoverGeometry({
 
   const [isMobileViewport, setIsMobileViewport] = useState(false);
 
-  const checkMobile = useCallback(() => {
+  useEffect(() => {
+    const check = () => {
+      if (typeof window !== 'undefined') {
+        const isMobile = window.innerWidth < mobileBreakpoint;
+        setIsMobileViewport((prev) => (prev === isMobile ? prev : isMobile));
+      }
+    };
+    check();
     if (typeof window !== 'undefined') {
-      const isMobile = window.innerWidth < mobileBreakpoint;
-      setIsMobileViewport((prev) => (prev === isMobile ? prev : isMobile));
+      window.addEventListener('resize', check, { passive: true });
+      return () => window.removeEventListener('resize', check);
     }
   }, [mobileBreakpoint]);
-
-  useEffect(() => {
-    checkMobile();
-  }, [checkMobile]);
-
-  useEventListener('resize', checkMobile);
 
   // Calculate the final coordinates with optional QuadTree spatial partitioning
   const finalLayoutPos = useMemo(() => {
@@ -344,15 +352,14 @@ export function usePopoverGeometry({
 
     // Optional QuadTree spatial collision resolution
     if (enableSpatialCollision) {
-      const activeFloating = storeApi.getState().floating;
-      const activeOffsets = storeApi.getState().offsets;
+      const { floating: activeFloating, offsets: activeOffsets } = storeApi.getState();
       const spatialBounds: BoundingBox = {
         x: 0,
         y: 0,
         width: winWidth,
         height: winHeight,
       };
-      const spatialTree = new QuadTree(spatialBounds, 4);
+      const spatialTree = new QuadTree(spatialBounds);
 
       for (const sibling of activeFloating) {
         if (sibling.key !== id) {

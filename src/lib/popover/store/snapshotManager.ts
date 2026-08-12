@@ -56,10 +56,24 @@ export interface SnapshotManagerOptions<TData = unknown> {
   deserialize?: (raw: string) => PopoverSnapshotData<TData>;
 }
 
+export function areKeysSafe(keys: Iterable<unknown>): boolean {
+  for (const key of keys) {
+    if (typeof key !== 'string' || UNSAFE_KEYS_SET.has(key)) return false;
+  }
+  return true;
+}
+
 function isSnapshotMessageEvent<TData>(
   event: Event,
 ): event is MessageEvent<PopoverSnapshotData<TData>> {
-  return typeof event === 'object' && event !== null && 'data' in event;
+  if (typeof event !== 'object' || event === null || !('data' in event)) return false;
+  const d = (event as MessageEvent).data;
+  return (
+    typeof d === 'object' &&
+    d !== null &&
+    Array.isArray((d as Record<string, unknown>).trailKeys) &&
+    Array.isArray((d as Record<string, unknown>).pinnedKeys)
+  );
 }
 
 const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
@@ -180,15 +194,16 @@ export class PopoverSnapshotManager<TData = unknown> {
     if (!Array.isArray(trailKeys) || !Array.isArray(pinnedKeys)) return false;
     if (typeof offsets !== 'object' || offsets === null) return false;
 
-    // Protection against Prototype Pollution in stored snapshots using module-level UNSAFE_KEYS_SET
-    for (const key of trailKeys) {
-      if (typeof key !== 'string' || UNSAFE_KEYS_SET.has(key)) return false;
+    if (
+      !areKeysSafe(trailKeys) ||
+      !areKeysSafe(pinnedKeys) ||
+      !areKeysSafe(Object.keys(offsets as object))
+    ) {
+      return false;
     }
-    for (const key of pinnedKeys) {
-      if (typeof key !== 'string' || UNSAFE_KEYS_SET.has(key)) return false;
-    }
-    for (const key in offsets) {
-      if (UNSAFE_KEYS_SET.has(key)) return false;
+    if (record.payloads) {
+      if (typeof record.payloads !== 'object' || record.payloads === null) return false;
+      if (!areKeysSafe(Object.keys(record.payloads as object))) return false;
     }
     return true;
   }

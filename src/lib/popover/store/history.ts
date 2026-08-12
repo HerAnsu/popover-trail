@@ -35,7 +35,7 @@ class RingBuffer<T> {
 
   constructor(capacity: number) {
     this.capacity = capacity;
-    this.buffer = Array.from({ length: capacity });
+    this.buffer = new Array<T | undefined>(capacity).fill(undefined);
     this.head = 0;
     this.tail = 0;
     this._length = 0;
@@ -89,6 +89,23 @@ class RingBuffer<T> {
   }
 }
 
+export function createHistorySnapshot<TData, TContext>(
+  state: PopoverStateData<TData, TContext>,
+): HistorySnapshot<TData> {
+  const hasOffsets = state.offsets !== EMPTY_OBJECT && Object.keys(state.offsets).length > 0;
+  const hasPinned =
+    state.pinnedStates !== EMPTY_OBJECT && Object.keys(state.pinnedStates).length > 0;
+
+  return {
+    trail: state.trail,
+    floating: state.floating,
+    offsets: hasOffsets ? { ...state.offsets } : EMPTY_OBJECT,
+    pinnedStates: hasPinned ? { ...state.pinnedStates } : EMPTY_OBJECT,
+    zIndexOrder: state.zIndexOrder.length === 0 ? EMPTY_ARRAY : [...state.zIndexOrder],
+    ownerId: state.ownerId,
+  };
+}
+
 /**
  * Creates an isolated history state manager for undo/redo snapshots.
  *
@@ -111,15 +128,7 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
       return;
     }
 
-    undoBuffer.push({
-      trail: state.trail,
-      floating: state.floating,
-      offsets: Object.keys(state.offsets).length === 0 ? EMPTY_OBJECT : { ...state.offsets },
-      pinnedStates:
-        Object.keys(state.pinnedStates).length === 0 ? EMPTY_OBJECT : { ...state.pinnedStates },
-      zIndexOrder: state.zIndexOrder.length === 0 ? EMPTY_ARRAY : [...state.zIndexOrder],
-      ownerId: state.ownerId,
-    });
+    undoBuffer.push(createHistorySnapshot(state));
     redoBuffer.clear();
   };
 
@@ -133,14 +142,7 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
     const prev = undoBuffer.pop();
     if (!prev) return null;
 
-    redoBuffer.push({
-      trail: current.trail,
-      floating: current.floating,
-      offsets: current.offsets,
-      pinnedStates: current.pinnedStates,
-      zIndexOrder: current.zIndexOrder,
-      ownerId: current.ownerId,
-    });
+    redoBuffer.push(createHistorySnapshot(current));
     return prev;
   };
 
@@ -151,14 +153,7 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
     const next = redoBuffer.pop();
     if (!next) return null;
 
-    undoBuffer.push({
-      trail: current.trail,
-      floating: current.floating,
-      offsets: current.offsets,
-      pinnedStates: current.pinnedStates,
-      zIndexOrder: current.zIndexOrder,
-      ownerId: current.ownerId,
-    });
+    undoBuffer.push(createHistorySnapshot(current));
     return next;
   };
 

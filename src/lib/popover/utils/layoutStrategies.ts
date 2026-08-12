@@ -69,6 +69,17 @@ export class DockedTopLayoutStrategy implements PopoverLayoutStrategyEngine {
   }
 }
 
+const PLACEMENT_OFFSET_STRATEGIES: Record<string, (trigger: DOMRect, offset: number) => Point2D> = {
+  bottom: (t, o) => new Point2D(t.left, t.bottom + o),
+  'bottom-start': (t, o) => new Point2D(t.left, t.bottom + o),
+  top: (t, o) => new Point2D(t.left, t.top - o),
+  'top-start': (t, o) => new Point2D(t.left, t.top - o),
+  right: (t, o) => new Point2D(t.right + o, t.top),
+  'right-start': (t, o) => new Point2D(t.right + o, t.top),
+  left: (t, o) => new Point2D(t.left - o, t.top),
+  'left-start': (t, o) => new Point2D(t.left - o, t.top),
+};
+
 /** Default relative Floating-UI layout strategy. */
 export class RelativeFloatingLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'floating-ui';
@@ -77,23 +88,8 @@ export class RelativeFloatingLayoutStrategy implements PopoverLayoutStrategyEngi
     const trigger = params.triggerRect;
     const offset = params.offset ?? 8;
     const placement = params.placement ?? 'bottom';
-
-    switch (placement) {
-      case 'bottom':
-      case 'bottom-start':
-        return new Point2D(trigger.left, trigger.bottom + offset);
-      case 'top':
-      case 'top-start':
-        return new Point2D(trigger.left, trigger.top - offset);
-      case 'right':
-      case 'right-start':
-        return new Point2D(trigger.right + offset, trigger.top);
-      case 'left':
-      case 'left-start':
-        return new Point2D(trigger.left - offset, trigger.top);
-      default:
-        return new Point2D(trigger.left, trigger.bottom + offset);
-    }
+    const computeFn = PLACEMENT_OFFSET_STRATEGIES[placement] ?? PLACEMENT_OFFSET_STRATEGIES.bottom;
+    return computeFn(trigger, offset);
   }
 }
 

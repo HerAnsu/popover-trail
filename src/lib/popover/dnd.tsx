@@ -58,6 +58,31 @@ const FULL_FLEX_CONTAINER_STYLE = {
 } satisfies React.CSSProperties;
 const RETURN_FOCUS_CONFIG = { preventScroll: true };
 
+function resolveDragTransformState(
+  isDragAllowed: boolean,
+  offset: { x: number; y: number },
+  physics: { rotation: number; rotationX: number; rotationY: number; dragX: number; dragY: number },
+) {
+  if (!isDragAllowed) {
+    return {
+      offset: { x: 0, y: 0 },
+      dragX: 0,
+      dragY: 0,
+      rotation: 0,
+      rotationX: 0,
+      rotationY: 0,
+    };
+  }
+  return {
+    offset,
+    dragX: physics.dragX,
+    dragY: physics.dragY,
+    rotation: physics.rotation,
+    rotationX: physics.rotationX,
+    rotationY: physics.rotationY,
+  };
+}
+
 /**
  * Options parameters for the `usePopoverDraggableCard` composite hook.
  */
@@ -130,7 +155,7 @@ export function usePopoverDraggableCard({
   const friction = entry.tiltFriction ?? 0.95;
   const decay = entry.tiltDecay ?? 0.82;
 
-  const { rotation, rotationX, rotationY, dragX, dragY } = usePopoverDragAndDrop({
+  const physics = usePopoverDragAndDrop({
     isDragging: isDragAllowed ? isDragging : false,
     transform: isDragAllowed ? transform : null,
     enableTilt: tiltEnabled,
@@ -143,17 +168,14 @@ export function usePopoverDraggableCard({
 
   // 3. Compile styles using the compiler utility with active dragging offsets and rotation angles
   const offset = usePopoverOffset(entry.key);
+  const dragTransforms = resolveDragTransformState(isDragAllowed, offset, physics);
+
   const style = getPopoverStyles({
     finalLayoutPos: {
       top: extractNumericStyle(card.style.top),
       left: extractNumericStyle(card.style.left),
     },
-    offset: isDragAllowed ? offset : { x: 0, y: 0 },
-    dragX: isDragAllowed ? dragX : 0,
-    dragY: isDragAllowed ? dragY : 0,
-    rotation: isDragAllowed ? rotation : 0,
-    rotationX: isDragAllowed ? rotationX : 0,
-    rotationY: isDragAllowed ? rotationY : 0,
+    ...dragTransforms,
     zIndex: extractNumericStyle(card.style.zIndex),
   });
 
@@ -343,8 +365,8 @@ export function PopoverCanvas<TData = unknown>({
 
   const activeEntries = useMemo(() => {
     const raw = [
-      ...floating.map((entry, idx) => ({ entry, isPinned: true, index: floating.length + idx })),
-      ...trail.map((entry, idx) => ({ entry, isPinned: false, index: idx })),
+      ...floating.map((entry, idx) => ({ entry, isPinned: true, index: idx })),
+      ...trail.map((entry, idx) => ({ entry, isPinned: false, index: floating.length + idx })),
     ];
     if (zIndexOrder.length === 0) return raw;
     const orderMap = new Map<string, number>(zIndexOrder.filter(Boolean).map((key, i) => [key, i]));

@@ -45,6 +45,7 @@ export interface UsePopoverDragAndDropResult {
 
 class ReducedMotionObserverImpl {
   private matches = false;
+  private listeners = new Set<() => void>();
 
   constructor() {
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
@@ -52,9 +53,15 @@ class ReducedMotionObserverImpl {
       this.matches = mediaQuery.matches;
       const listener = (e: MediaQueryListEvent) => {
         this.matches = e.matches;
+        this.listeners.forEach((cb) => cb());
       };
       if (typeof mediaQuery.addEventListener === 'function') {
         mediaQuery.addEventListener('change', listener);
+      } else if (
+        typeof (mediaQuery as unknown as { addListener?: (l: unknown) => void }).addListener ===
+        'function'
+      ) {
+        (mediaQuery as unknown as { addListener: (l: unknown) => void }).addListener(listener);
       }
     }
   }
@@ -62,6 +69,13 @@ class ReducedMotionObserverImpl {
   get isReducedMotion(): boolean {
     return this.matches;
   }
+
+  subscribe = (callback: () => void): (() => void) => {
+    this.listeners.add(callback);
+    return () => {
+      this.listeners.delete(callback);
+    };
+  };
 }
 
 const ReducedMotionObserver = new ReducedMotionObserverImpl();
@@ -95,7 +109,11 @@ export function usePopoverDragAndDrop({
     transformYRef.current = dragAxis === 'x' ? 0 : (transform?.y ?? 0);
   }, [transform, dragAxis]);
 
-  const prefersReducedMotion = ReducedMotionObserver.isReducedMotion;
+  const prefersReducedMotion = React.useSyncExternalStore(
+    ReducedMotionObserver.subscribe,
+    () => ReducedMotionObserver.isReducedMotion,
+    () => false,
+  );
 
   useEffect(() => {
     let rafId: number;

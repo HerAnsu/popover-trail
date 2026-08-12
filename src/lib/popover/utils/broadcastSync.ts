@@ -29,16 +29,19 @@ export function createBroadcastSync(channelName = 'popover-trail-sync') {
   const listeners = new Set<PopoverSyncListener>();
   let channel: BroadcastChannel | null = null;
 
+  let messageHandler: ((event: MessageEvent<PopoverSyncMessage>) => void) | null = null;
+
   if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
     try {
       channel = new BroadcastChannel(channelName);
-      channel.addEventListener('message', (event: MessageEvent<PopoverSyncMessage>) => {
+      messageHandler = (event: MessageEvent<PopoverSyncMessage>) => {
         if (event.data && event.data.tabId !== tabId) {
           for (const listener of listeners) {
             listener(event.data);
           }
         }
-      });
+      };
+      channel.addEventListener('message', messageHandler);
     } catch {
       // Ignore if BroadcastChannel restricted by browser policy
     }
@@ -68,6 +71,10 @@ export function createBroadcastSync(channelName = 'popover-trail-sync') {
   const destroy = () => {
     listeners.clear();
     if (channel) {
+      if (messageHandler) {
+        channel.removeEventListener('message', messageHandler);
+        messageHandler = null;
+      }
       channel.close();
       channel = null;
     }

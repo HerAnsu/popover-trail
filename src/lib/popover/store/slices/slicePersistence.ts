@@ -91,6 +91,15 @@ export function createPersistenceSlice<
             }
           }
         }
+        if (deps.popoverDAG) {
+          deps.popoverDAG.clear();
+          for (const entry of snapshotState.trail) {
+            deps.popoverDAG.addNode(entry.key, entry.parentKey);
+          }
+          for (const entry of snapshotState.floating) {
+            deps.popoverDAG.addNode(entry.key, entry.parentKey);
+          }
+        }
         set({
           trail: snapshotState.trail,
           floating: snapshotState.floating,
@@ -106,7 +115,7 @@ export function createPersistenceSlice<
     },
 
     persistState: async (config?: PopoverPersistConfig) => {
-      const storageKey = config?.key ?? 'popover_store_state';
+      const storageKey = config?.storageKey ?? config?.key ?? 'popover_store_state';
       const engine =
         config?.storage ??
         (typeof window !== 'undefined' && window.localStorage ? window.localStorage : null);
@@ -145,7 +154,7 @@ export function createPersistenceSlice<
     },
 
     rehydrateState: async (config?: PopoverPersistConfig) => {
-      const storageKey = config?.key ?? 'popover_store_state';
+      const storageKey = config?.storageKey ?? config?.key ?? 'popover_store_state';
       const engine =
         config?.storage ??
         (typeof window !== 'undefined' && window.localStorage ? window.localStorage : null);
@@ -157,15 +166,27 @@ export function createPersistenceSlice<
         const parsed = JSON.parse(raw);
         if (!parsed || !Array.isArray(parsed.floating)) return false;
 
-        const nextFloating: TrailEntry<TData>[] = parsed.floating.map(
-          (item: TrailEntry<TData>) => ({
-            ...item,
-            status: 'success' as const,
-            isLoading: false,
-            error: null,
-            isPinned: true,
-            transitionStatus: 'mounted' as const,
-          }),
+        const isRawEntry = (item: unknown): item is TrailEntry<TData> =>
+          typeof item === 'object' &&
+          item !== null &&
+          typeof (item as Record<string, unknown>).key === 'string' &&
+          !['__proto__', 'constructor', 'prototype'].includes(
+            (item as Record<string, unknown>).key as string,
+          );
+
+        const nextFloating: TrailEntry<TData>[] = (parsed.floating as unknown[]).flatMap((item) =>
+          isRawEntry(item)
+            ? [
+                {
+                  ...item,
+                  status: 'success' as const,
+                  isLoading: false,
+                  error: null,
+                  isPinned: true,
+                  transitionStatus: 'mounted' as const,
+                },
+              ]
+            : [],
         );
 
         set({

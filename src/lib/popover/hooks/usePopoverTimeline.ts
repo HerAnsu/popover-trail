@@ -39,8 +39,12 @@ export interface UsePopoverTimelineResult<TData = unknown> {
  */
 export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<TData> {
   const actions = usePopoverActions<TData>();
-  const canUndo = usePopoverStore((state) => state.actions.canUndo());
-  const canRedo = usePopoverStore((state) => state.actions.canRedo());
+  const canUndo = usePopoverStore(
+    (state) => Boolean(state.stateRevision !== undefined) && state.actions.canUndo(),
+  );
+  const canRedo = usePopoverStore(
+    (state) => Boolean(state.stateRevision !== undefined) && state.actions.canRedo(),
+  );
   const trail = usePopoverTrail<TData>();
   const floating = usePopoverFloating<TData>();
 

@@ -25,8 +25,10 @@ export class Point2D {
     this.y = Number.isFinite(y) ? y : 0;
   }
 
+  private static readonly ZERO = new Point2D(0, 0);
+
   static zero(): Point2D {
-    return new Point2D(0, 0);
+    return Point2D.ZERO;
   }
 
   static of(x: number, y: number): Point2D {

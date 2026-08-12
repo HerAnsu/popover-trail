@@ -97,8 +97,10 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
     }
 
     this.hitsCount++;
-    this.cache.delete(key);
-    this.cache.set(key, entry);
+    if (this.cache.size >= this.maxSize * 0.9) {
+      this.cache.delete(key);
+      this.cache.set(key, entry);
+    }
     return entry.data;
   }
 

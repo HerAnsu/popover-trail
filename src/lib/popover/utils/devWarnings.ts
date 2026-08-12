@@ -40,6 +40,8 @@ export function warnDevDetails(condition: boolean, details: DevWarningDetails): 
   }
 }
 
+const UNSAFE_PROP_NAMES_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
+
 /** PT-101: Validates popover key format. */
 export function validatePopoverKey(key: string | undefined): void {
   if (!isDevEnv()) return;
@@ -52,8 +54,7 @@ export function validatePopoverKey(key: string | undefined): void {
     return;
   }
 
-  const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-  if (UNSAFE_KEYS.has(key)) {
+  if (UNSAFE_PROP_NAMES_SET.has(key)) {
     warnDevDetails(true, {
       code: 'PT-101',
       message: `Unsafe JavaScript property name "${key}" cannot be used as a popover key.`,

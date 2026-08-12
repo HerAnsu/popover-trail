@@ -39,9 +39,8 @@ function resolveAllRemovedKeys<TData>(
 
   if (!closePinnedDescendants && floating.length > 0) {
     const floatingKeys = new Set<string>();
-    for (let i = 0; i < floating.length; i++) {
-      const e = floating[i];
-      if (e) floatingKeys.add(e.key);
+    for (const e of floating) {
+      floatingKeys.add(e.key);
     }
     for (const key of descendants) {
       if (!floatingKeys.has(key)) {

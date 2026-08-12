@@ -5,7 +5,7 @@
  * @module slicePinning
  */
 
-import { togglePinState, bringToFrontPatch, hasEntryWithKey } from '../../utils/storeHelpers';
+import { togglePinState, bringToFrontPatch, findEntryInStore } from '../../utils/storeHelpers';
 import { reduceUpdateOffsetState } from '../storeActions';
 import { selectIsPinned } from '../storeSelectors';
 import type { SliceContext } from './sliceContext';
@@ -30,11 +30,10 @@ export function createPinningSlice<
 
     bringToFront: (key: string) => {
       set((state) => {
-        if (!hasEntryWithKey(state.floating, state.trail, key)) return {};
+        const entry = findEntryInStore(state.floating, state.trail, key);
+        if (!entry) return {};
         if (state.zIndexOrder[state.zIndexOrder.length - 1] === key) return {};
-        const entry =
-          state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key);
-        if (entry?.transitionStatus === 'unmounting') return {};
+        if (entry.transitionStatus === 'unmounting') return {};
         return bringToFrontPatch(state, key);
       });
     },

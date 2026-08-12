@@ -7,6 +7,16 @@
 import type { PopoverStateData } from '../../types';
 import { getCleanupStatePatch } from './stackReducers';
 
+export function resolvePinnedLayoutPos(
+  rect?: DOMRect,
+  entry?: { pinnedLayoutPos?: { top: number; left: number }; rect?: DOMRect | null },
+): { top: number; left: number } | undefined {
+  if (rect) return { top: rect.top, left: rect.left };
+  if (entry?.pinnedLayoutPos) return entry.pinnedLayoutPos;
+  if (entry?.rect) return { top: entry.rect.top, left: entry.rect.left };
+  return undefined;
+}
+
 /**
  * Pure state updater for toggling a popover's modeless pinned/floating vs trailing status.
  */
@@ -21,8 +31,8 @@ export function togglePinState<TData, TContext>(
 
   if (!wasPinned && trailIndex === -1) {
     return {
-      floating: [...state.floating],
-      trail: [...state.trail],
+      floating: state.floating,
+      trail: state.trail,
     };
   }
 
@@ -38,7 +48,7 @@ export function togglePinState<TData, TContext>(
     const updatedEntry = {
       ...entry,
       rect: rect ?? entry.rect,
-      pinnedLayoutPos: rect ? { top: rect.top, left: rect.left } : undefined,
+      pinnedLayoutPos: resolvePinnedLayoutPos(rect, entry),
       parentKey: undefined,
     };
     nextTrail.splice(trailIndex, 1);

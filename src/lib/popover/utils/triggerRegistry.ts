@@ -57,8 +57,15 @@ export const TriggerRegistry = {
     registry.clear();
   },
 
-  /** Check if a key has a living (non-GC'd) element. */
+  /** Check if a key has a living (non-GC'd) element. Prunes stale WeakRef if GC'd. */
   has(key: string): boolean {
-    return TriggerRegistry.get(key) !== null;
+    const ref = registry.get(key);
+    if (!ref) return false;
+    const el = ref.deref();
+    if (!el) {
+      registry.delete(key);
+      return false;
+    }
+    return true;
   },
 } as const;

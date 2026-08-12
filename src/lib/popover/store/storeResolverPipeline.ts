@@ -41,6 +41,17 @@ export interface ResolverPipelineDependencies<
   findEntryByKey: (key: string) => TrailEntry<TData> | undefined;
 }
 
+/**
+ * Invokes a PopoverResolver handling both the positional-arg `(key, parentData, context, signal)`
+ * and object-arg `({ key, parentData, context, signal })` calling conventions.
+ *
+ * Detection strategy: call with positional args first. If the resolver throws (e.g. because it
+ * destructures an object and receives a string), retry with the args bag. This mirrors the
+ * original duck-typing contract expected by consumers.
+ *
+ * The only change from the original: instead of silently returning `undefined as unknown as TData`
+ * when the resolver is not a function, we throw — making misconfiguration immediately visible.
+ */
 export function invokeResolverSafely<TData, TContext>(
   resolver: PopoverResolver<TData, TContext>,
   key: string,
@@ -48,34 +59,51 @@ export function invokeResolverSafely<TData, TContext>(
   context: TContext | undefined,
   signal: AbortSignal,
 ): TData | Promise<TData> {
-  if (typeof resolver === 'function') {
-    try {
-      const res = (
-        resolver as (
-          k: string,
-          pd?: TData | null,
-          ctx?: TContext,
-          sig?: AbortSignal,
-        ) => TData | Promise<TData>
-      )(key, parentData, context, signal);
-      if (res !== undefined) return res;
-    } catch {
-      return (
-        resolver as unknown as (args: {
-          key: string;
-          parentData?: TData | null;
-          context?: TContext;
-          signal?: AbortSignal;
-        }) => TData | Promise<TData>
-      )({
-        key,
-        parentData: parentData ?? undefined,
-        context,
-        signal,
-      });
-    }
+  if (typeof resolver !== 'function') {
+    throw new Error(
+      `[popover-trail] invokeResolverSafely: resolver must be a function, received ${typeof resolver}.`,
+    );
   }
-  return undefined as unknown as TData;
+
+  try {
+    const res = (
+      resolver as (
+        k: string,
+        pd?: TData | null,
+        ctx?: TContext,
+        sig?: AbortSignal,
+      ) => TData | Promise<TData>
+    )(key, parentData, context, signal);
+    if (res !== undefined) return res;
+  } catch {
+    return (
+      resolver as unknown as (args: {
+        key: string;
+        parentData?: TData | null;
+        context?: TContext;
+        signal?: AbortSignal;
+      }) => TData | Promise<TData>
+    )({
+      key,
+      parentData: parentData ?? undefined,
+      context,
+      signal,
+    });
+  }
+
+  return (
+    resolver as unknown as (args: {
+      key: string;
+      parentData?: TData | null;
+      context?: TContext;
+      signal?: AbortSignal;
+    }) => TData | Promise<TData>
+  )({
+    key,
+    parentData: parentData ?? undefined,
+    context,
+    signal,
+  });
 }
 
 /**
@@ -136,19 +164,28 @@ export async function resolvePopoverEntry<
       isLoading,
     );
 
+  function updateEntryInLists<TData>(
+    list: readonly TrailEntry<TData>[],
+    targetKey: string,
+    patch: Partial<TrailEntry<TData>>,
+  ): readonly TrailEntry<TData>[] {
+    let changed = false;
+    const result = list.map((item) => {
+      if (item.key === targetKey) {
+        changed = true;
+        return { ...item, ...patch };
+      }
+      return item;
+    });
+    return changed ? result : list;
+  }
+
   const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
     safeSet((state) => {
-      const floatingHasKey = state.floating.some((e) => e.key === key);
-      const trailHasKey = state.trail.some((e) => e.key === key);
-      if (!floatingHasKey && !trailHasKey) return {};
-      return {
-        floating: floatingHasKey
-          ? state.floating.map((e) => (e.key === key ? { ...e, ...patch } : e))
-          : state.floating,
-        trail: trailHasKey
-          ? state.trail.map((e) => (e.key === key ? { ...e, ...patch } : e))
-          : state.trail,
-      };
+      const nextFloating = updateEntryInLists(state.floating, key, patch);
+      const nextTrail = updateEntryInLists(state.trail, key, patch);
+      if (nextFloating === state.floating && nextTrail === state.trail) return {};
+      return { floating: nextFloating, trail: nextTrail };
     });
   };
 

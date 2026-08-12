@@ -12,8 +12,16 @@ import {
   getNextZIndexOrder,
 } from './stackReducers';
 
+export function normalizeOriginalEntry<TData>(entry: TrailEntry<TData>): TrailEntry<TData> {
+  return {
+    ...entry,
+    originalParentKey: entry.originalParentKey ?? entry.parentKey,
+    originalRect: entry.originalRect ?? entry.rect,
+  };
+}
+
 /**
- * Pure state updater for spawning or opening a new root popover.
+ * Pure state updater for initializing or opening a new root popover stack.
  */
 export function openRootState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
@@ -24,10 +32,7 @@ export function openRootState<TData, TContext>(
   if (hasFloating) {
     return bringToFrontPatch(state, entry.key);
   }
-  const nextEntry = {
-    ...entry,
-    originalRect: entry.originalRect ?? entry.rect,
-  };
+  const nextEntry = normalizeOriginalEntry(entry);
   const isSameOwner = state.ownerId === ownerId;
   const filteredTrail = state.trail.filter((e) => e.key !== entry.key);
   const nextTrail = isSameOwner ? [...filteredTrail, nextEntry] : [nextEntry];
@@ -58,11 +63,10 @@ function computeNextTrailForNestedPush<TData, TContext>(
   const parentEntry = state.trail[trailIndex];
   if (!parentEntry || parentEntry.key === finalEntry.key) return null;
 
-  if (finalEntry.parentKey === finalEntry.key) {
-    finalEntry.parentKey = undefined;
-  }
-  const baseTrail = state.trail.slice(0, trailIndex + 1).filter((e) => e.key !== finalEntry.key);
-  return [...baseTrail, finalEntry];
+  const cleanEntry =
+    finalEntry.parentKey === finalEntry.key ? { ...finalEntry, parentKey: undefined } : finalEntry;
+  const baseTrail = state.trail.slice(0, trailIndex + 1).filter((e) => e.key !== cleanEntry.key);
+  return [...baseTrail, cleanEntry];
 }
 
 /**
@@ -78,11 +82,7 @@ export function pushNestedState<TData, TContext>(
     return bringToFrontPatch(state, entry.key);
   }
 
-  const finalEntry = {
-    ...entry,
-    originalParentKey: entry.originalParentKey ?? entry.parentKey,
-    originalRect: entry.originalRect ?? entry.rect,
-  };
+  const finalEntry = normalizeOriginalEntry(entry);
 
   const nextTrail = computeNextTrailForNestedPush(state, index, finalEntry);
   if (!nextTrail) return {};

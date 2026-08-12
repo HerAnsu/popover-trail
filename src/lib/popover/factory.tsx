@@ -27,6 +27,8 @@ import type { RegisteredKeys, RegisteredDataMap } from './types/registerTypes';
 interface ReactInternals {
   __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?: {
     ReactCurrentDispatcher?: { current?: unknown };
+    ReactCurrentOwner?: { current?: unknown };
+    ReactCurrentBatchConfig?: { transition?: unknown };
   };
 }
 
@@ -36,7 +38,11 @@ interface ReactInternals {
 function isCurrentlyRenderingInReact(): boolean {
   try {
     const secret = (React as ReactInternals).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-    return Boolean(secret?.ReactCurrentDispatcher?.current);
+    return Boolean(
+      secret?.ReactCurrentDispatcher?.current ||
+      secret?.ReactCurrentOwner?.current ||
+      secret?.ReactCurrentBatchConfig?.transition,
+    );
   } catch {
     return false;
   }

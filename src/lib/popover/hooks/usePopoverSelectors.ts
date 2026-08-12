@@ -23,6 +23,12 @@ import { shallowEqual } from '../utils/storeHelpers';
 
 const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
+type ReactUseFn = <T>(promise: Promise<T>) => T;
+const REACT_USE: ReactUseFn | undefined =
+  'use' in React && typeof (React as { use?: unknown }).use === 'function'
+    ? (React as { use: ReactUseFn }).use
+    : undefined;
+
 /**
  * Hook to retrieve the active trailing popover cascade array.
  *
@@ -96,8 +102,7 @@ export function usePopoverEntryStatus<
 >(key: TPopoverKey, expectedStatus: S = 'success' as S): NarrowTrailEntry<TData, S> | undefined {
   const entry = usePopoverEntry<TData, TPopoverKey>(key);
   if (!entry) return undefined;
-  const currentStatus =
-    entry.status ?? (entry.isLoading ? 'loading' : entry.error ? 'error' : 'success');
+  const currentStatus = getEntryState(entry).status;
   if (currentStatus === expectedStatus) {
     return entry as NarrowTrailEntry<TData, S>;
   }
@@ -236,18 +241,12 @@ export function usePopover<
       : `Popover "${key}" [Closed]`,
   );
 
-  const discriminatedState = useMemo(
-    (): PopoverEntryDiscriminatedState<TData> =>
-      slice.entry
-        ? getEntryState(slice.entry)
-        : { status: 'loading', isLoading: true, data: undefined, error: null },
-    [slice.entry],
-  );
-
   return useMemo(
     (): UsePopoverResult<TData> => ({
       entry: slice.entry,
-      state: discriminatedState,
+      state: slice.entry
+        ? getEntryState(slice.entry)
+        : { status: 'loading', isLoading: true, data: undefined, error: null },
       isOpen: slice.isOpen,
       isPinned: slice.isPinned,
       zIndex: slice.zIndex,
@@ -261,7 +260,7 @@ export function usePopover<
       bringToFront,
       updateOffset,
     }),
-    [slice, discriminatedState, close, pin, bringToFront, updateOffset],
+    [slice, close, pin, bringToFront, updateOffset],
   );
 }
 
@@ -345,7 +344,7 @@ export function usePopoverHydration<
 }
 
 /**
- * React 19 native data hook with Suspense support leveraging `use(promise)`.
+ * Hook to retrieve resolved data for a popover key with React 19 use() support.
  *
  * @template TData - The type of resolved data payload.
  * @param key - The unique identifier key of the popover card.
@@ -367,11 +366,9 @@ export function usePopoverData<
 >(key: TPopoverKey): TData | null | undefined {
   const entry = usePopoverEntry<TData, TPopoverKey>(key);
   if (entry?.error) return entry.data;
-  const ReactUse =
-    'use' in React ? (React as { use: <T>(promise: Promise<T>) => T }).use : undefined;
 
-  if (entry?.dataPromise && typeof ReactUse === 'function') {
-    return ReactUse(entry.dataPromise);
+  if (entry?.dataPromise && typeof REACT_USE === 'function') {
+    return REACT_USE(entry.dataPromise);
   }
   return entry?.data;
 }

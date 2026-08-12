@@ -47,6 +47,119 @@ export function createTrailSlice<
 
   const getCurrentState = () => get();
 
+  /**
+   * Returns the maximum exit duration across all removedKeys,
+   * taking per-entry overrides into account over the global default.
+   */
+  const resolveMaxExitDuration = (removedKeys: ReadonlySet<string>): number => {
+    const { exitTransitionDuration: globalDuration } = get();
+    let max = globalDuration;
+    for (const key of removedKeys) {
+      const entry = findEntryByKey(key);
+      if (entry?.exitTransitionDuration !== undefined) {
+        max = Math.max(max, entry.exitTransitionDuration);
+      }
+    }
+    return max;
+  };
+
+  /** Marks all removed entries as 'unmounting' to trigger exit animations. */
+  const applyUnmountingState = (removedKeys: ReadonlySet<string>): void => {
+    set((state) => {
+      const update = (e: TrailEntry<TData>) =>
+        removedKeys.has(e.key) ? { ...e, transitionStatus: 'unmounting' as const } : e;
+      return {
+        trail: state.trail.map(update),
+        floating: state.floating.map(update),
+      };
+    });
+  };
+
+  /**
+   * Builds the final cleanup patch that removes entries from floating/trail,
+   * resets their pinned state, and recomputes derived collections.
+   */
+  const buildCleanupPatch =
+    (removedKeys: ReadonlySet<string>, filterUnmountingOnly = false) =>
+    (state: Parameters<Parameters<typeof set>[0]>[0]) => {
+      const keep = filterUnmountingOnly
+        ? (e: TrailEntry<TData>) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting'
+        : (e: TrailEntry<TData>) => !removedKeys.has(e.key);
+
+      const nextFloating = state.floating.filter(keep);
+      const nextTrail = state.trail.filter(keep);
+      const nextPinnedStates = { ...state.pinnedStates };
+
+      for (const k of removedKeys) {
+        const stillPresent =
+          nextFloating.some((e) => e.key === k) || nextTrail.some((e) => e.key === k);
+        if (!stillPresent) {
+          nextPinnedStates[k] = false;
+        }
+      }
+
+      return {
+        floating: nextFloating,
+        trail: nextTrail,
+        ...getCleanupStatePatch<TData, TContext>(
+          nextFloating,
+          nextTrail,
+          state.offsets,
+          state.zIndexOrder,
+          nextPinnedStates,
+          state.nestedHydrationRequestCounters,
+        ),
+      };
+    };
+
+  /** Removes entries immediately with no animation. */
+  const applyImmediateClose = (removedKeys: ReadonlySet<string>): void => {
+    set(buildCleanupPatch(removedKeys));
+  };
+
+  const scheduleCustomTransitionExit = (
+    removedKeys: ReadonlySet<string>,
+    duration: number,
+    scheduleFn: (key: string, duration: number, callback: () => void) => void,
+    onExitComplete: () => void,
+  ) => {
+    let completedCount = 0;
+    const totalCount = removedKeys.size;
+    for (const key of removedKeys) {
+      scheduleFn(key, duration, () => {
+        completedCount += 1;
+        if (completedCount >= totalCount) {
+          onExitComplete();
+        }
+      });
+    }
+  };
+
+  const scheduleStandardTransitionExit = (removedKeys: ReadonlySet<string>, duration: number) => {
+    for (const key of removedKeys) {
+      clearTransitionTimer(key);
+      const timer = setTimeout(() => {
+        transitionTimers.delete(key);
+        set(buildCleanupPatch(new Set([key]), true));
+      }, duration);
+      transitionTimers.set(key, timer);
+    }
+  };
+
+  /**
+   * Schedules the final cleanup after all exit transitions have completed.
+   * Supports the optional `scheduleTransitionExit` injection for testing.
+   */
+  const scheduleExitCleanup = (removedKeys: ReadonlySet<string>, duration: number): void => {
+    if (deps.scheduleTransitionExit) {
+      scheduleCustomTransitionExit(removedKeys, duration, deps.scheduleTransitionExit, () => {
+        set(buildCleanupPatch(removedKeys, true));
+      });
+    } else {
+      scheduleStandardTransitionExit(removedKeys, duration);
+    }
+  };
+
   const slice = {
     openRoot: (ownerId: string, entry: TrailEntry<TData>) => {
       const current = getCurrentState();
@@ -83,106 +196,13 @@ export function createTrailSlice<
       pushSnapshot(getCurrentState());
       abortControllersForKeys(removedKeys);
 
-      const { exitTransitionDuration: globalDuration } = get();
-      let maxDuration = globalDuration;
-      for (const key of removedKeys) {
-        const entry = findEntryByKey(key);
-        if (entry?.exitTransitionDuration !== undefined) {
-          maxDuration = Math.max(maxDuration, entry.exitTransitionDuration);
-        }
-      }
+      const maxDuration = resolveMaxExitDuration(removedKeys);
 
       if (options?.transition && maxDuration > 0) {
-        set((state) => {
-          const update = (e: TrailEntry<TData>) =>
-            removedKeys.has(e.key) ? { ...e, transitionStatus: 'unmounting' as const } : e;
-          return {
-            trail: state.trail.map(update),
-            floating: state.floating.map(update),
-          };
-        });
-
-        let completedCount = 0;
-        const totalCount = removedKeys.size;
-        const safeOnExitComplete = () => {
-          completedCount += 1;
-          if (completedCount >= totalCount) {
-            onExitComplete();
-          }
-        };
-
-        const onExitComplete = () => {
-          set((state) => {
-            const nextFloating = state.floating.filter(
-              (e) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting',
-            );
-            const nextTrail = state.trail.filter(
-              (e) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting',
-            );
-            const nextPinnedStates = { ...state.pinnedStates };
-            for (const k of removedKeys) {
-              const exists =
-                nextFloating.some((e) => e.key === k) || nextTrail.some((e) => e.key === k);
-              if (!exists) {
-                nextPinnedStates[k] = false;
-              }
-            }
-            return {
-              floating: nextFloating,
-              trail: nextTrail,
-              ...getCleanupStatePatch<TData, TContext>(
-                nextFloating,
-                nextTrail,
-                state.offsets,
-                state.zIndexOrder,
-                nextPinnedStates,
-                state.nestedHydrationRequestCounters,
-              ),
-            };
-          });
-        };
-
-        if (deps.scheduleTransitionExit) {
-          for (const key of removedKeys) {
-            deps.scheduleTransitionExit(key, maxDuration, safeOnExitComplete);
-          }
-        } else {
-          for (const key of removedKeys) {
-            clearTransitionTimer(key);
-          }
-          const exitTimer = setTimeout(() => {
-            for (const key of removedKeys) {
-              transitionTimers.delete(key);
-            }
-            onExitComplete();
-          }, maxDuration);
-
-          for (const key of removedKeys) {
-            clearTransitionTimer(key);
-            transitionTimers.set(key, exitTimer);
-          }
-        }
+        applyUnmountingState(removedKeys);
+        scheduleExitCleanup(removedKeys, maxDuration);
       } else {
-        set((state) => {
-          const nextFloating = state.floating.filter((e) => !removedKeys.has(e.key));
-          const nextTrail = state.trail.filter((e) => !removedKeys.has(e.key));
-          const nextPinnedStates = { ...state.pinnedStates };
-          for (const k of removedKeys) {
-            nextPinnedStates[k] = false;
-          }
-          return {
-            floating: nextFloating,
-            trail: nextTrail,
-            ...getCleanupStatePatch<TData, TContext>(
-              nextFloating,
-              nextTrail,
-              state.offsets,
-              state.zIndexOrder,
-              nextPinnedStates,
-              state.nestedHydrationRequestCounters,
-            ),
-          };
-        });
+        applyImmediateClose(removedKeys);
       }
     },
 

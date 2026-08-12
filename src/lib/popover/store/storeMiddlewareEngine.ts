@@ -3,7 +3,21 @@ import type { PopoverMiddleware, PopoverStore } from '../types';
 function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
   val: unknown,
 ): val is Partial<PopoverStore<TData, TContext, TPopoverKey>> {
-  return typeof val === 'object' && val !== null;
+  return (
+    typeof val === 'object' &&
+    val !== null &&
+    !Array.isArray(val) &&
+    !(val instanceof Date) &&
+    !(val instanceof RegExp)
+  );
+}
+
+export function mergeSanitizedPatch<T extends object>(target: T, source: object): void {
+  for (const k of Object.keys(source)) {
+    if (k !== '__proto__' && k !== 'constructor' && k !== 'prototype') {
+      (target as Record<string, unknown>)[k] = (source as Record<string, unknown>)[k];
+    }
+  }
 }
 
 /**
@@ -57,7 +71,7 @@ export class PopoverMiddlewareEngine<
             patch = { ...initialPatch };
             isCloned = true;
           }
-          Object.assign(patch, result);
+          mergeSanitizedPatch(patch, result);
         }
       } catch (err) {
         console.error('[PopoverStore] Middleware execution error:', err);

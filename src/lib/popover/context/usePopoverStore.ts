@@ -1,4 +1,4 @@
-import { useContext, useCallback } from 'react';
+import { useContext } from 'react';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore } from '../types';
@@ -43,12 +43,7 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
 ): TSelected {
   const store = usePopoverStoreApi<TData, TContext>();
 
-  const stableSelector = useCallback(
-    (state: PopoverStore<TData, TContext>): TSelected => selector(state),
-    [selector],
-  );
-
-  return useStore(store, stableSelector);
+  return useStore(store, selector);
 }
 
 /**

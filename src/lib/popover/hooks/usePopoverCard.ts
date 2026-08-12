@@ -258,10 +258,13 @@ export function usePopoverCard({
   // Handle custom autoFocusElement option on mount
   useEffect(() => {
     if (!entry.focusLockOptions?.autoFocusElement || typeof document === 'undefined') return;
+    const autoFocus = entry.focusLockOptions.autoFocusElement;
     const target =
-      typeof entry.focusLockOptions.autoFocusElement === 'function'
-        ? entry.focusLockOptions.autoFocusElement()
-        : document.querySelector<HTMLElement>(entry.focusLockOptions.autoFocusElement);
+      typeof autoFocus === 'function'
+        ? autoFocus()
+        : typeof autoFocus === 'string' && autoFocus.trim() !== ''
+          ? document.querySelector<HTMLElement>(autoFocus)
+          : null;
     if (target && typeof target.focus === 'function') {
       target.focus();
     }

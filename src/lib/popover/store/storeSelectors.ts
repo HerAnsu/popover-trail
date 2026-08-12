@@ -36,6 +36,8 @@ export function selectEntryByKey<TData = unknown>(key: string) {
   }): TrailEntry<TData> | undefined => findEntryInStore(state.floating, state.trail, key);
 }
 
+const ZERO_OFFSET = Object.freeze({ x: 0, y: 0 });
+
 /**
  * Selects the topmost active popover entry in z-index depth order.
  */
@@ -44,9 +46,14 @@ export function selectTopmostEntry<TData = unknown>(state: {
   floating: readonly TrailEntry<TData>[];
   trail: readonly TrailEntry<TData>[];
 }): TrailEntry<TData> | undefined {
-  if (state.zIndexOrder.length === 0) return undefined;
-  const topKey = state.zIndexOrder[state.zIndexOrder.length - 1];
-  return topKey ? findEntryInStore(state.floating, state.trail, topKey) : undefined;
+  for (let i = state.zIndexOrder.length - 1; i >= 0; i--) {
+    const key = state.zIndexOrder[i];
+    if (key) {
+      const entry = findEntryInStore(state.floating, state.trail, key);
+      if (entry && entry.transitionStatus !== 'unmounting') return entry;
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -63,7 +70,7 @@ export function selectIsPinned(key: string) {
 export function selectOffset(key: string) {
   return (state: {
     offsets: Readonly<Record<string, Readonly<{ x: number; y: number }>>>;
-  }): { x: number; y: number } => state.offsets[key] ?? { x: 0, y: 0 };
+  }): { x: number; y: number } => state.offsets[key] ?? ZERO_OFFSET;
 }
 
 /**

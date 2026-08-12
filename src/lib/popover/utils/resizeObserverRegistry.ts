@@ -17,10 +17,11 @@ class ResizeObserverRegistryImpl {
 
   private flushCallbacks = () => {
     this.frameId = null;
-    const entriesToProcess = Array.from(this.pendingEntries.values());
-    this.pendingEntries.clear();
+    if (this.listeners.size === 0) return;
+    const toProcess = this.pendingEntries;
+    this.pendingEntries = new Map<Element, ResizeObserverEntry>();
 
-    for (const entry of entriesToProcess) {
+    for (const entry of toProcess.values()) {
       const callbackSet = this.listeners.get(entry.target);
       if (callbackSet) {
         for (const callback of callbackSet) {

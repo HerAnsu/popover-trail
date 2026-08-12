@@ -47,11 +47,9 @@ export function clampDragCoordinates(
   y: number,
   bounds?: ClampBounds,
 ): { x: number; y: number } {
-  const pt = new Point2D(x, y);
-  if (!bounds) return pt.toObject();
-
-  const { minX, maxX, minY, maxY } = resolveValidBounds(bounds);
-  return pt.clamp(minX, maxX, minY, maxY).toObject();
+  const out = { x, y };
+  if (bounds) clampDragCoordinatesInPlace(x, y, bounds, out);
+  return out;
 }
 
 function computeRawTiltAngles(
