@@ -30,8 +30,10 @@ import type { RegisteredKeys, RegisteredDataMap } from './types/registerTypes';
  */
 function isCurrentlyRenderingInReact(): boolean {
   try {
-    const secret = (React as unknown as Record<string, Record<string, { current?: unknown }>>)
-      .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    const reactObj = React as unknown as Record<string, Record<string, { current?: unknown }>>;
+    const secret =
+      reactObj.__CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED ??
+      reactObj.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
     return Boolean(
       secret?.ReactCurrentDispatcher?.current ||
       secret?.ReactCurrentOwner?.current ||

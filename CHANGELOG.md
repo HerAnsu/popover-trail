@@ -5,6 +5,26 @@ All notable changes to the `popover-trail` package will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-08-13
+
+### Fixed
+- **Drag-and-Drop Tilt Physics (`dnd.tsx`)**: Fixed missing `cardRef` in `usePopoverDragAndDrop` call inside `usePopoverDraggableCard`, restoring element-level spring rotation angle mutations (`--pt-rotate-z`) during drag gestures.
+- **Store Subscription Deduplication (`PopoverTrigger.tsx`, `usePopoverTriggers.ts`)**: Added optional `explicitIsOpen` parameter to `usePopoverTrigger` and `usePopoverNestedTrigger` to skip duplicate store state subscriptions in trigger inner components.
+- **Stable Click-Outside Event Listeners (`useClickOutside.ts`)**: Ref-wrapped `shouldIgnoreClick` callback to prevent capture-phase document event listeners from detaching and re-attaching on inline function updates.
+
+### Performance & Memory Optimizations
+- **Zero-Dependency `equalityFn` Store Selector Memoization (`usePopoverStore.ts`)**: Implemented a pure, zero-dependency ref-memoized selector mechanism inside `usePopoverStore` compatible with Zustand 5 and React 18/19 Concurrent Mode, preventing unnecessary component re-renders when using custom equality functions (e.g. `shallowEqual`).
+- **Batched Geometry Store Selectors (`useGeometry.ts`)**: Consolidated 4 separate `usePopoverStore` selector calls into a single batched pass with `shallowEqual`.
+- **Render & Prop Sync Optimizations (`usePopoverPropSync.ts`, `PopoverPortal.tsx`, `PopoverTrail.tsx`)**:
+  - Removed unmemoized parent `props` object from `usePopoverPropSync` dependency list using a stable `propsRef`.
+  - Removed inline `children` render prop from `useMemo` dependency array in `PopoverPortal.tsx`.
+  - Ref-wrapped `filter` callback in `PopoverTrail.tsx` to avoid array re-filtering on parent re-renders.
+
+### Refactored & Standards
+- **React 19 Internal Dispatcher Support (`factory.tsx`, `usePopoverSelectors.ts`)**: Added support for React 19 `__CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED` fallback alongside `__SECRET_INTERNALS...`.
+- **Sub-Component Decoupling (`componentUtils.ts`)**: Centralized `getPolymorphicProps` and `createSubComponentClickHandler` into `utils/componentUtils.ts`, resolving sibling dependency between `PopoverCardPinButton` and `PopoverCardCloseButton`.
+- **Explicit Resource Management Cleanups (`broadcastSync.ts`, `disposable.ts`)**: Cleaned up `Symbol.dispose ?? Symbol.for('Symbol.dispose')` fallback declarations.
+
 ## [1.1.0] - 2026-08-13
 
 ### Fixed & Hardened

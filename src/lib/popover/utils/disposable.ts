@@ -29,9 +29,7 @@ export interface ScopeDisposable {
  * ```
  */
 const DISPOSE_SYMBOL =
-  typeof Symbol !== 'undefined'
-    ? ((Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose'))
-    : undefined;
+  typeof Symbol !== 'undefined' ? (Symbol.dispose ?? Symbol.for('Symbol.dispose')) : undefined;
 
 export function createDisposable(cleanupFn: () => void): ScopeDisposable {
   let disposed = false;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, ClickOutsideConfig } from '../types';
 import { isPortalOrExcludedTarget, getEventPath, getEventTarget } from '../utils/storeHelpers';
@@ -51,6 +51,11 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
   const popoverSelector = clickOutside?.popoverSelector ?? '.popover-card';
   const shouldIgnoreClick = clickOutside?.shouldIgnoreClick;
 
+  const shouldIgnoreClickRef = useRef(shouldIgnoreClick);
+  useEffect(() => {
+    shouldIgnoreClickRef.current = shouldIgnoreClick;
+  }, [shouldIgnoreClick]);
+
   const escapedIgnoreClass = useMemo(() => escapeCSSClass(ignoreClass), [ignoreClass]);
 
   useEffect(() => {
@@ -58,7 +63,7 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
 
     const handleClickOutside = (e: PointerEvent | MouseEvent) => {
       if (isPortalOrExcludedTarget(e)) return;
-      if (shouldIgnoreClick && shouldIgnoreClick(e)) return;
+      if (shouldIgnoreClickRef.current && shouldIgnoreClickRef.current(e)) return;
 
       const path = getEventPath(e);
       const target = getEventTarget<HTMLElement>(e) ?? (e.target as HTMLElement);
@@ -88,5 +93,5 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
       document.removeEventListener(eventType, handleClickOutside as EventListener, {
         capture: true,
       });
-  }, [enabled, escapedIgnoreClass, ignoreClass, popoverSelector, shouldIgnoreClick, store]);
+  }, [enabled, escapedIgnoreClass, ignoreClass, popoverSelector, store]);
 }

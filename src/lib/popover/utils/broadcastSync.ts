@@ -15,8 +15,7 @@ export interface PopoverSyncMessage {
 
 export type PopoverSyncListener = (message: PopoverSyncMessage) => void;
 
-const DISPOSE_SYMBOL: symbol =
-  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
+const DISPOSE_SYMBOL: symbol = Symbol.dispose ?? Symbol.for('Symbol.dispose');
 
 /**
  * Creates a tab-sync manager using native BroadcastChannel.

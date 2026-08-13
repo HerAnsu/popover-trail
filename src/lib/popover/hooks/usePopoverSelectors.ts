@@ -24,7 +24,7 @@ const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
 type ReactUseFn = <T>(promise: Promise<T>) => T;
 const REACT_USE: ReactUseFn | undefined =
-  'use' in React && typeof (React as { use?: unknown }).use === 'function'
+  typeof (React as { use?: unknown }).use === 'function'
     ? (React as { use: ReactUseFn }).use
     : undefined;
 

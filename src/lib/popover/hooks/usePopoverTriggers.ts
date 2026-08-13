@@ -11,6 +11,7 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
   key: string,
   options: TOptions | undefined,
   onOpenHandler: (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => void,
+  explicitIsOpen?: boolean,
 ) {
   const actions = usePopoverActions();
   const optionsRef = useRef(options);
@@ -62,7 +63,8 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
   }, [actions, key]);
 
   const hoverEnabled = Boolean(options?.hover?.enabled);
-  const isOpen = useIsPopoverOpen(key);
+  const storeIsOpen = useIsPopoverOpen(key);
+  const isOpen = explicitIsOpen ?? storeIsOpen;
 
   return useMemo(() => {
     const ariaProps = {
@@ -84,9 +86,14 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
  *
  * @param key - The unique identifier key for the root popover.
  * @param options - Custom configuration options.
+ * @param explicitIsOpen - Optional pre-resolved isOpen boolean flag.
  * @returns Event handler props object (e.g. `{ onClick }`).
  */
-export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
+export function usePopoverTrigger(
+  key: string,
+  options?: OpenRootOptions,
+  explicitIsOpen?: boolean,
+) {
   const actions = usePopoverActions();
   const onOpenHandler = useCallback(
     (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => {
@@ -101,7 +108,7 @@ export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
     [actions, key, options],
   );
 
-  return usePopoverTriggerBase(key, options, onOpenHandler);
+  return usePopoverTriggerBase(key, options, onOpenHandler, explicitIsOpen);
 }
 
 /**
@@ -110,12 +117,14 @@ export function usePopoverTrigger(key: string, options?: OpenRootOptions) {
  * @param key - The unique identifier key for the nested popover.
  * @param sourceKey - The unique key of the parent popover spawning this child.
  * @param options - Custom configuration options.
+ * @param explicitIsOpen - Optional pre-resolved isOpen boolean flag.
  * @returns Event handler props object (e.g. `{ onClick }`).
  */
 export function usePopoverNestedTrigger(
   key: string,
   sourceKey: string,
   options?: OpenNestedOptions,
+  explicitIsOpen?: boolean,
 ) {
   const actions = usePopoverActions();
   const onOpenHandler = useCallback(
@@ -129,5 +138,5 @@ export function usePopoverNestedTrigger(
     [actions, key, sourceKey, options],
   );
 
-  return usePopoverTriggerBase(key, options, onOpenHandler);
+  return usePopoverTriggerBase(key, options, onOpenHandler, explicitIsOpen);
 }

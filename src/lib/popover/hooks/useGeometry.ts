@@ -13,6 +13,7 @@ import type { TrailEntry, PopoverPlacement } from '../types';
 import { usePopoverCollisionConfig, usePopoverStore, usePopoverStoreApi } from '../context';
 import { QuadTree, type BoundingBox } from '../utils/quadTree';
 import { ResizeObserverRegistry } from '../utils/resizeObserverRegistry';
+import { shallowEqual } from '../utils/storeHelpers';
 
 /**
  * Helper to safely measure current viewport bounds across SSR and browser environments.
@@ -157,8 +158,20 @@ export function usePopoverGeometry({
 }: UsePopoverGeometryOptions): UsePopoverGeometryResult {
   const globalCollision = usePopoverCollisionConfig();
   const storeApi = usePopoverStoreApi();
-  const cascadeOffsetStep = usePopoverStore((state) => state.cascadeOffsetStep);
-  const defaultOffset = usePopoverStore((state) => state.defaultOffset);
+  const {
+    cascadeOffsetStep,
+    defaultOffset,
+    responsiveMode: globalResponsiveMode,
+    mobileBreakpoint,
+  } = usePopoverStore(
+    (state) => ({
+      cascadeOffsetStep: state.cascadeOffsetStep,
+      defaultOffset: state.defaultOffset,
+      responsiveMode: state.responsiveMode,
+      mobileBreakpoint: state.mobileBreakpoint,
+    }),
+    shallowEqual,
+  );
   const localCollision = entry?.collision;
 
   // Merge local overrides with global defaults
@@ -297,8 +310,6 @@ export function usePopoverGeometry({
     update,
   ]);
 
-  const globalResponsiveMode = usePopoverStore((state) => state.responsiveMode);
-  const mobileBreakpoint = usePopoverStore((state) => state.mobileBreakpoint);
   const effectiveResponsiveMode = entry?.responsiveMode ?? globalResponsiveMode;
   const layoutStrategy = entry?.layoutStrategy ?? 'floating-ui';
 

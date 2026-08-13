@@ -1,7 +1,7 @@
 import React, { useCallback, type ReactNode, type ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverCardScope } from './PopoverCardScopeContext';
-import { getPolymorphicProps } from './PopoverCardCloseButton';
+import { getPolymorphicProps } from '../../utils/componentUtils';
 
 /**
  * Sub-component for the Pin/Unpin action button of a `<PopoverCard>`.

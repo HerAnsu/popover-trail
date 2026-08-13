@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, PopoverResolver, FocusLockOptions } from '../types';
 import { isDeepEqual } from '../utils/storeHelpers';
@@ -127,16 +127,21 @@ export function usePopoverPropSync<TData, TContext>(
   props: PopoverProviderProps<TData, TContext>,
   activeResolver: PopoverResolver<TData, TContext>,
 ): void {
+  const propsRef = useRef(props);
+  useEffect(() => {
+    propsRef.current = props;
+  });
+
   useEffect(() => {
     store.getState().batchUpdates(() => {
       const state = store.getState();
-      syncBehaviorConfigProps(state, props);
-      syncNumericConfigProps(state, props);
-      syncObjectAndComplexProps(state, props, activeResolver);
+      const currentProps = propsRef.current;
+      syncBehaviorConfigProps(state, currentProps);
+      syncNumericConfigProps(state, currentProps);
+      syncObjectAndComplexProps(state, currentProps, activeResolver);
     });
   }, [
     store,
-    props,
     props.enableArrowNavigation,
     props.allowDragWhenPinned,
     props.allowDragWhenUnpinned,

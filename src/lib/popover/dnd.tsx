@@ -147,6 +147,8 @@ export function usePopoverDraggableCard({
     disabled: !isDragAllowed,
   });
 
+  const domRef = useRef<HTMLDivElement | null>(null);
+
   // 2. Physics-based rotation swing setup
   const tiltEnabled = entry.enableTilt ?? enableTilt;
   const maxTilt = entry.maxTiltAngle ?? maxTiltAngle;
@@ -164,6 +166,7 @@ export function usePopoverDraggableCard({
     dragAxis: axis,
     tiltFriction: friction,
     tiltDecay: decay,
+    cardRef: domRef,
   });
 
   // 3. Compile styles using the compiler utility with active dragging offsets and rotation angles
@@ -178,8 +181,6 @@ export function usePopoverDraggableCard({
     ...dragTransforms,
     zIndex: extractNumericStyle(card.style.zIndex),
   });
-
-  const domRef = useRef<HTMLDivElement | null>(null);
 
   const setCombinedRef = useMergedRef(card.ref, domRef, isDragAllowed ? setNodeRef : undefined);
 

@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo, useRef, useEffect } from 'react';
 import { PopoverPortal, usePopoverTrail, usePopoverFloating } from '../context';
 import type { TrailEntry } from '../types';
 
@@ -35,21 +35,27 @@ export function PopoverTrail<TData = unknown>({
   const trail = usePopoverTrail<TData>();
   const floating = usePopoverFloating<TData>();
 
+  const filterRef = useRef(filter);
+  useEffect(() => {
+    filterRef.current = filter;
+  }, [filter]);
+
   const filteredEntries = useMemo(() => {
+    const activeFilter = filterRef.current;
     const list: Array<{ entry: TrailEntry<TData>; isPinned: boolean }> = [];
     let idx = 0;
     for (const entry of floating) {
-      if (!filter || filter(entry, idx++)) {
+      if (!activeFilter || activeFilter(entry, idx++)) {
         list.push({ entry, isPinned: true });
       }
     }
     for (const entry of trail) {
-      if (!filter || filter(entry, idx++)) {
+      if (!activeFilter || activeFilter(entry, idx++)) {
         list.push({ entry, isPinned: false });
       }
     }
     return list;
-  }, [floating, trail, filter]);
+  }, [floating, trail]);
 
   return (
     <PopoverPortal container={container}>

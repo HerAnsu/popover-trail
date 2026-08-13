@@ -232,7 +232,7 @@ function RootTriggerInner({
   asChild?: boolean;
   children: React.ReactElement | ((props: PopoverTriggerChildProps) => React.ReactNode);
 }) {
-  const triggerProps = usePopoverTrigger(popoverKey, mergedOptions);
+  const triggerProps = usePopoverTrigger(popoverKey, mergedOptions, isOpen);
   return (
     <TriggerRenderer
       popoverKey={popoverKey}
@@ -266,7 +266,7 @@ function NestedTriggerInner({
   asChild?: boolean;
   children: React.ReactElement | ((props: PopoverTriggerChildProps) => React.ReactNode);
 }) {
-  const triggerProps = usePopoverNestedTrigger(popoverKey, parentKey, mergedOptions);
+  const triggerProps = usePopoverNestedTrigger(popoverKey, parentKey, mergedOptions, isOpen);
   return (
     <TriggerRenderer
       popoverKey={popoverKey}

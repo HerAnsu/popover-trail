@@ -29,8 +29,9 @@ export function PopoverPortal({ children, container }: PopoverPortalProps) {
     return () => setMounted(false);
   }, []);
 
+  const isRenderProp = typeof children === 'function';
   const formattedEntries = React.useMemo(() => {
-    if (typeof children !== 'function') return null;
+    if (!isRenderProp) return null;
     const result: Array<TrailEntry & { isPinned: boolean }> = [];
     for (let i = 0; i < floating.length; i++) {
       const entry = floating[i];
@@ -45,7 +46,7 @@ export function PopoverPortal({ children, container }: PopoverPortalProps) {
       }
     }
     return result;
-  }, [children, floating, trail]);
+  }, [isRenderProp, floating, trail]);
 
   if (!mounted) return null;
 
