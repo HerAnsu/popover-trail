@@ -22,15 +22,15 @@ import { validateBaseZIndex } from '../../utils/devWarnings';
 import type { SliceContext } from './sliceContext';
 import type { TrailEntry } from '../../types/entryTypes';
 
-function patchEntryButtonControls(
-  state: { floating: readonly TrailEntry<unknown>[]; trail: readonly TrailEntry<unknown>[] },
+function patchEntryButtonControls<TData>(
+  state: { floating: readonly TrailEntry<TData>[]; trail: readonly TrailEntry<TData>[] },
   key: string,
   updater: (prev?: ButtonControlConfig) => ButtonControlConfig,
-) {
+): { floating?: readonly TrailEntry<TData>[]; trail?: readonly TrailEntry<TData>[] } {
   if (!key) return {};
-  const entry = findEntryInStore(state.floating, state.trail, key);
+  const entry: TrailEntry<TData> | undefined = findEntryInStore(state.floating, state.trail, key);
   if (!entry) return {};
-  const updatedEntry = {
+  const updatedEntry: TrailEntry<TData> = {
     ...entry,
     buttonControls: updater(entry.buttonControls),
   };
@@ -119,7 +119,7 @@ export function createConfigSlice<
       if (!key) return;
       if (isPinnedEntry(get().pinnedStates, key)) return;
       const performClose = () => {
-        get().actions.closeByKey(key, { transition: true });
+        get().actions.closeByKey(key as unknown as TPopoverKey, { transition: true });
       };
       if (deps.scheduleHoverLeave) {
         deps.scheduleHoverLeave(key, delay, performClose);

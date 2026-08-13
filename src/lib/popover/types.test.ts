@@ -201,8 +201,9 @@ describe('Type Safety Guards & Event Predicates', () => {
     expect(config.enableArrowNavigation).toBe(true);
 
     const tokens: PopoverLib.PopoverThemeTokens = {
-      bg: '#fff',
+      baseZIndex: 1000,
+      cardShadow: 'none',
     };
-    expect(tokens.bg).toBe('#fff');
+    expect(tokens.baseZIndex).toBe(1000);
   });
 });

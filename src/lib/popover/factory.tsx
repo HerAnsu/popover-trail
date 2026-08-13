@@ -6,10 +6,8 @@
  */
 
 import React from 'react';
-import {
-  PopoverProvider as CorePopoverProvider,
-  type PopoverProviderProps,
-} from './context/PopoverProvider';
+import { PopoverProvider as CorePopoverProvider } from './context/PopoverProvider';
+import type { PopoverProviderProps } from './context/PopoverProviderProps';
 import { usePopoverActions as coreUsePopoverActions } from './context/usePopoverStore';
 import { PopoverTrigger as CorePopoverTrigger } from './components/PopoverTrigger';
 import { PopoverPortal as CorePopoverPortal } from './components/PopoverPortal';

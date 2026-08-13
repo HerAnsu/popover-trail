@@ -175,3 +175,15 @@ export type StoreSelectorMapper<TData = unknown, TContext = unknown, TResult = u
 export function createTypedStoreSelector<TData = unknown, TContext = unknown>() {
   return <TSelected>(selector: StoreSelectorMapper<TData, TContext, TSelected>) => selector;
 }
+
+/**
+ * Selects the high-level discriminated status of the popover system ('idle', 'active-trail', 'pinned-only').
+ */
+export function selectDiscriminatedStatus<TData = unknown>(state: {
+  trail: readonly TrailEntry<TData>[];
+  floating: readonly TrailEntry<TData>[];
+}): 'idle' | 'active-trail' | 'pinned-only' {
+  if (state.trail.length > 0) return 'active-trail';
+  if (state.floating.length > 0) return 'pinned-only';
+  return 'idle';
+}

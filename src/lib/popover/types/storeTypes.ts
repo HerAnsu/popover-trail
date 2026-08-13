@@ -25,7 +25,7 @@ import type { PopoverStoreEvent } from './eventTypes';
 
 import type { StoreApi } from 'zustand/vanilla';
 import type { RegisteredKeys, RegisteredDataMap } from './registerTypes';
-import type { Brand, StackGroupId } from './branded';
+export type { Brand, PopoverKey, ParentKey, StackGroupId, ZIndexDepth } from './branded';
 
 export type ViewportX = Brand<number, 'ViewportX'>;
 export type ViewportY = Brand<number, 'ViewportY'>;

@@ -5,14 +5,19 @@
  * @module disposable
  */
 
+declare global {
+  interface SymbolConstructor {
+    readonly dispose?: symbol;
+    readonly asyncDispose?: symbol;
+  }
+}
+
 /**
  * Interface representing a disposable resource with TypeScript 5.2+ Symbol.dispose support.
  */
 export interface ScopeDisposable {
   /** Standard disposal method. */
   dispose: () => void;
-  /** Explicit resource management symbol handler for TS 5.2 `using` statements. */
-  [key: symbol]: unknown;
 }
 
 /**

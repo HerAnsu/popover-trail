@@ -128,9 +128,13 @@ export function createPopoverController<
       getStoreState().pushNested(index, entry);
     },
     openRootWithResolver: (key, anchorEvent, options) =>
-      getStoreState().openRootWithResolver(key, anchorEvent, options),
+      getStoreState().openRootWithResolver(key as unknown as TPopoverKey, anchorEvent, options),
     openNestedWithResolver: (key, sourceKey, options) =>
-      getStoreState().openNestedWithResolver(key, sourceKey, options),
+      getStoreState().openNestedWithResolver(
+        key as unknown as TPopoverKey,
+        sourceKey as unknown as TPopoverKey,
+        options,
+      ),
     closeByKey: (key: TPopoverKey, options?: { transition?: boolean }) => {
       getStoreState().closeByKey(key, options);
     },
@@ -144,10 +148,10 @@ export function createPopoverController<
       getStoreState().updateOffset(key, x, y);
     },
     hoverEnter: (key: string) => {
-      getStoreState().hoverEnter(key);
+      getStoreState().hoverEnter(key as unknown as TPopoverKey);
     },
     hoverLeave: (key: string, delay?: number) => {
-      getStoreState().hoverLeave(key, delay);
+      getStoreState().hoverLeave(key as unknown as TPopoverKey, delay);
     },
     closeTopmost: (options?: { transition?: boolean }) => {
       getStoreState().closeTopmost(options);

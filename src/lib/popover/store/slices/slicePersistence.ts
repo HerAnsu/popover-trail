@@ -153,7 +153,7 @@ export function createPersistenceSlice<
       const sanitizedFloating = filteredFloating.map((entry) => {
         const clean: Record<string, unknown> = {};
         for (const key of Object.keys(entry)) {
-          const val = (entry as Record<string, unknown>)[key];
+          const val = (entry as unknown as Record<string, unknown>)[key];
           if (typeof val !== 'function' && key !== 'dataPromise') {
             clean[key] = val;
           }

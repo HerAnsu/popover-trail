@@ -37,6 +37,7 @@ export interface ActionRegistryDependencies<
   isRootStale: (startedCounter: number) => boolean;
   incrementNestedCounter: (parentKey: string) => number;
   isNestedStale: (parentKey: string, startedCounter: number) => boolean;
+  findEntryByKey: (key: string) => import('../types').TrailEntry<TData> | undefined;
   resolvePopoverEntry: (
     params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
   ) => Promise<void>;

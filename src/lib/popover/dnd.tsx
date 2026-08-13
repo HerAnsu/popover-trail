@@ -529,7 +529,7 @@ function PopoverCardInner<TData = unknown>(props: PopoverCardProps<TData>) {
       open
       tabIndex={-1}
       id={`popover-card-${entry.key}`}
-      ref={ref}
+      ref={ref as React.Ref<HTMLDialogElement>}
       style={combinedStyle}
       aria-labelledby={`title-${entry.key}`}
       aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}

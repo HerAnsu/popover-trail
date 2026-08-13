@@ -14,6 +14,7 @@ import { usePopoverCollisionConfig } from './usePopoverSelectors';
 import { QuadTree, type BoundingBox } from '../utils/quadTree';
 import { ResizeObserverRegistry } from '../utils/resizeObserverRegistry';
 import { shallowEqual } from '../utils/equality';
+import type { PopoverPlacement, TrailEntry } from '../types';
 
 /**
  * Helper to safely measure current viewport bounds across SSR and browser environments.

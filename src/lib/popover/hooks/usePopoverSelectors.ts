@@ -19,6 +19,9 @@ import {
 
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
 import { shallowEqual } from '../utils/equality';
+import { findEntryInStore } from '../utils/storeHelpers';
+
+export type { UsePopoverResult };
 
 const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 

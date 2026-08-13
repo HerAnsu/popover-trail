@@ -5,7 +5,13 @@
  * @module sliceResolver
  */
 
-import type { OpenRootOptions, OpenNestedOptions, AnchorEventLike, TrailEntry } from '../../types';
+import type {
+  OpenRootOptions,
+  OpenNestedOptions,
+  AnchorEventLike,
+  TrailEntry,
+  PopoverStateData,
+} from '../../types';
 import {
   findEntryInStore,
   findEntryIndex,
@@ -197,8 +203,12 @@ export function createResolverSlice<
         (updatedEntry: TrailEntry<TData>) => (state: PopoverStateData<TData, TContext>) =>
           findEntryInStore(state.floating, state.trail, key)
             ? {
-                floating: state.floating.map((e) => (e.key === key ? updatedEntry : e)),
-                trail: state.trail.map((e) => (e.key === key ? updatedEntry : e)),
+                floating: state.floating.map((e: TrailEntry<TData>) =>
+                  e.key === key ? updatedEntry : e,
+                ),
+                trail: state.trail.map((e: TrailEntry<TData>) =>
+                  e.key === key ? updatedEntry : e,
+                ),
               }
             : {};
 
