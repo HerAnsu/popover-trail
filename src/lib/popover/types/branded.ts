@@ -27,26 +27,6 @@ export type StackGroupId = Brand<string, 'StackGroupId'>;
 export type ZIndexDepth = Brand<number, 'ZIndexDepth'>;
 
 /**
- * Type predicate guard checking whether a value is a valid non-empty string PopoverKey.
- *
- * @param value - Value to check.
- * @returns True if value is a non-empty string.
- */
-export function isPopoverKey(value: unknown): value is PopoverKey {
-  return typeof value === 'string' && value.trim().length > 0;
-}
-
-/**
- * Asserts that a string value is a valid PopoverKey, returning it branded.
- *
- * @param key - String key identifier.
- * @returns Nominal PopoverKey.
- */
-export function toPopoverKey(key: string): PopoverKey {
-  return key as PopoverKey;
-}
-
-/**
  * Single source of truth frozen empty array primitive.
  * Safe for use as default state across store slices without double type assertions.
  */

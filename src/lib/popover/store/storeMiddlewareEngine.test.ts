@@ -92,4 +92,21 @@ describe('storeMiddlewareEngine module', () => {
     const result = engine.apply({ ownerId: 'owner-1' }, {} as PopoverStore);
     expect(result).toEqual({ ownerId: 'owner-1' });
   });
+
+  it('safely handles falsy registrations and supports clear/dispose', () => {
+    const engine = new PopoverMiddlewareEngine();
+    // @ts-expect-error Testing invalid middleware input
+    const unsub = engine.use(null);
+    expect(engine.size).toBe(0);
+    expect(() => unsub()).not.toThrow();
+
+    engine.use(() => ({}));
+    expect(engine.size).toBe(1);
+    engine.clear();
+    expect(engine.size).toBe(0);
+
+    engine.use(() => ({}));
+    engine.dispose();
+    expect(engine.size).toBe(0);
+  });
 });

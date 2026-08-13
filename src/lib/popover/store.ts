@@ -13,8 +13,6 @@ import type {
   TrailEntry,
   PopoverCache,
   PopoverStoreEvent,
-  OpenRootOptions,
-  OpenNestedOptions,
 } from './types';
 import { findEntryInStore } from './utils/storeHelpers';
 import { createHistoryManager } from './store/history';
@@ -25,7 +23,7 @@ import { createStoreActions } from './store/storeActionRegistry';
 import { PopoverDAG } from './utils/dag';
 import { getInitialStoreState, EMPTY_ARRAY, EMPTY_OBJECT } from './store/storeDefaults';
 import { createBatchingManager } from './store/storeBatching';
-import { resolvePopoverEntry } from './store/storeResolverPipeline';
+import { resolvePopoverEntry, type ResolvePopoverEntryParams } from './store/storeResolverPipeline';
 
 /**
  * Instantiates and returns a generic Zustand vanilla StoreApi instance.
@@ -140,46 +138,22 @@ export function createPopoverStore<
       return findEntryInStore(floating, trail, key);
     };
 
+    const resolverPipelineDeps = {
+      popoverDAG,
+      cache,
+      resolveData,
+      initialContext,
+      inFlightPromises,
+      registerController,
+      removeController,
+      safeSet,
+      findEntryByKey,
+      eventListeners,
+    };
+
     const boundResolvePopoverEntry = (
-      key: string,
-      parentKey: string | undefined,
-      rect: DOMRect | null,
-      parentData: TData | null | undefined,
-      options: (OpenRootOptions & OpenNestedOptions) | undefined,
-      controllerKey: string,
-      incrementCounter: () => number,
-      isStale: (counter: number) => boolean,
-      insertStatePatch: (
-        entry: TrailEntry<TData>,
-      ) =>
-        | Partial<PopoverStore<TData, TContext, TPopoverKey>>
-        | ((
-            state: PopoverStore<TData, TContext, TPopoverKey>,
-          ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>),
-    ) =>
-      resolvePopoverEntry(
-        get,
-        key,
-        parentKey,
-        rect,
-        parentData,
-        options,
-        controllerKey,
-        incrementCounter,
-        isStale,
-        insertStatePatch,
-        {
-          popoverDAG,
-          cache,
-          resolveData,
-          initialContext,
-          inFlightPromises,
-          registerController,
-          removeController,
-          safeSet,
-          findEntryByKey,
-        },
-      );
+      params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
+    ) => resolvePopoverEntry(get, params, resolverPipelineDeps);
 
     const actions = Object.freeze(
       createStoreActions<TData, TContext, TPopoverKey>(safeSet, get, {

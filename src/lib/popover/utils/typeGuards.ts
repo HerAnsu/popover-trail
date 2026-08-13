@@ -15,15 +15,6 @@ import type {
 } from '../types';
 import { VALID_PLACEMENTS_SET } from '../constants';
 
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-
-/**
- * Type guard verifying a string key is safe from prototype pollution attacks.
- */
-export function isSafeKey(key: string): boolean {
-  return typeof key === 'string' && key.length > 0 && !UNSAFE_KEYS.has(key);
-}
-
 /**
  * Type Guard function checking if a TrailEntry has finished resolving data successfully.
  * Narrows entry.data to TData (eliminating undefined) within conditional blocks.
@@ -117,8 +108,11 @@ export function isErrorEntry<TData>(
  * @see {@link isResolvedEntry}
  */
 export function getEntryState<TData>(
-  entry: TrailEntry<TData>,
+  entry: TrailEntry<TData> | undefined | null,
 ): PopoverEntryDiscriminatedState<TData> {
+  if (!entry) {
+    return { status: 'loading', isLoading: true, data: undefined, error: null };
+  }
   if (entry.isLoading) {
     return { status: 'loading', isLoading: true, data: undefined, error: null };
   }

@@ -25,12 +25,11 @@ import type { PopoverStoreEvent } from './eventTypes';
 
 import type { StoreApi } from 'zustand/vanilla';
 import type { RegisteredKeys, RegisteredDataMap } from './registerTypes';
+import type { Brand, StackGroupId } from './branded';
 
-export type Brand<T, B> = T & { readonly __brand: B };
 export type ViewportX = Brand<number, 'ViewportX'>;
 export type ViewportY = Brand<number, 'ViewportY'>;
 export type OwnerId = Brand<string, 'OwnerId'>;
-export type StackGroupId = Brand<string, 'StackGroupId'>;
 export type TabId = Brand<string, 'TabId'>;
 export type DragOffset = { x: number; y: number };
 
@@ -133,13 +132,6 @@ export type ReadonlyDeep<T> = T extends (...args: unknown[]) => unknown
     ? { readonly [P in keyof T]: ReadonlyDeep<T[P]> }
     : T;
 
-/**
- * Branded string type helper for strict popover keys.
- */
-export type PopoverKey<T extends string = string> = T & {
-  readonly __popoverKeyBrand?: unique symbol;
-};
-
 /** Domain-scoped template literal type for namespaced popover keys (e.g. 'user:profile'). */
 export type DomainPopoverKey<
   TDomain extends string = string,
@@ -205,8 +197,6 @@ export interface PopoverCache<TData = unknown> {
   clear: () => void;
   destroy?: () => void;
 }
-
-export type TypedPopoverCache<TData = unknown> = PopoverCache<TData>;
 
 /**
  * The inner reactive state managed by the popover Zustand store.

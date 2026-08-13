@@ -6,8 +6,8 @@
  */
 
 import { useMemo, type ReactNode, type ElementType } from 'react';
-import { clsx } from '../utils/storeHelpers';
-import { usePopoverTimeline } from '../context';
+import { clsx } from '../utils/clsx';
+import { usePopoverTimeline } from '../hooks/usePopoverTimeline';
 import type { PolymorphicProps } from './PopoverCard';
 import {
   PopoverTimelineScopeContext,

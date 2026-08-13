@@ -37,4 +37,12 @@ describe('styles - getPopoverStyles', () => {
 
     expect(style1).toBe(style2);
   });
+
+  it('handles nullish layout position and offset without throwing', () => {
+    // @ts-expect-error Testing null input
+    const style = getPopoverStyles({ finalLayoutPos: null, offset: null });
+    expect(style.top).toBe(0);
+    expect(style.left).toBe(0);
+    expect(style.zIndex).toBe(1000);
+  });
 });

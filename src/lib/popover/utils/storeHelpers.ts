@@ -19,30 +19,7 @@ export {
 export function isPromise<T>(value: unknown): value is Promise<T> {
   if (value instanceof Promise) return true;
   if ((typeof value !== 'object' && typeof value !== 'function') || value === null) return false;
-  return (
-    Object.prototype.hasOwnProperty.call(value, 'then') &&
-    typeof (value as Record<string, unknown>).then === 'function'
-  );
-}
-
-/**
- * Shallow equality comparison utility for plain objects and arrays.
- */
-export function shallowEqual<T>(objA: T, objB: T): boolean {
-  if (Object.is(objA, objB)) return true;
-  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
-    return false;
-  }
-  const keysA = Object.keys(objA);
-  if (keysA.length !== Object.keys(objB).length) return false;
-  const recA = objA as Record<string, unknown>;
-  const recB = objB as Record<string, unknown>;
-  for (const key of keysA) {
-    if (!Object.prototype.hasOwnProperty.call(objB, key) || !Object.is(recA[key], recB[key])) {
-      return false;
-    }
-  }
-  return true;
+  return typeof (value as { then?: unknown }).then === 'function';
 }
 
 /**
@@ -52,95 +29,9 @@ export function toError(err: unknown): Error {
   return err instanceof Error ? err : new Error(String(err));
 }
 
-/**
- * Safely extracts the event target or primary Shadow DOM origin node from an event.
- */
-export function getEventTarget<T extends EventTarget = HTMLElement>(e: Event): T | null {
-  if (typeof e.composedPath === 'function') {
-    const path = e.composedPath();
-    if (path.length > 0) return (path[0] as T) ?? (e.target as T | null);
-  }
-  return (e.target as T | null) ?? null;
-}
+export { shallowEqual, isDeepEqual } from './equality';
 
-/**
- * Returns the event propagation path, supporting Shadow DOM composedPath.
- */
-export function getEventPath(e: Event): EventTarget[] {
-  if (typeof e.composedPath === 'function') {
-    return e.composedPath();
-  }
-  return e.target ? [e.target] : [];
-}
-
-/**
- * Inspects event path for elements marked with data-popover-portal or data-popover-ignore-outside.
- */
-export function isPortalOrExcludedTarget(e: Event): boolean {
-  const path = getEventPath(e);
-  for (const target of path) {
-    if (target instanceof Element) {
-      if (
-        target.hasAttribute('data-popover-portal') ||
-        target.hasAttribute('data-popover-ignore-outside')
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-/**
- * Lightweight zero-dependency deep equality comparison helper for plain objects, arrays, and primitives.
- */
-export function isDeepEqual<T>(a: T, b: T): boolean {
-  if (Object.is(a, b)) return true;
-  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
-    return false;
-  }
-  if (Array.isArray(a)) {
-    if (!Array.isArray(b) || a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      if (!isDeepEqual(a[i], b[i])) return false;
-    }
-    return true;
-  }
-  if (Array.isArray(b)) return false;
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-  const recA = a as Record<string, unknown>;
-  const recB = b as Record<string, unknown>;
-  for (const key of keysA) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-    if (!Object.prototype.hasOwnProperty.call(b, key) || !isDeepEqual(recA[key], recB[key])) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
- * Lightweight zero-dependency className concatenation helper.
- */
-export function clsx(
-  ...inputs: Array<string | boolean | null | undefined | Record<string, boolean | null | undefined>>
-): string {
-  const classes: string[] = [];
-  for (const input of inputs) {
-    if (!input) continue;
-    if (typeof input === 'string') {
-      classes.push(input);
-    } else if (typeof input === 'object') {
-      for (const key in input) {
-        if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-        if (input[key]) classes.push(key);
-      }
-    }
-  }
-  return classes.join(' ');
-}
+export { clsx } from './clsx';
 
 /**
  * Retrieves a popover entry safely using a virtual index that merges
@@ -251,9 +142,12 @@ export function createTrailEntry<TData>(
     parentKey: parentKey ?? undefined,
     rect: rect ?? existingEntry?.rect ?? undefined,
     pinnedLayoutPos: existingEntry?.pinnedLayoutPos ?? undefined,
-    originalParentKey: parentKey ?? existingEntry?.originalParentKey ?? undefined,
-    originalRect: rect ?? existingEntry?.originalRect ?? undefined,
-    transitionStatus: 'mounting',
+    originalParentKey: existingEntry?.originalParentKey ?? parentKey ?? undefined,
+    originalRect: existingEntry?.originalRect ?? rect ?? undefined,
+    transitionStatus:
+      existingEntry?.transitionStatus && existingEntry.transitionStatus !== 'unmounting'
+        ? existingEntry.transitionStatus
+        : 'mounting',
     status:
       data !== undefined && data !== null
         ? 'success'

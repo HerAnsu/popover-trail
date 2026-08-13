@@ -8,15 +8,16 @@
 import React from 'react';
 import {
   PopoverProvider as CorePopoverProvider,
-  PopoverPortal as CorePopoverPortal,
+  type PopoverProviderProps,
+} from './context/PopoverProvider';
+import { usePopoverActions as coreUsePopoverActions } from './context/usePopoverStore';
+import { PopoverTrigger as CorePopoverTrigger } from './components/PopoverTrigger';
+import { PopoverPortal as CorePopoverPortal } from './components/PopoverPortal';
+import {
   usePopover as coreUsePopover,
-  usePopoverActions as coreUsePopoverActions,
   usePopoverContext as coreUsePopoverContext,
-  PopoverTrigger as CorePopoverTrigger,
   type UsePopoverResult,
-} from './index';
-import type { PopoverProviderProps } from './context';
-import type { PopoverTriggerProps } from './components/PopoverTrigger';
+} from './hooks/usePopoverSelectors';
 import {
   createPopoverSchema,
   type PopoverSchemaDefinition,
@@ -44,73 +45,78 @@ function isCurrentlyRenderingInReact(): boolean {
   }
 }
 
-function DefaultPopoverProvider(props: PopoverProviderProps<unknown, unknown>) {
-  return <CorePopoverProvider {...props} />;
-}
-DefaultPopoverProvider.displayName = 'PopoverProvider';
-
-function DefaultPopoverTrigger(props: PopoverTriggerProps<string>) {
-  return <CorePopoverTrigger {...props} />;
-}
-DefaultPopoverTrigger.displayName = 'PopoverTrigger';
-
-const DEFAULT_GENERIC_TRAIL_INSTANCE = Object.freeze({
-  PopoverProvider: DefaultPopoverProvider,
-  PopoverPortal: CorePopoverPortal,
-  PopoverTrigger: DefaultPopoverTrigger,
-  usePopover: coreUsePopover as (key: string) => UsePopoverResult<unknown>,
-  usePopoverActions: coreUsePopoverActions as () => ReturnType<typeof coreUsePopoverActions>,
-  usePopoverContext: coreUsePopoverContext as () => unknown,
-});
-
 /**
- * Unified factory creating popover trail instances from a schema definition.
+ * Factory creating pre-typed, scoped Popover components and hooks.
+ * Supports passing a schema instance from `createPopoverSchema` or schema definition for end-to-end type safety.
  *
- * @template TSchema - Schema definition map type.
- * @param definition - Object map defining schema nodes.
- * @returns Strongly typed schema instance with bound triggers, hooks, and keys.
+ * @template TSchema - Schema definition mapping keys to data payloads.
+ * @param schema - Schema instance or definition created via `createPopoverSchema(definition)`.
+ * @returns Strongly typed suite of Popover components and hooks.
  */
 export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
-  definition: TSchema,
-): PopoverSchemaInstance<TSchema>;
+  schema: PopoverSchemaInstance<TSchema> | TSchema,
+): PopoverSchemaInstance<TSchema> & {
+  PopoverProvider: React.ComponentType<PopoverProviderProps<unknown, unknown>>;
+  PopoverTrigger: typeof CorePopoverTrigger;
+  PopoverPortal: typeof CorePopoverPortal;
+  usePopover: typeof coreUsePopover;
+  usePopoverActions: typeof coreUsePopoverActions;
+  usePopoverContext: typeof coreUsePopoverContext;
+};
 
 /**
- * Unified factory creating generic type-bound popover trail components and hooks.
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Shared context payload type.
- * @template TPopoverKey - Union of valid popover keys.
- * @returns Object containing type-bound PopoverProvider, PopoverTrigger, PopoverPortal, and hooks.
- *
- * @example
- * ```tsx
- * import { createPopoverTrail } from 'popover-trail';
- *
- * const myTrail = createPopoverTrail<MyData, MyContext, 'card-1' | 'card-2'>();
- * ```
- *
- * @see {@link createPopoverSchema}
- * @see {@link PopoverProvider}
+ * Factory creating generic scoped Popover components and hooks.
  */
 export function createPopoverTrail<
   TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
-  TPopoverKey extends string = RegisteredKeys,
 >(): {
   PopoverProvider: React.ComponentType<PopoverProviderProps<TData, TContext>>;
+  PopoverTrigger: typeof CorePopoverTrigger;
   PopoverPortal: typeof CorePopoverPortal;
-  PopoverTrigger: React.ComponentType<PopoverTriggerProps<TPopoverKey>>;
-  usePopover: (key: TPopoverKey) => UsePopoverResult<TData>;
-  usePopoverActions: () => ReturnType<typeof coreUsePopoverActions<TData, TContext, TPopoverKey>>;
+  usePopover: <K extends string = RegisteredKeys>(key: K) => UsePopoverResult<TData>;
+  usePopoverActions: () => ReturnType<typeof coreUsePopoverActions<TData, TContext>>;
   usePopoverContext: () => TContext;
 };
 
-export function createPopoverTrail(definition?: PopoverSchemaDefinition): unknown {
-  validateFactoryPlacement(isCurrentlyRenderingInReact());
-
-  if (definition && typeof definition === 'object') {
-    return createPopoverSchema(definition);
+/**
+ * Implementation of `createPopoverTrail`.
+ */
+export function createPopoverTrail<
+  TSchema extends PopoverSchemaDefinition = PopoverSchemaDefinition,
+  TData = RegisteredDataMap[RegisteredKeys],
+  TContext = unknown,
+>(schema?: PopoverSchemaInstance<TSchema> | TSchema) {
+  if (process.env.NODE_ENV !== 'production' && isCurrentlyRenderingInReact()) {
+    validateFactoryPlacement(false);
   }
 
-  return DEFAULT_GENERIC_TRAIL_INSTANCE;
+  const baseSuite = {
+    PopoverProvider: CorePopoverProvider as React.ComponentType<
+      PopoverProviderProps<TData, TContext>
+    >,
+    PopoverTrigger: CorePopoverTrigger,
+    PopoverPortal: CorePopoverPortal,
+    usePopover: coreUsePopover as <K extends string = RegisteredKeys>(
+      key: K,
+    ) => UsePopoverResult<TData>,
+    usePopoverActions: coreUsePopoverActions as () => ReturnType<
+      typeof coreUsePopoverActions<TData, TContext>
+    >,
+    usePopoverContext: coreUsePopoverContext as () => TContext,
+  };
+
+  if (schema) {
+    const resolvedSchema =
+      typeof schema === 'object' && 'createResolver' in schema
+        ? (schema as PopoverSchemaInstance<TSchema>)
+        : createPopoverSchema(schema as TSchema);
+
+    return {
+      ...resolvedSchema,
+      ...baseSuite,
+    };
+  }
+
+  return baseSuite;
 }

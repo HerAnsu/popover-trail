@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, PopoverResolver, FocusLockOptions } from '../types';
-import { isDeepEqual } from '../utils/storeHelpers';
+import { isDeepEqual } from '../utils/equality';
 import type { PopoverProviderProps } from './PopoverProviderProps';
 
-export function syncPropIfChanged<T>(
+function syncPropIfChanged<T>(
   currentValue: T,
   newValue: T,
   setter: (val: T) => void,

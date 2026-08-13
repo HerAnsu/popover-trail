@@ -5,7 +5,7 @@
  * @module useHookUtils
  */
 
-import { useRef, useCallback, type Ref, type RefCallback } from 'react';
+import { useRef, useCallback, useInsertionEffect, type Ref, type RefCallback } from 'react';
 
 /**
  * Merges multiple React refs (callback refs, ref objects, or null/undefined)
@@ -16,7 +16,7 @@ import { useRef, useCallback, type Ref, type RefCallback } from 'react';
  * this hook returns a **referentially stable** function. When one of the input
  * refs changes (e.g., a parent passes a new callback ref), the DOM node is NOT
  * detached and reattached — the merge function simply forwards to the latest refs
- * stored in an internal `useRef`.
+ * updated synchronously in `useInsertionEffect`.
  *
  * This eliminates layout thrashing (forced style recalculations) caused by
  * unnecessary DOM node detach/reattach cycles during parent re-renders.
@@ -33,7 +33,10 @@ import { useRef, useCallback, type Ref, type RefCallback } from 'react';
  */
 export function useMergedRef<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T> {
   const refsRef = useRef(refs);
-  refsRef.current = refs;
+
+  useInsertionEffect(() => {
+    refsRef.current = refs;
+  });
 
   return useCallback((node: T | null) => {
     for (const ref of refsRef.current) {
@@ -54,8 +57,8 @@ export function useMergedRef<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T>
  * Standard `useCallback` recreates the function identity when any dependency
  * changes, which cascades unnecessary re-renders through `React.memo` boundaries.
  *
- * `useStableCallback` wraps the handler in a `useRef` that is updated on every
- * render, and returns a static wrapper function (empty `[]` dependency array)
+ * `useStableCallback` wraps the handler in a `useRef` that is updated in `useInsertionEffect`,
+ * and returns a static wrapper function (empty `[]` dependency array)
  * that delegates to `ref.current`. The returned function **never changes identity**
  * for the entire component lifecycle.
  *
@@ -77,7 +80,10 @@ export function useMergedRef<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T>
  */
 export function useStableCallback<T extends (...args: never[]) => unknown>(fn: T): T {
   const ref = useRef(fn);
-  ref.current = fn;
+
+  useInsertionEffect(() => {
+    ref.current = fn;
+  });
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(((...args: Parameters<T>) => ref.current(...args)) as T, []);

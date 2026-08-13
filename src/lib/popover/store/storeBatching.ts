@@ -39,30 +39,39 @@ export function batchUpdatesScope<R>(
 type BatchListener = (state: unknown, prevState: unknown) => void;
 
 export function createBatchingManager(): BatchingManager {
-  let isBatching = false;
+  let batchDepth = 0;
   let isBatchDirty = false;
+  let initialBatchState: unknown = undefined;
   const batchListeners = new Set<BatchListener>();
 
-  const startBatch = () => {
-    isBatching = true;
-    isBatchDirty = false;
-  };
-
   return {
-    startBatch,
-    endBatch: (getState?: () => unknown) => {
-      isBatching = false;
-      if (isBatchDirty) {
+    startBatch: () => {
+      if (batchDepth === 0) {
         isBatchDirty = false;
-        if (getState) {
-          const currentState = getState();
-          for (const listener of batchListeners) {
-            try {
-              listener(currentState, currentState);
-            } catch (err) {
-              console.error('[popover-trail]: Exception in subscriber:', err);
+      }
+      batchDepth++;
+    },
+    endBatch: (getState?: () => unknown) => {
+      if (batchDepth > 0) {
+        batchDepth--;
+      }
+      if (batchDepth === 0) {
+        if (isBatchDirty) {
+          isBatchDirty = false;
+          if (getState) {
+            const currentState = getState();
+            const prevStateToUse = initialBatchState ?? currentState;
+            initialBatchState = undefined;
+            for (const listener of batchListeners) {
+              try {
+                listener(currentState, prevStateToUse);
+              } catch (err) {
+                console.error('[popover-trail]: Exception in subscriber:', err);
+              }
             }
           }
+        } else {
+          initialBatchState = undefined;
         }
       }
     },
@@ -92,7 +101,10 @@ export function createBatchingManager(): BatchingManager {
         };
         batchListeners.add(handler);
         const unsubRaw = rawSubscribe((state, prevState) => {
-          if (isBatching) {
+          if (batchDepth > 0) {
+            if (initialBatchState === undefined) {
+              initialBatchState = prevState;
+            }
             isBatchDirty = true;
             return;
           }

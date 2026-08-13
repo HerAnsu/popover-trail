@@ -1,13 +1,10 @@
 import React, { useContext, useMemo, useRef, useEffect } from 'react';
-import { clsx } from '../utils/storeHelpers';
+import { clsx } from '../utils/clsx';
 import { useMergedRef } from '../hooks/useHookUtils';
 import { TriggerRegistry } from '../utils/triggerRegistry';
-import {
-  PopoverCardContext,
-  usePopoverTrigger,
-  usePopoverNestedTrigger,
-  useIsPopoverOpen,
-} from '../context';
+import { PopoverCardContext } from '../context/PopoverCardContext';
+import { usePopoverTrigger, usePopoverNestedTrigger } from '../hooks/usePopoverTriggers';
+import { useIsPopoverOpen } from '../hooks/usePopoverSelectors';
 import type { OpenRootOptions, OpenNestedOptions, PopoverPlacement } from '../types';
 import {
   validatePopoverKey,

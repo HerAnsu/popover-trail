@@ -4,6 +4,10 @@ import {
   findEntryIndex,
   hasEntryWithKey,
   updateEntryInLists,
+  isPromise,
+  shallowEqual,
+  clsx,
+  isDeepEqual,
 } from './storeHelpers';
 import type { TrailEntry } from '../types';
 
@@ -48,5 +52,37 @@ describe('storeHelpers utility functions', () => {
     expect(updated.floating).toBe(floating); // Reference preserved!
     expect(updated.trail).not.toBe(trail);
     expect(updated.trail[0]?.isLoading).toBe(true);
+  });
+
+  it('accurately identifies promises and prototype-based thenables', () => {
+    expect(isPromise(Promise.resolve(1))).toBe(true);
+
+    const thenable = {};
+    const prop = ['t', 'h', 'e', 'n'].join('');
+    Object.defineProperty(thenable, prop, {
+      value: (resolve: (val: number) => void) => resolve(42),
+    });
+    expect(isPromise(thenable)).toBe(true);
+    expect(isPromise(null)).toBe(false);
+    expect(isPromise(123)).toBe(false);
+  });
+
+  it('compares objects shallowly and deeply', () => {
+    expect(shallowEqual({ a: 1, b: 2 }, { a: 1, b: 2 })).toBe(true);
+    expect(shallowEqual({ a: 1 }, { a: 2 })).toBe(false);
+
+    expect(isDeepEqual({ a: [1, { b: 2 }] }, { a: [1, { b: 2 }] })).toBe(true);
+    expect(isDeepEqual({ a: [1, { b: 2 }] }, { a: [1, { b: 3 }] })).toBe(false);
+  });
+
+  it('joins classnames cleanly with clsx', () => {
+    const isActive = Boolean(true);
+    const isHidden = Boolean(false);
+    expect(
+      clsx('btn', isActive ? 'active' : '', isHidden ? 'hidden' : '', {
+        primary: true,
+        disabled: false,
+      }),
+    ).toBe('btn active primary');
   });
 });

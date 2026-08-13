@@ -29,12 +29,14 @@ export function createControllerManager<TData = unknown>() {
   };
 
   const abortControllersForKeys = (keys: Iterable<string>): void => {
+    if (!keys) return;
     for (const key of keys) {
       const controller = activeControllers.get(key);
       if (controller) {
         controller.abort();
         activeControllers.delete(key);
       }
+      inFlightPromises.delete(key);
     }
   };
 
@@ -43,6 +45,7 @@ export function createControllerManager<TData = unknown>() {
       controller.abort();
     }
     activeControllers.clear();
+    inFlightPromises.clear();
   };
 
   return {
@@ -52,5 +55,14 @@ export function createControllerManager<TData = unknown>() {
     removeController,
     abortControllersForKeys,
     abortAllControllers,
+    hasInFlight: (key: string) => inFlightPromises.has(key),
+    getInFlight: (key: string) => inFlightPromises.get(key),
+    setInFlight: (key: string, promise: Promise<TData>) => {
+      inFlightPromises.set(key, promise);
+    },
+    removeInFlight: (key: string) => {
+      inFlightPromises.delete(key);
+    },
+    dispose: abortAllControllers,
   };
 }

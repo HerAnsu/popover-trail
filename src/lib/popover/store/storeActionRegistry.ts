@@ -5,17 +5,7 @@
  * @module storeActionRegistry
  */
 
-import type {
-  PopoverActions,
-  OpenRootOptions,
-  OpenNestedOptions,
-  PopoverStoreEvent,
-  TrailEntry,
-  StatePatch,
-  StoreState,
-  PopoverStateData,
-  PopoverCache,
-} from '../types';
+import type { PopoverActions, PopoverStoreEvent, PopoverStateData, PopoverCache } from '../types';
 import { createTrailSlice } from './slices/sliceTrail';
 import { createPinningSlice } from './slices/slicePinning';
 import { createResolverSlice } from './slices/sliceResolver';
@@ -23,6 +13,7 @@ import { createConfigSlice } from './slices/sliceConfig';
 import { createPersistenceSlice } from './slices/slicePersistence';
 import type { PopoverMiddlewareEngine } from './storeMiddlewareEngine';
 import type { SliceContext } from './slices/sliceContext';
+import type { ResolvePopoverEntryParams } from './storeResolverPipeline';
 import type { StoreSetFn, StoreGetFn } from './storeTypes';
 import type { HistoryManager, HistorySnapshot } from './history';
 
@@ -46,23 +37,8 @@ export interface ActionRegistryDependencies<
   isRootStale: (startedCounter: number) => boolean;
   incrementNestedCounter: (parentKey: string) => number;
   isNestedStale: (parentKey: string, startedCounter: number) => boolean;
-  findEntryByKey: (key: string) => TrailEntry<TData> | undefined;
   resolvePopoverEntry: (
-    key: string,
-    parentKey: string | undefined,
-    rect: DOMRect | null,
-    parentData: TData | null | undefined,
-    options: (OpenRootOptions & OpenNestedOptions) | undefined,
-    controllerKey: string,
-    incrementCounter: () => number,
-    isStale: (counter: number) => boolean,
-    insertStatePatch: (
-      entry: TrailEntry<TData>,
-    ) =>
-      | StatePatch<TData, TContext, TPopoverKey>
-      | ((
-          state: StoreState<TData, TContext, TPopoverKey>,
-        ) => StatePatch<TData, TContext, TPopoverKey>),
+    params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
   ) => Promise<void>;
   pushSnapshot: (state: PopoverStateData<TData, TContext>) => void;
   clearHistory: () => void;

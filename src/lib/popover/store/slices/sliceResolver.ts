@@ -94,6 +94,7 @@ export function createResolverSlice<
       const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
 
       if (
+        !options?.forceRefresh &&
         trail.length > 0 &&
         trail[0]?.key === keyOrName &&
         trail[0]?.transitionStatus !== 'unmounting' &&
@@ -115,17 +116,17 @@ export function createResolverSlice<
       const optRect = options?.triggerRect;
       const triggerRect = optRect ?? triggerEl?.getBoundingClientRect() ?? null;
 
-      await resolvePopoverEntry(
-        keyOrName,
-        undefined,
-        triggerRect,
-        undefined,
+      await resolvePopoverEntry({
+        key: keyOrName,
+        parentKey: undefined,
+        rect: triggerRect,
+        parentData: undefined,
         options,
-        '__root__',
-        incrementRootCounter,
-        isRootStale,
-        (entry) => (state) => openRootState(state, finalOwnerId, entry),
-      );
+        controllerKey: '__root__',
+        incrementCounter: incrementRootCounter,
+        isStale: isRootStale,
+        insertStatePatch: (entry) => (state) => openRootState(state, finalOwnerId, entry),
+      });
 
       const entry = findEntryByKey(keyOrName);
       if (entry?.onOpen) {
@@ -143,9 +144,8 @@ export function createResolverSlice<
       if (sourceIndex === -1) return;
 
       const existingEntry = findEntryInStore(floating, trail, keyOrName);
-      if (existingEntry) {
+      if (existingEntry && !options?.forceRefresh) {
         if (
-          existingEntry &&
           existingEntry.transitionStatus !== 'unmounting' &&
           (existingEntry.parentKey === sourceKey || existingEntry.originalParentKey === sourceKey)
         ) {
@@ -160,17 +160,17 @@ export function createResolverSlice<
       const optRect = options?.triggerRect;
       const rect = optRect ?? sourceEntry.rect;
 
-      await resolvePopoverEntry(
-        keyOrName,
-        sourceKey,
-        rect ?? null,
-        sourceEntry.data,
+      await resolvePopoverEntry({
+        key: keyOrName,
+        parentKey: sourceKey,
+        rect: rect ?? null,
+        parentData: sourceEntry.data,
         options,
-        keyOrName,
-        () => incrementNestedCounter(sourceKey),
-        (startedCounter) => isNestedStale(sourceKey, startedCounter),
-        (entry) => (state) => pushNestedState(state, sourceIndex, entry),
-      );
+        controllerKey: keyOrName,
+        incrementCounter: () => incrementNestedCounter(sourceKey),
+        isStale: (startedCounter) => isNestedStale(sourceKey, startedCounter),
+        insertStatePatch: (entry) => (state) => pushNestedState(state, sourceIndex, entry),
+      });
 
       const entry = findEntryByKey(keyOrName);
       if (entry?.onOpen) {
@@ -193,42 +193,39 @@ export function createResolverSlice<
 
       const options = extractEntryOptions(entry);
 
+      const updateStateForEntry =
+        (updatedEntry: TrailEntry<TData>) => (state: PopoverStateData<TData, TContext>) =>
+          findEntryInStore(state.floating, state.trail, key)
+            ? {
+                floating: state.floating.map((e) => (e.key === key ? updatedEntry : e)),
+                trail: state.trail.map((e) => (e.key === key ? updatedEntry : e)),
+              }
+            : {};
+
       if (effectiveParentKey) {
-        await resolvePopoverEntry(
+        await resolvePopoverEntry({
           key,
-          effectiveParentKey,
-          entry.rect ?? null,
+          parentKey: effectiveParentKey,
+          rect: entry.rect ?? null,
           parentData,
           options,
-          key,
-          () => incrementNestedCounter(effectiveParentKey),
-          (startedCounter) => isNestedStale(effectiveParentKey, startedCounter),
-          (updatedEntry) => (state) =>
-            findEntryInStore(state.floating, state.trail, key)
-              ? {
-                  floating: state.floating.map((e) => (e.key === key ? updatedEntry : e)),
-                  trail: state.trail.map((e) => (e.key === key ? updatedEntry : e)),
-                }
-              : {},
-        );
+          controllerKey: key,
+          incrementCounter: () => incrementNestedCounter(effectiveParentKey),
+          isStale: (startedCounter) => isNestedStale(effectiveParentKey, startedCounter),
+          insertStatePatch: updateStateForEntry,
+        });
       } else {
-        await resolvePopoverEntry(
+        await resolvePopoverEntry({
           key,
-          undefined,
-          entry.rect ?? null,
-          undefined,
+          parentKey: undefined,
+          rect: entry.rect ?? null,
+          parentData: undefined,
           options,
-          '__root__',
-          incrementRootCounter,
-          isRootStale,
-          (updatedEntry) => (state) =>
-            findEntryInStore(state.floating, state.trail, key)
-              ? {
-                  floating: state.floating.map((e) => (e.key === key ? updatedEntry : e)),
-                  trail: state.trail.map((e) => (e.key === key ? updatedEntry : e)),
-                }
-              : {},
-        );
+          controllerKey: '__root__',
+          incrementCounter: incrementRootCounter,
+          isStale: isRootStale,
+          insertStatePatch: updateStateForEntry,
+        });
       }
     },
 

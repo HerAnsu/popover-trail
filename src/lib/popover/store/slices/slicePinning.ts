@@ -16,19 +16,34 @@ export function createPinningSlice<
   TPopoverKey extends string = string,
 >(ctx: SliceContext<TData, TContext, TPopoverKey>) {
   const { set, get, deps } = ctx;
-  const { clearHoverTimer, findEntryByKey, pushSnapshot } = deps;
+  const { clearHoverTimer, findEntryByKey, pushSnapshot, eventListeners } = deps;
 
   return {
     togglePin: (key: string, rect?: DOMRect) => {
+      if (!key) return;
       pushSnapshot(get());
       clearHoverTimer(key);
       set((state) => togglePinState(state, key, rect));
       const entry = findEntryByKey(key);
       const isPinned = selectIsPinned(key)(get());
-      entry?.onPin?.(key, isPinned);
+      if (eventListeners) {
+        for (const listener of eventListeners) {
+          try {
+            listener({ type: isPinned ? 'pin' : 'unpin', key });
+          } catch (err) {
+            console.error('[popover-trail]: Exception in store event listener:', err);
+          }
+        }
+      }
+      try {
+        entry?.onPin?.(key, isPinned);
+      } catch (err) {
+        console.error('[popover-trail]: Exception in onPin callback:', err);
+      }
     },
 
     bringToFront: (key: string) => {
+      if (!key) return;
       set((state) => {
         const entry = findEntryInStore(state.floating, state.trail, key);
         if (!entry) return {};
@@ -39,7 +54,7 @@ export function createPinningSlice<
     },
 
     updateOffset: (key: string, x: number, y: number) => {
-      if (Number.isNaN(x) || Number.isNaN(y)) return;
+      if (!key || !Number.isFinite(x) || !Number.isFinite(y)) return;
       const current = get().offsets[key];
       if (current && current.x === x && current.y === y) return;
       set((state) => reduceUpdateOffsetState(state, key, { x, y }));

@@ -45,8 +45,10 @@ export function clampDragCoordinates(
   y: number,
   bounds?: ClampBounds,
 ): { x: number; y: number } {
-  const out = { x, y };
-  if (bounds) clampDragCoordinatesInPlace(x, y, bounds, out);
+  const safeX = Number.isFinite(x) ? x : 0;
+  const safeY = Number.isFinite(y) ? y : 0;
+  const out = { x: safeX, y: safeY };
+  if (bounds) clampDragCoordinatesInPlace(safeX, safeY, bounds, out);
   return out;
 }
 
@@ -113,34 +115,15 @@ export function clampDragCoordinatesInPlace(
   bounds: ClampBounds | undefined,
   outTarget: { x: number; y: number },
 ): void {
+  const safeX = Number.isFinite(x) ? x : 0;
+  const safeY = Number.isFinite(y) ? y : 0;
   if (!bounds) {
-    outTarget.x = x;
-    outTarget.y = y;
+    outTarget.x = safeX;
+    outTarget.y = safeY;
     return;
   }
 
   const { minX, maxX, minY, maxY } = resolveValidBounds(bounds);
-  outTarget.x = Math.max(minX, Math.min(maxX, x));
-  outTarget.y = Math.max(minY, Math.min(maxY, y));
-}
-
-/**
- * Zero-allocation in-place variant of computeTiltMatrix mutating a target object.
- *
- * @param deltaX - X offset delta.
- * @param deltaY - Y offset delta.
- * @param maxAngle - Maximum rotation limit in degrees (default: 15).
- * @param sensitivity - Sensitivity multiplier factor (default: 0.1).
- * @param outTarget - Target object to mutate with rotationX, rotationY values.
- */
-export function computeTiltMatrixInPlace(
-  deltaX: number,
-  deltaY: number,
-  maxAngle = 15,
-  sensitivity = 0.1,
-  outTarget: { rotationX: number; rotationY: number },
-): void {
-  const result = computeRawTiltAngles(deltaX, deltaY, maxAngle, sensitivity);
-  outTarget.rotationX = result.rotationX;
-  outTarget.rotationY = result.rotationY;
+  outTarget.x = Math.max(minX, Math.min(maxX, safeX));
+  outTarget.y = Math.max(minY, Math.min(maxY, safeY));
 }

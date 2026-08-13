@@ -1,5 +1,6 @@
-import { type ReactNode, useMemo, useRef, useEffect } from 'react';
-import { PopoverPortal, usePopoverTrail, usePopoverFloating } from '../context';
+import React, { type ReactNode, useMemo, useRef, useEffect } from 'react';
+import { PopoverPortal } from './PopoverPortal';
+import { usePopoverTrail, usePopoverFloating } from '../hooks/usePopoverSelectors';
 import type { TrailEntry } from '../types';
 
 /**

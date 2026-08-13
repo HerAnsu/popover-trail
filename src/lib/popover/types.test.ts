@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import * as PopoverLib from './index';
 import {
   isOpenRootEvent,
   isPushNestedEvent,
@@ -153,5 +154,55 @@ describe('Type Safety Guards & Event Predicates', () => {
 
     expect(descriptor.name).toBe('customSlice');
     expect(typeof descriptor.create).toBe('function');
+  });
+
+  it('validates advanced store and event type helper signatures', () => {
+    type Key = PopoverLib.PopoverKeyId;
+    const testKey: Key = PopoverLib.createPopoverKey('test-key');
+    expect(testKey).toBe('test-key');
+
+    const action: PopoverLib.StoreActionPayload<string> = { type: 'CLOSE_BY_KEY', key: 'card-1' };
+    expect(action.type).toBe('CLOSE_BY_KEY');
+
+    const domainKey: PopoverLib.DomainPopoverKey<'user', 'profile'> = 'user:profile';
+    expect(domainKey).toBe('user:profile');
+
+    const eventName: PopoverLib.PopoverStoreEventName = 'popover:open_root';
+    expect(eventName).toBe('popover:open_root');
+
+    const eventMap: Partial<PopoverLib.PopoverStoreEventMap<string>> = {
+      clear: { type: 'clear' },
+    };
+    expect(eventMap.clear?.type).toBe('clear');
+
+    const onEventMap: PopoverLib.OnPopoverEventMap<string> = {
+      listener: (_e) => {},
+    };
+    expect(typeof onEventMap.listener).toBe('function');
+
+    const step: PopoverLib.PopoverTimelineStep<string> = {
+      stepKey: 's1',
+      entry: { key: 'k1', status: 'loading', isLoading: true, error: null, data: null },
+      timestamp: 100,
+    };
+    expect(step.stepKey).toBe('s1');
+
+    const undone: PopoverLib.UndoneTimelineStep<string> = {
+      stepKey: 'u1',
+      entry: { key: 'k1', status: 'loading', isLoading: true, error: null, data: null },
+      timestamp: 100,
+    };
+    expect(undone.stepKey).toBe('u1');
+
+    const config: PopoverLib.PopoverConfig<string> = {
+      enableArrowNavigation: true,
+      debug: false,
+    };
+    expect(config.enableArrowNavigation).toBe(true);
+
+    const tokens: PopoverLib.PopoverThemeTokens = {
+      bg: '#fff',
+    };
+    expect(tokens.bg).toBe('#fff');
   });
 });

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "src/lib/popover/index.ts",
+    "src/lib/popover/types.ts",
+    "src/lib/popover/dnd.tsx",
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/**/*.test.{ts,tsx}"
+  ]
+}

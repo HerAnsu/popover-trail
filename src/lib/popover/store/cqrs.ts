@@ -10,6 +10,7 @@ import type { PopoverStore, PopoverActions, PopoverStateData } from '../types/st
 import type { TrailEntry } from '../types/entryTypes';
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
 import { findEntryInStore } from '../utils/storeHelpers';
+import { selectTopmostEntry } from './storeSelectors';
 
 const ZERO_OFFSET = Object.freeze({ x: 0, y: 0 });
 
@@ -43,9 +44,58 @@ export class PopoverQueryBus<
     return this.getStoreState().context;
   }
 
+  get zIndexOrder(): readonly string[] {
+    return this.getStoreState().zIndexOrder;
+  }
+
+  get activeCount(): number {
+    const s = this.getStoreState();
+    return s.trail.length + s.floating.length;
+  }
+
+  get isIdle(): boolean {
+    const s = this.getStoreState();
+    return s.trail.length === 0 && s.floating.length === 0;
+  }
+
+  get discriminatedStatus(): 'idle' | 'active-trail' | 'pinned-only' {
+    const s = this.getStoreState();
+    if (s.trail.length > 0) return 'active-trail';
+    if (s.floating.length > 0) return 'pinned-only';
+    return 'idle';
+  }
+
+  get topmost(): TrailEntry<TData> | undefined {
+    return selectTopmostEntry(this.getStoreState());
+  }
+
+  get root(): TrailEntry<TData> | undefined {
+    return this.getStoreState().trail[0];
+  }
+
   getEntry(key: TPopoverKey): TrailEntry<TData> | undefined {
     const state = this.getStoreState();
     return findEntryInStore(state.floating, state.trail, key);
+  }
+
+  hasEntry(key: TPopoverKey): boolean {
+    const state = this.getStoreState();
+    return Boolean(findEntryInStore(state.floating, state.trail, key));
+  }
+
+  isLoading(key: TPopoverKey): boolean {
+    const state = this.getStoreState();
+    return Boolean(findEntryInStore(state.floating, state.trail, key)?.isLoading);
+  }
+
+  getError(key: TPopoverKey): Error | null {
+    const state = this.getStoreState();
+    return findEntryInStore(state.floating, state.trail, key)?.error ?? null;
+  }
+
+  getData(key: TPopoverKey): TData | null {
+    const state = this.getStoreState();
+    return findEntryInStore(state.floating, state.trail, key)?.data ?? null;
   }
 
   isPinned(key: TPopoverKey): boolean {
@@ -68,30 +118,51 @@ export class PopoverCommandBus<
   TContext = unknown,
   TPopoverKey extends string = RegisteredKeys,
 > {
-  private readonly actions: PopoverActions<TData, TContext, TPopoverKey>;
+  private readonly getActions: () => PopoverActions<TData, TContext, TPopoverKey>;
 
-  constructor(actions: PopoverActions<TData, TContext, TPopoverKey>) {
-    this.actions = actions;
+  constructor(
+    actionsOrGetter:
+      | PopoverActions<TData, TContext, TPopoverKey>
+      | (() => PopoverActions<TData, TContext, TPopoverKey>),
+  ) {
+    this.getActions =
+      typeof actionsOrGetter === 'function' ? actionsOrGetter : () => actionsOrGetter;
+  }
+
+  openRoot(ownerId: string, entry: TrailEntry<TData>): void {
+    this.getActions().openRoot(ownerId, entry);
+  }
+
+  openNested(index: number, entry: TrailEntry<TData>): void {
+    this.getActions().pushNested(index, entry);
   }
 
   close(key: TPopoverKey): void {
-    this.actions.closeByKey(key);
+    this.getActions().closeByKey(key);
   }
 
   clearAll(): void {
-    this.actions.closeAll();
+    this.getActions().closeAll();
   }
 
   togglePin(key: TPopoverKey, rect?: DOMRect): void {
-    this.actions.togglePin(key, rect);
+    this.getActions().togglePin(key, rect);
   }
 
   bringToFront(key: TPopoverKey): void {
-    this.actions.bringToFront(key);
+    this.getActions().bringToFront(key);
   }
 
   updateOffset(key: TPopoverKey, x: number, y: number): void {
-    this.actions.updateOffset(key, x, y);
+    this.getActions().updateOffset(key, x, y);
+  }
+
+  undo(): void {
+    this.getActions().undo();
+  }
+
+  redo(): void {
+    this.getActions().redo();
   }
 
   dispose(): void {
@@ -126,16 +197,10 @@ export function createCQRSBuses<
     return storeOrApi as PopoverStore<TData, TContext, TPopoverKey>;
   };
 
-  const actions =
-    typeof storeOrApi === 'object' &&
-    storeOrApi !== null &&
-    'actions' in storeOrApi &&
-    typeof storeOrApi.actions === 'object'
-      ? storeOrApi.actions
-      : getState().actions;
+  const getActions = (): PopoverActions<TData, TContext, TPopoverKey> => getState().actions;
 
   return {
     queryBus: new PopoverQueryBus(getState),
-    commandBus: new PopoverCommandBus(actions),
+    commandBus: new PopoverCommandBus(getActions),
   };
 }

@@ -91,6 +91,7 @@ export class QuadTree {
 
   /** Inserts a QuadItem into the tree index. */
   insert(item: QuadItem): void {
+    if (!item || !item.bounds) return;
     if (this.nodes.length > 0) {
       const index = this.getIndex(item.bounds);
       if (index !== -1) {
@@ -122,28 +123,38 @@ export class QuadTree {
   }
 
   /** Retrieves items intersecting target bounds into returnItems without unnecessary allocations. */
-  retrieve(returnItems: QuadItem[] = [], itemBounds?: BoundingBox): QuadItem[] {
+  retrieve(
+    returnItems: QuadItem[] = [],
+    itemBounds?: BoundingBox,
+    seenIds: Set<string> = new Set(),
+  ): QuadItem[] {
     const targetBounds = itemBounds ?? this.bounds;
 
     if (this.nodes.length > 0) {
       const index = this.getIndex(targetBounds);
       if (index !== -1) {
-        this.nodes[index]?.retrieve(returnItems, targetBounds);
+        this.nodes[index]?.retrieve(returnItems, targetBounds, seenIds);
       } else {
         for (const node of this.nodes) {
           if (boxesIntersect(node.bounds, targetBounds)) {
-            node.retrieve(returnItems, targetBounds);
+            node.retrieve(returnItems, targetBounds, seenIds);
           }
         }
       }
     }
 
     for (const item of this.items) {
-      if (item && item.id && boxesIntersect(item.bounds, targetBounds)) {
+      if (item && item.id && !seenIds.has(item.id) && boxesIntersect(item.bounds, targetBounds)) {
+        seenIds.add(item.id);
         returnItems.push(item);
       }
     }
 
     return returnItems;
+  }
+
+  /** ScopeDisposable handle clearing all quad partitions. */
+  dispose(): void {
+    this.clear();
   }
 }

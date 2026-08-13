@@ -1,6 +1,6 @@
 import React, { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { usePopoverFloating, usePopoverTrail } from '../context';
+import { usePopoverFloating, usePopoverTrail } from '../hooks/usePopoverSelectors';
 import type { TrailEntry } from '../types';
 import { validatePortalContainer } from '../utils/devWarnings';
 

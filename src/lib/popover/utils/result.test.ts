@@ -5,8 +5,11 @@ import {
   isOk,
   isErr,
   mapResult,
+  mapErr,
   flatMapResult,
   unwrapOr,
+  unwrap,
+  matchResult,
   wrapResult,
   wrapAsyncResult,
 } from './result';
@@ -72,5 +75,28 @@ describe('result monad utility', () => {
     if (!errRes.success) {
       expect(errRes.error.code).toBe(PopoverErrorCode.RESOLVER_TIMEOUT);
     }
+  });
+
+  it('supports mapErr, unwrap, and matchResult', () => {
+    const ok = Ok(100);
+    const err = Err('network_failure');
+
+    expect(mapErr(err, (e) => `mapped_${e}`)).toEqual(Err('mapped_network_failure'));
+    expect(mapErr(ok, (e: string) => `mapped_${e}`)).toEqual(ok);
+
+    expect(unwrap(ok)).toBe(100);
+    expect(() => unwrap(err)).toThrow('network_failure');
+
+    const okMatch = matchResult(ok, {
+      ok: (d) => `Got ${d}`,
+      err: (e) => `Failed ${e}`,
+    });
+    expect(okMatch).toBe('Got 100');
+
+    const errMatch = matchResult(err, {
+      ok: (d: number) => `Got ${d}`,
+      err: (e) => `Failed ${e}`,
+    });
+    expect(errMatch).toBe('Failed network_failure');
   });
 });

@@ -8,6 +8,7 @@
 import type { TrailEntry, PopoverStateData } from '../types';
 import { DEFAULT_MAX_HISTORY_DEPTH } from '../constants';
 import { EMPTY_ARRAY, EMPTY_OBJECT } from './storeDefaults';
+import { shallowEqual } from '../utils/storeHelpers';
 
 /**
  * Snapshot of popover store state used for undo/redo history operations.
@@ -89,20 +90,22 @@ class RingBuffer<T> {
   }
 }
 
-export function createHistorySnapshot<TData, TContext>(
+function createHistorySnapshot<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
 ): HistorySnapshot<TData> {
-  const hasOffsets = state.offsets !== EMPTY_OBJECT && Object.keys(state.offsets).length > 0;
-  const hasPinned =
-    state.pinnedStates !== EMPTY_OBJECT && Object.keys(state.pinnedStates).length > 0;
+  const offsets = state.offsets ?? EMPTY_OBJECT;
+  const pinnedStates = state.pinnedStates ?? EMPTY_OBJECT;
+  const zIndexOrder = state.zIndexOrder ?? EMPTY_ARRAY;
+  const hasOffsets = offsets !== EMPTY_OBJECT && Object.keys(offsets).length > 0;
+  const hasPinned = pinnedStates !== EMPTY_OBJECT && Object.keys(pinnedStates).length > 0;
 
   return {
-    trail: state.trail,
-    floating: state.floating,
-    offsets: hasOffsets ? { ...state.offsets } : EMPTY_OBJECT,
-    pinnedStates: hasPinned ? { ...state.pinnedStates } : EMPTY_OBJECT,
-    zIndexOrder: state.zIndexOrder.length === 0 ? EMPTY_ARRAY : [...state.zIndexOrder],
-    ownerId: state.ownerId,
+    trail: state.trail ?? EMPTY_ARRAY,
+    floating: state.floating ?? EMPTY_ARRAY,
+    offsets: hasOffsets ? { ...offsets } : EMPTY_OBJECT,
+    pinnedStates: hasPinned ? { ...pinnedStates } : EMPTY_OBJECT,
+    zIndexOrder: zIndexOrder.length === 0 ? EMPTY_ARRAY : [...zIndexOrder],
+    ownerId: state.ownerId ?? null,
   };
 }
 
@@ -119,11 +122,15 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
 
   const pushSnapshot = <TContext>(state: PopoverStateData<TData, TContext>) => {
     const lastSnapshot = undoBuffer.peekLast();
+    const offsets = state.offsets ?? EMPTY_OBJECT;
+    const pinnedStates = state.pinnedStates ?? EMPTY_OBJECT;
     if (
       lastSnapshot &&
       lastSnapshot.trail === state.trail &&
       lastSnapshot.floating === state.floating &&
-      lastSnapshot.ownerId === state.ownerId
+      lastSnapshot.ownerId === state.ownerId &&
+      shallowEqual(lastSnapshot.offsets, offsets) &&
+      shallowEqual(lastSnapshot.pinnedStates, pinnedStates)
     ) {
       return;
     }

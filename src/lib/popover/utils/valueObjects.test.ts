@@ -67,6 +67,43 @@ describe('Geometry Value Objects', () => {
 
       const r3 = RectBounds.of(200, 200, 100, 100);
       expect(r1.intersects(r3)).toBe(false);
+
+      expect(r1.contains(null as unknown as { x: number; y: number })).toBe(false);
+      expect(r1.intersects(null as unknown as RectBounds)).toBe(false);
+    });
+
+    it('computes distance between two points', () => {
+      const p1 = Point2D.of(0, 0);
+      const p2 = Point2D.of(3, 4);
+      expect(p1.distanceTo(p2)).toBe(5);
+    });
+
+    it('converts to and from plain objects and DOMRect', () => {
+      const p = Point2D.fromObject({ x: 12, y: 34 });
+      expect(p.toObject()).toEqual({ x: 12, y: 34 });
+
+      const domRectLike = {
+        x: 10,
+        y: 20,
+        width: 100,
+        height: 50,
+        top: 20,
+        left: 10,
+        right: 110,
+        bottom: 70,
+        toJSON: () => ({}),
+      } as unknown as DOMRect;
+      const bounds = RectBounds.fromDOMRect(domRectLike);
+      expect(bounds.left).toBe(10);
+      expect(bounds.top).toBe(20);
+      expect(bounds.width).toBe(100);
+      expect(bounds.height).toBe(50);
+
+      const exportedDomRect = bounds.toDOMRect();
+      expect(exportedDomRect.x).toBe(10);
+      expect(exportedDomRect.y).toBe(20);
+      expect(exportedDomRect.width).toBe(100);
+      expect(exportedDomRect.height).toBe(50);
     });
   });
 });

@@ -52,7 +52,7 @@ export function toFiniteNumber(val: unknown, fallback = 0): number {
 }
 
 /** Single source of truth frozen zero offset constant for style generation */
-export const DEFAULT_ZERO_OFFSET: Readonly<{ x: number; y: number }> = Object.freeze({
+const DEFAULT_ZERO_OFFSET: Readonly<{ x: number; y: number }> = Object.freeze({
   x: 0,
   y: 0,
 });
@@ -81,12 +81,12 @@ export function getPopoverStyles({
   rotationY = 0,
   zIndex = DEFAULT_FALLBACK_Z_INDEX,
 }: GetPopoverStylesParams): CSSProperties {
-  const safeTopPos = toFiniteNumber(finalLayoutPos.top);
-  const safeLeftPos = toFiniteNumber(finalLayoutPos.left);
+  const safeTopPos = toFiniteNumber(finalLayoutPos?.top);
+  const safeLeftPos = toFiniteNumber(finalLayoutPos?.left);
   const safeDragX = toFiniteNumber(dragX);
   const safeDragY = toFiniteNumber(dragY);
-  const safeOffsetX = toFiniteNumber(offset.x);
-  const safeOffsetY = toFiniteNumber(offset.y);
+  const safeOffsetX = toFiniteNumber(offset?.x);
+  const safeOffsetY = toFiniteNumber(offset?.y);
   const safeRotation = toFiniteNumber(rotation);
   const safeRotationX = toFiniteNumber(rotationX);
   const safeRotationY = toFiniteNumber(rotationY);

@@ -1,4 +1,4 @@
-import { useContext, useRef } from 'react';
+import { useContext, useRef, useCallback } from 'react';
 import { useStore } from 'zustand';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore } from '../types';
@@ -42,25 +42,23 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
   equalityFn?: (a: TSelected, b: TSelected) => boolean,
 ): TSelected {
   const store = usePopoverStoreApi<TData, TContext>();
+  const cacheRef = useRef<{ hasValue: boolean; value?: TSelected }>({ hasValue: false });
 
-  const prevRef = useRef<TSelected | undefined>(undefined);
-  const selectorRef = useRef(selector);
-  const equalityFnRef = useRef(equalityFn);
+  const getSelection = useCallback(
+    (state: PopoverStore<TData, TContext>): TSelected => {
+      const next = selector(state);
+      if (equalityFn && cacheRef.current.hasValue) {
+        if (equalityFn(cacheRef.current.value as TSelected, next)) {
+          return cacheRef.current.value as TSelected;
+        }
+      }
+      cacheRef.current = { hasValue: true, value: next };
+      return next;
+    },
+    [selector, equalityFn],
+  );
 
-  selectorRef.current = selector;
-  equalityFnRef.current = equalityFn;
-
-  const memoizedSelector = (state: PopoverStore<TData, TContext>): TSelected => {
-    const next = selectorRef.current(state);
-    const eq = equalityFnRef.current;
-    if (eq && prevRef.current !== undefined && eq(prevRef.current, next)) {
-      return prevRef.current;
-    }
-    prevRef.current = next;
-    return next;
-  };
-
-  return useStore(store, memoizedSelector);
+  return useStore(store, getSelection);
 }
 
 /**

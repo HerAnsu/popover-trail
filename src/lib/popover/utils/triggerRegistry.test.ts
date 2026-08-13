@@ -43,4 +43,18 @@ describe('triggerRegistry utility', () => {
     expect(TriggerRegistry.has('k1')).toBe(false);
     expect(TriggerRegistry.has('k2')).toBe(false);
   });
+
+  it('safely handles empty/null keys and reports size', () => {
+    expect(TriggerRegistry.size).toBe(0);
+    TriggerRegistry.register('', createMockElement());
+    TriggerRegistry.register('valid', null as unknown as HTMLElement);
+    expect(TriggerRegistry.size).toBe(0);
+
+    const el = createMockElement();
+    TriggerRegistry.register('valid', el);
+    expect(TriggerRegistry.size).toBe(1);
+    expect(TriggerRegistry.get('')).toBeNull();
+    TriggerRegistry.unregister('');
+    expect(TriggerRegistry.size).toBe(1);
+  });
 });

@@ -46,12 +46,14 @@ describe('PopoverSnapshotManager', () => {
     expect(snapshot.pinnedKeys).toEqual(['pinned-1']);
   });
 
-  it('destroys BroadcastChannel resources on destroy()', () => {
+  it('destroys and disposes resources on destroy() and [Symbol.dispose]()', () => {
     const manager = new PopoverSnapshotManager({
       enableBroadcastChannel: true,
       storageKey: 'test-destroy-key',
     });
 
+    expect(() => manager.clearSnapshot()).not.toThrow();
     expect(() => manager.destroy()).not.toThrow();
+    expect(() => manager.dispose()).not.toThrow();
   });
 });

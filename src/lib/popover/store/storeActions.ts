@@ -6,8 +6,7 @@
  */
 
 import type { PopoverStore, StatePatch } from '../types';
-import type { TrailEntry } from '../types/entryTypes';
-import { bringToFrontPatch } from '../utils/storeHelpers';
+import { togglePinState } from './reducers/pinReducers';
 
 /**
  * Predicate checking if a popover with the given key is currently pinned in state.
@@ -24,82 +23,14 @@ export function isKeyInZIndexOrder(zIndexOrder: readonly string[], key: string):
 }
 
 /**
- * Helper locating an entry by key in either trail or floating lists.
- */
-function findEntryInLists<TData>(
-  state: { trail: readonly TrailEntry<TData>[]; floating: readonly TrailEntry<TData>[] },
-  key: string,
-): { targetEntry: TrailEntry<TData> | undefined; inTrail: boolean; inFloating: boolean } {
-  const targetInTrail = state.trail.find((e) => e.key === key);
-  const targetInFloating = state.floating.find((e) => e.key === key);
-  return {
-    targetEntry: targetInTrail ?? targetInFloating,
-    inTrail: Boolean(targetInTrail),
-    inFloating: Boolean(targetInFloating),
-  };
-}
-
-/**
- * Helper partitioning trail and floating arrays upon toggling pin state.
- */
-function partitionListsOnPinToggle<TData>(
-  state: { trail: readonly TrailEntry<TData>[]; floating: readonly TrailEntry<TData>[] },
-  key: string,
-  nextPinState: boolean,
-  inTrail: boolean,
-  inFloating: boolean,
-  targetEntry: TrailEntry<TData>,
-): { nextTrail: readonly TrailEntry<TData>[]; nextFloating: readonly TrailEntry<TData>[] } {
-  if (nextPinState && inTrail) {
-    return {
-      nextTrail: state.trail.filter((e) => e.key !== key),
-      nextFloating: [...state.floating, targetEntry],
-    };
-  }
-  if (!nextPinState && inFloating) {
-    return {
-      nextTrail: [...state.trail, targetEntry],
-      nextFloating: state.floating.filter((e) => e.key !== key),
-    };
-  }
-  return { nextTrail: state.trail, nextFloating: state.floating };
-}
-
-/**
  * Pure reducer function calculating state patch for toggling pin status on a popover entry.
  */
 export function reduceTogglePinState<TData, TContext, TPopoverKey extends string>(
   state: PopoverStore<TData, TContext, TPopoverKey>,
   key: string,
+  rect?: DOMRect,
 ): StatePatch<TData, TContext, TPopoverKey> {
-  const nextPinState = !state.pinnedStates[key];
-  const nextPinnedStates = { ...state.pinnedStates, [key]: nextPinState };
-
-  const { targetEntry, inTrail, inFloating } = findEntryInLists(state, key);
-  if (!targetEntry) {
-    return { pinnedStates: nextPinnedStates };
-  }
-
-  const { nextTrail, nextFloating } = partitionListsOnPinToggle(
-    state,
-    key,
-    nextPinState,
-    inTrail,
-    inFloating,
-    targetEntry,
-  );
-
-  const bringToFrontState: PopoverStore<TData, TContext, TPopoverKey> = {
-    ...state,
-    trail: nextTrail,
-    floating: nextFloating,
-    pinnedStates: nextPinnedStates,
-  };
-
-  return {
-    ...bringToFrontPatch(bringToFrontState, key),
-    pinnedStates: nextPinnedStates,
-  };
+  return togglePinState(state, key, rect);
 }
 
 /**

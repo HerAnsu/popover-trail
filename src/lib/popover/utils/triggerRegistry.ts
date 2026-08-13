@@ -24,6 +24,7 @@ function pruneDeadRefs(): void {
 export const TriggerRegistry = {
   /** Register an anchor element for a popover key. */
   register(key: string, el: HTMLElement): void {
+    if (!key || !el || typeof el !== 'object') return;
     if (registry.size > MAX_REGISTRY_SIZE_BEFORE_SWEEP) {
       pruneDeadRefs();
     }
@@ -32,6 +33,7 @@ export const TriggerRegistry = {
 
   /** Retrieve the anchor element, or null if GC'd or not registered. */
   get(key: string): HTMLElement | null {
+    if (!key) return null;
     const ref = registry.get(key);
     if (!ref) return null;
     const el = ref.deref();
@@ -44,6 +46,7 @@ export const TriggerRegistry = {
 
   /** Unregister a popover key. */
   unregister(key: string): void {
+    if (!key) return;
     registry.delete(key);
   },
 
@@ -67,5 +70,10 @@ export const TriggerRegistry = {
       return false;
     }
     return true;
+  },
+
+  /** Returns active registration count. */
+  get size(): number {
+    return registry.size;
   },
 } as const;

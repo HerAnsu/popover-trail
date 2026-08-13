@@ -10,6 +10,7 @@ describe('cqrs module', () => {
     trail: [{ key: 'root-1' }] as TrailEntry<unknown>[],
     pinnedStates: { 'pinned-1': true },
     offsets: { 'pinned-1': { x: 15, y: 30 } },
+    zIndexOrder: [] as string[],
     actions: {
       closeByKey: vi.fn(),
       closeAll: vi.fn(),
@@ -31,13 +32,41 @@ describe('cqrs module', () => {
     expect(queryBus.isPinned('pinned-1')).toBe(true);
     expect(queryBus.getOffset('pinned-1')).toEqual({ x: 15, y: 30 });
     expect(queryBus.getOffset('unknown')).toEqual({ x: 0, y: 0 });
+    expect(queryBus.activeCount).toBe(2);
+    expect(queryBus.isIdle).toBe(false);
+    expect(queryBus.discriminatedStatus).toBe('active-trail');
+    expect(queryBus.root?.key).toBe('root-1');
+    expect(queryBus.hasEntry('root-1')).toBe(true);
+    expect(queryBus.hasEntry('missing')).toBe(false);
+    expect(queryBus.isLoading('root-1')).toBe(false);
+    expect(queryBus.getError('root-1')).toBeNull();
+    expect(queryBus.getData('root-1')).toBeNull();
+    expect(queryBus.zIndexOrder).toEqual([]);
+    expect(queryBus.topmost?.key).toBe('root-1');
   });
 
   it('dispatches commands via PopoverCommandBus', () => {
-    const mockState = createMockStoreState();
+    const mockState = {
+      ...createMockStoreState(),
+      actions: {
+        ...createMockStoreState().actions,
+        openRoot: vi.fn(),
+        pushNested: vi.fn(),
+        undo: vi.fn(),
+        redo: vi.fn(),
+        reset: vi.fn(),
+      },
+    };
     const commandBus = new PopoverCommandBus(
       mockState.actions as unknown as PopoverStore['actions'],
     );
+
+    const testEntry = { key: 'root-1' } as TrailEntry<unknown>;
+    commandBus.openRoot('owner-1', testEntry);
+    expect(mockState.actions.openRoot).toHaveBeenCalledWith('owner-1', testEntry);
+
+    commandBus.openNested(0, testEntry);
+    expect(mockState.actions.pushNested).toHaveBeenCalledWith(0, testEntry);
 
     commandBus.close('root-1');
     expect(mockState.actions.closeByKey).toHaveBeenCalledWith('root-1');
@@ -53,6 +82,14 @@ describe('cqrs module', () => {
 
     commandBus.updateOffset('pinned-1', 50, 100);
     expect(mockState.actions.updateOffset).toHaveBeenCalledWith('pinned-1', 50, 100);
+
+    commandBus.undo();
+    expect(mockState.actions.undo).toHaveBeenCalled();
+
+    commandBus.redo();
+    expect(mockState.actions.redo).toHaveBeenCalled();
+
+    expect(() => commandBus.dispose()).not.toThrow();
   });
 
   it('creates queryBus and commandBus via createCQRSBuses factory', () => {

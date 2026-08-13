@@ -51,4 +51,15 @@ describe('ObjectPool utility', () => {
     pool2.acquire();
     expect(factory).toHaveBeenCalledTimes(3); // 2 initial + 1 after clear
   });
+
+  it('safely ignores null or undefined releases and tracks size', () => {
+    const pool = new ObjectPool(() => ({ x: 0 }), undefined, 2);
+    expect(pool.size).toBe(2);
+
+    pool.release(null as unknown as { x: number });
+    pool.release(undefined as unknown as { x: number });
+    expect(pool.size).toBe(2);
+
+    expect(() => pool.dispose()).not.toThrow();
+  });
 });

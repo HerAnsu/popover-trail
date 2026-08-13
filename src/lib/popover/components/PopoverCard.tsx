@@ -1,7 +1,7 @@
 import React, { useMemo, type ReactNode, type ElementType } from 'react';
-import { clsx } from '../utils/storeHelpers';
+import { clsx } from '../utils/clsx';
 import { usePopoverCard } from '../hooks/usePopoverCard';
-import { usePopoverActions } from '../context';
+import { usePopoverActions } from '../context/usePopoverStore';
 import { useMergedRef } from '../hooks/useHookUtils';
 import {
   type PolymorphicRef,

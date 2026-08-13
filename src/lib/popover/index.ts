@@ -59,7 +59,6 @@ export type {
   ReadonlyDeep,
   DragOffset,
   KnownKeyboardKey,
-  TypedPopoverCache,
   ResolverParams,
   CancellablePopoverResolver,
   LoadingTrailEntry,
@@ -88,8 +87,12 @@ export type {
   PopoverStoreEventName,
   StoreSliceDescriptor,
   StoreSliceCreator,
+  ParentKey,
+  ZIndexDepth,
+  DeepReadonly,
 } from './types';
 
+export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT } from './types';
 export type { ValidatedAnchorRef } from './types';
 
 export {
@@ -134,12 +137,19 @@ export { useEventListener } from './hooks/useEventListener';
 
 export { invariant } from './utils/invariant';
 
-export { clampDragCoordinates, computeTiltMatrix, applyDragFriction } from './utils/dragMath';
+export {
+  clampDragCoordinates,
+  clampDragCoordinatesInPlace,
+  computeTiltMatrix,
+  applyDragFriction,
+} from './utils/dragMath';
 
 export { createPopoverStore } from './store';
 
 export {
+  PopoverStoreContext,
   PopoverProvider,
+  type PopoverProviderProps,
   usePopoverStore,
   usePopoverStoreApi,
   usePopoverTrail,
@@ -152,14 +162,21 @@ export {
   useIsPopoverTopMost,
   usePopoverOffset,
   usePopoverContext,
+  usePopoverCollisionConfig,
   usePopoverActions,
   usePopoverHydration,
   type PopoverHydrationState,
+  usePopoverIsLoading,
+  usePopoverError,
+  usePopoverRootEntry,
+  usePopoverTotalActiveCount,
+  useIsPopoverIdle,
   usePopoverData,
   usePopoverTimeline,
   type UsePopoverTimelineResult,
   type PopoverTimelineItem,
   PopoverPortal,
+  type PopoverPortalProps,
   usePopoverTrigger,
   usePopoverNestedTrigger,
   useIsPopoverOpen,
@@ -172,6 +189,8 @@ export {
   createPopoverFSM,
   popoverFSMReducer,
   assertPopoverFSMState,
+  type PopoverStateValue,
+  type ValidStateTransitions,
   type PopoverFSMContext,
   type PopoverFSMEvent,
   type PopoverFSMState,
@@ -187,6 +206,7 @@ export {
 export {
   PopoverSnapshotManager,
   type PopoverSnapshotData,
+  type PopoverStoreSnapshot,
   type SnapshotManagerOptions,
 } from './store/snapshotManager';
 export { PopoverDAG, type DAGNode } from './utils/dag';
@@ -200,6 +220,10 @@ export {
   type PopoverSchemaInstance,
   type PopoverSchemaNode,
   type SchemaKeys,
+  type InferSchemaKeys,
+  type SchemaKeyOf,
+  type SchemaDataMap,
+  type InferSchemaDataMap,
   type SchemaData,
   type AllowedChildrenOf,
   type StrictPopoverKey,
@@ -209,7 +233,7 @@ export { usePopoverGeometry, type UsePopoverGeometryResult } from './hooks/useGe
 export { usePopoverDragAndDrop, type UsePopoverDragAndDropResult } from './hooks/useDragAndDrop';
 export { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCard';
 export { getPopoverStyles } from './utils/styles';
-export { SimplePopoverCache } from './utils/cache';
+export { SimplePopoverCache, type TypedPopoverCache } from './utils/cache';
 export {
   PopoverTrigger,
   type PopoverTriggerProps,
@@ -242,7 +266,12 @@ export { createPopoverTrail } from './factory';
 export { useMergedRef, useStableCallback } from './hooks/useHookUtils';
 export { TriggerRegistry } from './utils/triggerRegistry';
 export { ResizeObserverRegistry } from './utils/resizeObserverRegistry';
-export { PopoverError, PopoverErrorCode, createPopoverError } from './utils/errors';
+export {
+  PopoverError,
+  PopoverErrorCode,
+  createPopoverError,
+  formatPopoverErrorMessage,
+} from './utils/errors';
 export { Point2D, RectBounds } from './utils/valueObjects';
 export {
   Ok,
@@ -250,13 +279,16 @@ export {
   isOk,
   isErr,
   mapResult,
+  mapErr,
   flatMapResult,
   unwrapOr,
+  unwrap,
+  matchResult,
   wrapResult,
   wrapAsyncResult,
   type Result,
 } from './utils/result';
-export { createDisposable, type ScopeDisposable } from './utils/disposable';
+export { createDisposable, CompositeDisposable, type ScopeDisposable } from './utils/disposable';
 export {
   LayoutStrategyRegistry,
   globalLayoutStrategyRegistry,
@@ -272,19 +304,35 @@ export {
   assertValidRect,
 } from './utils/assertions';
 export { fastClone } from './utils/clone';
-export { createBroadcastSync, type PopoverSyncMessage } from './utils/broadcastSync';
+export {
+  createBroadcastSync,
+  type PopoverSyncMessage,
+  type PopoverSyncListener,
+} from './utils/broadcastSync';
 export {
   PopoverEventBus,
   globalPopoverEventBus,
   PopoverCustomEvent,
+  createPopoverEvent,
   type PopoverEventType,
 } from './store/eventBus';
 export { trackMemoryCleanup, untrackMemoryCleanup } from './utils/memorySentinel';
-export { applyThemeTokens, type PopoverThemeTokens } from './utils/themeTokens';
+export { applyThemeTokens, removeThemeTokens, type PopoverThemeTokens } from './utils/themeTokens';
 export { ObjectPool } from './utils/objectPool';
-export { sanitizeRect } from './utils/storeHelpers';
+export { clsx } from './utils/clsx';
+export {
+  sanitizeRect,
+  isPromise,
+  shallowEqual,
+  isDeepEqual,
+  toError,
+  updateEntryInLists,
+  getSnapshotStatePatch,
+  mergeEntryOptions,
+  closeFromState,
+} from './utils/storeHelpers';
+export { PopoverMiddlewareEngine } from './store/storeMiddlewareEngine';
 export { isKeyInZIndexOrder, reduceTogglePinState } from './store/storeActions';
-export { closeFromState } from './store/storeReducers';
 export {
   validateSchemaCircularChild,
   validateResolverTimeout,
@@ -292,6 +340,25 @@ export {
   markPerformance,
   measurePerformance,
 } from './utils/devWarnings';
+export {
+  selectActiveTrail,
+  selectFloatingEntries,
+  selectEntryByKey,
+  selectTopmostEntry,
+  selectIsPinned,
+  selectOffset,
+  selectZIndexOrder,
+  selectTotalActiveCount,
+  selectIsIdle,
+  selectHasEntry,
+  selectRootEntry,
+  selectIsLoading,
+  selectError,
+  selectData,
+  createTypedStoreSelector,
+  type StoreSelectorMapper,
+  selectDiscriminatedStatus,
+} from './store/storeSelectors';
 export type { HydrationState } from './store/storeHydration';
 export type { InternalPopoverState, InternalPopoverStore } from './store/storeTypes';
 export * from './constants';

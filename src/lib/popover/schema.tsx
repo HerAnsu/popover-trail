@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { PopoverTrigger, type PopoverTriggerProps } from './components/PopoverTrigger';
-import { usePopoverData, usePopoverEntry, usePopoverActions } from './context';
+import { usePopoverData, usePopoverEntry } from './hooks/usePopoverSelectors';
+import { usePopoverActions } from './context/usePopoverStore';
 import type {
   PopoverResolver,
   PopoverPlacement,
@@ -247,8 +248,6 @@ export function createPopoverSchema<
 
   const useActions = () => {
     const actions = usePopoverActions();
-    const actionsRef = React.useRef(actions);
-    actionsRef.current = actions;
 
     return useMemo(
       () => ({
@@ -261,7 +260,7 @@ export function createPopoverSchema<
           const strKey = String(key);
           validateSchemaKey(Boolean(node), strKey);
           const mergedOptions = mergeSchemaNodeOptions(node, options);
-          return actionsRef.current.openRootWithResolver(strKey, anchorEvent, mergedOptions);
+          return actions.openRootWithResolver(strKey, anchorEvent, mergedOptions);
         },
         pushNested: <SK extends SchemaKeys<TSchema>>(
           key: AllowedChildrenOf<TSchema, SK>,
@@ -273,19 +272,18 @@ export function createPopoverSchema<
           const node = definition[strKey];
           validateSchemaKey(Boolean(node), strKey);
           const mergedOptions = mergeSchemaNodeOptions(node, options);
-          return actionsRef.current.openNestedWithResolver(strKey, strSourceKey, mergedOptions);
+          return actions.openNestedWithResolver(strKey, strSourceKey, mergedOptions);
         },
-        close: (key: SchemaKeys<TSchema>) => actionsRef.current.closeByKey(key),
-        closeAll: () => actionsRef.current.closeAll(),
-        togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) =>
-          actionsRef.current.togglePin(key, rect),
-        bringToFront: (key: SchemaKeys<TSchema>) => actionsRef.current.bringToFront(key),
-        retryPopover: (key: SchemaKeys<TSchema>) => actionsRef.current.retryPopover(key),
+        close: (key: SchemaKeys<TSchema>) => actions.closeByKey(key),
+        closeAll: () => actions.closeAll(),
+        togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) => actions.togglePin(key, rect),
+        bringToFront: (key: SchemaKeys<TSchema>) => actions.bringToFront(key),
+        retryPopover: (key: SchemaKeys<TSchema>) => actions.retryPopover(key),
         prefetchPopover: (key: SchemaKeys<TSchema>, parentData?: unknown) =>
-          actionsRef.current.prefetchPopover(key, parentData),
-        clear: () => actionsRef.current.clear(),
+          actions.prefetchPopover(key, parentData),
+        clear: () => actions.clear(),
       }),
-      [],
+      [actions],
     );
   };
 

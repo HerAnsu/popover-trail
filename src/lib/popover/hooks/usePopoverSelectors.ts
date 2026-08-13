@@ -7,7 +7,7 @@ import {
   type NarrowTrailEntry,
   type UsePopoverResult,
 } from '../types';
-import { usePopoverActions, usePopoverStore } from '../context';
+import { usePopoverActions, usePopoverStore } from '../context/usePopoverStore';
 import {
   selectActiveTrail,
   selectFloatingEntries,
@@ -18,7 +18,7 @@ import {
 } from '../store/storeSelectors';
 
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
-import { shallowEqual } from '../utils/storeHelpers';
+import { shallowEqual } from '../utils/equality';
 
 const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
@@ -370,4 +370,49 @@ export function usePopoverData<
     return REACT_USE(entry.dataPromise);
   }
   return entry?.data;
+}
+
+/**
+ * Hook to retrieve loading state of a specific popover.
+ */
+export function usePopoverIsLoading<TPopoverKey extends string = RegisteredKeys>(
+  key: TPopoverKey,
+): boolean {
+  return usePopoverStore(
+    (state) => findEntryInStore(state.floating, state.trail, key)?.isLoading ?? false,
+  );
+}
+
+/**
+ * Hook to retrieve the error of a specific popover if any.
+ */
+export function usePopoverError<TPopoverKey extends string = RegisteredKeys>(
+  key: TPopoverKey,
+): Error | null {
+  return usePopoverStore(
+    (state) => findEntryInStore(state.floating, state.trail, key)?.error ?? null,
+  );
+}
+
+/**
+ * Hook to retrieve the root popover entry from the trail stack.
+ */
+export function usePopoverRootEntry<TData = RegisteredDataMap[RegisteredKeys]>():
+  | TrailEntry<TData>
+  | undefined {
+  return usePopoverStore((state) => state.trail[0] as TrailEntry<TData> | undefined);
+}
+
+/**
+ * Hook to retrieve the total count of active popovers.
+ */
+export function usePopoverTotalActiveCount(): number {
+  return usePopoverStore((state) => state.floating.length + state.trail.length);
+}
+
+/**
+ * Hook to check if the store is completely idle (0 popovers open).
+ */
+export function useIsPopoverIdle(): boolean {
+  return usePopoverStore((state) => state.floating.length === 0 && state.trail.length === 0);
 }

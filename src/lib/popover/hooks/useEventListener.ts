@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useInsertionEffect, useRef } from 'react';
 
 /**
  * Memory-safe custom React hook for binding window or element event listeners with auto cleanup on unmount.
@@ -12,23 +12,22 @@ export function useEventListener<K extends keyof WindowEventMap>(
   const savedHandler = useRef(handler);
   const optionsRef = useRef(options);
 
-  useEffect(() => {
+  useInsertionEffect(() => {
     savedHandler.current = handler;
-  }, [handler]);
-
-  useEffect(() => {
     optionsRef.current = options;
-  }, [options]);
+  });
 
   useEffect(() => {
-    if (!element || !element.addEventListener) return;
+    const target = element ?? (typeof window !== 'undefined' ? window : null);
+    if (!target) return;
 
-    const eventListener: typeof handler = (event) => savedHandler.current(event);
-    const activeOptions = optionsRef.current;
-    element.addEventListener(eventName, eventListener as EventListener, activeOptions);
+    const listener = (event: Event) => {
+      savedHandler.current(event as WindowEventMap[K]);
+    };
 
+    target.addEventListener(eventName, listener, optionsRef.current);
     return () => {
-      element.removeEventListener(eventName, eventListener as EventListener, activeOptions);
+      target.removeEventListener(eventName, listener, optionsRef.current);
     };
   }, [eventName, element]);
 }

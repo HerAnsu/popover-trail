@@ -9,11 +9,11 @@ import {
   type Boundary,
   type Placement,
 } from '@floating-ui/react';
-import type { TrailEntry, PopoverPlacement } from '../types';
-import { usePopoverCollisionConfig, usePopoverStore, usePopoverStoreApi } from '../context';
+import { usePopoverStore, usePopoverStoreApi } from '../context/usePopoverStore';
+import { usePopoverCollisionConfig } from './usePopoverSelectors';
 import { QuadTree, type BoundingBox } from '../utils/quadTree';
 import { ResizeObserverRegistry } from '../utils/resizeObserverRegistry';
-import { shallowEqual } from '../utils/storeHelpers';
+import { shallowEqual } from '../utils/equality';
 
 /**
  * Helper to safely measure current viewport bounds across SSR and browser environments.
@@ -24,6 +24,11 @@ function getViewportBounds(): { width: number; height: number } {
     width: isClient ? window.innerWidth : 1024,
     height: isClient ? window.innerHeight : 768,
   };
+}
+
+/** Pure helper to extract middleware extra properties. */
+function resolveMiddlewareExtraProps(option: unknown): Record<string, unknown> {
+  return typeof option === 'object' && option !== null ? (option as Record<string, unknown>) : {};
 }
 
 /** Pure calculation helper for resolving auto placement based on viewport coordinates. */
@@ -217,10 +222,6 @@ export function usePopoverGeometry({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anchorRectHash]);
 
-  function resolveMiddlewareExtraProps(option: unknown): Record<string, unknown> {
-    return typeof option === 'object' && option !== null ? (option as Record<string, unknown>) : {};
-  }
-
   // Configure useFloating positioning middleware dynamically with autoUpdate
   const middleware = useMemo(() => {
     const list = [
@@ -292,7 +293,9 @@ export function usePopoverGeometry({
     const unobserve = ResizeObserverRegistry.observe(floatingEl, () => {
       void update();
     });
-    return unobserve;
+    return () => {
+      unobserve();
+    };
   }, [isPinned, isDragging, update, refs.floating]);
 
   useEffect(() => {

@@ -117,6 +117,7 @@ export function getRemovedKeysForClose<TData>(
   trail: readonly TrailEntry<TData>[],
   index: number,
   closePinnedDescendants: boolean,
+  pinnedStates?: Record<string, boolean>,
 ): { isFloating: boolean; removedKeys: Set<string> } | null {
   const totalCount = floating.length + trail.length;
   if (index < 0 || index >= totalCount) return null;
@@ -128,6 +129,7 @@ export function getRemovedKeysForClose<TData>(
     trail,
     directClosedKeys,
     closePinnedDescendants,
+    pinnedStates,
   );
 
   return {

@@ -115,45 +115,11 @@ export function usePopoverDragAndDrop({
     () => false,
   );
 
+  // 1. Active Drag Spring Rotation Animation Frame Loop
   useEffect(() => {
-    let rafId: number;
+    if (!isDragging || !enableTilt || prefersReducedMotion) return;
 
-    // Early Guard Clause 1: Handle inertia decay when drag stops or tilt is disabled
-    if (!isDragging || !enableTilt || prefersReducedMotion) {
-      const curr = rotationRef.current;
-      if (curr.x === 0 && curr.y === 0 && curr.z === 0) return;
-
-      const returnToZero = () => {
-        const c = rotationRef.current;
-        if (c.x === 0 && c.y === 0 && c.z === 0) return;
-
-        const safeDecay = Math.min(Math.max(tiltDecay, 0.1), 0.99);
-        const finalX = Math.abs(c.x * safeDecay) < 0.05 ? 0 : c.x * safeDecay;
-        const finalY = Math.abs(c.y * safeDecay) < 0.05 ? 0 : c.y * safeDecay;
-        const finalZ = Math.abs(c.z * safeDecay) < 0.05 ? 0 : c.z * safeDecay;
-
-        const done = finalX === 0 && finalY === 0 && finalZ === 0;
-        rotationRef.current = { z: finalZ, x: finalX, y: finalY };
-
-        const el = cardRef?.current;
-        if (el) {
-          el.style.setProperty('--pt-rotate-z', done ? '0deg' : `${finalZ}deg`);
-          el.style.setProperty('--pt-rotate-x', done ? '0deg' : `${finalX}deg`);
-          el.style.setProperty('--pt-rotate-y', done ? '0deg' : `${finalY}deg`);
-        }
-
-        if (!done) {
-          rafId = requestAnimationFrame(returnToZero);
-        }
-      };
-
-      rafId = requestAnimationFrame(returnToZero);
-      return () => {
-        if (rafId) cancelAnimationFrame(rafId);
-      };
-    }
-
-    // Active Drag Spring Rotation Animation Frame Loop
+    let frameId = 0;
     const updateRotation = () => {
       const now = performance.now();
       const dt = Math.max(1, now - lastTime.current);
@@ -190,27 +156,59 @@ export function usePopoverDragAndDrop({
       lastDragX.current = currentDragX;
       lastDragY.current = currentDragY;
       lastTime.current = now;
-      rafId = requestAnimationFrame(updateRotation);
+      frameId = requestAnimationFrame(updateRotation);
     };
 
     lastTime.current = performance.now();
     lastDragX.current = transformXRef.current;
     lastDragY.current = transformYRef.current;
-    rafId = requestAnimationFrame(updateRotation);
+    frameId = requestAnimationFrame(updateRotation);
 
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-    };
+    return () => cancelAnimationFrame(frameId);
   }, [
     isDragging,
     enableTilt,
     maxTiltAngle,
     tiltSensitivity,
     tiltFriction,
-    tiltDecay,
     cardRef,
     prefersReducedMotion,
   ]);
+
+  // 2. Inertia Decay Back to Zero When Drag Stops
+  useEffect(() => {
+    if (isDragging || !enableTilt || prefersReducedMotion) return;
+    const curr = rotationRef.current;
+    if (curr.x === 0 && curr.y === 0 && curr.z === 0) return;
+
+    let frameId = 0;
+    const returnToZero = () => {
+      const c = rotationRef.current;
+      if (c.x === 0 && c.y === 0 && c.z === 0) return;
+
+      const safeDecay = Math.min(Math.max(tiltDecay, 0.1), 0.99);
+      const finalX = Math.abs(c.x * safeDecay) < 0.05 ? 0 : c.x * safeDecay;
+      const finalY = Math.abs(c.y * safeDecay) < 0.05 ? 0 : c.y * safeDecay;
+      const finalZ = Math.abs(c.z * safeDecay) < 0.05 ? 0 : c.z * safeDecay;
+
+      const done = finalX === 0 && finalY === 0 && finalZ === 0;
+      rotationRef.current = { z: finalZ, x: finalX, y: finalY };
+
+      const el = cardRef?.current;
+      if (el) {
+        el.style.setProperty('--pt-rotate-z', done ? '0deg' : `${finalZ}deg`);
+        el.style.setProperty('--pt-rotate-x', done ? '0deg' : `${finalX}deg`);
+        el.style.setProperty('--pt-rotate-y', done ? '0deg' : `${finalY}deg`);
+      }
+
+      if (!done) {
+        frameId = requestAnimationFrame(returnToZero);
+      }
+    };
+
+    frameId = requestAnimationFrame(returnToZero);
+    return () => cancelAnimationFrame(frameId);
+  }, [isDragging, enableTilt, tiltDecay, cardRef, prefersReducedMotion]);
 
   const dragX = dragAxis === 'y' ? 0 : (transform?.x ?? 0);
   const dragY = dragAxis === 'x' ? 0 : (transform?.y ?? 0);

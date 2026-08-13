@@ -1,5 +1,5 @@
 import React, { type ReactNode, type ElementType } from 'react';
-import { clsx } from '../../utils/storeHelpers';
+import { clsx } from '../../utils/clsx';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
 

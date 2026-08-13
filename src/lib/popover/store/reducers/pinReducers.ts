@@ -7,7 +7,7 @@
 import type { PopoverStateData } from '../../types';
 import { getCleanupStatePatch } from './stackReducers';
 
-export function resolvePinnedLayoutPos(
+function resolvePinnedLayoutPos(
   rect?: DOMRect,
   entry?: { pinnedLayoutPos?: { top: number; left: number }; rect?: DOMRect | null },
 ): { top: number; left: number } | undefined {
@@ -60,6 +60,7 @@ export function togglePinState<TData, TContext>(
     const entry = nextFloating[floatingIndex];
     nextFloating.splice(floatingIndex, 1);
     nextPinnedStates[key] = false;
+    delete nextOffsets[key];
     if (entry) {
       nextTrail.push({
         ...entry,
@@ -76,7 +77,7 @@ export function togglePinState<TData, TContext>(
     nextOffsets,
     nextZIndexOrder,
     nextPinnedStates,
-    state.nestedHydrationRequestCounters,
+    state.nestedHydrationRequestCounters ?? {},
   );
 
   return {

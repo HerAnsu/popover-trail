@@ -54,3 +54,73 @@ export function createDisposable(cleanupFn: () => void): ScopeDisposable {
 
   return handle;
 }
+
+/**
+ * Composite container managing multiple ScopeDisposable handles and cleanup callbacks atomically.
+ */
+export class CompositeDisposable implements ScopeDisposable {
+  private readonly disposables = new Set<ScopeDisposable | (() => void)>();
+  private disposed = false;
+
+  /** Adds disposables or cleanup callbacks to the composite container. */
+  add(...disposables: (ScopeDisposable | (() => void) | null | undefined)[]): void {
+    if (this.disposed) {
+      for (const d of disposables) {
+        if (typeof d === 'function') {
+          try {
+            d();
+          } catch {
+            // Safe disposal
+          }
+        } else if (d && typeof d.dispose === 'function') {
+          try {
+            d.dispose();
+          } catch {
+            // Safe disposal
+          }
+        }
+      }
+      return;
+    }
+    for (const d of disposables) {
+      if (d) this.disposables.add(d);
+    }
+  }
+
+  /** Removes a disposable handle from the container without invoking it. */
+  remove(disposable: ScopeDisposable | (() => void)): boolean {
+    return this.disposables.delete(disposable);
+  }
+
+  /** Number of active registered disposable handles. */
+  get size(): number {
+    return this.disposables.size;
+  }
+
+  /** Disposes all registered handles and cleans up the container. */
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    for (const d of this.disposables) {
+      if (typeof d === 'function') {
+        try {
+          d();
+        } catch {
+          // Safe disposal
+        }
+      } else if (d && typeof d.dispose === 'function') {
+        try {
+          d.dispose();
+        } catch {
+          // Safe disposal
+        }
+      }
+    }
+    this.disposables.clear();
+  }
+
+  /** Explicit resource management symbol handler for TS 5.2 `using` statements. */
+  [DISPOSE_SYMBOL as symbol](): void {
+    this.dispose();
+  }
+}

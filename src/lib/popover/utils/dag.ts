@@ -67,6 +67,51 @@ export class PopoverDAG {
   }
 
   /**
+   * Removes a node from the DAG graph and cleans up parent/child references.
+   */
+  removeNode(key: string): void {
+    const node = this.nodes.get(key);
+    if (!node) return;
+
+    if (node.parentKey) {
+      const parentNode = this.nodes.get(node.parentKey);
+      if (parentNode) {
+        parentNode.childrenKeys.delete(key);
+      }
+    }
+
+    for (const childKey of node.childrenKeys) {
+      const childNode = this.nodes.get(childKey);
+      if (childNode && childNode.parentKey === key) {
+        childNode.parentKey = undefined;
+      }
+    }
+
+    this.nodes.delete(key);
+  }
+
+  /**
+   * Checks whether a node exists in the graph.
+   */
+  hasNode(key: string): boolean {
+    return this.nodes.has(key);
+  }
+
+  /**
+   * Retrieves a node from the graph.
+   */
+  getNode(key: string): DAGNode | undefined {
+    return this.nodes.get(key);
+  }
+
+  /**
+   * Returns total count of nodes in the graph.
+   */
+  get size(): number {
+    return this.nodes.size;
+  }
+
+  /**
    * Populates target outSet with all descendant keys for a given parent key (Zero-allocation variant).
    */
   getDescendantKeysInto(parentKey: string, outSet: Set<string>): Set<string> {

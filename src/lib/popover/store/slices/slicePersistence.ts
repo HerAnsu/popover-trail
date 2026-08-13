@@ -14,6 +14,14 @@ import type {
 import { getSnapshotStatePatch } from '../../utils/storeHelpers';
 import type { SliceContext } from './sliceContext';
 
+function resolveStorageEngine(config?: PopoverPersistConfig) {
+  const storageKey = config?.storageKey ?? config?.key ?? 'popover_store_state';
+  const engine =
+    config?.storage ??
+    (typeof window !== 'undefined' && window.localStorage ? window.localStorage : null);
+  return { storageKey, engine };
+}
+
 export function createPersistenceSlice<
   TData = unknown,
   TContext = unknown,
@@ -109,16 +117,14 @@ export function createPersistenceSlice<
           ownerId: snapshotState.ownerId,
           anchorElement: snapshotState.anchorElement,
           anchorRect: snapshotState.anchorRect,
+          nestedHydrationRequestCounters: snapshotState.nestedHydrationRequestCounters,
         });
         return false;
       }
     },
 
     persistState: async (config?: PopoverPersistConfig) => {
-      const storageKey = config?.storageKey ?? config?.key ?? 'popover_store_state';
-      const engine =
-        config?.storage ??
-        (typeof window !== 'undefined' && window.localStorage ? window.localStorage : null);
+      const { storageKey, engine } = resolveStorageEngine(config);
       if (!engine) return;
 
       const { floating, pinnedStates, offsets, zIndexOrder } = getCurrentState();
@@ -144,8 +150,19 @@ export function createPersistenceSlice<
         if (pinnedVal !== undefined) savedPinnedStates[k] = pinnedVal;
       }
 
+      const sanitizedFloating = filteredFloating.map((entry) => {
+        const clean: Record<string, unknown> = {};
+        for (const key of Object.keys(entry)) {
+          const val = (entry as Record<string, unknown>)[key];
+          if (typeof val !== 'function' && key !== 'dataPromise') {
+            clean[key] = val;
+          }
+        }
+        return clean;
+      });
+
       const payload = JSON.stringify({
-        floating: filteredFloating,
+        floating: sanitizedFloating,
         offsets: savedOffsets,
         pinnedStates: savedPinnedStates,
         zIndexOrder: zIndexOrder.filter((k) => keysToSave.has(k)),
@@ -154,10 +171,7 @@ export function createPersistenceSlice<
     },
 
     rehydrateState: async (config?: PopoverPersistConfig) => {
-      const storageKey = config?.storageKey ?? config?.key ?? 'popover_store_state';
-      const engine =
-        config?.storage ??
-        (typeof window !== 'undefined' && window.localStorage ? window.localStorage : null);
+      const { storageKey, engine } = resolveStorageEngine(config);
       if (!engine) return false;
 
       try {

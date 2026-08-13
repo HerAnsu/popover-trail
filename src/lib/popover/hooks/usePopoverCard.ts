@@ -8,9 +8,9 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { usePopoverGeometry } from './useGeometry';
-import { usePopoverActions, usePopoverStore } from '../context';
+import { usePopoverActions, usePopoverStore } from '../context/usePopoverStore';
 import { getPopoverStyles } from '../utils/styles';
-import { shallowEqual } from '../utils/storeHelpers';
+import { shallowEqual } from '../utils/equality';
 import { FOCUSABLE_ELEMENTS_SELECTOR } from '../constants';
 import type { TrailEntry, PopoverPlacement, PopoverStore } from '../types';
 
@@ -82,6 +82,73 @@ export interface CardKeyboardNavigationOptions {
   actions: { closeFrom: (index: number) => void };
 }
 
+function handleCustomShortcuts(
+  e: React.KeyboardEvent<HTMLElement>,
+  cardEntry: TrailEntry,
+): boolean {
+  if (!cardEntry.keyboardShortcuts) return false;
+  const keyName = e.key;
+  const modKey = (e.metaKey || e.ctrlKey ? 'Mod+' : '') + keyName;
+  const handler = cardEntry.keyboardShortcuts[modKey] ?? cardEntry.keyboardShortcuts[keyName];
+  if (handler) {
+    e.preventDefault();
+    handler(cardEntry.key);
+    return true;
+  }
+  return false;
+}
+
+function handleVerticalArrowNavigation(
+  e: React.KeyboardEvent<HTMLElement>,
+  cardEl: HTMLElement | null,
+): void {
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  const activeEl =
+    typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+  const isEditingText =
+    activeEl &&
+    (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+
+  if (isEditingText || !cardEl) return;
+  const elements = Array.from(
+    cardEl.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR),
+  ).filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0);
+  if (elements.length === 0) return;
+
+  e.preventDefault();
+  let currentIndex = activeEl ? elements.indexOf(activeEl) : -1;
+  if (e.key === 'ArrowDown') {
+    currentIndex = (currentIndex + 1) % elements.length;
+  } else {
+    currentIndex = (currentIndex - 1 + elements.length) % elements.length;
+  }
+  elements[currentIndex]?.focus();
+}
+
+function handleHorizontalArrowNavigation(
+  e: React.KeyboardEvent<HTMLElement>,
+  cardEntry: TrailEntry,
+  pinned: boolean,
+  trailList: readonly TrailEntry[],
+  floatCount: number,
+  act?: { closeFrom: (index: number) => void },
+): void {
+  if (e.key === 'ArrowRight') {
+    const activeEl =
+      typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+    if (activeEl && (activeEl.tagName === 'BUTTON' || activeEl.tagName === 'A')) {
+      e.preventDefault();
+      activeEl.click();
+    }
+  } else if (e.key === 'ArrowLeft' && !pinned) {
+    const trailIndex = trailList.findIndex((t) => t.key === cardEntry.key);
+    if (trailIndex > 0) {
+      e.preventDefault();
+      act?.closeFrom(floatCount + trailIndex);
+    }
+  }
+}
+
 /**
  * Helper function for handling Arrow navigation and custom keyboard shortcuts on popover cards.
  */
@@ -109,67 +176,11 @@ export function handleCardKeyboardNavigation(
 
   if (!e || !cardEntry) return;
 
-  // 1. Check custom keyboardShortcuts on entry first
-  if (cardEntry.keyboardShortcuts) {
-    const keyName = e.key;
-    const modKey = (e.metaKey || e.ctrlKey ? 'Mod+' : '') + keyName;
-    const handler = cardEntry.keyboardShortcuts[modKey] ?? cardEntry.keyboardShortcuts[keyName];
-    if (handler) {
-      e.preventDefault();
-      handler(cardEntry.key);
-      return;
-    }
-  }
-
+  if (handleCustomShortcuts(e, cardEntry)) return;
   if (!enableArrow) return;
 
-  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-    const activeEl =
-      typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
-    const isEditingText =
-      activeEl &&
-      (activeEl.tagName === 'INPUT' ||
-        activeEl.tagName === 'TEXTAREA' ||
-        activeEl.isContentEditable);
-
-    if (isEditingText) return;
-
-    if (!cardEl) return;
-    const elements = Array.from(
-      cardEl.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR),
-    ).filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0);
-    if (elements.length === 0) return;
-
-    e.preventDefault();
-
-    let currentIndex = activeEl ? elements.indexOf(activeEl) : -1;
-
-    if (e.key === 'ArrowDown') {
-      currentIndex = (currentIndex + 1) % elements.length;
-    } else {
-      currentIndex = (currentIndex - 1 + elements.length) % elements.length;
-    }
-    elements[currentIndex]?.focus();
-  }
-
-  if (e.key === 'ArrowRight') {
-    const activeEl =
-      typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
-    if (activeEl && (activeEl.tagName === 'BUTTON' || activeEl.tagName === 'A')) {
-      e.preventDefault();
-      activeEl.click();
-    }
-  }
-
-  if (e.key === 'ArrowLeft') {
-    if (!pinned) {
-      const trailIndex = trailList.findIndex((t) => t.key === cardEntry.key);
-      if (trailIndex > 0) {
-        e.preventDefault();
-        act?.closeFrom(floatCount + trailIndex);
-      }
-    }
-  }
+  handleVerticalArrowNavigation(e, cardEl);
+  handleHorizontalArrowNavigation(e, cardEntry, pinned, trailList, floatCount, act);
 }
 
 function restoreCardFocus(

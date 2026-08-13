@@ -90,6 +90,15 @@ describe('layoutStrategies utility', () => {
       });
       expect(l.x).toBe(mockTrigger.left - 10);
       expect(l.y).toBe(mockTrigger.top);
+
+      // bottom-end
+      const be = strategy.computePosition({
+        triggerRect: mockTrigger,
+        placement: 'bottom-end',
+        offset: 10,
+      });
+      expect(be.x).toBe(mockTrigger.right);
+      expect(be.y).toBe(mockTrigger.bottom + 10);
     });
   });
 
@@ -97,7 +106,19 @@ describe('layoutStrategies utility', () => {
     it('registers and retrieves layout strategies with fallback', () => {
       const registry = new LayoutStrategyRegistry();
       expect(registry.get('fixed-center').id).toBe('fixed-center');
+      expect(registry.get('docked-bottom').id).toBe('docked-bottom');
+      expect(registry.get('docked-top').id).toBe('docked-top');
       expect(registry.get('unknown-strategy').id).toBe('floating-ui');
+
+      const dockedBottomPos = registry.get('docked-bottom').computePosition({
+        triggerRect: mockTrigger,
+        popoverRect: mockPopover,
+        viewportHeight: 500,
+      });
+      expect(dockedBottomPos.y).toBe(300);
+
+      const dockedTopPos = registry.get('docked-top').computePosition();
+      expect(dockedTopPos.x).toBe(0);
 
       const custom: PopoverLayoutStrategyEngine = {
         id: 'custom-strategy',
@@ -106,6 +127,11 @@ describe('layoutStrategies utility', () => {
 
       registry.register(custom);
       expect(registry.get('custom-strategy').id).toBe('custom-strategy');
+      expect(registry.has('custom-strategy')).toBe(true);
+      expect(registry.listStrategies()).toContain('custom-strategy');
+
+      registry.unregister('custom-strategy');
+      expect(registry.has('custom-strategy')).toBe(false);
     });
   });
 });

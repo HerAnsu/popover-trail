@@ -12,7 +12,7 @@ import {
   getNextZIndexOrder,
 } from './stackReducers';
 
-export function normalizeOriginalEntry<TData>(entry: TrailEntry<TData>): TrailEntry<TData> {
+function normalizeOriginalEntry<TData>(entry: TrailEntry<TData>): TrailEntry<TData> {
   return {
     ...entry,
     originalParentKey: entry.originalParentKey ?? entry.parentKey,
@@ -20,31 +20,42 @@ export function normalizeOriginalEntry<TData>(entry: TrailEntry<TData>): TrailEn
   };
 }
 
+function buildActiveTrailPatch<TData, TContext>(
+  state: PopoverStateData<TData, TContext>,
+  nextTrail: TrailEntry<TData>[],
+  activeKey: string,
+  extraPatch?: Partial<PopoverStateData<TData, TContext>>,
+): Partial<PopoverStateData<TData, TContext>> {
+  const activeKeys = getActiveKeys(state.floating, nextTrail);
+  return {
+    ...extraPatch,
+    trail: nextTrail,
+    offsets: filterRecord(state.offsets, activeKeys),
+    pinnedStates: filterRecord(state.pinnedStates, activeKeys),
+    nestedHydrationRequestCounters: filterRecord(
+      state.nestedHydrationRequestCounters ?? {},
+      activeKeys,
+    ),
+    zIndexOrder: getNextZIndexOrder(state.zIndexOrder, activeKeys, activeKey),
+  };
+}
+
 /**
- * Pure state updater for initializing or opening a new root popover stack.
+ * Pure state updater for opening a root popover at the top level.
  */
 export function openRootState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
   ownerId: string,
   entry: TrailEntry<TData>,
 ): Partial<PopoverStateData<TData, TContext>> {
-  const hasFloating = state.floating.some((e) => e.key === entry.key);
-  if (hasFloating) {
+  if (state.floating.some((e) => e.key === entry.key)) {
     return bringToFrontPatch(state, entry.key);
   }
   const nextEntry = normalizeOriginalEntry(entry);
-  const isSameOwner = state.ownerId === ownerId;
   const filteredTrail = state.trail.filter((e) => e.key !== entry.key);
-  const nextTrail = isSameOwner ? [...filteredTrail, nextEntry] : [nextEntry];
+  const nextTrail = state.ownerId === ownerId ? [...filteredTrail, nextEntry] : [nextEntry];
 
-  const activeKeys = getActiveKeys(state.floating, nextTrail);
-
-  return {
-    ownerId,
-    trail: nextTrail,
-    offsets: filterRecord(state.offsets, activeKeys),
-    zIndexOrder: getNextZIndexOrder(state.zIndexOrder, activeKeys, entry.key),
-  };
+  return buildActiveTrailPatch(state, nextTrail, entry.key, { ownerId });
 }
 
 function computeNextTrailForNestedPush<TData, TContext>(
@@ -77,21 +88,13 @@ export function pushNestedState<TData, TContext>(
   index: number,
   entry: TrailEntry<TData>,
 ): Partial<PopoverStateData<TData, TContext>> {
-  const hasFloating = state.floating.some((e) => e.key === entry.key);
-  if (hasFloating) {
+  if (state.floating.some((e) => e.key === entry.key)) {
     return bringToFrontPatch(state, entry.key);
   }
 
   const finalEntry = normalizeOriginalEntry(entry);
-
   const nextTrail = computeNextTrailForNestedPush(state, index, finalEntry);
   if (!nextTrail) return {};
 
-  const activeKeys = getActiveKeys(state.floating, nextTrail);
-
-  return {
-    trail: nextTrail,
-    offsets: filterRecord(state.offsets, activeKeys),
-    zIndexOrder: getNextZIndexOrder(state.zIndexOrder, activeKeys, entry.key),
-  };
+  return buildActiveTrailPatch(state, nextTrail, entry.key);
 }

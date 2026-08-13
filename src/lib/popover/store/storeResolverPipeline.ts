@@ -15,9 +15,11 @@ import type {
   OpenNestedOptions,
   StatePatch,
   StoreState,
+  PopoverStoreEvent,
 } from '../types';
 import { isPromise, toError, findEntryInStore, createTrailEntry } from '../utils/storeHelpers';
 import type { PopoverDAG } from '../utils/dag';
+import { dispatchStoreEvent } from './eventBus';
 
 export interface ResolverPipelineDependencies<
   TData = unknown,
@@ -39,18 +41,11 @@ export interface ResolverPipelineDependencies<
         ) => StatePatch<TData, TContext, TPopoverKey>),
   ) => void;
   findEntryByKey: (key: string) => TrailEntry<TData> | undefined;
+  eventListeners?: Set<(event: PopoverStoreEvent<TData>) => void>;
 }
 
 /**
- * Invokes a PopoverResolver handling both the positional-arg `(key, parentData, context, signal)`
- * and object-arg `({ key, parentData, context, signal })` calling conventions.
- *
- * Detection strategy: call with positional args first. If the resolver throws (e.g. because it
- * destructures an object and receives a string), retry with the args bag. This mirrors the
- * original duck-typing contract expected by consumers.
- *
- * The only change from the original: instead of silently returning `undefined as unknown as TData`
- * when the resolver is not a function, we throw — making misconfiguration immediately visible.
+ * Invokes a PopoverResolver handling both positional-arg and object-arg calling conventions.
  */
 export function invokeResolverSafely<TData, TContext>(
   resolver: PopoverResolver<TData, TContext>,
@@ -66,7 +61,7 @@ export function invokeResolverSafely<TData, TContext>(
   }
 
   try {
-    const res = (
+    return (
       resolver as (
         k: string,
         pd?: TData | null,
@@ -74,7 +69,6 @@ export function invokeResolverSafely<TData, TContext>(
         sig?: AbortSignal,
       ) => TData | Promise<TData>
     )(key, parentData, context, signal);
-    if (res !== undefined) return res;
   } catch {
     return (
       resolver as unknown as (args: {
@@ -90,19 +84,95 @@ export function invokeResolverSafely<TData, TContext>(
       signal,
     });
   }
+}
 
-  return (
-    resolver as unknown as (args: {
-      key: string;
-      parentData?: TData | null;
-      context?: TContext;
-      signal?: AbortSignal;
-    }) => TData | Promise<TData>
-  )({
-    key,
-    parentData: parentData ?? undefined,
-    context,
-    signal,
+export interface ResolvePopoverEntryParams<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
+  key: string;
+  parentKey?: string;
+  rect?: DOMRect | null;
+  parentData?: TData | null;
+  options?: OpenRootOptions & OpenNestedOptions;
+  controllerKey: string;
+  incrementCounter: () => number;
+  isStale: (counter: number) => boolean;
+  insertStatePatch: (
+    entry: TrailEntry<TData>,
+  ) =>
+    | StatePatch<TData, TContext, TPopoverKey>
+    | ((
+        state: StoreState<TData, TContext, TPopoverKey>,
+      ) => StatePatch<TData, TContext, TPopoverKey>);
+}
+
+function updateEntryInStoreLists<TData, TContext, TPopoverKey extends string>(
+  safeSet: ResolverPipelineDependencies<TData, TContext, TPopoverKey>['safeSet'],
+  key: string,
+  patch: Partial<TrailEntry<TData>>,
+): void {
+  safeSet((state) => {
+    const inFloating = state.floating.some((e) => e.key === key);
+    const inTrail = state.trail.some((e) => e.key === key);
+    if (!inFloating && !inTrail) return {};
+    const nextFloating = inFloating
+      ? state.floating.map((e) => (e.key === key ? { ...e, ...patch } : e))
+      : state.floating;
+    const nextTrail = inTrail
+      ? state.trail.map((e) => (e.key === key ? { ...e, ...patch } : e))
+      : state.trail;
+    return { floating: nextFloating, trail: nextTrail };
+  });
+}
+
+function handleResolverError<TData, TContext, TPopoverKey extends string>(
+  objErr: unknown,
+  key: string,
+  deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
+): void {
+  const error = toError(objErr);
+  if (error.name === 'AbortError') return;
+  dispatchStoreEvent(deps.eventListeners, { type: 'resolve_error', key, error });
+  const currentEntry = deps.findEntryByKey(key);
+  try {
+    (currentEntry?.onError as unknown as (err: Error, k?: string) => void)?.(error, key);
+  } catch (cbErr) {
+    console.error('[popover-trail]: Exception in onError callback:', cbErr);
+  }
+  updateEntryInStoreLists(deps.safeSet, key, {
+    error,
+    isLoading: false,
+    status: 'error',
+  });
+}
+
+function handleResolverSuccess<TData, TContext, TPopoverKey extends string>(
+  data: TData,
+  key: string,
+  successEntry: TrailEntry<TData>,
+  params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
+  deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
+  storeCache?: PopoverCache<TData>,
+): void {
+  const activeCache = storeCache || deps.cache;
+  if (activeCache) {
+    try {
+      activeCache.set(key, data);
+    } catch {
+      // Ignore cache write errors
+    }
+  }
+  dispatchStoreEvent(deps.eventListeners, { type: 'resolve_success', key, data });
+  deps.safeSet((state) => {
+    const patchOrFn = params.insertStatePatch(successEntry);
+    const computedPatch = typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
+    return findEntryInStore(state.floating, state.trail, key)
+      ? state.floating.some((e) => e.key === key)
+        ? { floating: state.floating.map((e) => (e.key === key ? successEntry : e)) }
+        : { trail: state.trail.map((e) => (e.key === key ? successEntry : e)) }
+      : computedPatch;
   });
 }
 
@@ -115,23 +185,20 @@ export async function resolvePopoverEntry<
   TPopoverKey extends string = string,
 >(
   get: StoreApi<PopoverStore<TData, TContext, TPopoverKey>>['getState'],
-  key: string,
-  parentKey: string | undefined,
-  rect: DOMRect | null,
-  parentData: TData | null | undefined,
-  options: (OpenRootOptions & OpenNestedOptions) | undefined,
-  controllerKey: string,
-  incrementCounter: () => number,
-  isStale: (counter: number) => boolean,
-  insertStatePatch: (
-    entry: TrailEntry<TData>,
-  ) =>
-    | StatePatch<TData, TContext, TPopoverKey>
-    | ((
-        state: StoreState<TData, TContext, TPopoverKey>,
-      ) => StatePatch<TData, TContext, TPopoverKey>),
+  params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
   deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
 ): Promise<void> {
+  const {
+    key,
+    parentKey,
+    rect,
+    parentData,
+    options,
+    controllerKey,
+    incrementCounter,
+    isStale,
+    insertStatePatch,
+  } = params;
   const {
     popoverDAG,
     cache,
@@ -141,7 +208,6 @@ export async function resolvePopoverEntry<
     registerController,
     removeController,
     safeSet,
-    findEntryByKey,
   } = deps;
 
   popoverDAG.addNode(key, parentKey);
@@ -164,68 +230,17 @@ export async function resolvePopoverEntry<
       isLoading,
     );
 
-  function updateEntryInLists<EData>(
-    list: readonly TrailEntry<EData>[],
-    targetKey: string,
-    patch: Partial<TrailEntry<EData>>,
-  ): readonly TrailEntry<EData>[] {
-    let changed = false;
-    const result = list.map((item) => {
-      if (item.key === targetKey) {
-        changed = true;
-        return { ...item, ...patch };
-      }
-      return item;
-    });
-    return changed ? result : list;
-  }
-
-  const updateEntryStateInLists = (patch: Partial<TrailEntry<TData>>) => {
-    safeSet((state) => {
-      const nextFloating = updateEntryInLists(state.floating, key, patch);
-      const nextTrail = updateEntryInLists(state.trail, key, patch);
-      if (nextFloating === state.floating && nextTrail === state.trail) return {};
-      return { floating: nextFloating, trail: nextTrail };
-    });
-  };
-
-  const commitResolverError = (objErr: unknown) => {
-    const error = toError(objErr);
-    if (error.name === 'AbortError') return;
-    const currentEntry = findEntryByKey(key);
-    currentEntry?.onError?.(error, key);
-    if (currentEntry) {
-      updateEntryStateInLists({ status: 'error', isLoading: false, error });
-    } else {
-      const errorEntry = buildEntry(undefined, error, false);
-      safeSet(insertStatePatch(errorEntry));
-    }
-  };
-
-  const commitResolverSuccess = (data: TData) => {
-    (cache || storeCache)?.set(key, data);
-    const successEntry = buildEntry(data, null, false);
-    safeSet((state) => {
-      const patchOrFn = insertStatePatch(successEntry);
-      const computedPatch = typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
-      return findEntryInStore(state.floating, state.trail, key)
-        ? state.floating.some((e) => e.key === key)
-          ? { floating: state.floating.map((e) => (e.key === key ? successEntry : e)) }
-          : { trail: state.trail.map((e) => (e.key === key ? successEntry : e)) }
-        : computedPatch;
-    });
-  };
-
   const requestCounter = incrementCounter();
 
-  if (cache || storeCache) {
+  // 1. Check synchronous cache hits
+  const activeCache = cache || storeCache;
+  if (activeCache) {
     try {
-      const cachedData = (cache || storeCache)?.get(key);
-      const resolvedCachedData = isPromise(cachedData) ? await cachedData : cachedData;
-      if (resolvedCachedData !== undefined) {
-        if (isStale(requestCounter)) return;
-        const cachedEntry = buildEntry(resolvedCachedData, null, false);
-        safeSet(insertStatePatch(cachedEntry));
+      const rawCached = activeCache.get(key);
+      if (rawCached !== undefined && !isPromise(rawCached)) {
+        if (!isStale(requestCounter)) {
+          safeSet(insertStatePatch(buildEntry(rawCached, null, false)));
+        }
         return;
       }
     } catch {
@@ -233,27 +248,29 @@ export async function resolvePopoverEntry<
     }
   }
 
-  const forceRefresh = options?.forceRefresh;
-
+  // 2. Reuse existing success entry if not force-refreshing
+  const forceRefresh = Boolean(options?.forceRefresh);
   if (
     existingEntry &&
     existingEntry.status === 'success' &&
     existingEntry.data !== undefined &&
     !forceRefresh
   ) {
-    if (isStale(requestCounter)) return;
-    const entryToReuse = buildEntry(existingEntry.data, null, false);
-    safeSet(insertStatePatch(entryToReuse));
+    if (!isStale(requestCounter)) {
+      safeSet(insertStatePatch(buildEntry(existingEntry.data, null, false)));
+    }
     return;
   }
 
+  // 3. Launch resolver function (sync or async)
   const activeResolver = get().resolveData ?? resolveData;
+  const currentContext = get().context ?? initialContext;
 
   let rawSyncResult: unknown;
   let isSync = false;
-  const currentContext = get().context ?? initialContext;
 
   if (!inFlightPromises.has(key) || forceRefresh) {
+    dispatchStoreEvent(deps.eventListeners, { type: 'resolve_start', key });
     const controller = registerController(controllerKey);
     try {
       const res = invokeResolverSafely(
@@ -280,31 +297,38 @@ export async function resolvePopoverEntry<
       }
     } catch (objErr) {
       removeController(controllerKey);
-      commitResolverError(objErr);
+      handleResolverError(objErr, key, deps);
       return;
     }
   }
 
   if (isSync) {
     if (isStale(requestCounter)) return;
-    commitResolverSuccess(rawSyncResult as TData);
+    handleResolverSuccess(
+      rawSyncResult as TData,
+      key,
+      buildEntry(rawSyncResult as TData, null, false),
+      params,
+      deps,
+      storeCache,
+    );
     return;
   }
 
+  // 4. Async path: insert loading state synchronously, then await in-flight promise
   const inFlight = inFlightPromises.get(key);
   if (inFlight) {
-    if (!existingEntry || existingEntry.status !== 'success') {
-      const loadingEntry = buildEntry(undefined, null, true);
-      safeSet(insertStatePatch(loadingEntry));
+    if (!existingEntry || existingEntry.status !== 'success' || forceRefresh) {
+      safeSet(insertStatePatch(buildEntry(existingEntry?.data, null, true)));
     }
 
     try {
       const data = await inFlight;
       if (isStale(requestCounter)) return;
-      commitResolverSuccess(data);
+      handleResolverSuccess(data, key, buildEntry(data, null, false), params, deps, storeCache);
     } catch (err) {
       if (isStale(requestCounter)) return;
-      commitResolverError(err);
+      handleResolverError(err, key, deps);
     }
   }
 }

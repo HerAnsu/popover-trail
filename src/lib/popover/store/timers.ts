@@ -22,6 +22,7 @@ function scheduleNamedTimer(
   delay: number,
   callback: () => void,
 ): void {
+  if (!key) return;
   const existing = timersMap.get(key);
   if (existing) {
     clearTimeout(existing);
@@ -30,7 +31,11 @@ function scheduleNamedTimer(
   const timer = setTimeout(() => {
     if (timersMap.get(key) === timer) {
       timersMap.delete(key);
-      callback();
+      try {
+        callback();
+      } catch (err) {
+        console.error(`[TimerManager] Error executing callback for "${key}":`, err);
+      }
     }
   }, delay);
   timersMap.set(key, timer);

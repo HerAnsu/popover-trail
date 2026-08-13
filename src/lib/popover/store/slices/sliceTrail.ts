@@ -16,6 +16,7 @@ import {
 } from '../../utils/storeHelpers';
 import { selectTopmostEntry } from '../storeSelectors';
 import { EMPTY_ARRAY } from '../storeDefaults';
+import { dispatchStoreEvent } from '../eventBus';
 import type { SliceContext } from './sliceContext';
 
 export function createTrailSlice<
@@ -35,15 +36,7 @@ export function createTrailSlice<
     pushSnapshot,
   } = deps;
 
-  const emitEvent = (event: PopoverStoreEvent<TData>) => {
-    for (const listener of eventListeners) {
-      try {
-        listener(event);
-      } catch (err) {
-        console.error('[popover-trail]: Exception in store event listener:', err);
-      }
-    }
-  };
+  const emitEvent = (event: PopoverStoreEvent<TData>) => dispatchStoreEvent(eventListeners, event);
 
   const getCurrentState = () => get();
 
@@ -95,6 +88,14 @@ export function createTrailSlice<
           nextFloating.some((e) => e.key === k) || nextTrail.some((e) => e.key === k);
         if (!stillPresent) {
           nextPinnedStates[k] = false;
+          const removedEntry = findEntryByKey(k);
+          if (removedEntry?.onClose) {
+            try {
+              removedEntry.onClose(k);
+            } catch (err) {
+              console.error('[popover-trail]: Exception in onClose callback:', err);
+            }
+          }
         }
       }
 
@@ -188,13 +189,20 @@ export function createTrailSlice<
     },
 
     closeFrom: (index: number, options?: { transition?: boolean }) => {
-      const { floating, trail, closePinnedDescendants } = get();
-      const res = getRemovedKeysForClose(floating, trail, index, closePinnedDescendants);
+      const { floating, trail, closePinnedDescendants, pinnedStates } = get();
+      const res = getRemovedKeysForClose(
+        floating,
+        trail,
+        index,
+        closePinnedDescendants,
+        pinnedStates,
+      );
       if (!res) return;
       const { removedKeys } = res;
 
       pushSnapshot(getCurrentState());
       abortControllersForKeys(removedKeys);
+      emitEvent({ type: 'close', keys: Array.from(removedKeys) });
 
       const maxDuration = resolveMaxExitDuration(removedKeys);
 
@@ -206,9 +214,15 @@ export function createTrailSlice<
       }
     },
 
-    clear: resetStoreState,
+    clear: () => {
+      emitEvent({ type: 'clear' });
+      resetStoreState();
+    },
 
-    closeAll: resetStoreState,
+    closeAll: () => {
+      emitEvent({ type: 'clear' });
+      resetStoreState();
+    },
 
     clearTrail: () => {
       const { trail } = get();
@@ -219,18 +233,35 @@ export function createTrailSlice<
         rootController.abort();
         activeControllers.delete('__root__');
       }
-      const { floating, pinnedStates, offsets, zIndexOrder, nestedHydrationRequestCounters } =
-        get();
+      const {
+        floating,
+        pinnedStates,
+        offsets,
+        zIndexOrder,
+        nestedHydrationRequestCounters,
+        closePinnedDescendants,
+      } = get();
       const trailKeys = trail.map((e) => e.key);
-      const descendants = getRemovedKeysForClose(floating, trail, 0, false)?.removedKeys ?? [];
+      const descendants =
+        getRemovedKeysForClose(floating, trail, 0, closePinnedDescendants, pinnedStates)
+          ?.removedKeys ?? [];
       const removedKeys = new Set<string>([...trailKeys, ...descendants]);
 
       abortControllersForKeys(removedKeys);
+      emitEvent({ type: 'close', keys: Array.from(removedKeys) });
 
       const nextFloating = floating.filter((e) => !removedKeys.has(e.key));
       const nextPinnedStates = { ...pinnedStates };
       for (const key of removedKeys) {
         nextPinnedStates[key] = false;
+        const removedEntry = findEntryByKey(key);
+        if (removedEntry?.onClose) {
+          try {
+            removedEntry.onClose(key);
+          } catch (err) {
+            console.error('[popover-trail]: Exception in onClose callback:', err);
+          }
+        }
       }
 
       const cleanupPatch = getCleanupStatePatch<TData, TContext>(

@@ -61,9 +61,33 @@ export function flatMapResult<T, U, E>(
   return result;
 }
 
+/** Maps error payload preserving success data. */
+export function mapErr<T, E, F>(result: Result<T, E>, fn: (error: E) => F): Result<T, F> {
+  if (!result.success) {
+    return Err(fn(result.error));
+  }
+  return result;
+}
+
 /** Unwraps result data or returns fallback value if error. */
 export function unwrapOr<T, E>(result: Result<T, E>, fallback: T): T {
   return result.success ? result.data : fallback;
+}
+
+/** Unwraps result data or throws error if result is Err. */
+export function unwrap<T, E>(result: Result<T, E>): T {
+  if (result.success) {
+    return result.data;
+  }
+  throw result.error instanceof Error ? result.error : new Error(String(result.error));
+}
+
+/** Pattern matches against Ok and Err result branches. */
+export function matchResult<T, E, R>(
+  result: Result<T, E>,
+  patterns: { ok: (data: T) => R; err: (error: E) => R },
+): R {
+  return result.success ? patterns.ok(result.data) : patterns.err(result.error);
 }
 
 /** Wraps a throwing function execution into a safe Result. */

@@ -40,4 +40,15 @@ describe('storeHydration module', () => {
     const manager = createHydrationManager();
     expect(manager.isNestedStale('unmapped-parent', 1)).toBe(true);
   });
+
+  it('deletes nested parent counter individually', () => {
+    const manager = createHydrationManager();
+    manager.incrementNestedCounter('p1');
+    manager.incrementNestedCounter('p2');
+    expect(manager.getNestedCounters()).toHaveProperty('p1');
+
+    manager.deleteNestedCounter('p1');
+    expect(manager.getNestedCounters()).not.toHaveProperty('p1');
+    expect(manager.getNestedCounters()).toHaveProperty('p2');
+  });
 });

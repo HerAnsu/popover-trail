@@ -84,4 +84,19 @@ describe('PopoverDAG utility', () => {
     const zIndexes = dag.getTopologicalZIndexOrder(100);
     expect(zIndexes.size).toBe(3);
   });
+
+  it('supports node removal and introspection (hasNode, getNode, size)', () => {
+    const dag = new PopoverDAG();
+    dag.addNode('parent');
+    dag.addNode('child', 'parent');
+    expect(dag.size).toBe(2);
+    expect(dag.hasNode('parent')).toBe(true);
+    expect(dag.getNode('child')?.parentKey).toBe('parent');
+
+    dag.removeNode('parent');
+    expect(dag.size).toBe(1);
+    expect(dag.hasNode('parent')).toBe(false);
+    expect(dag.hasNode('child')).toBe(true);
+    expect(dag.getNode('child')?.parentKey).toBeUndefined();
+  });
 });

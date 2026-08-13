@@ -29,6 +29,11 @@ export {
   usePopoverData,
   usePopoverHydration,
   type PopoverHydrationState,
+  usePopoverIsLoading,
+  usePopoverError,
+  usePopoverRootEntry,
+  usePopoverTotalActiveCount,
+  useIsPopoverIdle,
 } from './hooks/usePopoverSelectors';
 
 export {

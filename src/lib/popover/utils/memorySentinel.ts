@@ -23,7 +23,7 @@ if (typeof globalThis !== 'undefined' && typeof FinalizationRegistry !== 'undefi
  * Registers a DOM element or object for GC monitoring.
  */
 export function trackMemoryCleanup(target: object, popoverKey: string): void {
-  if (!sentinelRegistry || !isDevEnv) return;
+  if (!target || !popoverKey || !sentinelRegistry || !isDevEnv) return;
 
   try {
     sentinelRegistry.register(target, popoverKey, target);
@@ -36,7 +36,7 @@ export function trackMemoryCleanup(target: object, popoverKey: string): void {
  * Unregisters a tracked object manually when explicitly unmounted.
  */
 export function untrackMemoryCleanup(target: object): void {
-  if (!sentinelRegistry) return;
+  if (!target || !sentinelRegistry) return;
 
   try {
     sentinelRegistry.unregister(target);

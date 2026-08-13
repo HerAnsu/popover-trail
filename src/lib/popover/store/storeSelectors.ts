@@ -53,6 +53,14 @@ export function selectTopmostEntry<TData = unknown>(state: {
       if (entry && entry.transitionStatus !== 'unmounting') return entry;
     }
   }
+  for (let i = state.trail.length - 1; i >= 0; i--) {
+    const entry = state.trail[i];
+    if (entry && entry.transitionStatus !== 'unmounting') return entry;
+  }
+  for (let i = state.floating.length - 1; i >= 0; i--) {
+    const entry = state.floating[i];
+    if (entry && entry.transitionStatus !== 'unmounting') return entry;
+  }
   return undefined;
 }
 
@@ -108,6 +116,45 @@ export function selectHasEntry<TData = unknown>(key: string) {
     floating: readonly TrailEntry<TData>[];
     trail: readonly TrailEntry<TData>[];
   }): boolean => hasEntryWithKey(state.floating, state.trail, key);
+}
+
+/**
+ * Selects the root popover entry from the trail stack.
+ */
+export function selectRootEntry<TData = unknown>(state: {
+  trail: readonly TrailEntry<TData>[];
+}): TrailEntry<TData> | undefined {
+  return state.trail[0];
+}
+
+/**
+ * Selects whether a popover entry is currently loading.
+ */
+export function selectIsLoading<TData = unknown>(key: string) {
+  return (state: {
+    floating: readonly TrailEntry<TData>[];
+    trail: readonly TrailEntry<TData>[];
+  }): boolean => findEntryInStore(state.floating, state.trail, key)?.isLoading ?? false;
+}
+
+/**
+ * Selects the error object for a popover entry if present.
+ */
+export function selectError<TData = unknown>(key: string) {
+  return (state: {
+    floating: readonly TrailEntry<TData>[];
+    trail: readonly TrailEntry<TData>[];
+  }): Error | null => findEntryInStore(state.floating, state.trail, key)?.error ?? null;
+}
+
+/**
+ * Selects the resolved data payload for a popover entry if present.
+ */
+export function selectData<TData = unknown>(key: string) {
+  return (state: {
+    floating: readonly TrailEntry<TData>[];
+    trail: readonly TrailEntry<TData>[];
+  }): TData | null => findEntryInStore(state.floating, state.trail, key)?.data ?? null;
 }
 
 /**

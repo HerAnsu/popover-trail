@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyThemeTokens } from './themeTokens';
+import { applyThemeTokens, removeThemeTokens } from './themeTokens';
 
 function createMockElement() {
   const styles = new Map<string, string>();
@@ -7,6 +7,7 @@ function createMockElement() {
     style: {
       setProperty: (key: string, value: string) => styles.set(key, value),
       getPropertyValue: (key: string) => styles.get(key) ?? '',
+      removeProperty: (key: string) => styles.delete(key),
     },
   } as unknown as HTMLElement;
 }
@@ -38,5 +39,15 @@ describe('themeTokens utility', () => {
 
   it('handles null element safely', () => {
     expect(() => applyThemeTokens(null)).not.toThrow();
+    expect(() => removeThemeTokens(null)).not.toThrow();
+  });
+
+  it('removes custom theme tokens with removeThemeTokens and disposable handle', () => {
+    const el = createMockElement();
+    const disposable = applyThemeTokens(el, { baseZIndex: 2000 });
+    expect(el.style.getPropertyValue('--pt-base-z-index')).toBe('2000');
+
+    disposable.dispose();
+    expect(el.style.getPropertyValue('--pt-base-z-index')).toBe('');
   });
 });

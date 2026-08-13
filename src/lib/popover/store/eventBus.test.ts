@@ -57,4 +57,19 @@ describe('eventBus module', () => {
     expect(l1).not.toHaveBeenCalled();
     expect(l2).not.toHaveBeenCalled();
   });
+
+  it('tracks subscription size and supports clear/dispose', () => {
+    const bus = new PopoverEventBus();
+    expect(bus.size).toBe(0);
+
+    bus.on('popover:open', () => {});
+    expect(bus.size).toBe(1);
+
+    bus.clear();
+    expect(bus.size).toBe(0);
+
+    bus.on('popover:pin', () => {});
+    bus.dispose();
+    expect(bus.size).toBe(0);
+  });
 });

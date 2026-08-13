@@ -73,6 +73,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @returns True if a valid (non-expired) entry exists.
    */
   has(key: string): boolean {
+    if (!key) return false;
     const entry = this.cache.get(key);
     if (!entry) return false;
     if (this.isExpired(entry)) {
@@ -89,6 +90,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @returns The cached data payload if valid; otherwise `undefined`.
    */
   get(key: string): TData | undefined {
+    if (!key) return undefined;
     const entry = this.cache.get(key);
     if (!entry || this.isExpired(entry)) {
       if (entry) this.cache.delete(key);
@@ -112,6 +114,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @param data - The data payload to cache.
    */
   set(key: string, data: TData): void {
+    if (!key) return;
     if (this.cache.has(key)) {
       this.cache.delete(key);
     } else if (this.cache.size >= this.maxSize) {
@@ -133,6 +136,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @param key - The unique cache key to delete.
    */
   delete(key: string): void {
+    if (!key) return;
     this.cache.delete(key);
   }
 

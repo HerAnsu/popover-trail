@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useIsPopoverOpen, usePopoverActions } from '../context';
+import { usePopoverActions } from '../context/usePopoverStore';
+import { useIsPopoverOpen } from './usePopoverSelectors';
 import type {
   AnchorEventLike,
   OpenNestedOptions,

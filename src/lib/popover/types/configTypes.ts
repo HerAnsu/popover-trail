@@ -6,12 +6,11 @@
 
 import type { Placement, Boundary } from '@floating-ui/react';
 import type { TrailEntry } from './entryTypes';
-import type { Brand, StackGroupId, ReadonlyDeep, PopoverKey } from './storeTypes';
-
-export type { Brand, StackGroupId };
+import type { ReadonlyDeep } from './storeTypes';
+import type { StackGroupId, PopoverKey } from './branded';
 
 /** Branded popover key identifier type. */
-export type PopoverKeyId = PopoverKey<string>;
+export type PopoverKeyId = PopoverKey;
 
 /** Deep readonly type helper for immutable state guarantees. */
 export type DeepReadonly<T> = ReadonlyDeep<T>;

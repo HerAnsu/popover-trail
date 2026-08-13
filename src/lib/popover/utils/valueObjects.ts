@@ -50,6 +50,14 @@ export class Point2D {
     return new Point2D(this.x - x, this.y - y);
   }
 
+  /** Calculates the Euclidean distance to another 2D point coordinate. */
+  distanceTo(other: Point2D | { x: number; y: number }): number {
+    const { x, y } = resolvePointCoordinates(other);
+    const dx = this.x - x;
+    const dy = this.y - y;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
   clamp(minX: number, maxX: number, minY: number, maxY: number): Point2D {
     const clampedX = Math.max(minX, Math.min(maxX, this.x));
     const clampedY = Math.max(minY, Math.min(maxY, this.y));
@@ -104,12 +112,15 @@ export class RectBounds {
   }
 
   contains(point: Point2D | { x: number; y: number }): boolean {
+    if (!point) return false;
     const px = point.x;
     const py = point.y;
+    if (!Number.isFinite(px) || !Number.isFinite(py)) return false;
     return px >= this.left && px <= this.right && py >= this.top && py <= this.bottom;
   }
 
-  intersects(other: RectBounds): boolean {
+  intersects(other?: RectBounds | null): boolean {
+    if (!other) return false;
     return (
       this.left < other.right &&
       this.right > other.left &&

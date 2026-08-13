@@ -5,6 +5,34 @@ All notable changes to the `popover-trail` package will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-08-13
+
+### Refactored & Code Quality
+- **React Doctor & Accessibility Polish**:
+  - Replaced custom dialog structures with HTML5 `<dialog>` element in `dnd.tsx`, preserving native accessibility and dialog semantics.
+  - Eliminated ref mutations during render across animation and geometry hooks (`useGeometry.ts`, `useDragAndDrop.ts`).
+  - Pruned intermediate barrel files and unified direct imports from submodule paths.
+- **Architectural Decoupling & Modular Utilities**:
+  - Decomposed monolithic `storeHelpers.ts` into zero-dependency standalone modules:
+    - [`clsx.ts`](file:///src/lib/popover/utils/clsx.ts) for class name composition.
+    - [`equality.ts`](file:///src/lib/popover/utils/equality.ts) for `shallowEqual` and `isDeepEqual`.
+    - [`domEvents.ts`](file:///src/lib/popover/utils/domEvents.ts) for Shadow DOM and event path inspection.
+  - Decomposed cognitive complexity hotspots:
+    - `resolvePopoverEntry` in `storeResolverPipeline.ts` split into cohesive resolution lifecycle steps while preserving synchronous execution contract for cached data and sync resolvers.
+    - `handleCardKeyboardNavigation` in `usePopoverCard.ts` split into dedicated arrow and escape dispatch handlers.
+    - `popoverFSMReducer` in `fsm.ts` modularized into state-specific transition handlers.
+- **Fallow Quality & Dead-Code Elimination**:
+  - Achieved **0 dead code issues**, **0 code duplicates**, and **0 circular dependencies** across all 90 entry points.
+  - Removed obsolete pass-through barrel `types/guardTypes.ts` and completed public facade exports in `src/lib/popover/index.ts`.
+  - Maintained Maintainability Index score of **91.6 (Good)** and React Doctor score of **100 / 100 Great**.
+
+### Tests & Verification
+- **Test Suite Expansion**:
+  - Added comprehensive stress, concurrency, and edge-case suites in `storeStressAndEdgeCases.test.ts`.
+  - Added complete CQRS `PopoverQueryBus` and `PopoverCommandBus` property and method test coverage.
+  - Expanded layout strategies and value objects geometry conversion tests.
+  - Total test count increased to **474 passing tests** across 80 test suites.
+
 ## [1.1.1] - 2026-08-13
 
 ### Fixed

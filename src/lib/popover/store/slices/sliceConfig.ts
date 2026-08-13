@@ -17,10 +17,31 @@ import type {
 } from '../../types';
 import { isDeepEqual, findEntryInStore } from '../../utils/storeHelpers';
 import { isPinnedEntry } from '../storeActions';
-import { getCleanupStatePatch } from '../reducers/stackReducers';
 import { isValidTransitionStatusChange } from '../fsm';
 import { validateBaseZIndex } from '../../utils/devWarnings';
 import type { SliceContext } from './sliceContext';
+import type { TrailEntry } from '../../types/entryTypes';
+
+function patchEntryButtonControls(
+  state: { floating: readonly TrailEntry<unknown>[]; trail: readonly TrailEntry<unknown>[] },
+  key: string,
+  updater: (prev?: ButtonControlConfig) => ButtonControlConfig,
+) {
+  if (!key) return {};
+  const entry = findEntryInStore(state.floating, state.trail, key);
+  if (!entry) return {};
+  const updatedEntry = {
+    ...entry,
+    buttonControls: updater(entry.buttonControls),
+  };
+  const inFloating = state.floating.some((e) => e.key === key);
+  return {
+    floating: inFloating
+      ? state.floating.map((e) => (e.key === key ? updatedEntry : e))
+      : state.floating,
+    trail: inFloating ? state.trail : state.trail.map((e) => (e.key === key ? updatedEntry : e)),
+  };
+}
 
 export function createConfigSlice<
   TData = unknown,
@@ -38,28 +59,6 @@ export function createConfigSlice<
     if (get()[key] !== value) {
       set({ [key]: value });
     }
-  };
-
-  const closeByKey = (key: string, options?: { transition?: boolean }) => {
-    const { floating, trail } = get();
-    const entry = findEntryInStore(floating, trail, key);
-    if (!entry) return;
-    if (entry.transitionStatus === 'unmounting' && options?.transition) return;
-
-    set((state) => {
-      const nextFloating = state.floating.filter((e) => e.key !== key);
-      const nextTrail = state.trail.filter((e) => e.key !== key);
-      const nextPinnedStates = { ...state.pinnedStates, [key]: false };
-      const cleanupPatch = getCleanupStatePatch<TData, TContext>(
-        nextFloating,
-        nextTrail,
-        state.offsets,
-        state.zIndexOrder,
-        nextPinnedStates,
-        state.nestedHydrationRequestCounters,
-      );
-      return { floating: nextFloating, trail: nextTrail, ...cleanupPatch };
-    });
   };
 
   return {
@@ -105,6 +104,7 @@ export function createConfigSlice<
     setDebug: (debug: boolean) => setIfChanged('debug', debug),
 
     hoverEnter: (key: string) => {
+      if (!key) return;
       let currentKey: string | undefined = key;
       const visited = new Set<string>();
       while (currentKey && !visited.has(currentKey)) {
@@ -116,15 +116,17 @@ export function createConfigSlice<
     },
 
     hoverLeave: (key: string, delay = 300) => {
+      if (!key) return;
       if (isPinnedEntry(get().pinnedStates, key)) return;
+      const performClose = () => {
+        get().actions.closeByKey(key, { transition: true });
+      };
       if (deps.scheduleHoverLeave) {
-        deps.scheduleHoverLeave(key, delay, () => {
-          closeByKey(key, { transition: true });
-        });
+        deps.scheduleHoverLeave(key, delay, performClose);
       } else {
         clearHoverTimer(key);
         const newTimer = setTimeout(() => {
-          closeByKey(key, { transition: true });
+          performClose();
           hoverCloseTimers.delete(key);
         }, delay);
         hoverCloseTimers.set(key, newTimer);
@@ -135,16 +137,22 @@ export function createConfigSlice<
       setIfChanged('cascadeOffsetStep', cascadeOffsetStep),
 
     setTransitionStatus: (key: string, status: PopoverTransitionStatus) => {
+      if (!key) return;
       const entry = findEntryByKey(key);
       if (!entry || entry.transitionStatus === status) return;
       if (!isValidTransitionStatusChange(entry.transitionStatus, status)) return;
 
-      set((state) => ({
-        floating: state.floating.map((e) =>
-          e.key === key ? { ...e, transitionStatus: status } : e,
-        ),
-        trail: state.trail.map((e) => (e.key === key ? { ...e, transitionStatus: status } : e)),
-      }));
+      set((state) => {
+        const inFloating = state.floating.some((e) => e.key === key);
+        return {
+          floating: inFloating
+            ? state.floating.map((e) => (e.key === key ? { ...e, transitionStatus: status } : e))
+            : state.floating,
+          trail: inFloating
+            ? state.trail
+            : state.trail.map((e) => (e.key === key ? { ...e, transitionStatus: status } : e)),
+        };
+      });
     },
 
     setExitTransitionDuration: (exitTransitionDuration: number) =>
@@ -193,18 +201,7 @@ export function createConfigSlice<
     },
 
     setButtonControls: (key: string, config: ButtonControlConfig) => {
-      set((state) => {
-        const entry = findEntryInStore(state.floating, state.trail, key);
-        if (!entry) return {};
-        const updatedEntry = {
-          ...entry,
-          buttonControls: { ...entry.buttonControls, ...config },
-        };
-        return {
-          floating: state.floating.map((e) => (e.key === key ? updatedEntry : e)),
-          trail: state.trail.map((e) => (e.key === key ? updatedEntry : e)),
-        };
-      });
+      set((state) => patchEntryButtonControls(state, key, (prev) => ({ ...prev, ...config })));
     },
 
     toggleButtonControl: (
@@ -212,21 +209,12 @@ export function createConfigSlice<
       controlName: 'enablePin' | 'enableClose' | 'enableDrag',
       enabled?: boolean,
     ) => {
-      set((state) => {
-        const entry = findEntryInStore(state.floating, state.trail, key);
-        if (!entry) return {};
-        const updatedEntry = {
-          ...entry,
-          buttonControls: {
-            ...entry.buttonControls,
-            [controlName]: enabled ?? !entry.buttonControls?.[controlName],
-          },
-        };
-        return {
-          floating: state.floating.map((e) => (e.key === key ? updatedEntry : e)),
-          trail: state.trail.map((e) => (e.key === key ? updatedEntry : e)),
-        };
-      });
+      set((state) =>
+        patchEntryButtonControls(state, key, (prev) => ({
+          ...prev,
+          [controlName]: enabled ?? !prev?.[controlName],
+        })),
+      );
     },
 
     setStackGroupFilter: (stackGroup: string | null) =>

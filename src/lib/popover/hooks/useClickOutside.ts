@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, ClickOutsideConfig } from '../types';
-import { isPortalOrExcludedTarget, getEventPath, getEventTarget } from '../utils/storeHelpers';
+import { isPortalOrExcludedTarget, getEventPath, getEventTarget } from '../utils/domEvents';
 import { TriggerRegistry } from '../utils/triggerRegistry';
 
 export interface UseClickOutsideOptions<TData = unknown, TContext = unknown> {

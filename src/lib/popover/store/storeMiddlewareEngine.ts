@@ -12,7 +12,7 @@ function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
   );
 }
 
-export function mergeSanitizedPatch<T extends object>(target: T, source: object): void {
+function mergeSanitizedPatch<T extends object>(target: T, source: object): void {
   for (const k of Object.keys(source)) {
     if (k !== '__proto__' && k !== 'constructor' && k !== 'prototype') {
       (target as Record<string, unknown>)[k] = (source as Record<string, unknown>)[k];
@@ -36,6 +36,7 @@ export class PopoverMiddlewareEngine<
 
   /** Registers a new middleware interceptor and returns an unsubscription callback. */
   public use(middleware: PopoverMiddleware<TData, TContext, TPopoverKey>): () => void {
+    if (!middleware || typeof middleware !== 'function') return () => {};
     this.middlewares.add(middleware);
     return () => {
       this.middlewares.delete(middleware);
@@ -45,6 +46,16 @@ export class PopoverMiddlewareEngine<
   /** Gets the current count of active registered middlewares. */
   public get size(): number {
     return this.middlewares.size;
+  }
+
+  /** Clears all registered middleware interceptors. */
+  public clear(): void {
+    this.middlewares.clear();
+  }
+
+  /** ScopeDisposable compliance handle clearing all registered middlewares. */
+  public dispose(): void {
+    this.clear();
   }
 
   /**

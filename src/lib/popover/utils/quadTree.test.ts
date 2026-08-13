@@ -98,4 +98,16 @@ describe('QuadTree utility', () => {
     const results = tree.retrieve([], { x: 0, y: 0, width: 300, height: 300 });
     expect(results.length).toBeGreaterThan(0);
   });
+
+  it('safely ignores null or invalid items and supports dispose', () => {
+    const tree = new QuadTree({ x: 0, y: 0, width: 500, height: 500 });
+    tree.insert(null as unknown as QuadItem);
+    tree.insert({ id: 'bad' } as unknown as QuadItem);
+    expect(tree.retrieve()).toHaveLength(0);
+
+    tree.insert({ id: 'good', bounds: { x: 10, y: 10, width: 20, height: 20 } });
+    expect(tree.retrieve()).toHaveLength(1);
+    tree.dispose();
+    expect(tree.retrieve()).toHaveLength(0);
+  });
 });

@@ -4,6 +4,7 @@
  */
 
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
+import type { PopoverStoreEvent } from '../types/eventTypes';
 
 export type PopoverEventType =
   | 'popover:open'
@@ -64,6 +65,10 @@ export class PopoverEventBus<
   TPopoverKey extends string = RegisteredKeys,
 > {
   private target = new EventTarget();
+  private listenerMap = new Map<
+    (event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>) => void,
+    EventListener
+  >();
 
   public emit<K extends PopoverEventType>(
     type: K,
@@ -80,14 +85,40 @@ export class PopoverEventBus<
   ): () => void {
     const handler = ((e: Event) => {
       if (isPopoverCustomEvent<K, TData, TPopoverKey>(e, type)) {
-        listener(e);
+        try {
+          listener(e);
+        } catch (err) {
+          console.error(`[PopoverEventBus] Listener error for "${type}":`, err);
+        }
       }
     }) as EventListener;
 
+    this.listenerMap.set(
+      listener as unknown as (
+        event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>,
+      ) => void,
+      handler,
+    );
     this.target.addEventListener(type, handler, options);
+
     return () => {
-      this.target.removeEventListener(type, handler, options);
+      this.off(type, listener);
     };
+  }
+
+  public off<K extends PopoverEventType>(
+    type: K,
+    listener: (event: PopoverCustomEvent<K, TData, TPopoverKey>) => void,
+    options?: EventListenerOptions,
+  ): void {
+    const handlerKey = listener as unknown as (
+      event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>,
+    ) => void;
+    const handler = this.listenerMap.get(handlerKey);
+    if (handler) {
+      this.target.removeEventListener(type, handler, options);
+      this.listenerMap.delete(handlerKey);
+    }
   }
 
   public once<K extends PopoverEventType>(
@@ -97,7 +128,12 @@ export class PopoverEventBus<
     return this.on(type, listener, { once: true });
   }
 
+  public get size(): number {
+    return this.listenerMap.size;
+  }
+
   public clear(): void {
+    this.listenerMap.clear();
     this.target = new EventTarget();
   }
 
@@ -107,3 +143,20 @@ export class PopoverEventBus<
 }
 
 export const globalPopoverEventBus = new PopoverEventBus();
+
+/**
+ * Safely dispatches a store event to all registered listener callbacks with error boundary isolation.
+ */
+export function dispatchStoreEvent<TData>(
+  listeners: ReadonlySet<(event: PopoverStoreEvent<TData>) => void> | undefined,
+  event: PopoverStoreEvent<TData>,
+): void {
+  if (!listeners) return;
+  for (const listener of listeners) {
+    try {
+      listener(event);
+    } catch (err) {
+      console.error('[popover-trail]: Exception in store event listener:', err);
+    }
+  }
+}

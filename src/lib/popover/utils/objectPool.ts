@@ -31,12 +31,17 @@ export class ObjectPool<T> {
   }
 
   release(item: T): void {
+    if (item === null || item === undefined) return;
     if (this.reset) {
       this.reset(item);
     }
     if (this.pool.length < this.maxCapacity) {
       this.pool.push(item);
     }
+  }
+
+  get size(): number {
+    return this.pool.length;
   }
 
   clear(): void {

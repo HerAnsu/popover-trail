@@ -10,9 +10,8 @@ export interface HydrationState {
   nestedHydrationRequestCounters: Record<string, number>;
 }
 
-export function clearRecordKeys(record: Record<string, unknown>): void {
+function clearRecordKeys(record: Record<string, unknown>): void {
   for (const k of Object.keys(record)) {
-    record[k] = undefined;
     delete record[k];
   }
 }
@@ -44,6 +43,10 @@ export function createHydrationManager() {
     return current === undefined || current !== startedCounter;
   };
 
+  const deleteNestedCounter = (parentKey: string): void => {
+    delete nestedCounters[parentKey];
+  };
+
   const resetHydrationCounters = () => {
     rootCounter = 0;
     clearRecordKeys(nestedCounters as Record<string, unknown>);
@@ -56,6 +59,7 @@ export function createHydrationManager() {
     isRootStale,
     incrementNestedCounter,
     isNestedStale,
+    deleteNestedCounter,
     resetHydrationCounters,
   };
 }

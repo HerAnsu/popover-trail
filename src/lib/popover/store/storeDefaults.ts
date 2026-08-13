@@ -19,7 +19,7 @@ export function getInitialStoreState<TData = unknown, TContext = unknown>(
   initialContext?: TContext,
   cache?: PopoverCache<TData>,
 ): Readonly<PopoverStateData<TData, TContext>> {
-  return {
+  return Object.freeze({
     stateRevision: 0,
     trail: EMPTY_READONLY_ARRAY,
     floating: EMPTY_READONLY_ARRAY,
@@ -53,5 +53,5 @@ export function getInitialStoreState<TData = unknown, TContext = unknown>(
     allowDragWhenPinned: true,
     allowDragWhenUnpinned: true,
     focusLockOptions: null,
-  };
+  });
 }

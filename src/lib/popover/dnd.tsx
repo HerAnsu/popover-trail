@@ -29,17 +29,11 @@ import {
   DEFAULT_TOUCH_DELAY_MS,
   DEFAULT_TOUCH_TOLERANCE_PX,
 } from './constants';
-import {
-  usePopoverOffset,
-  usePopoverTrail,
-  usePopoverFloating,
-  usePopoverStore,
-  usePopoverStoreApi,
-  usePopoverActions,
-  PopoverCardContext,
-} from './context';
+import { usePopoverOffset, usePopoverTrail, usePopoverFloating } from './hooks/usePopoverSelectors';
+import { usePopoverStore, usePopoverStoreApi, usePopoverActions } from './context/usePopoverStore';
+import { PopoverCardContext } from './context/PopoverCardContext';
 import { getPopoverStyles } from './utils/styles';
-import { clsx } from './utils/storeHelpers';
+import { clsx } from './utils/clsx';
 import { extractNumericStyle } from './utils/typeGuards';
 import type { TrailEntry, PopoverPlacement } from './types';
 
@@ -414,6 +408,18 @@ export interface PopoverDragHandleProps extends React.HTMLAttributes<HTMLElement
 }
 
 /**
+ * Feature toggle flags for the high-level `<PopoverCard>` component.
+ */
+export interface PopoverCardFeatures {
+  /** True to allow dragging (default: true). */
+  drag?: boolean;
+  /** True to enable spring rotation physics (default: true). */
+  tilt?: boolean;
+  /** Set true to enable React Focus Lock when this card is topmost (default: true). */
+  focusLock?: boolean;
+}
+
+/**
  * Prop types for the high-level `PopoverCard` component.
  */
 export interface PopoverCardProps<TData> {
@@ -431,11 +437,13 @@ export interface PopoverCardProps<TData> {
   className?: string;
   /** Inline styles applied to the outer card wrapper. */
   style?: React.CSSProperties;
-  /** True to allow dragging (default: true). */
+  /** Feature configuration flags for dragging, physics tilt, and focus trapping. */
+  features?: PopoverCardFeatures;
+  /** @deprecated Use `features.drag` instead. */
   enableDrag?: boolean;
-  /** True to enable spring rotation physics (default: true). */
+  /** @deprecated Use `features.tilt` instead. */
   enableTilt?: boolean;
-  /** Set true to enable React Focus Lock when this card is topmost (default: true). */
+  /** @deprecated Use `features.focusLock` instead. */
   enableFocusLock?: boolean;
   /** Custom drag handle trigger element. If not specified, the entire card is draggable. */
   dragHandle?: (props: PopoverDragHandleProps) => ReactNode;
@@ -447,19 +455,23 @@ export interface PopoverCardProps<TData> {
  *
  * @template TData - The resolved data payload type.
  */
-function PopoverCardInner<TData = unknown>({
-  entry,
-  index,
-  isPinned,
-  placement = 'bottom',
-  children,
-  className = 'popover-card',
-  style: customStyle,
-  enableDrag = true,
-  enableTilt = true,
-  enableFocusLock = true,
-  dragHandle,
-}: PopoverCardProps<TData>) {
+function PopoverCardInner<TData = unknown>(props: PopoverCardProps<TData>) {
+  const {
+    entry,
+    index,
+    isPinned,
+    placement = 'bottom',
+    children,
+    className = 'popover-card',
+    style: customStyle,
+    features,
+    dragHandle,
+  } = props;
+
+  const dragEnabled = features?.drag ?? props.enableDrag ?? true;
+  const tiltEnabled = features?.tilt ?? props.enableTilt ?? true;
+  const focusLockEnabled = features?.focusLock ?? props.enableFocusLock ?? true;
+
   const {
     ref,
     style,
@@ -477,8 +489,8 @@ function PopoverCardInner<TData = unknown>({
     index,
     isPinned,
     placement,
-    enableDrag,
-    enableTilt,
+    enableDrag: dragEnabled,
+    enableTilt: tiltEnabled,
   });
 
   const handleMouseDown = useCallback(() => {
@@ -513,42 +525,46 @@ function PopoverCardInner<TData = unknown>({
   const resolvedDragHandleProps = isDragAllowed ? dragHandleProps : {};
 
   return (
-    <div
+    <dialog
+      open
+      tabIndex={-1}
       id={`popover-card-${entry.key}`}
       ref={ref}
       style={combinedStyle}
-      role="dialog"
-      aria-modal={!isPinned}
       aria-labelledby={`title-${entry.key}`}
       aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
-      className={combinedClassName}
-      onMouseDown={handleMouseDown}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onKeyDown={onKeyDown}>
+      className={combinedClassName}>
       <FocusLock
-        disabled={!enableFocusLock || !isTop || isPinned}
+        disabled={!focusLockEnabled || !isTop || isPinned}
         returnFocus={RETURN_FOCUS_CONFIG}>
-        <PopoverCardContext value={entry.key}>
-          {entry.ariaDescribedby && (
-            <div id={`desc-${entry.key}`} style={DISPLAY_NONE_STYLE}>
-              {entry.ariaDescribedby}
-            </div>
-          )}
+        <div
+          role="presentation"
+          style={FULL_FLEX_CONTAINER_STYLE}
+          onMouseDown={handleMouseDown}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          onKeyDown={onKeyDown}>
+          <PopoverCardContext value={entry.key}>
+            {entry.ariaDescribedby && (
+              <div id={`desc-${entry.key}`} style={DISPLAY_NONE_STYLE}>
+                {entry.ariaDescribedby}
+              </div>
+            )}
 
-          {dragHandle ? (
-            <>
-              {dragHandle(resolvedDragHandleProps)}
-              {children}
-            </>
-          ) : (
-            <div {...resolvedDragHandleProps} style={FULL_FLEX_CONTAINER_STYLE}>
-              {children}
-            </div>
-          )}
-        </PopoverCardContext>
+            {dragHandle ? (
+              <>
+                {dragHandle(resolvedDragHandleProps)}
+                {children}
+              </>
+            ) : (
+              <div {...resolvedDragHandleProps} style={FULL_FLEX_CONTAINER_STYLE}>
+                {children}
+              </div>
+            )}
+          </PopoverCardContext>
+        </div>
       </FocusLock>
-    </div>
+    </dialog>
   );
 }
 

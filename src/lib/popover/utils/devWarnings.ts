@@ -18,7 +18,7 @@ function isDevEnv(): boolean {
 }
 
 /** Single Source of Truth for logging warnings to console in dev mode */
-export function emitDevWarning(code: string, message: string): void {
+function emitDevWarning(code: string, message: string): void {
   console.warn(`[popover-trail warning ${code}]: ${message}`);
 }
 

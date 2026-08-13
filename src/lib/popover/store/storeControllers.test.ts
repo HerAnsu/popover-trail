@@ -33,4 +33,20 @@ describe('storeControllers module', () => {
     expect(c2.signal.aborted).toBe(true);
     expect(manager.activeControllers.size).toBe(0);
   });
+
+  it('safely handles in-flight promises and null keys', () => {
+    const manager = createControllerManager<string>();
+    const promise = Promise.resolve('test');
+    manager.setInFlight('k1', promise);
+    expect(manager.hasInFlight('k1')).toBe(true);
+    expect(manager.getInFlight('k1')).toBe(promise);
+
+    manager.removeInFlight('k1');
+    expect(manager.hasInFlight('k1')).toBe(false);
+
+    // Null safety check
+    expect(() =>
+      manager.abortControllersForKeys(null as unknown as Iterable<string>),
+    ).not.toThrow();
+  });
 });

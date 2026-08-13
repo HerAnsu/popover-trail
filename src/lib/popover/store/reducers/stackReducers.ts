@@ -194,11 +194,14 @@ export function getCleanupStatePatch<TData, TContext>(
   pinnedStates: Record<string, boolean>,
   nestedHydrationRequestCounters: Record<string, number>,
 ): Partial<PopoverStateData<TData, TContext>> {
-  const activeKeys = getActiveKeys(floating, trail);
-  const nextOffsets = filterRecord(offsets, activeKeys);
-  const nextZIndexOrder = zIndexOrder.filter((k) => activeKeys.has(k));
-  const nextPinnedStates = filterRecord(pinnedStates, activeKeys);
-  const nextNestedCounters = filterRecord(nestedHydrationRequestCounters, activeKeys);
+  const activeKeys = getActiveKeys(floating ?? EMPTY_ARRAY, trail ?? EMPTY_ARRAY);
+  const nextOffsets = filterRecord(offsets ?? EMPTY_OBJECT, activeKeys);
+  const nextZIndexOrder = (zIndexOrder ?? EMPTY_ARRAY).filter((k) => activeKeys.has(k));
+  const nextPinnedStates = filterRecord(pinnedStates ?? EMPTY_OBJECT, activeKeys);
+  const nextNestedCounters = filterRecord(
+    nestedHydrationRequestCounters ?? EMPTY_OBJECT,
+    activeKeys,
+  );
 
   type WritablePatch = {
     -readonly [P in keyof PopoverStateData<TData, TContext>]?: PopoverStateData<TData, TContext>[P];

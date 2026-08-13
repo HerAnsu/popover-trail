@@ -52,6 +52,7 @@ export class FixedCenterLayoutStrategy implements PopoverLayoutStrategyEngine {
 export class DockedBottomLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'docked-bottom';
 
+  // fallow-ignore-next-line unused-class-member
   computePosition(params: LayoutStrategyParams): Point2D {
     const { viewportHeight } = resolveViewportDimensions(params);
     const popHeight = params.popoverRect?.height ?? 240;
@@ -64,6 +65,7 @@ export class DockedBottomLayoutStrategy implements PopoverLayoutStrategyEngine {
 export class DockedTopLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'docked-top';
 
+  // fallow-ignore-next-line unused-class-member
   computePosition(): Point2D {
     return Point2D.zero();
   }
@@ -75,12 +77,16 @@ const PLACEMENT_OFFSET_STRATEGIES: Record<
 > = {
   bottom: (t, o) => new Point2D(t.left, t.bottom + o),
   'bottom-start': (t, o) => new Point2D(t.left, t.bottom + o),
+  'bottom-end': (t, o) => new Point2D(t.right, t.bottom + o),
   top: (t, o) => new Point2D(t.left, t.top - o),
   'top-start': (t, o) => new Point2D(t.left, t.top - o),
+  'top-end': (t, o) => new Point2D(t.right, t.top - o),
   right: (t, o) => new Point2D(t.right + o, t.top),
   'right-start': (t, o) => new Point2D(t.right + o, t.top),
+  'right-end': (t, o) => new Point2D(t.right + o, t.bottom),
   left: (t, o) => new Point2D(t.left - o, t.top),
   'left-start': (t, o) => new Point2D(t.left - o, t.top),
+  'left-end': (t, o) => new Point2D(t.left - o, t.bottom),
 };
 
 /** Default relative Floating-UI layout strategy. */
@@ -97,10 +103,10 @@ export class RelativeFloatingLayoutStrategy implements PopoverLayoutStrategyEngi
   }
 }
 
-export const relativeFloatingLayoutStrategy = new RelativeFloatingLayoutStrategy();
-export const fixedCenterLayoutStrategy = new FixedCenterLayoutStrategy();
-export const dockedBottomLayoutStrategy = new DockedBottomLayoutStrategy();
-export const dockedTopLayoutStrategy = new DockedTopLayoutStrategy();
+const relativeFloatingLayoutStrategy = new RelativeFloatingLayoutStrategy();
+const fixedCenterLayoutStrategy = new FixedCenterLayoutStrategy();
+const dockedBottomLayoutStrategy = new DockedBottomLayoutStrategy();
+const dockedTopLayoutStrategy = new DockedTopLayoutStrategy();
 
 /** Strategy Registry Manager for layout positioning. */
 export class LayoutStrategyRegistry {
@@ -114,7 +120,20 @@ export class LayoutStrategyRegistry {
   }
 
   register(strategy: PopoverLayoutStrategyEngine): void {
+    if (!strategy || !strategy.id) return;
     this.strategies.set(strategy.id, strategy);
+  }
+
+  has(id: string): boolean {
+    return this.strategies.has(id);
+  }
+
+  unregister(id: string): boolean {
+    return this.strategies.delete(id);
+  }
+
+  listStrategies(): string[] {
+    return Array.from(this.strategies.keys());
   }
 
   get(id: string): PopoverLayoutStrategyEngine {

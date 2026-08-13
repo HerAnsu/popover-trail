@@ -1,10 +1,6 @@
 import { useCallback, useDebugValue, useMemo } from 'react';
-import {
-  usePopoverActions,
-  usePopoverFloating,
-  usePopoverStore,
-  usePopoverTrail,
-} from '../context';
+import { usePopoverActions, usePopoverStore } from '../context/usePopoverStore';
+import { usePopoverFloating, usePopoverTrail } from './usePopoverSelectors';
 
 /**
  * Item element in the popover timeline history.

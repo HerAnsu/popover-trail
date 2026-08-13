@@ -1,6 +1,7 @@
 import React, { useCallback, type ReactNode, type ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverCardScope } from './PopoverCardScopeContext';
+import { getPolymorphicProps } from '../../utils/componentUtils';
 
 /**
  * Sub-component for the Close action button of a `<PopoverCard>`.
@@ -9,10 +10,6 @@ export type PopoverCardCloseButtonProps<E extends ElementType = 'button'> = Poly
   E,
   { children?: ReactNode }
 >;
-
-import { getPolymorphicProps, createSubComponentClickHandler } from '../../utils/componentUtils';
-
-export { getPolymorphicProps, createSubComponentClickHandler };
 
 export function PopoverCardCloseButton<E extends ElementType = 'button'>({
   as,

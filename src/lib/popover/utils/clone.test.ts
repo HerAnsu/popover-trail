@@ -28,4 +28,27 @@ describe('clone utility (fastClone)', () => {
     expect(cloned.a).toBe(10);
     expect(cloned).not.toBe(objWithFn);
   });
+
+  it('clones Date, RegExp, Map, and Set objects', () => {
+    const date = new Date(1600000000000);
+    const dateClone = fastClone(date);
+    expect(dateClone).toEqual(date);
+    expect(dateClone).not.toBe(date);
+
+    const regex = /test-[a-z]+/gi;
+    const regexClone = fastClone(regex);
+    expect(regexClone.source).toBe(regex.source);
+    expect(regexClone.flags).toBe(regex.flags);
+    expect(regexClone).not.toBe(regex);
+
+    const map = new Map([['k1', { val: 1 }]]);
+    const mapClone = fastClone(map);
+    expect(mapClone.get('k1')).toEqual({ val: 1 });
+    expect(mapClone.get('k1')).not.toBe(map.get('k1'));
+
+    const set = new Set([{ id: 1 }]);
+    const setClone = fastClone(set);
+    expect(setClone.size).toBe(1);
+    expect(setClone).not.toBe(set);
+  });
 });

@@ -10,7 +10,7 @@ import { validateStorageKey } from '../utils/devWarnings';
 import { generateTabId } from '../utils/uuid';
 
 /** Current schema version tag for stored snapshot payloads. */
-export const SNAPSHOT_VERSION = '1.0.3';
+const SNAPSHOT_VERSION = '1.0.3';
 
 /**
  * Serializable snapshot data contract representing full popover trail state.
@@ -57,7 +57,7 @@ export interface SnapshotManagerOptions<TData = unknown> {
   deserialize?: (raw: string) => PopoverSnapshotData<TData>;
 }
 
-export function areKeysSafe(keys: Iterable<unknown>): boolean {
+function areKeysSafe(keys: Iterable<unknown>): boolean {
   for (const key of keys) {
     if (typeof key !== 'string' || UNSAFE_KEYS_SET.has(key)) return false;
   }
@@ -79,7 +79,7 @@ function isSnapshotMessageEvent<TData>(
 
 const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
 
-export const DEFAULT_SNAPSHOT_STORAGE_KEY = 'pt_popover_trail_snapshot';
+const DEFAULT_SNAPSHOT_STORAGE_KEY = 'pt_popover_trail_snapshot';
 
 const DISPOSE_SYMBOL: symbol =
   (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
@@ -144,14 +144,40 @@ export class PopoverSnapshotManager<TData = unknown> {
     offsets: Record<string, { x: number; y: number }>,
     payloads?: Record<string, TData>,
   ): PopoverSnapshotData<TData> {
+    let cleanPayloads: Record<string, TData> | undefined;
+    if (payloads && typeof payloads === 'object') {
+      cleanPayloads = {};
+      for (const [k, v] of Object.entries(payloads)) {
+        if (
+          v !== undefined &&
+          typeof v !== 'function' &&
+          !(v instanceof Promise) &&
+          !UNSAFE_KEYS_SET.has(k)
+        ) {
+          cleanPayloads[k] = v;
+        }
+      }
+    }
+
+    const cleanOffsets: Record<string, { x: number; y: number }> = {};
+    if (offsets && typeof offsets === 'object') {
+      for (const [k, pt] of Object.entries(offsets)) {
+        if (pt && typeof pt === 'object' && !UNSAFE_KEYS_SET.has(k)) {
+          const x = Number.isFinite(pt.x) ? pt.x : 0;
+          const y = Number.isFinite(pt.y) ? pt.y : 0;
+          cleanOffsets[k] = { x, y };
+        }
+      }
+    }
+
     return {
       version: SNAPSHOT_VERSION,
       timestamp: Date.now(),
       tabId: this.tabId,
       trailKeys: [...trailKeys],
       pinnedKeys: [...pinnedKeys],
-      offsets: { ...offsets },
-      payloads: payloads ? { ...payloads } : undefined,
+      offsets: cleanOffsets,
+      payloads: cleanPayloads,
     };
   }
 
@@ -186,6 +212,7 @@ export class PopoverSnapshotManager<TData = unknown> {
   private isValidSnapshot(data: unknown): data is PopoverSnapshotData<TData> {
     if (typeof data !== 'object' || data === null) return false;
     const record = data as Record<string, unknown>;
+    if (record.version !== SNAPSHOT_VERSION) return false;
     const { trailKeys, pinnedKeys, offsets } = record;
 
     if (!Array.isArray(trailKeys) || !Array.isArray(pinnedKeys)) return false;

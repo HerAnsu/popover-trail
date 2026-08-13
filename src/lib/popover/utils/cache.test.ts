@@ -83,4 +83,23 @@ describe('SimplePopoverCache', () => {
     expect(cached).toBe(promise);
     await expect(cached).resolves.toBe('async-data');
   });
+
+  it('safely handles empty or invalid keys and tracks stats', () => {
+    const cache = new SimplePopoverCache<string>();
+    expect(cache.get('')).toBeUndefined();
+    expect(cache.has('')).toBe(false);
+    cache.set('', 'invalid');
+    cache.delete('');
+    expect(cache.size).toBe(0);
+
+    cache.set('valid', 'data');
+    expect(cache.get('valid')).toBe('data');
+    expect(cache.get('missing')).toBeUndefined();
+    const stats = cache.stats();
+    expect(stats.hits).toBe(1);
+    expect(stats.misses).toBe(1);
+    expect(stats.hitRatio).toBe(0.5);
+
+    expect(() => cache.dispose()).not.toThrow();
+  });
 });

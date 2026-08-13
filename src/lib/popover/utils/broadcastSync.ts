@@ -15,12 +15,14 @@ export interface PopoverSyncMessage {
 
 export type PopoverSyncListener = (message: PopoverSyncMessage) => void;
 
-const DISPOSE_SYMBOL: symbol = Symbol.dispose ?? Symbol.for('Symbol.dispose');
+const DISPOSE_SYMBOL: symbol =
+  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
 /**
  * Creates a tab-sync manager using native BroadcastChannel.
  */
 export function createBroadcastSync(channelName = 'popover-trail-sync') {
+  const safeChannelName = channelName || 'popover-trail-sync';
   const tabId = generateTabId();
   const listeners = new Set<PopoverSyncListener>();
   let channel: BroadcastChannel | null = null;
@@ -29,11 +31,15 @@ export function createBroadcastSync(channelName = 'popover-trail-sync') {
 
   if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
     try {
-      channel = new BroadcastChannel(channelName);
+      channel = new BroadcastChannel(safeChannelName);
       messageHandler = (event: MessageEvent<PopoverSyncMessage>) => {
         if (event.data && event.data.tabId !== tabId) {
           for (const listener of listeners) {
-            listener(event.data);
+            try {
+              listener(event.data);
+            } catch (err) {
+              console.error('[BroadcastSync] Error executing listener:', err);
+            }
           }
         }
       };

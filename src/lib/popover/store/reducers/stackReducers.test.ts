@@ -7,6 +7,8 @@ import {
   getAllDescendants,
   bringToFrontPatch,
   getCleanupStatePatch,
+  updateEntryInLists,
+  getSnapshotStatePatch,
 } from './stackReducers';
 import { TrailEntry, PopoverStateData } from '../../types';
 
@@ -114,5 +116,50 @@ describe('stackReducers module', () => {
     expect(patch.ownerId).toBeUndefined();
     expect(patch.offsets).toEqual({ 'active-1': { x: 0, y: 0 } });
     expect(patch.zIndexOrder).toEqual(['active-1']);
+  });
+
+  it('updateEntryInLists updates entries in floating or trail lists immutably', () => {
+    const floating = [{ key: 'f1', data: 1 }] as TrailEntry<number>[];
+    const trail = [{ key: 't1', data: 2 }] as TrailEntry<number>[];
+
+    const updatedFloating = updateEntryInLists(floating, trail, 'f1', {
+      key: 'f1',
+      data: 10,
+    } as TrailEntry<number>);
+    expect(updatedFloating.floating?.[0]?.data).toBe(10);
+    expect(updatedFloating.trail).toBe(trail);
+
+    const updatedTrail = updateEntryInLists(floating, trail, 't1', {
+      key: 't1',
+      data: 20,
+    } as TrailEntry<number>);
+    expect(updatedTrail.trail?.[0]?.data).toBe(20);
+    expect(updatedTrail.floating).toBe(floating);
+  });
+
+  it('getSnapshotStatePatch builds full snapshot restoration patch', () => {
+    const patch = getSnapshotStatePatch({
+      trail: [{ key: 't1' }] as TrailEntry<unknown>[],
+      floating: [{ key: 'f1' }] as TrailEntry<unknown>[],
+      offsets: { t1: { x: 0, y: 0 } },
+      pinnedStates: { f1: true },
+      zIndexOrder: ['t1', 'f1'],
+      ownerId: 'owner-1',
+    });
+
+    expect(patch.trail).toHaveLength(1);
+    expect(patch.floating).toHaveLength(1);
+    expect(patch.ownerId).toBe('owner-1');
+
+    const emptyPatch = getSnapshotStatePatch({
+      trail: [],
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: [],
+      ownerId: null,
+    });
+    expect(emptyPatch.anchorElement).toBeNull();
+    expect(emptyPatch.anchorRect).toBeNull();
   });
 });
