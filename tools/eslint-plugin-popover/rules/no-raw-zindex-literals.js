@@ -4,7 +4,7 @@
  * Rule: popover/no-raw-zindex-literals
  * Description: Disallow magic zIndex literals > 1000 in inline styles; use themeTokens.zIndex
  */
-module.exports = {
+export default {
   meta: {
     type: 'suggestion',
     docs: {

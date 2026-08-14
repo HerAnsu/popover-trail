@@ -4,7 +4,7 @@
  * Rule: popover/prefer-performance-now-over-date-now
  * Description: Prefer performance.now() for monotonic high-precision physics and gesture timing
  */
-module.exports = {
+export default {
   meta: {
     type: 'suggestion',
     docs: {

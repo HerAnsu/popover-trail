@@ -4,7 +4,7 @@
  * Rule: popover/no-hardcoded-rgba-in-svg
  * Description: Prefer currentColor or theme tokens for SVG strokes and fills
  */
-module.exports = {
+export default {
   meta: {
     type: 'suggestion',
     docs: {

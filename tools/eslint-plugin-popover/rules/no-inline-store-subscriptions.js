@@ -4,7 +4,7 @@
  * Rule: popover/no-inline-store-subscriptions
  * Description: Disallow calling store.subscribe() directly in component render body without useEffect
  */
-module.exports = {
+export default {
   meta: {
     type: 'problem',
     docs: {

@@ -151,6 +151,8 @@ const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, 
   },
 );
 
+PopoverCardBase.displayName = 'PopoverCard';
+
 export const PopoverCard: PopoverCardComponent = Object.assign(
   PopoverCardBase as unknown as PopoverCardComponent,
   {

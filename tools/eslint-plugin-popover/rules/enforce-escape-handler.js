@@ -4,7 +4,7 @@
  * Rule: popover/enforce-escape-handler
  * Description: Ensure keyboard listeners in cards handle the Escape key for dismiss
  */
-module.exports = {
+export default {
   meta: {
     type: 'suggestion',
     docs: {

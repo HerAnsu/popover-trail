@@ -4,7 +4,7 @@
  * Rule: popover/enforce-pool-release-in-finally
  * Description: Ensure object pool acquisitions are released in finally blocks
  */
-module.exports = {
+export default {
   meta: {
     type: 'suggestion',
     docs: {

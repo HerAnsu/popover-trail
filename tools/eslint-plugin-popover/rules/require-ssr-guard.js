@@ -4,7 +4,7 @@
  * Rule: popover/require-ssr-guard
  * Description: Ensure direct window/document access is guarded against SSR crashes
  */
-module.exports = {
+export default {
   meta: {
     type: 'problem',
     docs: {

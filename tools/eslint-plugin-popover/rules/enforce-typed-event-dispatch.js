@@ -4,7 +4,7 @@
  * Rule: popover/enforce-typed-event-dispatch
  * Description: Ensure eventBus.emit calls provide a valid string event name
  */
-module.exports = {
+export default {
   meta: {
     type: 'suggestion',
     docs: {

@@ -4,5 +4,5 @@
   "private": true,
   "description": "Custom strict AST rules for popover-trail",
   "main": "index.js",
-  "type": "commonjs"
+  "type": "module"
 }

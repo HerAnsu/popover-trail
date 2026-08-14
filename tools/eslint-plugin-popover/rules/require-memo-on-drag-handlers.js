@@ -4,7 +4,7 @@
  * Rule: popover/require-memo-on-drag-handlers
  * Description: Require useCallback or memoized handlers for onDrag/onDragStart/onDragEnd to prevent 60/120 FPS jitter
  */
-module.exports = {
+export default {
   meta: {
     type: 'suggestion',
     docs: {
