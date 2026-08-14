@@ -192,7 +192,19 @@
     "popover/enforce-typed-event-dispatch": "warn",
     "popover/sanitize-snapshot-payload": "warn",
     "popover/require-display-name": "warn",
-    "popover/prefer-early-return-on-inactive": "warn"
+    "popover/prefer-early-return-on-inactive": "warn",
+    "popover/no-unhandled-resolver-promise": "warn",
+    "popover/enforce-cancellation-token-check": "warn",
+    "popover/no-race-condition-in-fetch": "warn",
+    "popover/enforce-finite-inertia-velocity": "warn",
+    "popover/require-safe-quadtree-bounds": "warn",
+    "popover/no-zero-damping-in-spring": "deny",
+    "popover/require-provider-wrap-on-hooks": "warn",
+    "popover/enforce-shallow-equal-on-composite-selectors": "warn",
+    "popover/no-nested-popover-providers": "warn",
+    "popover/no-dangerously-set-inner-html": "deny",
+    "popover/sanitize-custom-html-attributes": "warn",
+    "popover/enforce-cleanup-after-mock-timers": "warn"
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"]
 }
