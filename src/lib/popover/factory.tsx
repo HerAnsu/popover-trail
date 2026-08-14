@@ -77,6 +77,8 @@ export function createPopoverTrail<
   usePopoverContext: () => TContext;
 };
 
+declare const process: { env: { NODE_ENV?: string } } | undefined;
+
 /**
  * Implementation of `createPopoverTrail`.
  */
@@ -85,7 +87,11 @@ export function createPopoverTrail<
   TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
 >(schema?: PopoverSchemaInstance<TSchema> | TSchema) {
-  if (process.env.NODE_ENV !== 'production' && isCurrentlyRenderingInReact()) {
+  if (
+    typeof process !== 'undefined' &&
+    process?.env?.NODE_ENV !== 'production' &&
+    isCurrentlyRenderingInReact()
+  ) {
     validateFactoryPlacement(false);
   }
 

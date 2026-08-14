@@ -157,7 +157,7 @@ describe('Type Safety Guards & Event Predicates', () => {
   });
 
   it('validates advanced store and event type helper signatures', () => {
-    type Key = PopoverLib.PopoverKeyId;
+    type Key = PopoverLib.PopoverKey;
     const testKey: Key = PopoverLib.createPopoverKey('test-key');
     expect(testKey).toBe('test-key');
 

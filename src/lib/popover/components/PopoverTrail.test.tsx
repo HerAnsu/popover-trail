@@ -23,7 +23,7 @@ describe('PopoverTrail component', () => {
       { key: 'card-2', isLoading: false, error: null },
     ];
 
-    const filterFn = (entry: TrailEntry<unknown>) => entry.key !== 'card-1';
+    const filterFn = (entry: TrailEntry<unknown>, _index?: number) => entry.key !== 'card-1';
 
     const list: Array<{ entry: TrailEntry<unknown>; isPinned: boolean }> = [];
     let idx = 0;

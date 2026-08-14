@@ -222,7 +222,7 @@ export async function resolvePopoverEntry<
     createTrailEntry(
       key,
       parentKey,
-      rect,
+      rect ?? null,
       options,
       existingEntry,
       data ?? undefined,
@@ -310,7 +310,7 @@ export async function resolvePopoverEntry<
       buildEntry(rawSyncResult as TData, null, false),
       params,
       deps,
-      storeCache,
+      storeCache ?? undefined,
     );
     return;
   }
@@ -325,7 +325,14 @@ export async function resolvePopoverEntry<
     try {
       const data = await inFlight;
       if (isStale(requestCounter)) return;
-      handleResolverSuccess(data, key, buildEntry(data, null, false), params, deps, storeCache);
+      handleResolverSuccess(
+        data,
+        key,
+        buildEntry(data, null, false),
+        params,
+        deps,
+        storeCache ?? undefined,
+      );
     } catch (err) {
       if (isStale(requestCounter)) return;
       handleResolverError(err, key, deps);

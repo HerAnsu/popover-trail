@@ -15,13 +15,13 @@
 export type Brand<T, B extends string> = T & { readonly __brand: B };
 
 /** Nominal type for popover unique string identifiers. */
-export type PopoverKey = Brand<string, 'PopoverKey'>;
+export type PopoverKey<T extends string = string> = Brand<T, 'PopoverKey'>;
 
 /** Nominal type for parent popover unique string identifiers. */
-export type ParentKey = Brand<string, 'ParentKey'>;
+export type ParentKey<T extends string = string> = Brand<T, 'ParentKey'>;
 
 /** Nominal type for stack group filter string identifiers. */
-export type StackGroupId = Brand<string, 'StackGroupId'>;
+export type StackGroupId<T extends string = string> = Brand<T, 'StackGroupId'>;
 
 /** Nominal type for z-index integer depth values. */
 export type ZIndexDepth = Brand<number, 'ZIndexDepth'>;

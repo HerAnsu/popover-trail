@@ -25,7 +25,8 @@ import type { PopoverStoreEvent } from './eventTypes';
 
 import type { StoreApi } from 'zustand/vanilla';
 import type { RegisteredKeys, RegisteredDataMap } from './registerTypes';
-export type { Brand, PopoverKey, ParentKey, StackGroupId, ZIndexDepth } from './branded';
+import type { Brand, PopoverKey, ParentKey, StackGroupId, ZIndexDepth } from './branded';
+export type { Brand, PopoverKey, ParentKey, StackGroupId, ZIndexDepth };
 
 export type ViewportX = Brand<number, 'ViewportX'>;
 export type ViewportY = Brand<number, 'ViewportY'>;
@@ -325,7 +326,7 @@ export interface PopoverActions<
   closeTopmost: (options?: { transition?: boolean }) => void;
   openRootWithResolver: (
     keyOrName: TPopoverKey,
-    anchorEvent: AnchorEventLike,
+    anchorEvent?: AnchorEventLike,
     options?: Readonly<OpenRootOptions>,
   ) => Promise<void>;
   openNestedWithResolver: (
