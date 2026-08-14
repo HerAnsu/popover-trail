@@ -13,6 +13,14 @@
     "node",
     "vitest"
   ],
+  "jsPlugins": [
+    { "name": "sonarjs", "specifier": "eslint-plugin-sonarjs" },
+    { "name": "regexp", "specifier": "eslint-plugin-regexp" },
+    { "name": "@e18e", "specifier": "@e18e/eslint-plugin" },
+    { "name": "@stylistic", "specifier": "@stylistic/eslint-plugin" },
+    { "name": "testing-library", "specifier": "eslint-plugin-testing-library" },
+    { "name": "storybook", "specifier": "eslint-plugin-storybook" }
+  ],
   "categories": {
     "correctness": "deny",
     "perf": "deny",

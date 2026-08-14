@@ -76,6 +76,7 @@ export function useVirtualAnchorElement(anchorRect: DOMRect | null | undefined) 
     return {
       getBoundingClientRect: () => anchorRect,
     };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [anchorRectHash]);
 }
 
@@ -153,6 +154,7 @@ export function useFloatingUpdater(
     if (!isPinned && !isDragging) {
       void update();
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 

@@ -10,10 +10,7 @@ import { usePopoverGeometry } from './useGeometry';
 import { usePopoverActions } from '../context/usePopoverStore';
 import { getPopoverStyles } from '../utils/styles';
 import type { TrailEntry, PopoverPlacement } from '../types';
-import {
-  handleCardKeyboardNavigation,
-  type CardKeyboardNavigationOptions,
-} from './card/useCardKeyboardNav';
+import { handleCardKeyboardNavigation } from './card/useCardKeyboardNav';
 import { useCardFocusManagement } from './card/useCardFocusManagement';
 import {
   useCardStoreSlice,

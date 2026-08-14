@@ -23,8 +23,6 @@ import {
   findEntryInStore,
   createTrailEntry,
   createLoadingEntry,
-  createSuccessEntry,
-  createErrorEntry,
 } from '../utils/storeHelpers';
 import type { PopoverDAG } from '../utils/dag';
 import { dispatchStoreEvent } from './eventBus';
