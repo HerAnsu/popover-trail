@@ -18,6 +18,11 @@ import {
   validateQuadTreeBounds,
   validateFSMTransitionEvent,
   validatePortalContainer,
+  validateSchemaCircularChild,
+  validateResolverTimeout,
+  validatePortalExclusion,
+  markPerformance,
+  measurePerformance,
 } from './devWarnings';
 
 describe('Comprehensive Guardrail Error Warnings Utility', () => {
@@ -224,5 +229,33 @@ describe('Comprehensive Guardrail Error Warnings Utility', () => {
     );
 
     consoleWarnSpy.mockRestore();
+  });
+
+  it('validates PT-128 schema circular child and PT-129 resolver timeout', () => {
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    validateSchemaCircularChild('item-1', 'item-1');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[popover-trail warning PT-128]'),
+    );
+
+    validateResolverTimeout(6000, 'slow-item');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[popover-trail warning PT-129]'),
+    );
+
+    validatePortalExclusion('custom-portal');
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[popover-trail warning PT-130]'),
+    );
+
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('handles markPerformance and measurePerformance safely', () => {
+    expect(() => {
+      markPerformance('test-mark');
+      measurePerformance('test-measure', 'test-mark');
+    }).not.toThrow();
   });
 });

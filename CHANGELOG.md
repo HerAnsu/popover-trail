@@ -21,11 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `resolvePopoverEntry` in `storeResolverPipeline.ts` split into cohesive resolution lifecycle steps while preserving synchronous execution contract for cached data and sync resolvers.
     - `handleCardKeyboardNavigation` in `usePopoverCard.ts` split into dedicated arrow and escape dispatch handlers.
     - `popoverFSMReducer` in `fsm.ts` modularized into state-specific transition handlers.
+- **Clean Code & SRP Modularization**:
+  - Modularized `devWarnings.ts` into isolated domain validators under `src/lib/popover/validators/` (`validateTrigger.ts`, `validateProvider.ts`, `validateComponentScope.ts`, `validateStorageAndState.ts`, `validatePerformance.ts`, `warningEngine.ts`).
+  - Separated value objects into standalone `Point2D.ts` and `RectBounds.ts`.
+  - Decomposed composite hooks `useGeometry.ts` and `usePopoverCard.ts` into focused sub-modules (`geometry/useFloatingSetup.ts`, `geometry/geometryUtils.ts`, `card/useCardKeyboardNav.ts`, `card/useCardFocusManagement.ts`, `card/useCardStoreSlice.ts`).
+  - Introduced expressive entry factory methods (`createSuccessEntry`, `createLoadingEntry`, `createErrorEntry`, `createIdleEntry`) eliminating ambiguous flag parameters.
 - **Fallow Quality & Complexity Reduction**:
   - Reduced **all 39 high-complexity functions** flagged by `fallow health` down to **0 functions above threshold** across the entire codebase.
   - Extracted modular single-responsibility helpers across `storeResolverPipeline.ts`, `useGeometry.ts`, `usePopoverCard.ts`, `sliceResolver.ts`, `slicePersistence.ts`, `snapshotManager.ts`, `dnd.tsx`, and `storeHelpers.ts`.
   - Achieved **0 dead code issues**, **0 code duplicates**, and **0 circular dependencies** across all 92 entry points.
-  - Maintained Maintainability Index score of **91.6 (Good)** and React Doctor score of **100 / 100 Great**.
+  - Maintained Maintainability Index score of **91.5 (Good)** and React Doctor score of **100 / 100 Great**.
 
 ### Tests & Verification
 - **Test Suite Expansion**:

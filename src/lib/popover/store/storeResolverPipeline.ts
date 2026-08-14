@@ -17,7 +17,15 @@ import type {
   StoreState,
   PopoverStoreEvent,
 } from '../types';
-import { isPromise, toError, findEntryInStore, createTrailEntry } from '../utils/storeHelpers';
+import {
+  isPromise,
+  toError,
+  findEntryInStore,
+  createTrailEntry,
+  createLoadingEntry,
+  createSuccessEntry,
+  createErrorEntry,
+} from '../utils/storeHelpers';
 import type { PopoverDAG } from '../utils/dag';
 import { dispatchStoreEvent } from './eventBus';
 
@@ -436,7 +444,8 @@ export async function resolvePopoverEntry<
   if (!inFlight) return;
 
   if (!existingEntry || existingEntry.status !== 'success' || forceRefresh) {
-    safeSet(insertStatePatch(buildEntry(existingEntry?.data, null, true)));
+    const loadingEntry = createLoadingEntry(key, parentKey, rect ?? null, options, existingEntry);
+    safeSet(insertStatePatch(loadingEntry));
   }
 
   await awaitInFlightResolution(

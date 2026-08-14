@@ -231,7 +231,11 @@ export {
 
 export { usePopoverGeometry, type UsePopoverGeometryResult } from './hooks/useGeometry';
 export { usePopoverDragAndDrop, type UsePopoverDragAndDropResult } from './hooks/useDragAndDrop';
-export { usePopoverCard, type UsePopoverCardResult } from './hooks/usePopoverCard';
+export {
+  usePopoverCard,
+  type UsePopoverCardResult,
+  type CardKeyboardNavigationOptions,
+} from './hooks/usePopoverCard';
 export { getPopoverStyles } from './utils/styles';
 export { SimplePopoverCache, type TypedPopoverCache } from './utils/cache';
 export {
@@ -330,6 +334,10 @@ export {
   getSnapshotStatePatch,
   mergeEntryOptions,
   closeFromState,
+  createSuccessEntry,
+  createLoadingEntry,
+  createErrorEntry,
+  createIdleEntry,
 } from './utils/storeHelpers';
 export { PopoverMiddlewareEngine } from './store/storeMiddlewareEngine';
 export { isKeyInZIndexOrder, reduceTogglePinState } from './store/storeActions';
@@ -339,7 +347,7 @@ export {
   validatePortalExclusion,
   markPerformance,
   measurePerformance,
-} from './utils/devWarnings';
+} from './validators';
 export {
   selectActiveTrail,
   selectFloatingEntries,

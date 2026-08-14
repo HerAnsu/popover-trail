@@ -191,3 +191,49 @@ export function createTrailEntry<TData>(
     dataPromise: existingEntry?.dataPromise ?? undefined,
   };
 }
+
+/** Constructs an entry in 'success' status with resolved payload data. */
+export function createSuccessEntry<TData>(
+  key: string,
+  parentKey: string | undefined,
+  rect: DOMRect | null,
+  options: (OpenRootOptions & OpenNestedOptions) | undefined,
+  data: TData,
+  existingEntry?: TrailEntry<TData>,
+): TrailEntry<TData> {
+  return createTrailEntry(key, parentKey, rect, options, existingEntry, data, null, false);
+}
+
+/** Constructs an entry in 'loading' status. */
+export function createLoadingEntry<TData>(
+  key: string,
+  parentKey: string | undefined,
+  rect: DOMRect | null,
+  options: (OpenRootOptions & OpenNestedOptions) | undefined,
+  existingEntry?: TrailEntry<TData>,
+): TrailEntry<TData> {
+  return createTrailEntry(key, parentKey, rect, options, existingEntry, undefined, null, true);
+}
+
+/** Constructs an entry in 'error' status with an associated Error object. */
+export function createErrorEntry<TData>(
+  key: string,
+  parentKey: string | undefined,
+  rect: DOMRect | null,
+  options: (OpenRootOptions & OpenNestedOptions) | undefined,
+  error: Error,
+  existingEntry?: TrailEntry<TData>,
+): TrailEntry<TData> {
+  return createTrailEntry(key, parentKey, rect, options, existingEntry, undefined, error, false);
+}
+
+/** Constructs an entry in 'idle' status. */
+export function createIdleEntry<TData>(
+  key: string,
+  parentKey: string | undefined,
+  rect: DOMRect | null,
+  options: (OpenRootOptions & OpenNestedOptions) | undefined,
+  existingEntry?: TrailEntry<TData>,
+): TrailEntry<TData> {
+  return createTrailEntry(key, parentKey, rect, options, existingEntry, undefined, null, false);
+}
