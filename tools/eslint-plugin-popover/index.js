@@ -79,6 +79,27 @@ const noInlineStyleOverrideOnTokens = require('./rules/tokens-dom/no-inline-styl
 const enforceTransitionTimeoutSync = require('./rules/transitions/enforce-transition-timeout-sync');
 const noUnboundedScaleTransform = require('./rules/transitions/no-unbounded-scale-transform');
 
+// Group S: Keyboard Navigation & Shortcuts
+const enforcePreventDefaultOnNavKeys = require('./rules/keyboard-nav/enforce-prevent-default-on-nav-keys');
+const noUnscopedKeyboardListeners = require('./rules/keyboard-nav/no-unscoped-keyboard-listeners');
+const enforceCaseInsensitiveKeyMatching = require('./rules/keyboard-nav/enforce-case-insensitive-key-matching');
+
+// Group T: History & Snapshots
+const enforceMaxHistoryLimit = require('./rules/history/enforce-max-history-limit');
+const noDirectHistoryStackPush = require('./rules/history/no-direct-history-stack-push');
+const requireSnapshotDeserializerFallback = require('./rules/history/require-snapshot-deserializer-fallback');
+
+// Group U: DAG & Lineage
+const noCircularDagEdges = require('./rules/dag/no-circular-dag-edges');
+const enforceOrphanCleanupOnParentClose = require('./rules/dag/enforce-orphan-cleanup-on-parent-close');
+
+// Group V: Responsive & Viewport
+const enforcePositiveBreakpointWidth = require('./rules/responsive/enforce-positive-breakpoint-width');
+const noViewportResizeWithoutDebounce = require('./rules/responsive/no-viewport-resize-without-debounce');
+
+// Group W: Hooks Polish
+const enforceUseIsomorphicLayoutEffect = require('./rules/hooks-polish/enforce-use-isomorphic-layout-effect');
+
 const rules = {
   'require-ssr-guard': requireSsrGuard,
   'no-direct-dom-mutation': noDirectDomMutation,
@@ -123,6 +144,17 @@ const rules = {
   'no-inline-style-override-on-tokens': noInlineStyleOverrideOnTokens,
   'enforce-transition-timeout-sync': enforceTransitionTimeoutSync,
   'no-unbounded-scale-transform': noUnboundedScaleTransform,
+  'enforce-prevent-default-on-nav-keys': enforcePreventDefaultOnNavKeys,
+  'no-unscoped-keyboard-listeners': noUnscopedKeyboardListeners,
+  'enforce-case-insensitive-key-matching': enforceCaseInsensitiveKeyMatching,
+  'enforce-max-history-limit': enforceMaxHistoryLimit,
+  'no-direct-history-stack-push': noDirectHistoryStackPush,
+  'require-snapshot-deserializer-fallback': requireSnapshotDeserializerFallback,
+  'no-circular-dag-edges': noCircularDagEdges,
+  'enforce-orphan-cleanup-on-parent-close': enforceOrphanCleanupOnParentClose,
+  'enforce-positive-breakpoint-width': enforcePositiveBreakpointWidth,
+  'no-viewport-resize-without-debounce': noViewportResizeWithoutDebounce,
+  'enforce-use-isomorphic-layout-effect': enforceUseIsomorphicLayoutEffect,
 };
 
 module.exports = {

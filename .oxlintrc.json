@@ -217,7 +217,18 @@
     "popover/enforce-prefixed-data-attributes": "warn",
     "popover/no-inline-style-override-on-tokens": "warn",
     "popover/enforce-transition-timeout-sync": "warn",
-    "popover/no-unbounded-scale-transform": "warn"
+    "popover/no-unbounded-scale-transform": "warn",
+    "popover/enforce-prevent-default-on-nav-keys": "warn",
+    "popover/no-unscoped-keyboard-listeners": "warn",
+    "popover/enforce-case-insensitive-key-matching": "warn",
+    "popover/enforce-max-history-limit": "warn",
+    "popover/no-direct-history-stack-push": "deny",
+    "popover/require-snapshot-deserializer-fallback": "warn",
+    "popover/no-circular-dag-edges": "warn",
+    "popover/enforce-orphan-cleanup-on-parent-close": "warn",
+    "popover/enforce-positive-breakpoint-width": "warn",
+    "popover/no-viewport-resize-without-debounce": "warn",
+    "popover/enforce-use-isomorphic-layout-effect": "warn"
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"]
 }

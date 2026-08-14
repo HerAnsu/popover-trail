@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import plugin from '../index';
 
 describe('eslint-plugin-popover-trail custom rules', () => {
-  it('exports all 43 custom AST rules', () => {
-    expect(Object.keys(plugin.rules)).toHaveLength(43);
+  it('exports all 54 custom AST rules', () => {
+    expect(Object.keys(plugin.rules)).toHaveLength(54);
 
     // Group A
     expect(plugin.rules).toHaveProperty('require-ssr-guard');
@@ -83,6 +83,27 @@ describe('eslint-plugin-popover-trail custom rules', () => {
     // Group R
     expect(plugin.rules).toHaveProperty('enforce-transition-timeout-sync');
     expect(plugin.rules).toHaveProperty('no-unbounded-scale-transform');
+
+    // Group S
+    expect(plugin.rules).toHaveProperty('enforce-prevent-default-on-nav-keys');
+    expect(plugin.rules).toHaveProperty('no-unscoped-keyboard-listeners');
+    expect(plugin.rules).toHaveProperty('enforce-case-insensitive-key-matching');
+
+    // Group T
+    expect(plugin.rules).toHaveProperty('enforce-max-history-limit');
+    expect(plugin.rules).toHaveProperty('no-direct-history-stack-push');
+    expect(plugin.rules).toHaveProperty('require-snapshot-deserializer-fallback');
+
+    // Group U
+    expect(plugin.rules).toHaveProperty('no-circular-dag-edges');
+    expect(plugin.rules).toHaveProperty('enforce-orphan-cleanup-on-parent-close');
+
+    // Group V
+    expect(plugin.rules).toHaveProperty('enforce-positive-breakpoint-width');
+    expect(plugin.rules).toHaveProperty('no-viewport-resize-without-debounce');
+
+    // Group W
+    expect(plugin.rules).toHaveProperty('enforce-use-isomorphic-layout-effect');
   });
 
   it('each rule has meta and create functions conforming to ESLint / Oxlint specification', () => {
