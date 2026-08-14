@@ -54,7 +54,7 @@ export function createDisposable(cleanupFn: () => void): ScopeDisposable {
   };
 
   if (DISPOSE_SYMBOL) {
-    (handle as Record<symbol, unknown>)[DISPOSE_SYMBOL] = doCleanup;
+    (handle as unknown as Record<symbol, unknown>)[DISPOSE_SYMBOL] = doCleanup;
   }
 
   return handle;

@@ -24,6 +24,8 @@ import {
 import { validateFactoryPlacement } from './utils/devWarnings';
 import type { RegisteredKeys, RegisteredDataMap } from './types/registerTypes';
 
+declare const process: { env: { NODE_ENV?: string } } | undefined;
+
 /**
  * Safely inspects React internals to detect if a call is executed inside a component render pass.
  */
@@ -54,7 +56,7 @@ function isCurrentlyRenderingInReact(): boolean {
 export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
   schema: PopoverSchemaInstance<TSchema> | TSchema,
 ): PopoverSchemaInstance<TSchema> & {
-  PopoverProvider: React.ComponentType<PopoverProviderProps<unknown, unknown>>;
+  PopoverProvider: React.ComponentType<PopoverProviderProps>;
   PopoverTrigger: typeof CorePopoverTrigger;
   PopoverPortal: typeof CorePopoverPortal;
   usePopover: typeof coreUsePopover;
@@ -76,8 +78,6 @@ export function createPopoverTrail<
   usePopoverActions: () => ReturnType<typeof coreUsePopoverActions<TData, TContext>>;
   usePopoverContext: () => TContext;
 };
-
-declare const process: { env: { NODE_ENV?: string } } | undefined;
 
 /**
  * Implementation of `createPopoverTrail`.
