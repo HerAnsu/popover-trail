@@ -9,10 +9,22 @@ module.exports = {
     },
     schema: [],
     messages: {
-      visibleFocusOutline: 'Ensure focus-visible outline has sufficient contrast against popover background.',
+      visibleFocusOutline: 'Ensure focus-visible outline is defined and not set to `none` without ring styling.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          (node.key.name === 'outline' || node.key.value === 'outline') &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          node.value.value === 'none'
+        ) {
+          context.report({ node, messageId: 'visibleFocusOutline' });
+        }
+      },
+    };
   },
 };

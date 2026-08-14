@@ -14,25 +14,17 @@ module.exports = {
   },
   create(context) {
     const rawFilename = context.filename || context.getFilename();
-    if (!rawFilename.includes('reducers/')) {
-      return {};
-    }
+    if (!rawFilename.includes('reducers/')) return {};
 
     return {
       FunctionDeclaration(node) {
         if (node.async) {
-          context.report({
-            node,
-            messageId: 'asyncReducer',
-          });
+          context.report({ node, messageId: 'asyncReducer' });
         }
       },
       ArrowFunctionExpression(node) {
         if (node.async) {
-          context.report({
-            node,
-            messageId: 'asyncReducer',
-          });
+          context.report({ node, messageId: 'asyncReducer' });
         }
       },
     };

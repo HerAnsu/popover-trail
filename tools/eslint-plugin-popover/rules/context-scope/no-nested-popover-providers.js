@@ -12,7 +12,22 @@ module.exports = {
       nestedProvider: 'Avoid nesting <PopoverProvider> without an explicit isolated store configuration.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    let providerDepth = 0;
+    return {
+      JSXElement(node) {
+        if (node.openingElement && node.openingElement.name && node.openingElement.name.name === 'PopoverProvider') {
+          providerDepth++;
+          if (providerDepth > 1) {
+            context.report({ node, messageId: 'nestedProvider' });
+          }
+        }
+      },
+      'JSXElement:exit'(node) {
+        if (node.openingElement && node.openingElement.name && node.openingElement.name.name === 'PopoverProvider') {
+          providerDepth--;
+        }
+      },
+    };
   },
 };

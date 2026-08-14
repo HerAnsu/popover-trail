@@ -9,10 +9,23 @@ module.exports = {
     },
     schema: [],
     messages: {
-      useLogicalProperty: 'Consider using logical property instead of physical left/right for RTL compatibility.',
+      useLogicalProperty: 'Consider using logical property (marginInlineStart) instead of physical (marginLeft) for RTL compatibility.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.includes('components/') || filename.includes('.test.')) return {};
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          (node.key.name === 'marginLeft' || node.key.name === 'marginRight') &&
+          node.value &&
+          node.value.type === 'Literal'
+        ) {
+          context.report({ node, messageId: 'useLogicalProperty' });
+        }
+      },
+    };
   },
 };

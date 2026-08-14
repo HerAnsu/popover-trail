@@ -12,7 +12,16 @@ module.exports = {
       useTypeExport: 'Use `export type` when re-exporting pure TypeScript types to assist bundler elision.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.endsWith('.ts') && !filename.endsWith('.tsx')) return {};
+    return {
+      ExportNamedDeclaration(node) {
+        if (node.exportKind === 'type') return;
+        if (node.declaration && (node.declaration.type === 'TSTypeAliasDeclaration' || node.declaration.type === 'TSInterfaceDeclaration')) {
+          context.report({ node, messageId: 'useTypeExport' });
+        }
+      },
+    };
   },
 };

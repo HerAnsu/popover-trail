@@ -9,10 +9,35 @@ module.exports = {
     },
     schema: [],
     messages: {
-      missingFallback: 'Snapshot deserializer should catch parsing errors and return fallback state.',
+      missingFallback: 'Snapshot deserializer JSON.parse should be protected by try/catch.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.includes('snapshot') || filename.includes('.test.')) return {};
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.object &&
+          node.callee.object.name === 'JSON' &&
+          node.callee.property &&
+          node.callee.property.name === 'parse'
+        ) {
+          let parent = node.parent;
+          let inTry = false;
+          while (parent) {
+            if (parent.type === 'TryStatement') {
+              inTry = true;
+              break;
+            }
+            parent = parent.parent;
+          }
+          if (!inTry) {
+            context.report({ node, messageId: 'missingFallback' });
+          }
+        }
+      },
+    };
   },
 };

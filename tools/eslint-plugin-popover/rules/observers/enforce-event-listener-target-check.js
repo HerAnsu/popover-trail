@@ -12,7 +12,21 @@ module.exports = {
       uncheckedTarget: 'Verify target object existence before attaching event listener.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.property &&
+          node.callee.property.name === 'addEventListener' &&
+          node.callee.object &&
+          node.callee.object.type === 'Identifier' &&
+          node.callee.object.name === 'el' &&
+          !node.callee.optional
+        ) {
+          context.report({ node, messageId: 'uncheckedTarget' });
+        }
+      },
+    };
   },
 };

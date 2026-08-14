@@ -12,7 +12,18 @@ module.exports = {
       respectReducedMotion: 'Ensure animation presets disable or reduce duration when prefers-reduced-motion is matched.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.includes('animation') || filename.includes('.test.')) return {};
+    return {
+      FunctionDeclaration(node) {
+        if (node.id && node.id.name.includes('createSpringConfig')) {
+          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          if (!src.includes('reducedMotion') && !src.includes('prefers-reduced-motion')) {
+            context.report({ node, messageId: 'respectReducedMotion' });
+          }
+        }
+      },
+    };
   },
 };

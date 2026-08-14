@@ -12,7 +12,18 @@ module.exports = {
       unclosedChannel: 'BroadcastChannel instance should be closed via `channel.close()` in cleanup callback.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.')) return {};
+    return {
+      NewExpression(node) {
+        if (node.callee && node.callee.name === 'BroadcastChannel') {
+          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          if (!src.includes('.close()')) {
+            context.report({ node, messageId: 'unclosedChannel' });
+          }
+        }
+      },
+    };
   },
 };

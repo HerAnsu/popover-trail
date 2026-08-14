@@ -12,7 +12,22 @@ module.exports = {
       untrackedAutofocus: 'Autofocusing popover card element should record previous activeElement for focus return on close.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.property &&
+          node.callee.property.name === 'focus' &&
+          node.callee.object &&
+          node.callee.object.name === 'cardRef'
+        ) {
+          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          if (!src.includes('activeElement') && !src.includes('prevFocus')) {
+            context.report({ node, messageId: 'untrackedAutofocus' });
+          }
+        }
+      },
+    };
   },
 };

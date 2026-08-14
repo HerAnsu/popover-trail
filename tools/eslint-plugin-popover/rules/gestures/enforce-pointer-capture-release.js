@@ -12,7 +12,16 @@ module.exports = {
       unreleasedPointerCapture: 'Element with setPointerCapture should release pointer capture on pointerup/pointercancel.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (node.callee && node.callee.property && node.callee.property.name === 'setPointerCapture') {
+          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          if (!src.includes('releasePointerCapture')) {
+            context.report({ node, messageId: 'unreleasedPointerCapture' });
+          }
+        }
+      },
+    };
   },
 };

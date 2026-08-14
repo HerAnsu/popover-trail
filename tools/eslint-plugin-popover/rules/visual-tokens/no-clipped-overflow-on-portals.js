@@ -12,7 +12,18 @@ module.exports = {
       portalOverflowClipped: 'Root portal container should not have `overflow: hidden`, which clips floating card trails.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      JSXElement(node) {
+        if (node.openingElement && node.openingElement.name && node.openingElement.name.name === 'PopoverPortal') {
+          const hasHidden = node.openingElement.attributes.some(
+            (a) => a.name && a.name.name === 'style' && context.getSourceCode().getText(a.value).includes('overflow: "hidden"')
+          );
+          if (hasHidden) {
+            context.report({ node, messageId: 'portalOverflowClipped' });
+          }
+        }
+      },
+    };
   },
 };

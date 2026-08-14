@@ -12,7 +12,22 @@ module.exports = {
       willChangeCleanup: 'Reset willChange to "auto" when card transition completes to free GPU memory.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          (node.key.name === 'willChange' || node.key.value === 'willChange') &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          node.value.value === 'transform'
+        ) {
+          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          if (!src.includes('auto') && !src.includes('onAnimationEnd')) {
+            context.report({ node, messageId: 'willChangeCleanup' });
+          }
+        }
+      },
+    };
   },
 };

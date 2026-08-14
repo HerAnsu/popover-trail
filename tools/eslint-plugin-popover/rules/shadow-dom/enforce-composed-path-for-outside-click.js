@@ -12,7 +12,18 @@ module.exports = {
       useComposedPath: 'Use `e.composedPath ? e.composedPath() : ...` to ensure outside click logic traverses Shadow DOM boundaries.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.')) return {};
+    return {
+      FunctionDeclaration(node) {
+        if (node.id && node.id.name.includes('handleOutsideClick')) {
+          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          if (!src.includes('composedPath')) {
+            context.report({ node, messageId: 'useComposedPath' });
+          }
+        }
+      },
+    };
   },
 };

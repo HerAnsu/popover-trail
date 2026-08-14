@@ -9,10 +9,23 @@ module.exports = {
     },
     schema: [],
     messages: {
-      unboundedHistory: 'History buffer capacity should be capped with a maximum limit.',
+      unboundedHistory: 'History buffer capacity should be capped with a maximum limit (maxHistory > 0).',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          node.key.name === 'maxHistory' &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          typeof node.value.value === 'number' &&
+          node.value.value <= 0
+        ) {
+          context.report({ node, messageId: 'unboundedHistory' });
+        }
+      },
+    };
   },
 };

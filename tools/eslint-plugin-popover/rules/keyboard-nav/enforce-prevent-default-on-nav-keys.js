@@ -12,7 +12,20 @@ module.exports = {
       missingPreventDefault: 'Keyboard navigation handler for arrow keys should call `e.preventDefault()`.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      SwitchCase(node) {
+        if (
+          node.test &&
+          node.test.type === 'Literal' &&
+          (node.test.value === 'ArrowUp' || node.test.value === 'ArrowDown' || node.test.value === 'Tab')
+        ) {
+          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          if (!src.includes('preventDefault') && !src.includes('break')) {
+            context.report({ node, messageId: 'missingPreventDefault' });
+          }
+        }
+      },
+    };
   },
 };

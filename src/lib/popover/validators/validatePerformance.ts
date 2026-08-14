@@ -12,6 +12,12 @@ export function measurePerformance(name: string, startMark: string, endMark?: st
   if (typeof performance !== 'undefined' && typeof performance.measure === 'function') {
     try {
       performance.measure(name, startMark, endMark);
+      if (typeof performance.clearMarks === 'function') {
+        performance.clearMarks(startMark);
+        if (endMark) {
+          performance.clearMarks(endMark);
+        }
+      }
     } catch {
       // Ignore performance measure errors
     }

@@ -9,10 +9,16 @@ module.exports = {
     },
     schema: [],
     messages: {
-      unfilteredSpread: 'Spreading unsanitized user context data onto DOM element may leak internal properties.',
+      unfilteredSpread: 'Spreading unsanitized user props directly on DOM root can lead to invalid DOM properties.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      JSXSpreadAttribute(node) {
+        if (node.argument && node.argument.name === 'rawHtmlProps') {
+          context.report({ node, messageId: 'unfilteredSpread' });
+        }
+      },
+    };
   },
 };

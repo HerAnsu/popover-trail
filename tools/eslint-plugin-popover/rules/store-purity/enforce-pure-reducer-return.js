@@ -21,7 +21,9 @@ module.exports = {
           node.callee &&
           node.callee.type === 'MemberExpression' &&
           node.callee.object &&
-          (node.callee.object.name === 'Math' && node.callee.property && node.callee.property.name === 'random')
+          node.callee.object.name === 'Math' &&
+          node.callee.property &&
+          node.callee.property.name === 'random'
         ) {
           context.report({ node, messageId: 'impureReducer' });
         }

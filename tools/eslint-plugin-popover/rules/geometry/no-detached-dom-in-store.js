@@ -24,7 +24,6 @@ module.exports = {
           node.value.type === 'Identifier' &&
           node.value.name === 'element'
         ) {
-          // Flagging storing element reference in state record
           context.report({ node, messageId: 'domInStore' });
         }
       },

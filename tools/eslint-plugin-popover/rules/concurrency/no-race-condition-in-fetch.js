@@ -12,7 +12,16 @@ module.exports = {
       potentialRaceCondition: 'Async data resolution in useEffect should use an isActive flag or AbortController.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (node.callee && node.callee.name === 'useEffect') {
+          const fn = node.arguments[0];
+          if (fn && fn.async) {
+            context.report({ node, messageId: 'potentialRaceCondition' });
+          }
+        }
+      },
+    };
   },
 };

@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/require-aria-expanded-sync
- * Description: Require aria-expanded attribute on PopoverTrigger elements
- */
 module.exports = {
   meta: {
     type: 'suggestion',

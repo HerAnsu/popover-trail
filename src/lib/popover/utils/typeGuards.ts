@@ -213,7 +213,7 @@ export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRe
     const el = source.currentTarget;
     return {
       currentTarget: el,
-      getBoundingClientRect: () => el.getBoundingClientRect(),
+      getBoundingClientRect: () => el?.getBoundingClientRect(),
     };
   }
   return NULL_ANCHOR_REF;

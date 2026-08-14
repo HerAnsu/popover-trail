@@ -12,7 +12,15 @@ module.exports = {
       invalidActionName: 'Store action `{{name}}` should follow camelCase naming convention.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.includes('storeActionRegistry.ts')) return {};
+    return {
+      Property(node) {
+        if (node.key && node.key.name && node.key.name.includes('-')) {
+          context.report({ node, messageId: 'invalidActionName', data: { name: node.key.name } });
+        }
+      },
+    };
   },
 };

@@ -12,7 +12,18 @@ module.exports = {
       orphanCards: 'Closing parent popover should cascade dismiss all downstream child cards.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.includes('closeReducers.ts')) return {};
+    return {
+      FunctionDeclaration(node) {
+        if (node.id && node.id.name === 'closePopoverReducer') {
+          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          if (!src.includes('getChildren') && !src.includes('dag') && !src.includes('descendants')) {
+            context.report({ node, messageId: 'orphanCards' });
+          }
+        }
+      },
+    };
   },
 };

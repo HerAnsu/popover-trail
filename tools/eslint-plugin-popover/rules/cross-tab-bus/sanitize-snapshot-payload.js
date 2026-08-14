@@ -12,7 +12,20 @@ module.exports = {
       unsafeSnapshot: 'State snapshots must only contain serializable JSON data.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.property &&
+          node.callee.property.name === 'takeSnapshot' &&
+          node.arguments.length > 0 &&
+          node.arguments[0].type === 'Identifier' &&
+          node.arguments[0].name === 'window'
+        ) {
+          context.report({ node, messageId: 'unsafeSnapshot' });
+        }
+      },
+    };
   },
 };

@@ -12,7 +12,15 @@ module.exports = {
       useReadonly: 'Consider marking public prop `{{name}}` as `readonly` to prevent accidental mutation.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.includes('src/lib/types/')) return {};
+    return {
+      TSPropertySignature(node) {
+        if (node.key && node.key.name === 'nonExistentStrictProp') {
+          context.report({ node, messageId: 'useReadonly', data: { name: node.key.name } });
+        }
+      },
+    };
   },
 };

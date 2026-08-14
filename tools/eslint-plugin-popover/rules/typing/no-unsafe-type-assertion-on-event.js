@@ -9,10 +9,21 @@ module.exports = {
     },
     schema: [],
     messages: {
-      unsafeEventCast: 'Avoid raw type casting on event object. Use type narrowing or instance checks.',
+      unsafeEventCast: 'Avoid raw type casting `as any` on event object. Use type narrowing or instance checks.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      TSAsExpression(node) {
+        if (
+          node.expression &&
+          (node.expression.name === 'e' || node.expression.name === 'event') &&
+          node.typeAnnotation &&
+          node.typeAnnotation.type === 'TSAnyKeyword'
+        ) {
+          context.report({ node, messageId: 'unsafeEventCast' });
+        }
+      },
+    };
   },
 };

@@ -12,7 +12,18 @@ module.exports = {
       missingTerminate: 'Dedicated Web Worker instance should be terminated via `worker.terminate()` in cleanup.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.')) return {};
+    return {
+      NewExpression(node) {
+        if (node.callee && node.callee.name === 'Worker') {
+          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          if (!src.includes('terminate()')) {
+            context.report({ node, messageId: 'missingTerminate' });
+          }
+        }
+      },
+    };
   },
 };

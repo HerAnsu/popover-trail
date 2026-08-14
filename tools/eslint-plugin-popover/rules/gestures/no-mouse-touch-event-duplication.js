@@ -9,10 +9,17 @@ module.exports = {
     },
     schema: [],
     messages: {
-      duplicateTrigger: 'Direct dual binding of mouse and touch events may fire twice on touchscreens.',
+      duplicateTrigger: 'Direct dual binding of onMouseDown and onTouchStart without pointer events may cause dual triggers on mobile.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      JSXOpeningElement(node) {
+        const names = new Set(node.attributes.map((a) => a.name && a.name.name).filter(Boolean));
+        if (names.has('onMouseDown') && names.has('onTouchStart') && !names.has('onPointerDown')) {
+          context.report({ node, messageId: 'duplicateTrigger' });
+        }
+      },
+    };
   },
 };
