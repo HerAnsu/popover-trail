@@ -228,7 +228,20 @@
     "popover/enforce-orphan-cleanup-on-parent-close": "warn",
     "popover/enforce-positive-breakpoint-width": "warn",
     "popover/no-viewport-resize-without-debounce": "warn",
-    "popover/enforce-use-isomorphic-layout-effect": "warn"
+    "popover/enforce-use-isomorphic-layout-effect": "warn",
+    "popover/enforce-touch-action-none-on-draggable": "warn",
+    "popover/enforce-pointer-capture-release": "warn",
+    "popover/no-mouse-touch-event-duplication": "warn",
+    "popover/enforce-inert-attribute-on-background": "warn",
+    "popover/require-autofocus-cleanup": "warn",
+    "popover/no-tabindex-greater-than-zero": "deny",
+    "popover/enforce-portal-target-validation": "warn",
+    "popover/no-negative-zindex-in-layers": "deny",
+    "popover/enforce-unique-stack-group-ids": "warn",
+    "popover/enforce-worker-terminate-on-unmount": "warn",
+    "popover/no-dom-access-in-worker-resolver": "deny",
+    "popover/enforce-dev-warning-prefix": "warn",
+    "popover/no-unfiltered-console-error-in-lib": "warn"
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"]
 }

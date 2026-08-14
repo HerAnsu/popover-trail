@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import plugin from '../index';
 
 describe('eslint-plugin-popover-trail custom rules', () => {
-  it('exports all 54 custom AST rules', () => {
-    expect(Object.keys(plugin.rules)).toHaveLength(54);
+  it('exports all 67 custom AST rules', () => {
+    expect(Object.keys(plugin.rules)).toHaveLength(67);
 
     // Group A
     expect(plugin.rules).toHaveProperty('require-ssr-guard');
@@ -104,6 +104,29 @@ describe('eslint-plugin-popover-trail custom rules', () => {
 
     // Group W
     expect(plugin.rules).toHaveProperty('enforce-use-isomorphic-layout-effect');
+
+    // Group X
+    expect(plugin.rules).toHaveProperty('enforce-touch-action-none-on-draggable');
+    expect(plugin.rules).toHaveProperty('enforce-pointer-capture-release');
+    expect(plugin.rules).toHaveProperty('no-mouse-touch-event-duplication');
+
+    // Group Y
+    expect(plugin.rules).toHaveProperty('enforce-inert-attribute-on-background');
+    expect(plugin.rules).toHaveProperty('require-autofocus-cleanup');
+    expect(plugin.rules).toHaveProperty('no-tabindex-greater-than-zero');
+
+    // Group Z
+    expect(plugin.rules).toHaveProperty('enforce-portal-target-validation');
+    expect(plugin.rules).toHaveProperty('no-negative-zindex-in-layers');
+    expect(plugin.rules).toHaveProperty('enforce-unique-stack-group-ids');
+
+    // Group AA
+    expect(plugin.rules).toHaveProperty('enforce-worker-terminate-on-unmount');
+    expect(plugin.rules).toHaveProperty('no-dom-access-in-worker-resolver');
+
+    // Group AB
+    expect(plugin.rules).toHaveProperty('enforce-dev-warning-prefix');
+    expect(plugin.rules).toHaveProperty('no-unfiltered-console-error-in-lib');
   });
 
   it('each rule has meta and create functions conforming to ESLint / Oxlint specification', () => {

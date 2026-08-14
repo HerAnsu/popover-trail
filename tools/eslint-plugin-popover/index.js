@@ -100,6 +100,29 @@ const noViewportResizeWithoutDebounce = require('./rules/responsive/no-viewport-
 // Group W: Hooks Polish
 const enforceUseIsomorphicLayoutEffect = require('./rules/hooks-polish/enforce-use-isomorphic-layout-effect');
 
+// Group X: Gestures & Pointer
+const enforceTouchActionNoneOnDraggable = require('./rules/gestures/enforce-touch-action-none-on-draggable');
+const enforcePointerCaptureRelease = require('./rules/gestures/enforce-pointer-capture-release');
+const noMouseTouchEventDuplication = require('./rules/gestures/no-mouse-touch-event-duplication');
+
+// Group Y: Focus Trap & Modality
+const enforceInertAttributeOnBackground = require('./rules/focus-trap/enforce-inert-attribute-on-background');
+const requireAutofocusCleanup = require('./rules/focus-trap/require-autofocus-cleanup');
+const noTabIndexGreaterThanZero = require('./rules/focus-trap/no-tabindex-greater-than-zero');
+
+// Group Z: Portal & Stacking
+const enforcePortalTargetValidation = require('./rules/portal-stacking/enforce-portal-target-validation');
+const noNegativeZIndexInLayers = require('./rules/portal-stacking/no-negative-zindex-in-layers');
+const enforceUniqueStackGroupIds = require('./rules/portal-stacking/enforce-unique-stack-group-ids');
+
+// Group AA: Worker & Offload
+const enforceWorkerTerminateOnUnmount = require('./rules/worker/enforce-worker-terminate-on-unmount');
+const noDomAccessInWorkerResolver = require('./rules/worker/no-dom-access-in-worker-resolver');
+
+// Group AB: Diagnostics & Warnings
+const enforceDevWarningPrefix = require('./rules/diagnostics/enforce-dev-warning-prefix');
+const noUnfilteredConsoleErrorInLib = require('./rules/diagnostics/no-unfiltered-console-error-in-lib');
+
 const rules = {
   'require-ssr-guard': requireSsrGuard,
   'no-direct-dom-mutation': noDirectDomMutation,
@@ -155,6 +178,19 @@ const rules = {
   'enforce-positive-breakpoint-width': enforcePositiveBreakpointWidth,
   'no-viewport-resize-without-debounce': noViewportResizeWithoutDebounce,
   'enforce-use-isomorphic-layout-effect': enforceUseIsomorphicLayoutEffect,
+  'enforce-touch-action-none-on-draggable': enforceTouchActionNoneOnDraggable,
+  'enforce-pointer-capture-release': enforcePointerCaptureRelease,
+  'no-mouse-touch-event-duplication': noMouseTouchEventDuplication,
+  'enforce-inert-attribute-on-background': enforceInertAttributeOnBackground,
+  'require-autofocus-cleanup': requireAutofocusCleanup,
+  'no-tabindex-greater-than-zero': noTabIndexGreaterThanZero,
+  'enforce-portal-target-validation': enforcePortalTargetValidation,
+  'no-negative-zindex-in-layers': noNegativeZIndexInLayers,
+  'enforce-unique-stack-group-ids': enforceUniqueStackGroupIds,
+  'enforce-worker-terminate-on-unmount': enforceWorkerTerminateOnUnmount,
+  'no-dom-access-in-worker-resolver': noDomAccessInWorkerResolver,
+  'enforce-dev-warning-prefix': enforceDevWarningPrefix,
+  'no-unfiltered-console-error-in-lib': noUnfilteredConsoleErrorInLib,
 };
 
 module.exports = {
