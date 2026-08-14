@@ -82,6 +82,8 @@
     "check:pub": "npx publint",
     "preview": "vite preview",
     "test": "vitest run",
+    "bench": "npx tsx .gemini/scripts/benchmark-react19.ts",
+    "benchmark": "npx tsx .gemini/scripts/benchmark-react19.ts",
     "prepublishOnly": "npm run build:lib && npm run check:pub && npm test",
     "knip": "knip",
     "quality:audit": "npx tsx .gemini/scripts/run-full-audit.ts",
