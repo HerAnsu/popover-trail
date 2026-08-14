@@ -204,7 +204,20 @@
     "popover/no-nested-popover-providers": "warn",
     "popover/no-dangerously-set-inner-html": "deny",
     "popover/sanitize-custom-html-attributes": "warn",
-    "popover/enforce-cleanup-after-mock-timers": "warn"
+    "popover/enforce-cleanup-after-mock-timers": "warn",
+    "popover/enforce-middleware-order": "warn",
+    "popover/require-safe-collision-padding": "warn",
+    "popover/no-redundant-floating-middleware": "warn",
+    "popover/enforce-observer-unobserve": "warn",
+    "popover/no-passive-false-on-scroll-wheel": "warn",
+    "popover/enforce-event-listener-target-check": "warn",
+    "popover/enforce-pure-reducer-return": "warn",
+    "popover/no-async-in-reducers": "deny",
+    "popover/enforce-action-registry-naming": "warn",
+    "popover/enforce-prefixed-data-attributes": "warn",
+    "popover/no-inline-style-override-on-tokens": "warn",
+    "popover/enforce-transition-timeout-sync": "warn",
+    "popover/no-unbounded-scale-transform": "warn"
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"]
 }

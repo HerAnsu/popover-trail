@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import plugin from '../index';
 
 describe('eslint-plugin-popover-trail custom rules', () => {
-  it('exports all 30 custom AST rules', () => {
-    expect(Object.keys(plugin.rules)).toHaveLength(30);
+  it('exports all 43 custom AST rules', () => {
+    expect(Object.keys(plugin.rules)).toHaveLength(43);
 
     // Group A
     expect(plugin.rules).toHaveProperty('require-ssr-guard');
@@ -60,6 +60,29 @@ describe('eslint-plugin-popover-trail custom rules', () => {
 
     // Group M
     expect(plugin.rules).toHaveProperty('enforce-cleanup-after-mock-timers');
+
+    // Group N
+    expect(plugin.rules).toHaveProperty('enforce-middleware-order');
+    expect(plugin.rules).toHaveProperty('require-safe-collision-padding');
+    expect(plugin.rules).toHaveProperty('no-redundant-floating-middleware');
+
+    // Group O
+    expect(plugin.rules).toHaveProperty('enforce-observer-unobserve');
+    expect(plugin.rules).toHaveProperty('no-passive-false-on-scroll-wheel');
+    expect(plugin.rules).toHaveProperty('enforce-event-listener-target-check');
+
+    // Group P
+    expect(plugin.rules).toHaveProperty('enforce-pure-reducer-return');
+    expect(plugin.rules).toHaveProperty('no-async-in-reducers');
+    expect(plugin.rules).toHaveProperty('enforce-action-registry-naming');
+
+    // Group Q
+    expect(plugin.rules).toHaveProperty('enforce-prefixed-data-attributes');
+    expect(plugin.rules).toHaveProperty('no-inline-style-override-on-tokens');
+
+    // Group R
+    expect(plugin.rules).toHaveProperty('enforce-transition-timeout-sync');
+    expect(plugin.rules).toHaveProperty('no-unbounded-scale-transform');
   });
 
   it('each rule has meta and create functions conforming to ESLint / Oxlint specification', () => {

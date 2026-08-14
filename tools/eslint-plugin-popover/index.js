@@ -56,6 +56,29 @@ const sanitizeCustomHtmlAttributes = require('./rules/security/sanitize-custom-h
 // Group M: Testing & Mock Harness
 const enforceCleanupAfterMockTimers = require('./rules/testing/enforce-cleanup-after-mock-timers');
 
+// Group N: Floating UI Middleware
+const enforceMiddlewareOrder = require('./rules/floating/enforce-middleware-order');
+const requireSafeCollisionPadding = require('./rules/floating/require-safe-collision-padding');
+const noRedundantFloatingMiddleware = require('./rules/floating/no-redundant-floating-middleware');
+
+// Group O: Observers & Listeners
+const enforceObserverUnobserve = require('./rules/observers/enforce-observer-unobserve');
+const noPassiveFalseOnScrollWheel = require('./rules/observers/no-passive-false-on-scroll-wheel');
+const enforceEventListenerTargetCheck = require('./rules/observers/enforce-event-listener-target-check');
+
+// Group P: Store Purity
+const enforcePureReducerReturn = require('./rules/store-purity/enforce-pure-reducer-return');
+const noAsyncInReducers = require('./rules/store-purity/no-async-in-reducers');
+const enforceActionRegistryNaming = require('./rules/store-purity/enforce-action-registry-naming');
+
+// Group Q: DOM Attributes & Tokens
+const enforcePrefixedDataAttributes = require('./rules/tokens-dom/enforce-prefixed-data-attributes');
+const noInlineStyleOverrideOnTokens = require('./rules/tokens-dom/no-inline-style-override-on-tokens');
+
+// Group R: Transitions
+const enforceTransitionTimeoutSync = require('./rules/transitions/enforce-transition-timeout-sync');
+const noUnboundedScaleTransform = require('./rules/transitions/no-unbounded-scale-transform');
+
 const rules = {
   'require-ssr-guard': requireSsrGuard,
   'no-direct-dom-mutation': noDirectDomMutation,
@@ -87,6 +110,19 @@ const rules = {
   'no-dangerously-set-inner-html': noDangerouslySetInnerHTML,
   'sanitize-custom-html-attributes': sanitizeCustomHtmlAttributes,
   'enforce-cleanup-after-mock-timers': enforceCleanupAfterMockTimers,
+  'enforce-middleware-order': enforceMiddlewareOrder,
+  'require-safe-collision-padding': requireSafeCollisionPadding,
+  'no-redundant-floating-middleware': noRedundantFloatingMiddleware,
+  'enforce-observer-unobserve': enforceObserverUnobserve,
+  'no-passive-false-on-scroll-wheel': noPassiveFalseOnScrollWheel,
+  'enforce-event-listener-target-check': enforceEventListenerTargetCheck,
+  'enforce-pure-reducer-return': enforcePureReducerReturn,
+  'no-async-in-reducers': noAsyncInReducers,
+  'enforce-action-registry-naming': enforceActionRegistryNaming,
+  'enforce-prefixed-data-attributes': enforcePrefixedDataAttributes,
+  'no-inline-style-override-on-tokens': noInlineStyleOverrideOnTokens,
+  'enforce-transition-timeout-sync': enforceTransitionTimeoutSync,
+  'no-unbounded-scale-transform': noUnboundedScaleTransform,
 };
 
 module.exports = {
