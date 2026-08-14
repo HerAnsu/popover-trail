@@ -8,17 +8,33 @@ export default {
     docs: {
       description: 'Recommend isolation: isolate on popover portal containers to prevent z-index leakage.',
       category: 'Layout',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestIsolation: 'Consider isolation: isolate on portal container to encapsulate layer stacking.',
+      suggestIsolation: 'Root container for {{ name }} should include isolation: "isolate" in style prop.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('PopoverPortal')) return {};
+
     return {
-      JSXElement(_node) {
-        // Advisory portal stacking guideline
+      JSXElement(node) {
+        if (
+          node.openingElement &&
+          node.openingElement.name &&
+          node.openingElement.name.name === 'div'
+        ) {
+          const src = context.getSourceCode ? context.getSourceCode().getText(node.openingElement) : '';
+          if (src.includes('popover-portal') && !src.includes('isolation')) {
+            context.report({
+              node,
+              messageId: 'suggestIsolation',
+              data: { name: 'PopoverPortal' },
+            });
+          }
+        }
       },
     };
   },

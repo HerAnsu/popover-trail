@@ -8,17 +8,31 @@ export default {
     docs: {
       description: 'Recommend explicit null instead of undefined in JSON-serialized snapshot data.',
       category: 'Persistence',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      useNullForJson: 'Use null instead of undefined for JSON-serializable snapshot fields.',
+      useNullForJson: 'Property "{{ prop }}" explicitly assigned undefined in snapshot serializer; JSON drops undefined keys.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('snapshot') && !filename.includes('Persistence')) return {};
+
     return {
-      Property(_node) {
-        // Serialization guideline
+      Property(node) {
+        if (
+          node.value &&
+          node.value.type === 'Identifier' &&
+          node.value.name === 'undefined' &&
+          node.key
+        ) {
+          context.report({
+            node,
+            messageId: 'useNullForJson',
+            data: { prop: node.key.name || 'field' },
+          });
+        }
       },
     };
   },

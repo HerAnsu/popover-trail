@@ -8,17 +8,39 @@ export default {
     docs: {
       description: 'Encourage as const assertions on static tuple definitions.',
       category: 'Type Safety',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestAsConst: 'Consider adding "as const" to preserve exact literal types on constant arrays.',
+      suggestAsConst: 'Constant array {{ name }} with string literals should have "as const" assertion.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      VariableDeclarator(_node) {
-        // Type narrowing guideline
+      VariableDeclarator(node) {
+        if (
+          node.id &&
+          node.id.name &&
+          /^[A-Z_]+$/.test(node.id.name) &&
+          node.init &&
+          node.init.type === 'ArrayExpression' &&
+          node.init.elements.length > 2 &&
+          node.init.elements.every((el) => el && el.type === 'Literal' && typeof el.value === 'string') &&
+          node.parent &&
+          node.parent.kind === 'const'
+        ) {
+          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          if (!src.includes('as const') && !node.id.typeAnnotation) {
+            context.report({
+              node,
+              messageId: 'suggestAsConst',
+              data: { name: node.id.name },
+            });
+          }
+        }
       },
     };
   },

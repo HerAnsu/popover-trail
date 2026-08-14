@@ -1,24 +1,31 @@
 /**
- * @fileoverview Prefer string union types over numeric TypeScript enums for zero runtime bundle cost.
+ * @fileoverview Prefer string union types or const objects over TypeScript numeric enums in public library API.
  */
 
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Prefer string union types over TypeScript enums for zero runtime code footprint.',
-      category: 'Clean Code',
-      recommended: false,
+      description: 'Disallow TypeScript enums in library code; use string union types or const objects for zero runtime footprint.',
+      category: 'TypeScript',
+      recommended: true,
     },
     schema: [],
     messages: {
-      preferUnionOverEnum: 'Prefer string literal unions over numeric enums in library public APIs.',
+      noEnumInApi: 'Avoid TypeScript enum "{{ name }}"; use a string union type or const object for zero-cost bundle.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      TSEnumDeclaration(_node) {
-        // Zero-cost type optimization guideline
+      TSEnumDeclaration(node) {
+        context.report({
+          node,
+          messageId: 'noEnumInApi',
+          data: { name: node.id ? node.id.name : 'anonymous' },
+        });
       },
     };
   },

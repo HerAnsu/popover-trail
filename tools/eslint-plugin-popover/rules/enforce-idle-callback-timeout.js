@@ -8,17 +8,30 @@ export default {
     docs: {
       description: 'Recommend passing { timeout: ... } to requestIdleCallback to ensure callback fires under heavy load.',
       category: 'Performance',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestIdleTimeout: 'Consider passing { timeout: 2000 } to requestIdleCallback to avoid indefinite task postponement.',
+      suggestIdleTimeout: 'Pass a { timeout: number } options object as second argument to requestIdleCallback.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      CallExpression(_node) {
-        // Idle callback scheduling guideline
+      CallExpression(node) {
+        if (
+          node.callee &&
+          (node.callee.name === 'requestIdleCallback' ||
+            (node.callee.property && node.callee.property.name === 'requestIdleCallback')) &&
+          node.arguments.length === 1
+        ) {
+          context.report({
+            node,
+            messageId: 'suggestIdleTimeout',
+          });
+        }
       },
     };
   },

@@ -8,17 +8,33 @@ export default {
     docs: {
       description: 'Recommend destructuring both x and y coordinates when handling 2D point tuples.',
       category: 'Type Safety',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestTupleCompleteness: 'Consider destructuring both dimensions [x, y] in coordinate tuple.',
+      suggestTupleCompleteness: 'Destructuring from coordinate tuple {{ name }} only captures 1 element; consider [x, y].',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      ArrayPattern(_node) {
-        // Tuple completeness guideline
+      VariableDeclarator(node) {
+        if (
+          node.id &&
+          node.id.type === 'ArrayPattern' &&
+          node.id.elements.length === 1 &&
+          node.init &&
+          node.init.type === 'Identifier' &&
+          (node.init.name.includes('Coord') || node.init.name.includes('Point') || node.init.name.includes('Vector'))
+        ) {
+          context.report({
+            node,
+            messageId: 'suggestTupleCompleteness',
+            data: { name: node.init.name },
+          });
+        }
       },
     };
   },

@@ -1,24 +1,42 @@
 /**
- * @fileoverview Disallow indexing arrays beyond known bounds without undefined checks.
+ * @fileoverview Recommend default fallback values when destructuring array elements.
  */
 
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage safe destructuring with default fallbacks.',
+      description: 'Recommend fallback defaults when destructuring elements from variable-length arrays.',
       category: 'Type Safety',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      safeDestructure: 'Consider providing default value when destructuring sparse array elements.',
+      suggestArrayDefault: 'Destructuring index {{ idx }} from dynamic array without default fallback.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      ArrayPattern(_node) {
-        // Safe destructuring guideline
+      VariableDeclarator(node) {
+        if (
+          node.id &&
+          node.id.type === 'ArrayPattern' &&
+          node.id.elements.length > 2 &&
+          node.init &&
+          node.init.type === 'CallExpression'
+        ) {
+          const hasNoDefaults = node.id.elements.every((el) => el && el.type === 'Identifier');
+          if (hasNoDefaults) {
+            context.report({
+              node,
+              messageId: 'suggestArrayDefault',
+              data: { idx: String(node.id.elements.length - 1) },
+            });
+          }
+        }
       },
     };
   },

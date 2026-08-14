@@ -8,17 +8,34 @@ export default {
     docs: {
       description: 'Encourage explicit transformOrigin values in animated card styles.',
       category: 'Layout',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestTransformOrigin: 'Specify explicit transformOrigin alignment in card animation style.',
+      suggestTransformOrigin: 'Style transformOrigin "{{ value }}" should specify both X and Y axes.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      Property(_node) {
-        // Layout style convention
+      Property(node) {
+        if (
+          node.key &&
+          (node.key.name === 'transformOrigin' || node.key.value === 'transformOrigin') &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          typeof node.value.value === 'string' &&
+          !node.value.value.includes(' ') &&
+          node.value.value !== 'center'
+        ) {
+          context.report({
+            node,
+            messageId: 'suggestTransformOrigin',
+            data: { value: node.value.value },
+          });
+        }
       },
     };
   },

@@ -1,24 +1,42 @@
 /**
- * @fileoverview Recommend single boolean expression return in custom type guards for readability.
+ * @fileoverview Recommend concise single-expression returns in custom type guards.
  */
 
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage clean single boolean return in small type guards.',
+      description: 'Encourage clean single return expressions in type guard functions without redundant mutation.',
       category: 'Clean Code',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      simplifyTypeGuard: 'Consider simplifying type guard into a single return expression.',
+      simplifyTypeGuard: 'Type guard {{ name }} has multiple return branches; consider combining with boolean operators.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      FunctionDeclaration(_node) {
-        // Clean type guard guideline
+      FunctionDeclaration(node) {
+        if (
+          node.id &&
+          node.id.name.startsWith('is') &&
+          node.returnType &&
+          node.body &&
+          node.body.body
+        ) {
+          const returns = node.body.body.filter((s) => s.type === 'ReturnStatement');
+          if (returns.length > 3) {
+            context.report({
+              node,
+              messageId: 'simplifyTypeGuard',
+              data: { name: node.id.name },
+            });
+          }
+        }
       },
     };
   },

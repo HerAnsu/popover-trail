@@ -8,17 +8,33 @@ export default {
     docs: {
       description: 'Recommend passing Transferable buffers in postMessage second argument for zero-copy IPC.',
       category: 'Concurrency',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestTransferable: 'Consider passing ArrayBuffer in postMessage transfer list for zero-copy worker communication.',
+      suggestTransferable: 'Passing ArrayBuffer to worker.postMessage without transfer list; add transfer list for zero-copy IPC.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      CallExpression(_node) {
-        // Zero-copy IPC guideline
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.property &&
+          node.callee.property.name === 'postMessage' &&
+          node.arguments.length === 1 &&
+          node.arguments[0] &&
+          node.arguments[0].type === 'Identifier' &&
+          (node.arguments[0].name.includes('Buffer') || node.arguments[0].name.includes('ArrayBuffer'))
+        ) {
+          context.report({
+            node,
+            messageId: 'suggestTransferable',
+          });
+        }
       },
     };
   },

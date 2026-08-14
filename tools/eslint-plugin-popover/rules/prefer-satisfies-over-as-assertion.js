@@ -1,24 +1,44 @@
 /**
- * @fileoverview Recommend satisfies operator over as assertions for object literals.
+ * @fileoverview Recommend satisfies operator instead of as type assertions for object literals.
  */
 
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend satisfies operator instead of type assertions to preserve exact type shapes.',
+      description: 'Recommend TypeScript satisfies operator instead of "as Type" for object literals.',
       category: 'Type Safety',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      preferSatisfies: 'Consider using satisfies keyword instead of as type casting to preserve strict literal types.',
+      preferSatisfies: 'Prefer "satisfies {{ type }}" instead of unsafe "as {{ type }}" for object literals.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      TSAsExpression(_node) {
-        // Advisory type narrowing
+      TSAsExpression(node) {
+        if (
+          node.expression &&
+          node.expression.type === 'ObjectExpression' &&
+          node.typeAnnotation &&
+          node.typeAnnotation.typeName &&
+          node.typeAnnotation.typeName.name &&
+          !node.typeAnnotation.typeName.name.includes('unknown') &&
+          !node.typeAnnotation.typeName.name.includes('any') &&
+          !node.typeAnnotation.typeName.name.includes('const') &&
+          !node.typeAnnotation.typeName.name.includes('DOMRect') &&
+          !node.typeAnnotation.typeName.name.startsWith('T')
+        ) {
+          context.report({
+            node,
+            messageId: 'preferSatisfies',
+            data: { type: node.typeAnnotation.typeName.name },
+          });
+        }
       },
     };
   },

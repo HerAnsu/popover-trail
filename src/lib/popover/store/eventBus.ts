@@ -64,6 +64,7 @@ export class PopoverEventBus<
   TData = RegisteredDataMap[RegisteredKeys],
   TPopoverKey extends string = RegisteredKeys,
 > {
+  public readonly maxListeners = 100;
   private target = new EventTarget();
   private listenerMap = new Map<
     (event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>) => void,

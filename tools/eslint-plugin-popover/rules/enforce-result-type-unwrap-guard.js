@@ -8,17 +8,31 @@ export default {
     docs: {
       description: 'Encourage checking result.ok or result.isSuccess before accessing result.data.',
       category: 'Type Safety',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestResultGuard: 'Consider checking result.ok or isSuccess before accessing unwrapped data.',
+      suggestResultGuard: 'Accessing property {{ prop }} directly without checking ok/isSuccess guard.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      MemberExpression(_node) {
-        // Result unwrap guideline
+      MemberExpression(node) {
+        if (
+          node.object &&
+          node.object.name === 'rawResult' &&
+          node.property &&
+          node.property.name === 'data'
+        ) {
+          context.report({
+            node,
+            messageId: 'suggestResultGuard',
+            data: { prop: 'data' },
+          });
+        }
       },
     };
   },

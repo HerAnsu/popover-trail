@@ -8,17 +8,27 @@ export default {
     docs: {
       description: 'Recommend calling registry.unregister(token) when a tracked resource is manually disposed.',
       category: 'Memory',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestUnregisterToken: 'Consider unregistering token from FinalizationRegistry upon manual dispose.',
+      suggestUnregisterToken: 'FinalizationRegistry instance in class {{ name }} should have a corresponding unregister call on dispose.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      MethodDefinition(_node) {
-        // FinalizationRegistry guideline
+      ClassDeclaration(node) {
+        const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (body.includes('new FinalizationRegistry') && !body.includes('.unregister(')) {
+          context.report({
+            node,
+            messageId: 'suggestUnregisterToken',
+            data: { name: node.id?.name || 'anonymous' },
+          });
+        }
       },
     };
   },

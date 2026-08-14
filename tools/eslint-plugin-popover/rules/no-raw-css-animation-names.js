@@ -1,24 +1,43 @@
 /**
- * @fileoverview Disallow hardcoded keyframe animation names that conflict with library presets.
+ * @fileoverview Require animation names to be imported from style constants instead of raw magic strings.
  */
 
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage using standard popover-trail-* prefixed keyframes or design token classes.',
-      category: 'Visual Tokens',
-      recommended: false,
+      description: 'Require animation names to be defined in animation constants.',
+      category: 'Design Tokens',
+      recommended: true,
     },
     schema: [],
     messages: {
-      useStandardKeyframes: 'Consider using standard "popover-trail-*" animation class names instead of raw keyframes.',
+      useAnimationConstant: 'Animation name "{{ name }}" should be referenced via ANIMATION_NAMES constants.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('components/')) return {};
+
     return {
-      Property(_node) {
-        // Visual tokens design guideline
+      Property(node) {
+        if (
+          node.key &&
+          (node.key.name === 'animationName' || node.key.value === 'animationName') &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          typeof node.value.value === 'string' &&
+          !node.value.value.startsWith('var(') &&
+          node.value.value !== 'none' &&
+          node.value.value !== 'initial' &&
+          node.value.value !== 'inherit'
+        ) {
+          context.report({
+            node,
+            messageId: 'useAnimationConstant',
+            data: { name: node.value.value },
+          });
+        }
       },
     };
   },

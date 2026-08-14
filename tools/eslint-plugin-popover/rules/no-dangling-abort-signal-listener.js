@@ -8,17 +8,27 @@ export default {
     docs: {
       description: 'Encourage cleaning up signal.addEventListener("abort") listeners upon async completion.',
       category: 'Memory',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestSignalCleanup: 'Consider removing abort listener when operation completes successfully.',
+      suggestSignalCleanup: 'Abort listener attached in {{ name }} without corresponding removeEventListener in finally block.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      CallExpression(_node) {
-        // AbortSignal memory cleanup guideline
+      FunctionDeclaration(node) {
+        const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (body.includes("signal.addEventListener('abort'") && !body.includes("signal.removeEventListener('abort'")) {
+          context.report({
+            node,
+            messageId: 'suggestSignalCleanup',
+            data: { name: node.id?.name || 'anonymous' },
+          });
+        }
       },
     };
   },

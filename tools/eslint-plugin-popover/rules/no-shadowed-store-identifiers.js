@@ -1,24 +1,37 @@
 /**
- * @fileoverview Disallow shadowing core store identifiers in nested callbacks.
+ * @fileoverview Disallow local variables shadowing store instance identifier state or actions.
  */
 
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Disallow shadowing the identifier "state" or "actions" in inner nested arrow callbacks.',
+      description: 'Disallow inner parameter names shadowing outer store identifiers.',
       category: 'Clean Code',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      shadowedIdentifier: 'Avoid shadowing core identifier "{{ name }}" in nested scope.',
+      noShadowedStoreId: 'Inner identifier "{{ name }}" shadows store instance in scope.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('store')) return {};
+
     return {
-      Identifier(_node) {
-        // Scope hygiene guideline
+      FunctionDeclaration(node) {
+        if (node.params) {
+          for (const param of node.params) {
+            if (param.name === 'storeApi' || param.name === 'popoverStore') {
+              context.report({
+                node: param,
+                messageId: 'noShadowedStoreId',
+                data: { name: param.name },
+              });
+            }
+          }
+        }
       },
     };
   },

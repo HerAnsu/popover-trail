@@ -8,17 +8,32 @@ export default {
     docs: {
       description: 'Encourage consistent (key, payload, options) parameter ordering across all store action methods.',
       category: 'Clean Code',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestParamOrder: 'Follow (key, payload, options) parameter convention in action methods.',
+      suggestParamOrder: 'Action parameter order in {{ name }} should follow (key, payload, options) convention.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      FunctionDeclaration(_node) {
-        // Parameter order convention
+      MethodDefinition(node) {
+        if (
+          node.value &&
+          node.value.params &&
+          node.value.params.length >= 2 &&
+          node.value.params[0].name === 'payload' &&
+          node.value.params[1].name === 'key'
+        ) {
+          context.report({
+            node,
+            messageId: 'suggestParamOrder',
+            data: { name: node.key?.name || 'action' },
+          });
+        }
       },
     };
   },

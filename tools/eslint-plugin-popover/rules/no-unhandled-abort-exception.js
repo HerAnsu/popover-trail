@@ -1,29 +1,37 @@
 /**
- * @fileoverview Disallow treating AbortError as an uncaught fatal application failure.
+ * @fileoverview Disallow unhandled AbortError rejections causing unexpected error banners.
  */
 
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce ignoring or cleanly handling AbortError in async try-catch blocks.',
+      description: 'Ensure AbortError is handled gracefully and suppressed when intentionally canceled.',
       category: 'Concurrency',
       recommended: true,
     },
     schema: [],
     messages: {
-      handleAbortCleanly: 'Check if error is AbortError before reporting fatal state in async resolver.',
+      handleAbortError: 'Catch block in async action {{ name }} should check for err.name === "AbortError".',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (!filename.includes('Resolver') && !filename.includes('resolver')) return {};
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       CatchClause(node) {
-        const catchBody = context.getSourceCode ? context.getSourceCode().getText(node) : '';
-        if (catchBody && !catchBody.includes('AbortError') && !catchBody.includes('name ===') && !catchBody.includes('signal')) {
-          // Suggest handling AbortError
+        const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (
+          (body.includes('fetch(') || body.includes('controller.signal')) &&
+          !body.includes('AbortError') &&
+          !body.includes('isAbort')
+        ) {
+          context.report({
+            node,
+            messageId: 'handleAbortError',
+            data: { name: 'action' },
+          });
         }
       },
     };

@@ -8,17 +8,35 @@ export default {
     docs: {
       description: 'Recommend touch-action: manipulation on interactive pin and close buttons.',
       category: 'Performance',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestTouchManipulation: 'Consider touchAction: "manipulation" on button to eliminate mobile tap delay.',
+      suggestTouchManipulation: 'Interactive card button <{{ name }}> should include touchAction: "manipulation" in style.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      JSXElement(_node) {
-        // Mobile tap performance guideline
+      JSXElement(node) {
+        if (
+          node.openingElement &&
+          node.openingElement.name &&
+          (node.openingElement.name.name === 'button' ||
+            node.openingElement.name.name === 'PopoverCardCloseButton' ||
+            node.openingElement.name.name === 'PopoverCardPinButton')
+        ) {
+          const src = context.getSourceCode ? context.getSourceCode().getText(node.openingElement) : '';
+          if (src.includes('style=') && !src.includes('touchAction') && !src.includes('touch-action')) {
+            context.report({
+              node,
+              messageId: 'suggestTouchManipulation',
+              data: { name: node.openingElement.name.name },
+            });
+          }
+        }
       },
     };
   },

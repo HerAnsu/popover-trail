@@ -8,17 +8,36 @@ export default {
     docs: {
       description: 'Recommend an onError transition for async FSM states.',
       category: 'FSM',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestErrorState: 'Consider defining an ERROR transition branch for asynchronous FSM states.',
+      suggestErrorState: 'FSM async state {{ stateName }} should define an onError transition.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('fsm')) return {};
+
     return {
-      Property(_node) {
-        // FSM async branch guideline
+      Property(node) {
+        if (
+          node.key &&
+          node.key.name === 'loading' &&
+          node.value &&
+          node.value.type === 'ObjectExpression'
+        ) {
+          const hasErrorBranch = node.value.properties.some(
+            (p) => p.key && (p.key.name === 'onError' || p.key.name === 'ERROR' || p.key.name === 'REJECT'),
+          );
+          if (!hasErrorBranch) {
+            context.report({
+              node,
+              messageId: 'suggestErrorState',
+              data: { stateName: 'loading' },
+            });
+          }
+        }
       },
     };
   },

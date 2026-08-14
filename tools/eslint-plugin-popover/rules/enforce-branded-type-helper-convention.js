@@ -6,19 +6,43 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce create* prefix on branded type constructor helper functions.',
+      description: 'Enforce create* or to* prefix on branded type constructor helper functions.',
       category: 'Type Safety',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      suggestBrandedPrefix: 'Consider naming branded type factory functions with "create" prefix.',
+      suggestBrandedPrefix: 'Branded key factory function {{ name }} should start with "create" or "to" prefix.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      FunctionDeclaration(_node) {
-        // Branded factory naming guideline
+      FunctionDeclaration(node) {
+        if (
+          node.id &&
+          node.id.name &&
+          node.id.name.endsWith('Key') &&
+          !node.id.name.startsWith('create') &&
+          !node.id.name.startsWith('to') &&
+          !node.id.name.startsWith('as') &&
+          !node.id.name.startsWith('is') &&
+          !node.id.name.startsWith('use') &&
+          !node.id.name.startsWith('get') &&
+          !node.id.name.startsWith('select') &&
+          !node.id.name.startsWith('validate') &&
+          !node.id.name.startsWith('find') &&
+          !node.id.name.startsWith('has') &&
+          !node.id.name.startsWith('hash')
+        ) {
+          context.report({
+            node,
+            messageId: 'suggestBrandedPrefix',
+            data: { name: node.id.name },
+          });
+        }
       },
     };
   },

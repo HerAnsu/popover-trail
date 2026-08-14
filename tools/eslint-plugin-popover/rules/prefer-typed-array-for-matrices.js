@@ -1,30 +1,39 @@
 /**
- * @fileoverview Recommend typed array Float32Array or numeric tuples for 3D matrix operations.
+ * @fileoverview Recommend Float32Array for matrix3d vector calculations.
  */
 
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage using Float32Array or flat coordinate tuples for 3D tilt matrices.',
+      description: 'Recommend Float32Array or Float64Array for 4x4 matrix storage to maximize SIMD performance.',
       category: 'Performance',
-      recommended: false,
+      recommended: true,
     },
     schema: [],
     messages: {
-      useFlatMatrix: 'Consider flat tuple [rX, rY, tX, tY] or Float32Array for high-frequency CSS matrix transforms.',
+      suggestTypedArray: 'Matrix {{ name }} initialized as plain array; consider Float32Array for zero-GC math operations.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
-      FunctionDeclaration(node) {
+      VariableDeclarator(node) {
         if (
           node.id &&
-          node.id.name === 'computeRawTiltAnglesComplex' &&
-          node.returnType &&
-          node.returnType.typeAnnotation
+          node.id.name &&
+          node.id.name.includes('Matrix') &&
+          node.init &&
+          node.init.type === 'ArrayExpression' &&
+          node.init.elements.length === 16
         ) {
-          // Rule provides recommendation for complex matrix transforms
+          context.report({
+            node,
+            messageId: 'suggestTypedArray',
+            data: { name: node.id.name },
+          });
         }
       },
     };
