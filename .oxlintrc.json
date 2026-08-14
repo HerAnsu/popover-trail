@@ -241,7 +241,20 @@
     "popover/enforce-worker-terminate-on-unmount": "warn",
     "popover/no-dom-access-in-worker-resolver": "deny",
     "popover/enforce-dev-warning-prefix": "warn",
-    "popover/no-unfiltered-console-error-in-lib": "warn"
+    "popover/no-unfiltered-console-error-in-lib": "warn",
+    "popover/no-top-level-side-effects": "warn",
+    "popover/enforce-explicit-type-only-exports": "warn",
+    "popover/no-wildcard-internal-reexports": "warn",
+    "popover/prefer-weakmap-for-dom-associations": "warn",
+    "popover/enforce-clear-on-lru-cache-destroy": "warn",
+    "popover/no-closure-leak-in-timeout-callbacks": "warn",
+    "popover/enforce-logical-css-properties": "warn",
+    "popover/require-dir-attribute-sync": "warn",
+    "popover/enforce-composed-path-for-outside-click": "warn",
+    "popover/no-direct-body-append-in-components": "deny",
+    "popover/respect-prefers-reduced-motion": "warn",
+    "popover/no-infinite-keyframes-in-library": "deny",
+    "popover/enforce-will-change-cleanup": "warn"
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"]
 }

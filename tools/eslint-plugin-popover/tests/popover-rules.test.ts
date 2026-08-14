@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import plugin from '../index';
 
 describe('eslint-plugin-popover-trail custom rules', () => {
-  it('exports all 67 custom AST rules', () => {
-    expect(Object.keys(plugin.rules)).toHaveLength(67);
+  it('exports all 80 custom AST rules', () => {
+    expect(Object.keys(plugin.rules)).toHaveLength(80);
 
     // Group A
     expect(plugin.rules).toHaveProperty('require-ssr-guard');
@@ -127,6 +127,29 @@ describe('eslint-plugin-popover-trail custom rules', () => {
     // Group AB
     expect(plugin.rules).toHaveProperty('enforce-dev-warning-prefix');
     expect(plugin.rules).toHaveProperty('no-unfiltered-console-error-in-lib');
+
+    // Group AC
+    expect(plugin.rules).toHaveProperty('no-top-level-side-effects');
+    expect(plugin.rules).toHaveProperty('enforce-explicit-type-only-exports');
+    expect(plugin.rules).toHaveProperty('no-wildcard-internal-reexports');
+
+    // Group AD
+    expect(plugin.rules).toHaveProperty('prefer-weakmap-for-dom-associations');
+    expect(plugin.rules).toHaveProperty('enforce-clear-on-lru-cache-destroy');
+    expect(plugin.rules).toHaveProperty('no-closure-leak-in-timeout-callbacks');
+
+    // Group AE
+    expect(plugin.rules).toHaveProperty('enforce-logical-css-properties');
+    expect(plugin.rules).toHaveProperty('require-dir-attribute-sync');
+
+    // Group AF
+    expect(plugin.rules).toHaveProperty('enforce-composed-path-for-outside-click');
+    expect(plugin.rules).toHaveProperty('no-direct-body-append-in-components');
+
+    // Group AG
+    expect(plugin.rules).toHaveProperty('respect-prefers-reduced-motion');
+    expect(plugin.rules).toHaveProperty('no-infinite-keyframes-in-library');
+    expect(plugin.rules).toHaveProperty('enforce-will-change-cleanup');
   });
 
   it('each rule has meta and create functions conforming to ESLint / Oxlint specification', () => {

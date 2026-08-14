@@ -123,6 +123,29 @@ const noDomAccessInWorkerResolver = require('./rules/worker/no-dom-access-in-wor
 const enforceDevWarningPrefix = require('./rules/diagnostics/enforce-dev-warning-prefix');
 const noUnfilteredConsoleErrorInLib = require('./rules/diagnostics/no-unfiltered-console-error-in-lib');
 
+// Group AC: Bundling & Side-Effects
+const noTopLevelSideEffects = require('./rules/bundling/no-top-level-side-effects');
+const enforceExplicitTypeOnlyExports = require('./rules/bundling/enforce-explicit-type-only-exports');
+const noWildcardInternalReexports = require('./rules/bundling/no-wildcard-internal-reexports');
+
+// Group AD: GC & Memory
+const preferWeakmapForDomAssociations = require('./rules/gc-memory/prefer-weakmap-for-dom-associations');
+const enforceClearOnLruCacheDestroy = require('./rules/gc-memory/enforce-clear-on-lru-cache-destroy');
+const noClosureLeakInTimeoutCallbacks = require('./rules/gc-memory/no-closure-leak-in-timeout-callbacks');
+
+// Group AE: RTL & Logical
+const enforceLogicalCssProperties = require('./rules/rtl/enforce-logical-css-properties');
+const requireDirAttributeSync = require('./rules/rtl/require-dir-attribute-sync');
+
+// Group AF: Shadow DOM & Portals
+const enforceComposedPathForOutsideClick = require('./rules/shadow-dom/enforce-composed-path-for-outside-click');
+const noDirectBodyAppendInComponents = require('./rules/shadow-dom/no-direct-body-append-in-components');
+
+// Group AG: Motion & A11y
+const respectPrefersReducedMotion = require('./rules/motion-a11y/respect-prefers-reduced-motion');
+const noInfiniteKeyframesInLibrary = require('./rules/motion-a11y/no-infinite-keyframes-in-library');
+const enforceWillChangeCleanup = require('./rules/motion-a11y/enforce-will-change-cleanup');
+
 const rules = {
   'require-ssr-guard': requireSsrGuard,
   'no-direct-dom-mutation': noDirectDomMutation,
@@ -191,6 +214,19 @@ const rules = {
   'no-dom-access-in-worker-resolver': noDomAccessInWorkerResolver,
   'enforce-dev-warning-prefix': enforceDevWarningPrefix,
   'no-unfiltered-console-error-in-lib': noUnfilteredConsoleErrorInLib,
+  'no-top-level-side-effects': noTopLevelSideEffects,
+  'enforce-explicit-type-only-exports': enforceExplicitTypeOnlyExports,
+  'no-wildcard-internal-reexports': noWildcardInternalReexports,
+  'prefer-weakmap-for-dom-associations': preferWeakmapForDomAssociations,
+  'enforce-clear-on-lru-cache-destroy': enforceClearOnLruCacheDestroy,
+  'no-closure-leak-in-timeout-callbacks': noClosureLeakInTimeoutCallbacks,
+  'enforce-logical-css-properties': enforceLogicalCssProperties,
+  'require-dir-attribute-sync': requireDirAttributeSync,
+  'enforce-composed-path-for-outside-click': enforceComposedPathForOutsideClick,
+  'no-direct-body-append-in-components': noDirectBodyAppendInComponents,
+  'respect-prefers-reduced-motion': respectPrefersReducedMotion,
+  'no-infinite-keyframes-in-library': noInfiniteKeyframesInLibrary,
+  'enforce-will-change-cleanup': enforceWillChangeCleanup,
 };
 
 module.exports = {
