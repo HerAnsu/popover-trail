@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import plugin from '../index';
 
 describe('eslint-plugin-popover-trail custom rules', () => {
-  it('exports all 150 custom AST rules', () => {
-    expect(Object.keys(plugin.rules)).toHaveLength(150);
+  it('exports all 200 custom AST rules', () => {
+    expect(Object.keys(plugin.rules)).toHaveLength(200);
 
     // Group A
     expect(plugin.rules).toHaveProperty('require-ssr-guard');
