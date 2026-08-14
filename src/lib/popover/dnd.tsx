@@ -1,4 +1,3 @@
-/* eslint-disable react/only-export-components */
 /**
  * Drag-and-Drop (dnd-kit) Integration Module for popover-trail.
  * Provides `usePopoverDraggableCard`, `PopoverCanvas`, and `PopoverCard` with

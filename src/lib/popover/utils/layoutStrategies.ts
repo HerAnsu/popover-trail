@@ -131,7 +131,7 @@ export class LayoutStrategyRegistry {
   }
 
   listStrategies(): string[] {
-    return Array.from(this.strategies.keys());
+    return [...this.strategies.keys()];
   }
 
   get(id: string): PopoverLayoutStrategyEngine {

@@ -91,13 +91,11 @@ describe('Store Exotic Edge-Cases & Chaos Stress Suite', () => {
 
     // Listener 1 throws a string
     store.getState().actions.subscribeEvent(() => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw 'string exception';
     });
 
     // Listener 2 throws null
     store.getState().actions.subscribeEvent(() => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw null;
     });
 
@@ -105,7 +103,7 @@ describe('Store Exotic Edge-Cases & Chaos Stress Suite', () => {
     store.getState().actions.subscribeEvent(() => {
       const circular: Record<string, unknown> = {};
       circular.self = circular;
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
+
       throw circular;
     });
 

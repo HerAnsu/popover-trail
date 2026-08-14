@@ -76,7 +76,7 @@ function createMockStorage(initialData?: Record<string, string>): Storage {
     clear: () => {
       storageMap.clear();
     },
-    key: (index: number) => Array.from(storageMap.keys())[index] ?? null,
+    key: (index: number) => [...storageMap.keys()][index] ?? null,
     get length() {
       return storageMap.size;
     },
@@ -844,7 +844,7 @@ describe('createPopoverStore', () => {
       const state = store.getState();
       expect(state.floating).toHaveLength(1);
       expect(state.floating[0]?.key).toBe('child');
-      expect(state.zIndexOrder[state.zIndexOrder.length - 1]).toBe('child');
+      expect(state.zIndexOrder.at(-1)).toBe('child');
     });
 
     it('should cancel exit transition timers when resetStoreState / clear / destroy is called', async () => {

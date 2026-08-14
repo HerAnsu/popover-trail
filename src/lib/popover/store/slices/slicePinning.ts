@@ -47,7 +47,7 @@ export function createPinningSlice<
       set((state) => {
         const entry = findEntryInStore(state.floating, state.trail, key);
         if (!entry) return {};
-        if (state.zIndexOrder[state.zIndexOrder.length - 1] === key) return {};
+        if (state.zIndexOrder.at(-1) === key) return {};
         if (entry.transitionStatus === 'unmounting') return {};
         return bringToFrontPatch(state, key);
       });

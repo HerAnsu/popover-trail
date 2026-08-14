@@ -76,7 +76,6 @@ export function useVirtualAnchorElement(anchorRect: DOMRect | null | undefined) 
     return {
       getBoundingClientRect: () => anchorRect,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anchorRectHash]);
 }
 
@@ -133,7 +132,7 @@ export function useCollisionMergedConfig(
 ) {
   const boundary = localCollision?.boundary ?? globalCollision?.boundary;
   const boundaryOption = useResolvedBoundary(boundary);
-  const merged = Object.assign({}, globalCollision, localCollision);
+  const merged = { ...globalCollision, ...localCollision };
 
   return {
     padding: merged.padding,
@@ -154,7 +153,6 @@ export function useFloatingUpdater(
     if (!isPinned && !isDragging) {
       void update();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
 

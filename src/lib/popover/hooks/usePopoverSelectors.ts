@@ -129,8 +129,7 @@ export function usePopoverZIndex<TPopoverKey extends string = RegisteredKeys>(ke
  */
 export function useIsPopoverTopMost<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore(
-    (state) =>
-      state.zIndexOrder.length > 0 && state.zIndexOrder[state.zIndexOrder.length - 1] === key,
+    (state) => state.zIndexOrder.length > 0 && state.zIndexOrder.at(-1) === key,
   );
 }
 
@@ -209,8 +208,7 @@ export function usePopover<
         const isOpen = entry !== undefined;
         const isPinned = state.pinnedStates[key] ?? false;
         const zIndex = state.zIndexOrder.indexOf(key);
-        const isTop =
-          state.zIndexOrder.length > 0 && state.zIndexOrder[state.zIndexOrder.length - 1] === key;
+        const isTop = state.zIndexOrder.length > 0 && state.zIndexOrder.at(-1) === key;
         const offset = state.offsets[key] ?? DEFAULT_OFFSET;
 
         return {

@@ -61,11 +61,11 @@ describe('PopoverDAG utility', () => {
 
     const rootDescendants = dag.getDescendantKeys('root');
     expect(rootDescendants.size).toBe(5);
-    expect(Array.from(rootDescendants)).toEqual(['b1', 'b2', 'c1', 'c2', 'd1']);
+    expect([...rootDescendants]).toEqual(['b1', 'b2', 'c1', 'c2', 'd1']);
 
     const b1Descendants = dag.getDescendantKeys('b1');
     expect(b1Descendants.size).toBe(3);
-    expect(Array.from(b1Descendants)).toEqual(['c1', 'c2', 'd1']);
+    expect([...b1Descendants]).toEqual(['c1', 'c2', 'd1']);
   });
 
   it('prevents infinite loops when cyclic parent-child links are introduced', () => {

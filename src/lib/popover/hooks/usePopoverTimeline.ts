@@ -47,7 +47,7 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
   const history = useMemo<PopoverTimelineItem<TData>[]>(() => {
     const activeTrailKeys = trail.map((e) => e.key);
     const activePinnedKeys = floating.map((e) => e.key);
-    const primaryKey = activeTrailKeys[activeTrailKeys.length - 1] ?? activePinnedKeys[0] ?? 'root';
+    const primaryKey = activeTrailKeys.at(-1) ?? activePinnedKeys[0] ?? 'root';
 
     return [
       {
@@ -64,7 +64,7 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
       if (stepIndex < 0 || stepIndex >= history.length) return;
       const targetStep = history[stepIndex];
       if (targetStep && targetStep.trailKeys.length > 0) {
-        const lastKey = targetStep.trailKeys[targetStep.trailKeys.length - 1];
+        const lastKey = targetStep.trailKeys.at(-1);
         if (lastKey) {
           actions.bringToFront(lastKey);
         }

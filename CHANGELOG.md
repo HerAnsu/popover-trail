@@ -26,10 +26,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Separated value objects into standalone `Point2D.ts` and `RectBounds.ts`.
   - Decomposed composite hooks `useGeometry.ts` and `usePopoverCard.ts` into focused sub-modules (`geometry/useFloatingSetup.ts`, `geometry/geometryUtils.ts`, `card/useCardKeyboardNav.ts`, `card/useCardFocusManagement.ts`, `card/useCardStoreSlice.ts`).
   - Introduced expressive entry factory methods (`createSuccessEntry`, `createLoadingEntry`, `createErrorEntry`, `createIdleEntry`) eliminating ambiguous flag parameters.
+- **Linter Hardening & Dual-Engine Architecture**:
+  - Integrated ESLint Flat Config (`eslint.config.mjs`) alongside Oxlint with `eslint-plugin-oxlint` to eliminate duplicate rule checks while keeping sub-second execution speed.
+  - Added full plugin suite:
+    - `@e18e/eslint-plugin` for modern V8 engine optimizations (`prefer-object-has-own`, `prefer-array-at`, `prefer-spread-syntax`, `prefer-flatmap-over-map-flat`).
+    - `eslint-plugin-sonarjs` for cognitive complexity checks, jump redundancy, and code smell prevention.
+    - `eslint-plugin-regexp` for ReDoS security and RegExp optimization (`no-super-linear-backtracking`).
+    - `@stylistic/eslint-plugin` for unified formatting and type annotation delimiters.
+    - `eslint-plugin-testing-library` for testing queries and DOM standards.
+    - `eslint-plugin-storybook` for Storybook metadata declarations.
+    - `eslint-plugin-react-hooks` for comprehensive hook safety and dependency validation.
+  - Added dedicated npm scripts: `lint:ox`, `lint:eslint`, `lint:fix` and combined `npm run lint`.
 - **Fallow Quality & Complexity Reduction**:
   - Reduced **all 39 high-complexity functions** flagged by `fallow health` down to **0 functions above threshold** across the entire codebase.
   - Extracted modular single-responsibility helpers across `storeResolverPipeline.ts`, `useGeometry.ts`, `usePopoverCard.ts`, `sliceResolver.ts`, `slicePersistence.ts`, `snapshotManager.ts`, `dnd.tsx`, and `storeHelpers.ts`.
-  - Achieved **0 dead code issues**, **0 code duplicates**, and **0 circular dependencies** across all 92 entry points.
+  - Achieved **0 dead code issues**, **0 code duplicates**, and **0 circular dependencies** across all 93 entry points.
   - Maintained Maintainability Index score of **91.5 (Good)** and React Doctor score of **100 / 100 Great**.
 
 ### Tests & Verification

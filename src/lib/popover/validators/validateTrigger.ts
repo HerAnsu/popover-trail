@@ -31,7 +31,7 @@ export function validatePlacement(placement: PopoverPlacement | undefined): void
   if (!VALID_PLACEMENTS_SET.has(placement)) {
     warnDevDetails(true, {
       code: 'PT-102',
-      message: `Invalid layout placement "${placement}" provided. Supported values are: ${Array.from(VALID_PLACEMENTS_SET).join(', ')}.`,
+      message: `Invalid layout placement "${placement}" provided. Supported values are: ${[...VALID_PLACEMENTS_SET].join(', ')}.`,
     });
   }
 }

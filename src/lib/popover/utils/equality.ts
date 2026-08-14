@@ -11,7 +11,7 @@ export function shallowEqual<T>(objA: T, objB: T): boolean {
   const recA = objA as Record<string, unknown>;
   const recB = objB as Record<string, unknown>;
   for (const key of keysA) {
-    if (!Object.prototype.hasOwnProperty.call(objB, key) || !Object.is(recA[key], recB[key])) {
+    if (!Object.hasOwn(objB, key) || !Object.is(recA[key], recB[key])) {
       return false;
     }
   }
@@ -34,7 +34,7 @@ function areObjectsDeepEqual(
   if (keysA.length !== Object.keys(recB).length) return false;
   for (const key of keysA) {
     if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
-    if (!Object.prototype.hasOwnProperty.call(recB, key) || !isDeepEqual(recA[key], recB[key])) {
+    if (!Object.hasOwn(recB, key) || !isDeepEqual(recA[key], recB[key])) {
       return false;
     }
   }

@@ -204,7 +204,7 @@ export function createPopoverSchema<
   > => {
     return (rawKey: string | object, parentData?: unknown, context?: TC, signal?: AbortSignal) => {
       const parsed = parseResolverInvocationParams(rawKey, parentData, context, signal);
-      const hasNode = Object.prototype.hasOwnProperty.call(definition, parsed.key);
+      const hasNode = Object.hasOwn(definition, parsed.key);
       const node = hasNode ? definition[parsed.key] : undefined;
       validateSchemaKey(Boolean(node), parsed.key);
 

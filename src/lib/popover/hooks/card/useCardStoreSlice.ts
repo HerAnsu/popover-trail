@@ -46,9 +46,7 @@ export function useCardStoreSlice(entryKey: string) {
       (state: PopoverStore) => ({
         offset: state.offsets[entryKey] ?? DEFAULT_OFFSET,
         zIndex: state.zIndexOrder.indexOf(entryKey),
-        isTop:
-          state.zIndexOrder.length > 0 &&
-          state.zIndexOrder[state.zIndexOrder.length - 1] === entryKey,
+        isTop: state.zIndexOrder.length > 0 && state.zIndexOrder.at(-1) === entryKey,
         enableArrowNavigation: state.enableArrowNavigation,
         trail: state.trail,
         floating: state.floating,

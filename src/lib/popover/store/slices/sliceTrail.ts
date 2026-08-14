@@ -202,7 +202,7 @@ export function createTrailSlice<
 
       pushSnapshot(getCurrentState());
       abortControllersForKeys(removedKeys);
-      emitEvent({ type: 'close', keys: Array.from(removedKeys) });
+      emitEvent({ type: 'close', keys: [...removedKeys] });
 
       const maxDuration = resolveMaxExitDuration(removedKeys);
 
@@ -248,7 +248,7 @@ export function createTrailSlice<
       const removedKeys = new Set<string>([...trailKeys, ...descendants]);
 
       abortControllersForKeys(removedKeys);
-      emitEvent({ type: 'close', keys: Array.from(removedKeys) });
+      emitEvent({ type: 'close', keys: [...removedKeys] });
 
       const nextFloating = floating.filter((e) => !removedKeys.has(e.key));
       const nextPinnedStates = { ...pinnedStates };

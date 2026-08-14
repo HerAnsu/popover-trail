@@ -110,7 +110,7 @@ export function mergeEntryOptions<TData>(
   }
   if (options) {
     for (const key in options) {
-      if (Object.prototype.hasOwnProperty.call(options, key)) {
+      if (Object.hasOwn(options, key)) {
         const val = options[key as keyof typeof options];
         if (val !== undefined) {
           (merged as Record<string, unknown>)[key] = val;
