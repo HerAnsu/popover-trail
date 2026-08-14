@@ -1,18 +1,18 @@
 /**
- * @fileoverview Require pool.release(item) calls to be located inside a finally block.
+ * @fileoverview Recommend inspecting rejected outcomes when using Promise.allSettled.
  */
 
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce that acquired ObjectPool instances are returned via pool.release() inside a try...finally block.',
-      category: 'Object Pool',
+      description: 'Recommend checking item.status === "rejected" when processing Promise.allSettled results.',
+      category: 'Concurrency',
       recommended: true,
     },
     schema: [],
     messages: {
-      releaseInFinally: 'Object pool release for "{{ pool }}" should be wrapped in a finally block to prevent resource leaks on throw.',
+      checkSettledRejection: 'Results of Promise.allSettled in {{ name }} should filter or log rejected items.',
     },
   },
   create(context) {
@@ -24,22 +24,21 @@ export default {
         if (
           node.callee &&
           node.callee.property &&
-          node.callee.property.name === 'acquire' &&
+          node.callee.property.name === 'allSettled' &&
           node.callee.object &&
-          node.callee.object.name &&
-          node.callee.object.name.toLowerCase().includes('pool')
+          node.callee.object.name === 'Promise'
         ) {
           let parent = node.parent;
-          while (parent && parent.type !== 'FunctionDeclaration' && parent.type !== 'MethodDefinition') {
+          while (parent && parent.type !== 'FunctionDeclaration' && parent.type !== 'ArrowFunctionExpression') {
             parent = parent.parent;
           }
           if (parent) {
             const body = context.getSourceCode ? context.getSourceCode().getText(parent) : '';
-            if (body.includes('.release(') && !body.includes('finally')) {
+            if (!body.includes('rejected') && !body.includes('.status')) {
               context.report({
                 node,
-                messageId: 'releaseInFinally',
-                data: { pool: node.callee.object.name },
+                messageId: 'checkSettledRejection',
+                data: { name: parent.id?.name || 'function' },
               });
             }
           }
