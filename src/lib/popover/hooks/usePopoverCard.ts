@@ -98,6 +98,18 @@ function handleCustomShortcuts(
   return false;
 }
 
+function getFocusableCardElements(cardEl: HTMLElement | null): HTMLElement[] {
+  if (!cardEl) return [];
+  return Array.from(cardEl.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR)).filter(
+    (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0,
+  );
+}
+
+function isUserEditingText(el: HTMLElement | null): boolean {
+  if (!el) return false;
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+}
+
 function handleVerticalArrowNavigation(
   e: React.KeyboardEvent<HTMLElement>,
   cardEl: HTMLElement | null,
@@ -105,24 +117,18 @@ function handleVerticalArrowNavigation(
   if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
   const activeEl =
     typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
-  const isEditingText =
-    activeEl &&
-    (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
 
-  if (isEditingText || !cardEl) return;
-  const elements = Array.from(
-    cardEl.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR),
-  ).filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0);
+  if (isUserEditingText(activeEl) || !cardEl) return;
+  const elements = getFocusableCardElements(cardEl);
   if (elements.length === 0) return;
 
   e.preventDefault();
-  let currentIndex = activeEl ? elements.indexOf(activeEl) : -1;
-  if (e.key === 'ArrowDown') {
-    currentIndex = (currentIndex + 1) % elements.length;
-  } else {
-    currentIndex = (currentIndex - 1 + elements.length) % elements.length;
-  }
-  elements[currentIndex]?.focus();
+  const currentIndex = activeEl ? elements.indexOf(activeEl) : -1;
+  const nextIndex =
+    e.key === 'ArrowDown'
+      ? (currentIndex + 1) % elements.length
+      : (currentIndex - 1 + elements.length) % elements.length;
+  elements[nextIndex]?.focus();
 }
 
 function handleHorizontalArrowNavigation(
@@ -149,6 +155,51 @@ function handleHorizontalArrowNavigation(
   }
 }
 
+interface ResolvedNavParams {
+  e: React.KeyboardEvent<HTMLElement> | undefined;
+  cardEl: HTMLElement | null;
+  cardEntry: TrailEntry | undefined;
+  enableArrow: boolean;
+  pinned: boolean;
+  trailList: readonly TrailEntry[];
+  floatCount: number;
+  act?: { closeFrom: (index: number) => void };
+}
+
+function resolveNavParams(
+  eventOrOptions: React.KeyboardEvent<HTMLElement> | CardKeyboardNavigationOptions,
+  cardElement?: HTMLElement | null,
+  entry?: TrailEntry,
+  enableArrowNavigation?: boolean,
+  isPinned?: boolean,
+  trail?: readonly TrailEntry[],
+  floatingCount?: number,
+  actions?: { closeFrom: (index: number) => void },
+): ResolvedNavParams {
+  if (typeof eventOrOptions === 'object' && 'event' in eventOrOptions) {
+    return {
+      e: eventOrOptions.event,
+      cardEl: eventOrOptions.cardElement ?? null,
+      cardEntry: eventOrOptions.entry,
+      enableArrow: Boolean(eventOrOptions.enableArrowNavigation),
+      pinned: Boolean(eventOrOptions.isPinned),
+      trailList: eventOrOptions.trail ?? [],
+      floatCount: eventOrOptions.floatingCount ?? 0,
+      act: eventOrOptions.actions,
+    };
+  }
+  return {
+    e: eventOrOptions,
+    cardEl: cardElement ?? null,
+    cardEntry: entry,
+    enableArrow: Boolean(enableArrowNavigation),
+    pinned: Boolean(isPinned),
+    trailList: trail ?? [],
+    floatCount: floatingCount ?? 0,
+    act: actions,
+  };
+}
+
 /**
  * Helper function for handling Arrow navigation and custom keyboard shortcuts on popover cards.
  */
@@ -162,20 +213,19 @@ export function handleCardKeyboardNavigation(
   floatingCount?: number,
   actions?: { closeFrom: (index: number) => void },
 ): void {
-  const isOptsObject = typeof eventOrOptions === 'object' && 'event' in eventOrOptions;
-  const e = isOptsObject ? eventOrOptions.event : eventOrOptions;
-  const cardEl = isOptsObject ? eventOrOptions.cardElement : (cardElement ?? null);
-  const cardEntry = isOptsObject ? eventOrOptions.entry : entry;
-  const enableArrow = isOptsObject
-    ? eventOrOptions.enableArrowNavigation
-    : (enableArrowNavigation ?? false);
-  const pinned = isOptsObject ? eventOrOptions.isPinned : (isPinned ?? false);
-  const trailList = isOptsObject ? eventOrOptions.trail : (trail ?? []);
-  const floatCount = isOptsObject ? eventOrOptions.floatingCount : (floatingCount ?? 0);
-  const act = isOptsObject ? eventOrOptions.actions : actions;
+  const { e, cardEl, cardEntry, enableArrow, pinned, trailList, floatCount, act } =
+    resolveNavParams(
+      eventOrOptions,
+      cardElement,
+      entry,
+      enableArrowNavigation,
+      isPinned,
+      trail,
+      floatingCount,
+      actions,
+    );
 
   if (!e || !cardEntry) return;
-
   if (handleCustomShortcuts(e, cardEntry)) return;
   if (!enableArrow) return;
 
@@ -183,46 +233,49 @@ export function handleCardKeyboardNavigation(
   handleHorizontalArrowNavigation(e, cardEntry, pinned, trailList, floatCount, act);
 }
 
+function focusParentCard(parentKey: string): boolean {
+  const escapedKey =
+    typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+      ? CSS.escape(parentKey)
+      : parentKey.replace(/[^a-zA-Z0-9_-]/g, '');
+  const parentCard = document.querySelector<HTMLElement>(`[aria-labelledby="title-${escapedKey}"]`);
+  if (!parentCard) return false;
+
+  const firstFocusable = parentCard.querySelector<HTMLElement>(
+    "button, a, input, select, textarea, [tabindex]:not([tabindex='-1'])",
+  );
+  if (firstFocusable) {
+    firstFocusable.focus();
+    return true;
+  }
+  parentCard.focus();
+  return true;
+}
+
+function tryRestorePreviousElementFocus(
+  cardElement: HTMLElement | null,
+  previouslyFocused: HTMLElement | null,
+): boolean {
+  if (!previouslyFocused || !document.body.contains(previouslyFocused)) return false;
+  if (typeof previouslyFocused.focus !== 'function') return false;
+
+  const activeEl = document.activeElement;
+  const isFocusInside = cardElement?.contains(activeEl) || activeEl === document.body || !activeEl;
+  if (isFocusInside) {
+    previouslyFocused.focus();
+    return true;
+  }
+  return false;
+}
+
 function restoreCardFocus(
   cardElement: HTMLElement | null,
   previouslyFocused: HTMLElement | null,
   parentKey?: string,
 ): void {
-  const isStillInDom = previouslyFocused && document.body.contains(previouslyFocused);
-
-  if (isStillInDom && typeof previouslyFocused?.focus === 'function') {
-    const activeEl = document.activeElement;
-    const isFocusInside =
-      cardElement?.contains(activeEl) || activeEl === document.body || !activeEl;
-    if (isFocusInside) {
-      previouslyFocused.focus();
-    }
-  } else {
-    if (parentKey) {
-      const escapedKey =
-        typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
-          ? CSS.escape(parentKey)
-          : parentKey.replace(/[^a-zA-Z0-9_-]/g, '');
-      const parentCard = document.querySelector<HTMLElement>(
-        `[aria-labelledby="title-${escapedKey}"]`,
-      );
-      if (parentCard) {
-        const firstFocusable = parentCard.querySelector<HTMLElement>(
-          "button, a, input, select, textarea, [tabindex]:not([tabindex='-1'])",
-        );
-        if (firstFocusable) {
-          firstFocusable.focus();
-          return;
-        }
-        parentCard.focus();
-        return;
-      }
-    }
-    const mainHeading = document.querySelector('h1');
-    if (mainHeading) {
-      mainHeading.focus();
-    }
-  }
+  if (tryRestorePreviousElementFocus(cardElement, previouslyFocused)) return;
+  if (parentKey && focusParentCard(parentKey)) return;
+  document.querySelector<HTMLElement>('h1')?.focus();
 }
 
 function resolveTransitionClassName(
@@ -230,10 +283,120 @@ function resolveTransitionClassName(
   entryClasses: { mounting?: string; unmounting?: string; mounted?: string },
   globalClasses: { mounting?: string; unmounting?: string; mounted?: string },
 ): string {
-  if (status === 'mounting') return entryClasses.mounting ?? globalClasses.mounting ?? '';
-  if (status === 'mounted') return entryClasses.mounted ?? globalClasses.mounted ?? '';
-  if (status === 'unmounting') return entryClasses.unmounting ?? globalClasses.unmounting ?? '';
-  return '';
+  if (!status || (status !== 'mounting' && status !== 'mounted' && status !== 'unmounting')) {
+    return '';
+  }
+  return entryClasses[status] ?? globalClasses[status] ?? '';
+}
+
+/**
+ * A unified composite hook that encapsulates all layout positioning, keyboard/hover controls,
+ * focus lock restoration, and actions into a single simple interface.
+ * Independent of drag-and-drop libraries.
+ *
+ * @param options - Hook configuration settings.
+ * @returns Object containing refs, compiled styles, interaction state flags, and actions.
+ */
+function useCardFocusManagement(
+  entry: TrailEntry,
+  cardRef: React.RefObject<HTMLElement | null>,
+): void {
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
+    }
+    const cardElement = cardRef.current;
+
+    return () => {
+      if (entry.focusLockOptions?.returnFocus === false) return;
+      restoreCardFocus(cardElement, previouslyFocusedElementRef.current, entry.parentKey);
+    };
+  }, [entry.parentKey, entry.focusLockOptions?.returnFocus, cardRef]);
+
+  useEffect(() => {
+    if (!entry.focusLockOptions?.autoFocusElement || typeof document === 'undefined') return;
+    const autoFocus = entry.focusLockOptions.autoFocusElement;
+    const target =
+      typeof autoFocus === 'function'
+        ? autoFocus()
+        : typeof autoFocus === 'string' && autoFocus.trim() !== ''
+          ? document.querySelector<HTMLElement>(autoFocus)
+          : null;
+    if (target && typeof target.focus === 'function') {
+      target.focus();
+    }
+  }, [entry.focusLockOptions, entry.focusLockOptions?.autoFocusElement]);
+
+  useEffect(() => {
+    if (!entry.focusLockOptions?.lockScroll || typeof document === 'undefined') return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [entry.focusLockOptions?.lockScroll]);
+}
+
+function useCardMountingTransition(
+  key: string,
+  status: string | undefined,
+  actions: PopoverActions,
+): void {
+  useEffect(() => {
+    if (status === 'mounting') {
+      let rAF2: number;
+      const rAF1 = requestAnimationFrame(() => {
+        rAF2 = requestAnimationFrame(() => {
+          actions.setTransitionStatus(key, 'mounted');
+        });
+      });
+      return () => {
+        cancelAnimationFrame(rAF1);
+        if (rAF2) {
+          cancelAnimationFrame(rAF2);
+        }
+      };
+    }
+    return undefined;
+  }, [key, status, actions]);
+}
+
+function useCardStoreSlice(entryKey: string) {
+  return usePopoverStore(
+    useCallback(
+      (state: PopoverStore) => ({
+        offset: state.offsets[entryKey] ?? DEFAULT_OFFSET,
+        zIndex: state.zIndexOrder.indexOf(entryKey),
+        isTop:
+          state.zIndexOrder.length > 0 &&
+          state.zIndexOrder[state.zIndexOrder.length - 1] === entryKey,
+        enableArrowNavigation: state.enableArrowNavigation,
+        trail: state.trail,
+        floating: state.floating,
+        baseZIndex: state.baseZIndex,
+        mountingClassName: state.mountingClassName,
+        unmountingClassName: state.unmountingClassName,
+        mountedClassName: state.mountedClassName,
+        zIndexBaseMap: state.zIndexBaseMap,
+      }),
+      [entryKey],
+    ),
+    shallowEqual,
+  );
+}
+
+function resolveEffectiveBaseZIndex(
+  entry: TrailEntry,
+  zIndexBaseMap?: Record<string, number>,
+  baseZIndex?: number,
+): number {
+  if (entry.baseZIndex !== undefined) return entry.baseZIndex;
+  if (entry.stackGroup && zIndexBaseMap && zIndexBaseMap[entry.stackGroup] !== undefined) {
+    return zIndexBaseMap[entry.stackGroup];
+  }
+  return baseZIndex ?? 1000;
 }
 
 /**
@@ -251,45 +414,8 @@ export function usePopoverCard({
   placement = 'bottom',
 }: UsePopoverCardOptions): UsePopoverCardResult {
   const ref = useRef<HTMLDivElement | null>(null);
-  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
-  // Capture active element on mount and restore focus on unmount (WAI-ARIA compliance)
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
-    }
-    const cardElement = ref.current;
-
-    return () => {
-      if (entry.focusLockOptions?.returnFocus === false) return;
-      restoreCardFocus(cardElement, previouslyFocusedElementRef.current, entry.parentKey);
-    };
-  }, [entry.parentKey, entry.focusLockOptions?.returnFocus]);
-
-  // Handle custom autoFocusElement option on mount
-  useEffect(() => {
-    if (!entry.focusLockOptions?.autoFocusElement || typeof document === 'undefined') return;
-    const autoFocus = entry.focusLockOptions.autoFocusElement;
-    const target =
-      typeof autoFocus === 'function'
-        ? autoFocus()
-        : typeof autoFocus === 'string' && autoFocus.trim() !== ''
-          ? document.querySelector<HTMLElement>(autoFocus)
-          : null;
-    if (target && typeof target.focus === 'function') {
-      target.focus();
-    }
-  }, [entry.focusLockOptions, entry.focusLockOptions?.autoFocusElement]);
-
-  // Handle optional body scroll locking while card is active
-  useEffect(() => {
-    if (!entry.focusLockOptions?.lockScroll || typeof document === 'undefined') return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [entry.focusLockOptions?.lockScroll]);
+  useCardFocusManagement(entry, ref);
 
   // Geometry positioning setup
   const { finalLayoutPos, setFloating } = usePopoverGeometry({
@@ -301,29 +427,6 @@ export function usePopoverCard({
     isPinned,
     entry,
   });
-
-  // Select state coordinates and actions
-  const storeSlice = usePopoverStore(
-    useCallback(
-      (state: PopoverStore) => ({
-        offset: state.offsets[entry.key] ?? DEFAULT_OFFSET,
-        zIndex: state.zIndexOrder.indexOf(entry.key),
-        isTop:
-          state.zIndexOrder.length > 0 &&
-          state.zIndexOrder[state.zIndexOrder.length - 1] === entry.key,
-        enableArrowNavigation: state.enableArrowNavigation,
-        trail: state.trail,
-        floating: state.floating,
-        baseZIndex: state.baseZIndex,
-        mountingClassName: state.mountingClassName,
-        unmountingClassName: state.unmountingClassName,
-        mountedClassName: state.mountedClassName,
-        zIndexBaseMap: state.zIndexBaseMap,
-      }),
-      [entry.key],
-    ),
-    shallowEqual,
-  );
 
   const {
     offset,
@@ -337,28 +440,11 @@ export function usePopoverCard({
     unmountingClassName: globalUnmounting,
     mountedClassName: globalMounted,
     zIndexBaseMap,
-  } = storeSlice;
+  } = useCardStoreSlice(entry.key);
 
   const actions = usePopoverActions();
 
-  // Handle transition state automatically (mounting -> mounted) using requestAnimationFrame for frame-adaptive rendering
-  useEffect(() => {
-    if (entry.transitionStatus === 'mounting') {
-      let rAF2: number;
-      const rAF1 = requestAnimationFrame(() => {
-        rAF2 = requestAnimationFrame(() => {
-          actions.setTransitionStatus(entry.key, 'mounted');
-        });
-      });
-      return () => {
-        cancelAnimationFrame(rAF1);
-        if (rAF2) {
-          cancelAnimationFrame(rAF2);
-        }
-      };
-    }
-    return undefined;
-  }, [entry.key, entry.transitionStatus, actions]);
+  useCardMountingTransition(entry.key, entry.transitionStatus, actions);
 
   const transitionClassName = resolveTransitionClassName(
     entry.transitionStatus,
@@ -374,8 +460,7 @@ export function usePopoverCard({
     },
   );
 
-  const groupBaseZIndex = entry.stackGroup ? zIndexBaseMap?.[entry.stackGroup] : undefined;
-  const effectiveBaseZIndex = entry.baseZIndex ?? groupBaseZIndex ?? baseZIndex ?? 1000;
+  const effectiveBaseZIndex = resolveEffectiveBaseZIndex(entry, zIndexBaseMap, baseZIndex);
 
   // Compile styles using the compiler utility (static offsets only)
   const style = getPopoverStyles({

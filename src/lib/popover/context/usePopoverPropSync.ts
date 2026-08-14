@@ -71,10 +71,9 @@ function syncNumericConfigProps<TData, TContext>(
   );
 }
 
-function syncObjectAndComplexProps<TData, TContext>(
+function syncAnimationClassNames<TData, TContext>(
   state: PopoverStore<TData, TContext>,
   props: PopoverProviderProps<TData, TContext>,
-  activeResolver: PopoverResolver<TData, TContext>,
 ): void {
   const mountingName = String(props.mountingClassName ?? 'mounting');
   const unmountingName = String(props.unmountingClassName ?? 'unmounting');
@@ -86,6 +85,14 @@ function syncObjectAndComplexProps<TData, TContext>(
   ) {
     state.setGlobalAnimationClassNames(mountingName, unmountingName, mountedName);
   }
+}
+
+function syncObjectAndComplexProps<TData, TContext>(
+  state: PopoverStore<TData, TContext>,
+  props: PopoverProviderProps<TData, TContext>,
+  activeResolver: PopoverResolver<TData, TContext>,
+): void {
+  syncAnimationClassNames(state, props);
 
   if (props.initialContext !== undefined) {
     syncPropIfChanged(state.context, props.initialContext as TContext, (val) =>

@@ -39,6 +39,28 @@ function isElementMatchingPopover(
   return false;
 }
 
+function isClickInsidePopover(
+  path: EventTarget[],
+  popoverSelector: string,
+  escapedIgnoreClass?: string,
+  ignoreClass?: string,
+): boolean {
+  return path.some(
+    (el) =>
+      el instanceof HTMLElement &&
+      isElementMatchingPopover(el, popoverSelector, escapedIgnoreClass, ignoreClass),
+  );
+}
+
+function isClickOnAnchor(
+  path: EventTarget[],
+  target: HTMLElement | null,
+  anchorEl: Element | null | undefined,
+): boolean {
+  if (!anchorEl) return false;
+  return path.includes(anchorEl) || (target ? anchorEl.contains(target) : false);
+}
+
 /**
  * Custom hook isolating click-outside capture phase event listener logic for PopoverProvider.
  */
@@ -69,17 +91,12 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
       const target = getEventTarget<HTMLElement>(e) ?? (e.target as HTMLElement);
       const state = store.getState();
 
-      const clickedInside = path.some((el) => {
-        if (el instanceof HTMLElement) {
-          return isElementMatchingPopover(el, popoverSelector, escapedIgnoreClass, ignoreClass);
-        }
-        return false;
-      });
-
-      if (clickedInside) return;
+      if (isClickInsidePopover(path, popoverSelector, escapedIgnoreClass, ignoreClass)) {
+        return;
+      }
 
       const anchorEl = TriggerRegistry.get(state.ownerId ?? '') ?? state.anchorElement;
-      if (anchorEl && (path.includes(anchorEl) || anchorEl.contains(target))) {
+      if (isClickOnAnchor(path, target, anchorEl)) {
         return;
       }
 

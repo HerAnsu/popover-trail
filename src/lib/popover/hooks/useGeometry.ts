@@ -152,41 +152,46 @@ function calculateCascadeOffset(
  * @see {@link PopoverCard}
  * @see {@link QuadTree}
  */
-export function usePopoverGeometry({
-  id,
-  anchorRect,
-  placement,
-  zIndex,
-  isDragging,
-  isPinned,
-  entry,
-  enableSpatialCollision = false,
-}: UsePopoverGeometryOptions): UsePopoverGeometryResult {
-  const globalCollision = usePopoverCollisionConfig();
-  const storeApi = usePopoverStoreApi();
-  const {
-    cascadeOffsetStep,
-    defaultOffset,
-    responsiveMode: globalResponsiveMode,
-    mobileBreakpoint,
-  } = usePopoverStore(
-    (state) => ({
-      cascadeOffsetStep: state.cascadeOffsetStep,
-      defaultOffset: state.defaultOffset,
-      responsiveMode: state.responsiveMode,
-      mobileBreakpoint: state.mobileBreakpoint,
-    }),
-    shallowEqual,
-  );
-  const localCollision = entry?.collision;
+function applySpatialCollisionNudge(
+  id: string,
+  top: number,
+  left: number,
+  winWidth: number,
+  winHeight: number,
+  activeFloating: readonly TrailEntry<unknown>[],
+  activeOffsets: Record<string, { x: number; y: number }>,
+): { top: number; left: number } {
+  const spatialBounds: BoundingBox = { x: 0, y: 0, width: winWidth, height: winHeight };
+  const spatialTree = new QuadTree(spatialBounds);
 
-  // Merge local overrides with global defaults
-  const boundary = localCollision?.boundary ?? globalCollision?.boundary;
-  const padding = localCollision?.padding ?? globalCollision?.padding;
-  const flipOption = localCollision?.flip ?? globalCollision?.flip;
-  const shiftOption = localCollision?.shift ?? globalCollision?.shift;
-  const sizeOption = localCollision?.size ?? globalCollision?.size;
+  for (const sibling of activeFloating) {
+    if (sibling.key !== id) {
+      const off = activeOffsets[sibling.key] ?? { x: 0, y: 0 };
+      spatialTree.insert({
+        id: sibling.key,
+        bounds: {
+          x: (sibling.pinnedLayoutPos?.left ?? 0) + off.x,
+          y: (sibling.pinnedLayoutPos?.top ?? 0) + off.y,
+          width: 320,
+          height: 240,
+        },
+      });
+    }
+  }
 
+  const cardBox = { x: left, y: top, width: 320, height: 240 };
+  spatialTree.insert({ id, bounds: cardBox });
+
+  const collisions = spatialTree.retrieve([], cardBox);
+  if (collisions.length > 1) {
+    return { top: top + 16, left: left + 16 };
+  }
+  return { top, left };
+}
+
+function useResolvedBoundary(
+  boundary?: Boundary | (() => Boundary | null | undefined),
+): Boundary | undefined {
   const [resolvedBoundary, setResolvedBoundary] = useState<Boundary | undefined>(
     typeof boundary !== 'function' ? boundary : undefined,
   );
@@ -206,8 +211,112 @@ export function usePopoverGeometry({
     }
   }, [boundary]);
 
-  const boundaryOption = resolvedBoundary || undefined;
+  return resolvedBoundary;
+}
 
+function buildFloatingMiddlewareList(
+  offsetDistance: number,
+  flipOption: unknown,
+  shiftOption: unknown,
+  sizeOption: unknown,
+  boundaryOption: Boundary | undefined,
+  padding: number | undefined,
+) {
+  const list = [offset(offsetDistance)];
+
+  if (flipOption !== false) {
+    list.push(
+      flip({
+        boundary: boundaryOption,
+        padding: padding ?? undefined,
+        ...resolveMiddlewareExtraProps(flipOption),
+      }),
+    );
+  }
+
+  if (shiftOption !== false) {
+    list.push(
+      shift({
+        boundary: boundaryOption,
+        padding: padding ?? 12,
+        ...resolveMiddlewareExtraProps(shiftOption),
+      }),
+    );
+  }
+
+  if (sizeOption) {
+    list.push(
+      size({
+        boundary: boundaryOption,
+        padding: padding ?? 12,
+        apply({ availableWidth, availableHeight, elements }) {
+          elements.floating.style.setProperty('--popover-max-width', `${availableWidth}px`);
+          elements.floating.style.setProperty('--popover-max-height', `${availableHeight}px`);
+        },
+        ...resolveMiddlewareExtraProps(sizeOption),
+      }),
+    );
+  }
+
+  return list;
+}
+
+function calculateBaseOffsetPosition(
+  zIndex: number,
+  step: number,
+  direction: 'left' | 'right' | 'top' | 'bottom',
+  y: number | null,
+  x: number | null,
+): { baseTop: number; baseLeft: number } {
+  const { topOffset, leftOffset } = calculateCascadeOffset(zIndex, step, direction);
+  return {
+    baseTop: (y ?? 0) + topOffset,
+    baseLeft: (x ?? 0) + leftOffset,
+  };
+}
+
+function resolveUnpinnedLayoutPosition(
+  id: string,
+  entry: TrailEntry | undefined,
+  cascadeOffsetStep: number,
+  resolvedPlacement: string,
+  zIndex: number,
+  y: number | null,
+  x: number | null,
+  enableSpatialCollision: boolean,
+  storeApi: ReturnType<typeof usePopoverStoreApi>,
+  winWidth: number,
+  winHeight: number,
+): { top: number; left: number } {
+  const step = entry?.cascadeOffsetStep ?? cascadeOffsetStep;
+  const direction = (entry?.cascadeOffsetDirection ??
+    (resolvedPlacement.startsWith('left') ? 'left' : 'right')) as
+    | 'left'
+    | 'right'
+    | 'top'
+    | 'bottom';
+  const { baseTop, baseLeft } = calculateBaseOffsetPosition(zIndex, step, direction, y, x);
+
+  if (enableSpatialCollision) {
+    const { floating: activeFloating, offsets: activeOffsets } = storeApi.getState();
+    return applySpatialCollisionNudge(
+      id,
+      baseTop,
+      baseLeft,
+      winWidth,
+      winHeight,
+      activeFloating,
+      activeOffsets,
+    );
+  }
+
+  return {
+    top: baseTop,
+    left: baseLeft,
+  };
+}
+
+function useVirtualAnchorElement(anchorRect: DOMRect | null | undefined) {
   const anchorRectHash = anchorRect
     ? Math.imul(Math.round(anchorRect.top), 73856093) ^
       Math.imul(Math.round(anchorRect.left), 19349663) ^
@@ -215,81 +324,23 @@ export function usePopoverGeometry({
       Math.imul(Math.round(anchorRect.height), 4256233)
     : 0;
 
-  const virtualElement = useMemo(() => {
+  return useMemo(() => {
     if (!anchorRect) return null;
     return {
       getBoundingClientRect: () => anchorRect,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anchorRectHash]);
+}
 
-  // Configure useFloating positioning middleware dynamically with autoUpdate
-  const middleware = useMemo(() => {
-    const list = [
-      offset(entry?.offset ?? defaultOffset ?? 8), // Gap distance from trigger
-    ];
-
-    if (flipOption !== false) {
-      list.push(
-        flip({
-          boundary: boundaryOption,
-          padding: padding ?? undefined,
-          ...resolveMiddlewareExtraProps(flipOption),
-        }),
-      );
-    }
-
-    if (shiftOption !== false) {
-      list.push(
-        shift({
-          boundary: boundaryOption,
-          padding: padding ?? 12,
-          ...resolveMiddlewareExtraProps(shiftOption),
-        }),
-      );
-    }
-
-    if (sizeOption) {
-      list.push(
-        size({
-          boundary: boundaryOption,
-          padding: padding ?? 12,
-          apply({ availableWidth, availableHeight, elements }) {
-            elements.floating.style.setProperty('--popover-max-width', `${availableWidth}px`);
-            elements.floating.style.setProperty('--popover-max-height', `${availableHeight}px`);
-          },
-          ...resolveMiddlewareExtraProps(sizeOption),
-        }),
-      );
-    }
-
-    return list;
-  }, [entry?.offset, defaultOffset, flipOption, shiftOption, sizeOption, boundaryOption, padding]);
-
-  const resolvedAutoPlacement = useMemo(() => {
-    return calculateAutoPlacement(placement, anchorRect);
-  }, [placement, anchorRect]);
-
-  const {
-    refs,
-    x,
-    y,
-    update,
-    placement: resolvedPlacement,
-  } = useFloating({
-    placement: resolvedAutoPlacement ?? 'bottom',
-    whileElementsMounted: isPinned ? undefined : autoUpdate,
-    middleware,
-  });
-
+function useFloatingResizeObserver(
+  floatingEl: HTMLElement | null,
+  isPinned: boolean | undefined,
+  isDragging: boolean | undefined,
+  update: () => void,
+) {
   useEffect(() => {
-    refs.setReference(virtualElement);
-  }, [virtualElement, refs]);
-
-  useEffect(() => {
-    if (isPinned || isDragging) return;
-    const floatingEl = refs.floating.current;
-    if (!floatingEl) return;
+    if (isPinned || isDragging || !floatingEl) return;
 
     const unobserve = ResizeObserverRegistry.observe(floatingEl, () => {
       void update();
@@ -297,26 +348,10 @@ export function usePopoverGeometry({
     return () => {
       unobserve();
     };
-  }, [isPinned, isDragging, update, refs.floating]);
+  }, [isPinned, isDragging, update, floatingEl]);
+}
 
-  useEffect(() => {
-    if (!isPinned && !isDragging) {
-      void update();
-    }
-  }, [
-    id,
-    anchorRect,
-    resolvedAutoPlacement,
-    zIndex,
-    isDragging,
-    isPinned,
-    entry?.pinnedLayoutPos,
-    update,
-  ]);
-
-  const effectiveResponsiveMode = entry?.responsiveMode ?? globalResponsiveMode;
-  const layoutStrategy = entry?.layoutStrategy ?? 'floating-ui';
-
+function useMobileViewport(mobileBreakpoint: number): boolean {
   const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   useEffect(() => {
@@ -329,6 +364,147 @@ export function usePopoverGeometry({
     window.addEventListener('resize', check, { passive: true });
     return () => window.removeEventListener('resize', check);
   }, [mobileBreakpoint]);
+
+  return isMobileViewport;
+}
+
+function useGeometryStoreConfig() {
+  return usePopoverStore(
+    (state) => ({
+      cascadeOffsetStep: state.cascadeOffsetStep,
+      defaultOffset: state.defaultOffset,
+      responsiveMode: state.responsiveMode,
+      mobileBreakpoint: state.mobileBreakpoint,
+    }),
+    shallowEqual,
+  );
+}
+
+function useCollisionMergedConfig(
+  localCollision?: CollisionConfig,
+  globalCollision?: CollisionConfig,
+) {
+  const boundary = localCollision?.boundary ?? globalCollision?.boundary;
+  const boundaryOption = useResolvedBoundary(boundary);
+  const merged = Object.assign({}, globalCollision, localCollision);
+
+  return {
+    padding: merged.padding,
+    flipOption: merged.flip,
+    shiftOption: merged.shift,
+    sizeOption: merged.size,
+    boundaryOption,
+  };
+}
+
+function usePopoverFloatingSetup(
+  placement: Placement | 'auto' | undefined,
+  anchorRect: DOMRect | null | undefined,
+  isPinned: boolean | undefined,
+  middleware: Array<
+    | ReturnType<typeof offset>
+    | ReturnType<typeof flip>
+    | ReturnType<typeof shift>
+    | ReturnType<typeof size>
+  >,
+) {
+  const resolvedAutoPlacement = useMemo(
+    () => calculateAutoPlacement(placement, anchorRect),
+    [placement, anchorRect],
+  );
+
+  const floating = useFloating({
+    placement: resolvedAutoPlacement ?? 'bottom',
+    whileElementsMounted: isPinned ? undefined : autoUpdate,
+    middleware,
+  });
+
+  return { ...floating, resolvedAutoPlacement };
+}
+
+function useFloatingUpdater(
+  isPinned: boolean | undefined,
+  isDragging: boolean | undefined,
+  update: () => void,
+  deps: React.DependencyList,
+) {
+  useEffect(() => {
+    if (!isPinned && !isDragging) {
+      void update();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
+export function usePopoverGeometry({
+  id,
+  anchorRect,
+  placement,
+  zIndex,
+  isDragging,
+  isPinned,
+  entry,
+  enableSpatialCollision = false,
+}: UsePopoverGeometryOptions): UsePopoverGeometryResult {
+  const globalCollision = usePopoverCollisionConfig();
+  const storeApi = usePopoverStoreApi();
+  const {
+    cascadeOffsetStep,
+    defaultOffset,
+    responsiveMode: globalResponsiveMode,
+    mobileBreakpoint,
+  } = useGeometryStoreConfig();
+
+  const { padding, flipOption, shiftOption, sizeOption, boundaryOption } = useCollisionMergedConfig(
+    entry?.collision,
+    globalCollision,
+  );
+
+  const virtualElement = useVirtualAnchorElement(anchorRect);
+
+  // Configure useFloating positioning middleware dynamically with autoUpdate
+  const middleware = useMemo(
+    () =>
+      buildFloatingMiddlewareList(
+        entry?.offset ?? defaultOffset ?? 8,
+        flipOption,
+        shiftOption,
+        sizeOption,
+        boundaryOption,
+        padding,
+      ),
+    [entry?.offset, defaultOffset, flipOption, shiftOption, sizeOption, boundaryOption, padding],
+  );
+
+  const {
+    refs,
+    x,
+    y,
+    update,
+    placement: resolvedPlacement,
+    resolvedAutoPlacement,
+  } = usePopoverFloatingSetup(placement, anchorRect, isPinned, middleware);
+
+  useEffect(() => {
+    refs.setReference(virtualElement);
+  }, [virtualElement, refs]);
+
+  useFloatingResizeObserver(refs.floating.current, isPinned, isDragging, update);
+
+  useFloatingUpdater(isPinned, isDragging, update, [
+    id,
+    anchorRect,
+    resolvedAutoPlacement,
+    zIndex,
+    isDragging,
+    isPinned,
+    entry?.pinnedLayoutPos,
+    update,
+  ]);
+
+  const effectiveResponsiveMode = entry?.responsiveMode ?? globalResponsiveMode;
+  const layoutStrategy = entry?.layoutStrategy ?? 'floating-ui';
+  const isMobileViewport = useMobileViewport(mobileBreakpoint);
 
   // Calculate the final coordinates with optional QuadTree spatial partitioning
   const finalLayoutPos = useMemo(() => {
@@ -349,63 +525,19 @@ export function usePopoverGeometry({
       return responsivePos;
     }
 
-    const step = entry?.cascadeOffsetStep ?? cascadeOffsetStep;
-    const direction =
-      entry?.cascadeOffsetDirection ?? (resolvedPlacement.startsWith('left') ? 'left' : 'right');
-    const { topOffset, leftOffset } = calculateCascadeOffset(
+    return resolveUnpinnedLayoutPosition(
+      id,
+      entry,
+      cascadeOffsetStep,
+      resolvedPlacement,
       zIndex,
-      step,
-      direction as 'left' | 'right' | 'top' | 'bottom',
+      y,
+      x,
+      enableSpatialCollision,
+      storeApi,
+      winWidth,
+      winHeight,
     );
-
-    let calculatedTop = (y ?? 0) + topOffset;
-    let calculatedLeft = (x ?? 0) + leftOffset;
-
-    // Optional QuadTree spatial collision resolution
-    if (enableSpatialCollision) {
-      const { floating: activeFloating, offsets: activeOffsets } = storeApi.getState();
-      const spatialBounds: BoundingBox = {
-        x: 0,
-        y: 0,
-        width: winWidth,
-        height: winHeight,
-      };
-      const spatialTree = new QuadTree(spatialBounds);
-
-      for (const sibling of activeFloating) {
-        if (sibling.key !== id) {
-          const off = activeOffsets[sibling.key] ?? { x: 0, y: 0 };
-          spatialTree.insert({
-            id: sibling.key,
-            bounds: {
-              x: (sibling.pinnedLayoutPos?.left ?? 0) + off.x,
-              y: (sibling.pinnedLayoutPos?.top ?? 0) + off.y,
-              width: 320,
-              height: 240,
-            },
-          });
-        }
-      }
-
-      const cardBox = {
-        x: calculatedLeft,
-        y: calculatedTop,
-        width: 320,
-        height: 240,
-      };
-      spatialTree.insert({ id, bounds: cardBox });
-
-      const collisions = spatialTree.retrieve([], cardBox);
-      if (collisions.length > 1) {
-        calculatedTop += 16;
-        calculatedLeft += 16;
-      }
-    }
-
-    return {
-      top: calculatedTop,
-      left: calculatedLeft,
-    };
   }, [
     isPinned,
     entry?.pinnedLayoutPos,

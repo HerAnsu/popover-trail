@@ -25,6 +25,18 @@ function getDirectClosedKeys<TData>(
   return trail.slice(trailIndex).map((e) => e.key);
 }
 
+function shouldIncludeDescendant(
+  key: string,
+  closePinnedDescendants: boolean,
+  pinnedStates?: Record<string, boolean>,
+  floatingSet?: Set<string>,
+): boolean {
+  if (closePinnedDescendants) return true;
+  if (pinnedStates) return !pinnedStates[key];
+  if (floatingSet) return !floatingSet.has(key);
+  return true;
+}
+
 /**
  * Helper resolving full set of closed keys including child descendants.
  */
@@ -37,25 +49,13 @@ function resolveAllRemovedKeys<TData>(
 ): Set<string> {
   const result = new Set<string>(directClosedKeys);
   const descendants = getAllDescendants(directClosedKeys, floating, trail);
+  const floatingSet =
+    !closePinnedDescendants && !pinnedStates && floating.length > 0
+      ? new Set(floating.map((e) => e.key))
+      : undefined;
 
-  if (!closePinnedDescendants && pinnedStates) {
-    for (const key of descendants) {
-      if (!pinnedStates[key]) {
-        result.add(key);
-      }
-    }
-  } else if (!closePinnedDescendants && floating.length > 0) {
-    const floatingKeys = new Set<string>();
-    for (const e of floating) {
-      floatingKeys.add(e.key);
-    }
-    for (const key of descendants) {
-      if (!floatingKeys.has(key)) {
-        result.add(key);
-      }
-    }
-  } else {
-    for (const key of descendants) {
+  for (const key of descendants) {
+    if (shouldIncludeDescendant(key, closePinnedDescendants, pinnedStates, floatingSet)) {
       result.add(key);
     }
   }

@@ -319,8 +319,10 @@ describe('createPopoverStore', () => {
 
     // Verify parentKey and rect are present
     let state = store.getState();
-    expect(state.trail[1]?.key).toBe('child-item');
-    expect(state.trail[1]?.parentKey).toBe('root-item');
+    expect(state.trail[1]).toMatchObject({
+      key: 'child-item',
+      parentKey: 'root-item',
+    });
     expect(state.trail[1]?.rect?.top).toBe(40);
 
     // Pin the child popover
@@ -328,20 +330,22 @@ describe('createPopoverStore', () => {
 
     state = store.getState();
     const pinnedEntry = state.floating.find((e) => e.key === 'child-item');
-    expect(pinnedEntry).toBeDefined();
-    expect(pinnedEntry?.parentKey).toBeUndefined(); // Detached while pinned
-    expect(pinnedEntry?.rect?.top).toBe(600); // Updated to card rect
-    expect(pinnedEntry?.originalParentKey).toBe('root-item'); // Preserved
-    expect(pinnedEntry?.originalRect?.top).toBe(40); // Preserved
+    expect(pinnedEntry).toMatchObject({
+      originalParentKey: 'root-item',
+    });
+    expect(pinnedEntry?.parentKey).toBeUndefined();
+    expect(pinnedEntry?.rect?.top).toBe(600);
+    expect(pinnedEntry?.originalRect?.top).toBe(40);
 
     // Unpin the child popover
     store.getState().togglePin('child-item');
 
     state = store.getState();
     const restoredEntry = state.trail.find((e) => e.key === 'child-item');
-    expect(restoredEntry).toBeDefined();
-    expect(restoredEntry?.parentKey).toBe('root-item'); // Restored!
-    expect(restoredEntry?.rect?.top).toBe(40); // Restored!
+    expect(restoredEntry).toMatchObject({
+      parentKey: 'root-item',
+    });
+    expect(restoredEntry?.rect?.top).toBe(40);
   });
 
   it('should NOT close pinned descendants by default when parent is closed, but should do so if configured', () => {
@@ -718,25 +722,11 @@ describe('createPopoverStore', () => {
     await store.getState().retryPopover('retry-item');
 
     const retriedEntry = store.getState().trail[0];
-    expect(retriedEntry?.error).toBeNull();
-    expect(retriedEntry?.data).toEqual({ title: 'Success' });
-    expect(retriedEntry?.placement).toBe('top-start');
-    expect(retriedEntry?.offset).toBe(12);
-    expect(retriedEntry?.exitTransitionDuration).toBe(300);
-    expect(retriedEntry?.baseZIndex).toBe(2000);
-    expect(retriedEntry?.cascadeOffsetStep).toBe(16);
-    expect(retriedEntry?.cascadeOffsetDirection).toBe('right');
-    expect(retriedEntry?.enableTilt).toBe(true);
-    expect(retriedEntry?.maxTiltAngle).toBe(15);
-    expect(retriedEntry?.tiltSensitivity).toBe(2);
-    expect(retriedEntry?.dragAxis).toBe('x');
-    expect(retriedEntry?.tiltFriction).toBe(0.9);
-    expect(retriedEntry?.tiltDecay).toBe(0.8);
-    expect(retriedEntry?.mountingClassName).toBe('custom-mount');
-    expect(retriedEntry?.unmountingClassName).toBe('custom-unmount');
-    expect(retriedEntry?.mountedClassName).toBe('custom-mounted');
-    expect(retriedEntry?.allowDragWhenUnpinned).toBe(true);
-    expect(retriedEntry?.ariaDescribedby).toBe('desc-id');
+    expect(retriedEntry).toMatchObject({
+      error: null,
+      data: { title: 'Success' },
+      ...fullOptions,
+    });
   });
 
   describe('simplePopoverCache enhancements', () => {

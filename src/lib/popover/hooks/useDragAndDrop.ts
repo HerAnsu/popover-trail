@@ -80,6 +80,29 @@ class ReducedMotionObserverImpl {
 
 const ReducedMotionObserver = new ReducedMotionObserverImpl();
 
+function calculateDecayedRotation(
+  c: { x: number; y: number; z: number },
+  decay: number,
+): { x: number; y: number; z: number; done: boolean } {
+  const safeDecay = Math.min(Math.max(decay, 0.1), 0.99);
+  const x = Math.abs(c.x * safeDecay) < 0.05 ? 0 : c.x * safeDecay;
+  const y = Math.abs(c.y * safeDecay) < 0.05 ? 0 : c.y * safeDecay;
+  const z = Math.abs(c.z * safeDecay) < 0.05 ? 0 : c.z * safeDecay;
+  const done = x === 0 && y === 0 && z === 0;
+  return { x, y, z, done };
+}
+
+function applyElementTiltStyles(
+  el: HTMLElement | null,
+  rot: { x: number; y: number; z: number },
+  done: boolean,
+): void {
+  if (!el) return;
+  el.style.setProperty('--pt-rotate-z', done ? '0deg' : `${rot.z}deg`);
+  el.style.setProperty('--pt-rotate-x', done ? '0deg' : `${rot.x}deg`);
+  el.style.setProperty('--pt-rotate-y', done ? '0deg' : `${rot.y}deg`);
+}
+
 /**
  * Custom hook to track active coordinate offsets and calculate drag velocity
  * to apply dynamic physics-based spring rotation (tilt/swing) styles during drag events.
@@ -186,22 +209,11 @@ export function usePopoverDragAndDrop({
       const c = rotationRef.current;
       if (c.x === 0 && c.y === 0 && c.z === 0) return;
 
-      const safeDecay = Math.min(Math.max(tiltDecay, 0.1), 0.99);
-      const finalX = Math.abs(c.x * safeDecay) < 0.05 ? 0 : c.x * safeDecay;
-      const finalY = Math.abs(c.y * safeDecay) < 0.05 ? 0 : c.y * safeDecay;
-      const finalZ = Math.abs(c.z * safeDecay) < 0.05 ? 0 : c.z * safeDecay;
+      const next = calculateDecayedRotation(c, tiltDecay);
+      rotationRef.current = { z: next.z, x: next.x, y: next.y };
+      applyElementTiltStyles(cardRef?.current ?? null, next, next.done);
 
-      const done = finalX === 0 && finalY === 0 && finalZ === 0;
-      rotationRef.current = { z: finalZ, x: finalX, y: finalY };
-
-      const el = cardRef?.current;
-      if (el) {
-        el.style.setProperty('--pt-rotate-z', done ? '0deg' : `${finalZ}deg`);
-        el.style.setProperty('--pt-rotate-x', done ? '0deg' : `${finalX}deg`);
-        el.style.setProperty('--pt-rotate-y', done ? '0deg' : `${finalY}deg`);
-      }
-
-      if (!done) {
+      if (!next.done) {
         frameId = requestAnimationFrame(returnToZero);
       }
     };

@@ -60,6 +60,19 @@ export function createDisposable(cleanupFn: () => void): ScopeDisposable {
   return handle;
 }
 
+function safelyDisposeItem(d: ScopeDisposable | (() => void) | null | undefined): void {
+  if (!d) return;
+  try {
+    if (typeof d === 'function') {
+      d();
+    } else if (typeof d.dispose === 'function') {
+      d.dispose();
+    }
+  } catch {
+    // Safe disposal
+  }
+}
+
 /**
  * Composite container managing multiple ScopeDisposable handles and cleanup callbacks atomically.
  */
@@ -71,19 +84,7 @@ export class CompositeDisposable implements ScopeDisposable {
   add(...disposables: (ScopeDisposable | (() => void) | null | undefined)[]): void {
     if (this.disposed) {
       for (const d of disposables) {
-        if (typeof d === 'function') {
-          try {
-            d();
-          } catch {
-            // Safe disposal
-          }
-        } else if (d && typeof d.dispose === 'function') {
-          try {
-            d.dispose();
-          } catch {
-            // Safe disposal
-          }
-        }
+        safelyDisposeItem(d);
       }
       return;
     }
@@ -107,19 +108,7 @@ export class CompositeDisposable implements ScopeDisposable {
     if (this.disposed) return;
     this.disposed = true;
     for (const d of this.disposables) {
-      if (typeof d === 'function') {
-        try {
-          d();
-        } catch {
-          // Safe disposal
-        }
-      } else if (d && typeof d.dispose === 'function') {
-        try {
-          d.dispose();
-        } catch {
-          // Safe disposal
-        }
-      }
+      safelyDisposeItem(d);
     }
     this.disposables.clear();
   }

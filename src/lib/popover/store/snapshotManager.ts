@@ -84,6 +84,61 @@ const DEFAULT_SNAPSHOT_STORAGE_KEY = 'pt_popover_trail_snapshot';
 const DISPOSE_SYMBOL: symbol =
   (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
+function sanitizePayloads<TData>(
+  payloads?: Record<string, TData>,
+): Record<string, TData> | undefined {
+  if (!payloads || typeof payloads !== 'object') return undefined;
+  const clean: Record<string, TData> = {};
+  for (const [k, v] of Object.entries(payloads)) {
+    if (
+      v !== undefined &&
+      typeof v !== 'function' &&
+      !(v instanceof Promise) &&
+      !UNSAFE_KEYS_SET.has(k)
+    ) {
+      clean[k] = v;
+    }
+  }
+  return clean;
+}
+
+function sanitizePoint(
+  pt: { x: number; y: number } | null | undefined,
+): { x: number; y: number } | null {
+  if (!pt || typeof pt !== 'object') return null;
+  return {
+    x: Number.isFinite(pt.x) ? pt.x : 0,
+    y: Number.isFinite(pt.y) ? pt.y : 0,
+  };
+}
+
+function sanitizeOffsets(
+  offsets?: Record<string, { x: number; y: number }>,
+): Record<string, { x: number; y: number }> {
+  if (!offsets || typeof offsets !== 'object') return {};
+  const clean: Record<string, { x: number; y: number }> = {};
+  for (const [k, pt] of Object.entries(offsets)) {
+    if (UNSAFE_KEYS_SET.has(k)) continue;
+    const cleanPt = sanitizePoint(pt);
+    if (cleanPt) clean[k] = cleanPt;
+  }
+  return clean;
+}
+
+function isPayloadSafe(payloads: unknown): boolean {
+  if (payloads === undefined) return true;
+  if (typeof payloads !== 'object' || payloads === null) return false;
+  return areKeysSafe(Object.keys(payloads as object));
+}
+
+function areSnapshotKeysValid(trailKeys: unknown, pinnedKeys: unknown, offsets: unknown): boolean {
+  if (!Array.isArray(trailKeys) || !Array.isArray(pinnedKeys)) return false;
+  if (typeof offsets !== 'object' || offsets === null) return false;
+  return (
+    areKeysSafe(trailKeys) && areKeysSafe(pinnedKeys) && areKeysSafe(Object.keys(offsets as object))
+  );
+}
+
 /**
  * Manages persisting, loading, and cross-tab broadcasting of popover state snapshots.
  *
@@ -130,13 +185,7 @@ export class PopoverSnapshotManager<TData = unknown> {
   }
 
   /**
-   * Generates a clean serializable snapshot payload.
-   *
-   * @param trailKeys - Ordered active popover keys.
-   * @param pinnedKeys - Pinned popover keys.
-   * @param offsets - Map of drag offset positions.
-   * @param payloads - Optional payloads map.
-   * @returns Fresh PopoverSnapshotData object.
+   * Constructs a validated snapshot object.
    */
   createSnapshot(
     trailKeys: string[],
@@ -144,40 +193,14 @@ export class PopoverSnapshotManager<TData = unknown> {
     offsets: Record<string, { x: number; y: number }>,
     payloads?: Record<string, TData>,
   ): PopoverSnapshotData<TData> {
-    let cleanPayloads: Record<string, TData> | undefined;
-    if (payloads && typeof payloads === 'object') {
-      cleanPayloads = {};
-      for (const [k, v] of Object.entries(payloads)) {
-        if (
-          v !== undefined &&
-          typeof v !== 'function' &&
-          !(v instanceof Promise) &&
-          !UNSAFE_KEYS_SET.has(k)
-        ) {
-          cleanPayloads[k] = v;
-        }
-      }
-    }
-
-    const cleanOffsets: Record<string, { x: number; y: number }> = {};
-    if (offsets && typeof offsets === 'object') {
-      for (const [k, pt] of Object.entries(offsets)) {
-        if (pt && typeof pt === 'object' && !UNSAFE_KEYS_SET.has(k)) {
-          const x = Number.isFinite(pt.x) ? pt.x : 0;
-          const y = Number.isFinite(pt.y) ? pt.y : 0;
-          cleanOffsets[k] = { x, y };
-        }
-      }
-    }
-
     return {
       version: SNAPSHOT_VERSION,
       timestamp: Date.now(),
       tabId: this.tabId,
       trailKeys: [...trailKeys],
       pinnedKeys: [...pinnedKeys],
-      offsets: cleanOffsets,
-      payloads: cleanPayloads,
+      offsets: sanitizeOffsets(offsets),
+      payloads: sanitizePayloads(payloads),
     };
   }
 
@@ -213,23 +236,8 @@ export class PopoverSnapshotManager<TData = unknown> {
     if (typeof data !== 'object' || data === null) return false;
     const record = data as Record<string, unknown>;
     if (record.version !== SNAPSHOT_VERSION) return false;
-    const { trailKeys, pinnedKeys, offsets } = record;
-
-    if (!Array.isArray(trailKeys) || !Array.isArray(pinnedKeys)) return false;
-    if (typeof offsets !== 'object' || offsets === null) return false;
-
-    if (
-      !areKeysSafe(trailKeys) ||
-      !areKeysSafe(pinnedKeys) ||
-      !areKeysSafe(Object.keys(offsets as object))
-    ) {
-      return false;
-    }
-    if (record.payloads) {
-      if (typeof record.payloads !== 'object' || record.payloads === null) return false;
-      if (!areKeysSafe(Object.keys(record.payloads as object))) return false;
-    }
-    return true;
+    if (!areSnapshotKeysValid(record.trailKeys, record.pinnedKeys, record.offsets)) return false;
+    return isPayloadSafe(record.payloads);
   }
 
   /**

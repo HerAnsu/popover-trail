@@ -38,6 +38,23 @@ export function batchUpdatesScope<R>(
  */
 type BatchListener = (state: unknown, prevState: unknown) => void;
 
+function notifyBatchSubscribers(
+  listeners: Set<BatchListener>,
+  getState?: () => unknown,
+  initialBatchState?: unknown,
+): void {
+  if (!getState) return;
+  const currentState = getState();
+  const prevStateToUse = initialBatchState ?? currentState;
+  for (const listener of listeners) {
+    try {
+      listener(currentState, prevStateToUse);
+    } catch (err) {
+      console.error('[popover-trail]: Exception in subscriber:', err);
+    }
+  }
+}
+
 export function createBatchingManager(): BatchingManager {
   let batchDepth = 0;
   let isBatchDirty = false;
@@ -58,21 +75,9 @@ export function createBatchingManager(): BatchingManager {
       if (batchDepth === 0) {
         if (isBatchDirty) {
           isBatchDirty = false;
-          if (getState) {
-            const currentState = getState();
-            const prevStateToUse = initialBatchState ?? currentState;
-            initialBatchState = undefined;
-            for (const listener of batchListeners) {
-              try {
-                listener(currentState, prevStateToUse);
-              } catch (err) {
-                console.error('[popover-trail]: Exception in subscriber:', err);
-              }
-            }
-          }
-        } else {
-          initialBatchState = undefined;
+          notifyBatchSubscribers(batchListeners, getState, initialBatchState);
         }
+        initialBatchState = undefined;
       }
     },
     attachSubscriber: <TData, TContext, TPopoverKey extends string>(

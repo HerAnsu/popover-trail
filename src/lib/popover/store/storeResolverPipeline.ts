@@ -176,6 +176,178 @@ function handleResolverSuccess<TData, TContext, TPopoverKey extends string>(
   });
 }
 
+function getSyncCachedData<TData>(
+  activeCache: PopoverCache<TData> | undefined,
+  key: string,
+): TData | undefined {
+  if (!activeCache) return undefined;
+  try {
+    const raw = activeCache.get(key);
+    if (raw !== undefined && !isPromise(raw)) {
+      return raw;
+    }
+  } catch {
+    // Ignore cache read failures
+  }
+  return undefined;
+}
+
+function startInFlightResolver<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  key: string,
+  controllerKey: string,
+  parentData: unknown,
+  activeResolver: PopoverResolver<TData, TContext>,
+  currentContext: TContext,
+  deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
+): { isSync: true; result: TData } | { isSync: false; hasError: boolean } {
+  const { eventListeners, registerController, removeController, inFlightPromises } = deps;
+  dispatchStoreEvent(eventListeners, { type: 'resolve_start', key });
+  const controller = registerController(controllerKey);
+
+  try {
+    const res = invokeResolverSafely(
+      activeResolver,
+      key,
+      parentData,
+      currentContext,
+      controller.signal,
+    );
+
+    if (isPromise(res)) {
+      const promise: Promise<TData> = (async () => {
+        try {
+          return await res;
+        } finally {
+          inFlightPromises.delete(key);
+          removeController(controllerKey);
+        }
+      })();
+      inFlightPromises.set(key, promise);
+      return { isSync: false, hasError: false };
+    }
+
+    removeController(controllerKey);
+    return { isSync: true, result: res as TData };
+  } catch (objErr) {
+    removeController(controllerKey);
+    handleResolverError(objErr, key, deps);
+    return { isSync: false, hasError: true };
+  }
+}
+
+async function awaitInFlightResolution<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  inFlight: Promise<TData>,
+  key: string,
+  requestCounter: number,
+  params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
+  deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
+  storeCache: PopoverCache<TData> | undefined,
+  buildEntry: (data?: TData | null, error?: Error | null, isLoading?: boolean) => TrailEntry<TData>,
+): Promise<void> {
+  try {
+    const data = await inFlight;
+    if (params.isStale(requestCounter)) return;
+    handleResolverSuccess(data, key, buildEntry(data, null, false), params, deps, storeCache);
+  } catch (err) {
+    if (params.isStale(requestCounter)) return;
+    handleResolverError(err, key, deps);
+  }
+}
+
+function tryResolveFromCacheOrState<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  cache: PopoverCache<TData> | undefined,
+  storeCache: PopoverCache<TData> | null | undefined,
+  existingEntry: TrailEntry<TData> | undefined,
+  key: string,
+  forceRefresh: boolean,
+  requestCounter: number,
+  params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
+  safeSet: (
+    patch: (
+      state: PopoverStore<TData, TContext, TPopoverKey>,
+    ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>,
+  ) => void,
+  buildEntry: (data?: TData | null, error?: Error | null, isLoading?: boolean) => TrailEntry<TData>,
+): boolean {
+  const cachedData = getSyncCachedData(cache || storeCache, key);
+  if (cachedData !== undefined) {
+    if (!params.isStale(requestCounter)) {
+      safeSet(params.insertStatePatch(buildEntry(cachedData, null, false)));
+    }
+    return true;
+  }
+
+  if (
+    existingEntry &&
+    existingEntry.status === 'success' &&
+    existingEntry.data !== undefined &&
+    !forceRefresh
+  ) {
+    if (!params.isStale(requestCounter)) {
+      safeSet(params.insertStatePatch(buildEntry(existingEntry.data, null, false)));
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function tryLaunchSyncResolver<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  key: string,
+  controllerKey: string,
+  parentData: unknown,
+  activeResolver: PopoverResolver<TData, TContext> | undefined,
+  currentContext: TContext,
+  forceRefresh: boolean,
+  requestCounter: number,
+  params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
+  deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
+  storeCache: PopoverCache<TData> | null | undefined,
+  buildEntry: (data?: TData | null, error?: Error | null, isLoading?: boolean) => TrailEntry<TData>,
+): boolean {
+  if (deps.inFlightPromises.has(key) && !forceRefresh) return false;
+
+  const launch = startInFlightResolver(
+    key,
+    controllerKey,
+    parentData,
+    activeResolver,
+    currentContext,
+    deps,
+  );
+
+  if (launch.isSync) {
+    if (!params.isStale(requestCounter)) {
+      handleResolverSuccess(
+        launch.result,
+        key,
+        buildEntry(launch.result, null, false),
+        params,
+        deps,
+        storeCache ?? undefined,
+      );
+    }
+    return true;
+  }
+  return launch.hasError;
+}
+
 /**
  * Resolves popover entry data asynchronously or synchronously and commits state patches to the store.
  */
@@ -196,19 +368,9 @@ export async function resolvePopoverEntry<
     options,
     controllerKey,
     incrementCounter,
-    isStale,
     insertStatePatch,
   } = params;
-  const {
-    popoverDAG,
-    cache,
-    resolveData,
-    initialContext,
-    inFlightPromises,
-    registerController,
-    removeController,
-    safeSet,
-  } = deps;
+  const { popoverDAG, cache, resolveData, initialContext, inFlightPromises, safeSet } = deps;
 
   popoverDAG.addNode(key, parentKey);
   const { floating, trail, cache: storeCache } = get();
@@ -231,111 +393,59 @@ export async function resolvePopoverEntry<
     );
 
   const requestCounter = incrementCounter();
-
-  // 1. Check synchronous cache hits
-  const activeCache = cache || storeCache;
-  if (activeCache) {
-    try {
-      const rawCached = activeCache.get(key);
-      if (rawCached !== undefined && !isPromise(rawCached)) {
-        if (!isStale(requestCounter)) {
-          safeSet(insertStatePatch(buildEntry(rawCached, null, false)));
-        }
-        return;
-      }
-    } catch {
-      // Ignore cache read failures
-    }
-  }
-
-  // 2. Reuse existing success entry if not force-refreshing
   const forceRefresh = Boolean(options?.forceRefresh);
+
+  // 1 & 2. Check synchronous cache hits or reusable existing entry
   if (
-    existingEntry &&
-    existingEntry.status === 'success' &&
-    existingEntry.data !== undefined &&
-    !forceRefresh
+    tryResolveFromCacheOrState(
+      cache,
+      storeCache,
+      existingEntry,
+      key,
+      forceRefresh,
+      requestCounter,
+      params,
+      safeSet,
+      buildEntry,
+    )
   ) {
-    if (!isStale(requestCounter)) {
-      safeSet(insertStatePatch(buildEntry(existingEntry.data, null, false)));
-    }
     return;
   }
 
   // 3. Launch resolver function (sync or async)
   const activeResolver = get().resolveData ?? resolveData;
-  const currentContext = get().context ?? initialContext;
+  const currentContext = (get().context ?? initialContext) as TContext;
 
-  let rawSyncResult: unknown;
-  let isSync = false;
-
-  if (!inFlightPromises.has(key) || forceRefresh) {
-    dispatchStoreEvent(deps.eventListeners, { type: 'resolve_start', key });
-    const controller = registerController(controllerKey);
-    try {
-      const res = invokeResolverSafely(
-        activeResolver,
-        key,
-        parentData,
-        currentContext,
-        controller.signal,
-      );
-      if (isPromise(res)) {
-        const promise: Promise<TData> = (async () => {
-          try {
-            return await res;
-          } finally {
-            inFlightPromises.delete(key);
-            removeController(controllerKey);
-          }
-        })();
-        inFlightPromises.set(key, promise);
-      } else {
-        rawSyncResult = res;
-        isSync = true;
-        removeController(controllerKey);
-      }
-    } catch (objErr) {
-      removeController(controllerKey);
-      handleResolverError(objErr, key, deps);
-      return;
-    }
-  }
-
-  if (isSync) {
-    if (isStale(requestCounter)) return;
-    handleResolverSuccess(
-      rawSyncResult as TData,
-      key,
-      buildEntry(rawSyncResult as TData, null, false),
-      params,
-      deps,
-      storeCache ?? undefined,
-    );
-    return;
-  }
+  const isResolvedOrErrored = tryLaunchSyncResolver(
+    key,
+    controllerKey,
+    parentData,
+    activeResolver,
+    currentContext,
+    forceRefresh,
+    requestCounter,
+    params,
+    deps,
+    storeCache,
+    buildEntry,
+  );
+  if (isResolvedOrErrored) return;
 
   // 4. Async path: insert loading state synchronously, then await in-flight promise
   const inFlight = inFlightPromises.get(key);
-  if (inFlight) {
-    if (!existingEntry || existingEntry.status !== 'success' || forceRefresh) {
-      safeSet(insertStatePatch(buildEntry(existingEntry?.data, null, true)));
-    }
+  if (!inFlight) return;
 
-    try {
-      const data = await inFlight;
-      if (isStale(requestCounter)) return;
-      handleResolverSuccess(
-        data,
-        key,
-        buildEntry(data, null, false),
-        params,
-        deps,
-        storeCache ?? undefined,
-      );
-    } catch (err) {
-      if (isStale(requestCounter)) return;
-      handleResolverError(err, key, deps);
-    }
+  if (!existingEntry || existingEntry.status !== 'success' || forceRefresh) {
+    safeSet(insertStatePatch(buildEntry(existingEntry?.data, null, true)));
   }
+
+  await awaitInFlightResolution(
+    inFlight,
+    key,
+    requestCounter,
+    params,
+    deps,
+    storeCache ?? undefined,
+    buildEntry,
+  );
 }

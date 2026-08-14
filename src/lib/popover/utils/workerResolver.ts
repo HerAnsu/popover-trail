@@ -304,20 +304,48 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
   return resolver as WorkerResolver<TData, TContext>;
 }
 
+function handleWorkerAbort(activeTasks: Map<number, AbortController>, id: number): void {
+  const controller = activeTasks.get(id);
+  if (controller) {
+    controller.abort();
+    activeTasks.delete(id);
+  }
+}
+
+async function handleWorkerResolve<TData, TContext>(
+  selfScope: WindowOrWorkerGlobalScope,
+  activeTasks: Map<number, AbortController>,
+  id: number,
+  key: string,
+  parentData: unknown,
+  context: TContext,
+  handler: (key: string, parentData?: unknown, context?: TContext) => TData | Promise<TData>,
+): Promise<void> {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  if (controller) {
+    activeTasks.set(id, controller);
+  }
+
+  try {
+    const result = await handler(key, parentData, context);
+    if (controller && controller.signal.aborted) {
+      return;
+    }
+    selfScope.postMessage({ id, success: true, data: result });
+  } catch (err) {
+    selfScope.postMessage({
+      id,
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  } finally {
+    activeTasks.delete(id);
+  }
+}
+
 /**
  * Helper to define a CSP-compliant Worker script listener for popover-trail RPC resolvers.
  * Use inside a dedicated Web Worker module file (e.g. `myWorker.ts`).
- *
- * @example
- * ```ts
- * // worker.ts
- * import { definePopoverWorkerRPC } from 'popover-trail';
- *
- * definePopoverWorkerRPC(async (key, parentData, context) => {
- *   const res = await fetch(`/api/card/${key}`);
- *   return res.json();
- * });
- * ```
  */
 export function definePopoverWorkerRPC<TData = unknown, TContext = unknown>(
   handler: (key: string, parentData?: unknown, context?: TContext) => TData | Promise<TData>,
@@ -331,37 +359,20 @@ export function definePopoverWorkerRPC<TData = unknown, TContext = unknown>(
     const { action, id, key, parentData, context } = ev.data || {};
 
     if (action === 'abort') {
-      const controller = activeTasks.get(id);
-      if (controller) {
-        controller.abort();
-        activeTasks.delete(id);
-      }
+      handleWorkerAbort(activeTasks, id);
       return;
     }
 
     if (action === 'resolve' || !action) {
-      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      if (controller) {
-        activeTasks.set(id, controller);
-      }
-
-      try {
-        const result = await handler(key, parentData, context as TContext);
-
-        if (controller && controller.signal.aborted) {
-          return;
-        }
-
-        self.postMessage({ id, success: true, data: result });
-      } catch (err) {
-        self.postMessage({
-          id,
-          success: false,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      } finally {
-        activeTasks.delete(id);
-      }
+      await handleWorkerResolve(
+        self,
+        activeTasks,
+        id,
+        key,
+        parentData,
+        context as TContext,
+        handler,
+      );
     }
   });
 }

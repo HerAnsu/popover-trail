@@ -151,6 +151,34 @@ export interface PopoverSchemaInstance<
   };
 }
 
+function parseResolverInvocationParams<TC>(
+  rawKey: string | object,
+  parentData?: unknown,
+  context?: TC,
+  signal?: AbortSignal,
+): { key: string; parentData: unknown; context: TC | undefined; signal: AbortSignal | undefined } {
+  if (typeof rawKey === 'object' && rawKey !== null) {
+    const obj = rawKey as {
+      key?: string;
+      parentData?: unknown;
+      context?: TC;
+      signal?: AbortSignal;
+    };
+    return {
+      key: String(obj.key ?? ''),
+      parentData: obj.parentData ?? parentData,
+      context: obj.context ?? context,
+      signal: obj.signal ?? signal,
+    };
+  }
+  return {
+    key: String(rawKey),
+    parentData,
+    context,
+    signal,
+  };
+}
+
 /**
  * Factory function creating a strongly typed Popover Schema.
  * Consolidates popover definitions, key types, data payload types, placement defaults, and resolvers.
@@ -175,27 +203,17 @@ export function createPopoverSchema<
     TC
   > => {
     return (rawKey: string | object, parentData?: unknown, context?: TC, signal?: AbortSignal) => {
-      const isObjKey = typeof rawKey === 'object' && rawKey !== null;
-      const key = isObjKey ? String((rawKey as { key?: string }).key ?? '') : String(rawKey);
-      const effectiveParentData = isObjKey
-        ? ((rawKey as { parentData?: unknown }).parentData ?? parentData)
-        : parentData;
-      const effectiveContext = isObjKey
-        ? ((rawKey as { context?: TC }).context ?? context)
-        : context;
-      const effectiveSignal = isObjKey
-        ? ((rawKey as { signal?: AbortSignal }).signal ?? signal)
-        : signal;
+      const parsed = parseResolverInvocationParams(rawKey, parentData, context, signal);
+      const hasNode = Object.prototype.hasOwnProperty.call(definition, parsed.key);
+      const node = hasNode ? definition[parsed.key] : undefined;
+      validateSchemaKey(Boolean(node), parsed.key);
 
-      const hasNode = Object.prototype.hasOwnProperty.call(definition, key);
-      const node = hasNode ? definition[key] : undefined;
-      validateSchemaKey(Boolean(node), key);
       if (node && typeof node.resolver === 'function') {
         return Promise.resolve(
-          node.resolver(key, effectiveParentData, effectiveContext, effectiveSignal),
+          node.resolver(parsed.key, parsed.parentData, parsed.context, parsed.signal),
         ) as ReturnType<PopoverResolver<SchemaData<TSchema, SchemaKeys<TSchema>>, TC>>;
       }
-      return Promise.reject(new Error(`No schema resolver defined for key: "${key}"`));
+      return Promise.reject(new Error(`No schema resolver defined for key: "${parsed.key}"`));
     };
   };
 

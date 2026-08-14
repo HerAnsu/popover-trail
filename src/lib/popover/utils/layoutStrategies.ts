@@ -52,7 +52,6 @@ export class FixedCenterLayoutStrategy implements PopoverLayoutStrategyEngine {
 export class DockedBottomLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'docked-bottom';
 
-  // fallow-ignore-next-line unused-class-member
   computePosition(params: LayoutStrategyParams): Point2D {
     const { viewportHeight } = resolveViewportDimensions(params);
     const popHeight = params.popoverRect?.height ?? 240;
@@ -65,7 +64,6 @@ export class DockedBottomLayoutStrategy implements PopoverLayoutStrategyEngine {
 export class DockedTopLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'docked-top';
 
-  // fallow-ignore-next-line unused-class-member
   computePosition(): Point2D {
     return Point2D.zero();
   }

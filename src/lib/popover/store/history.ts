@@ -90,21 +90,27 @@ class RingBuffer<T> {
   }
 }
 
+function cloneNonEmptyRecord<T extends Record<string, unknown>>(record?: T): T {
+  if (!record || record === EMPTY_OBJECT || Object.keys(record).length === 0) {
+    return EMPTY_OBJECT as T;
+  }
+  return { ...record };
+}
+
+function cloneNonEmptyArray<T>(arr?: readonly T[]): readonly T[] {
+  if (!arr || arr.length === 0) return EMPTY_ARRAY;
+  return [...arr];
+}
+
 function createHistorySnapshot<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
 ): HistorySnapshot<TData> {
-  const offsets = state.offsets ?? EMPTY_OBJECT;
-  const pinnedStates = state.pinnedStates ?? EMPTY_OBJECT;
-  const zIndexOrder = state.zIndexOrder ?? EMPTY_ARRAY;
-  const hasOffsets = offsets !== EMPTY_OBJECT && Object.keys(offsets).length > 0;
-  const hasPinned = pinnedStates !== EMPTY_OBJECT && Object.keys(pinnedStates).length > 0;
-
   return {
     trail: state.trail ?? EMPTY_ARRAY,
     floating: state.floating ?? EMPTY_ARRAY,
-    offsets: hasOffsets ? { ...offsets } : EMPTY_OBJECT,
-    pinnedStates: hasPinned ? { ...pinnedStates } : EMPTY_OBJECT,
-    zIndexOrder: zIndexOrder.length === 0 ? EMPTY_ARRAY : [...zIndexOrder],
+    offsets: cloneNonEmptyRecord(state.offsets),
+    pinnedStates: cloneNonEmptyRecord(state.pinnedStates),
+    zIndexOrder: cloneNonEmptyArray(state.zIndexOrder),
     ownerId: state.ownerId ?? null,
   };
 }

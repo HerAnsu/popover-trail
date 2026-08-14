@@ -22,6 +22,101 @@ function resolveStorageEngine(config?: PopoverPersistConfig) {
   return { storageKey, engine };
 }
 
+function rollbackActiveControllers(
+  activeControllers: Map<string, AbortController>,
+  snapshotControllers: Set<string> | null,
+): void {
+  if (activeControllers.size === 0) return;
+  for (const key of activeControllers.keys()) {
+    if (!snapshotControllers || !snapshotControllers.has(key)) {
+      const controller = activeControllers.get(key);
+      if (controller) controller.abort();
+      activeControllers.delete(key);
+    }
+  }
+}
+
+function restoreDAGFromState<TData>(
+  dag: { clear: () => void; addNode: (key: string, parentKey?: string) => void } | undefined,
+  trail: readonly TrailEntry<TData>[],
+  floating: readonly TrailEntry<TData>[],
+): void {
+  if (!dag) return;
+  dag.clear();
+  for (const entry of trail) {
+    dag.addNode(entry.key, entry.parentKey);
+  }
+  for (const entry of floating) {
+    dag.addNode(entry.key, entry.parentKey);
+  }
+}
+
+function parseRehydratedFloatingEntries<TData>(rawFloating: unknown): TrailEntry<TData>[] {
+  if (!Array.isArray(rawFloating)) return [];
+  const isRawEntry = (item: unknown): item is TrailEntry<TData> =>
+    typeof item === 'object' &&
+    item !== null &&
+    typeof (item as Record<string, unknown>).key === 'string' &&
+    !['__proto__', 'constructor', 'prototype'].includes(
+      (item as Record<string, unknown>).key as string,
+    );
+
+  return rawFloating.flatMap((item) =>
+    isRawEntry(item)
+      ? [
+          {
+            ...item,
+            status: 'success' as const,
+            isLoading: false,
+            error: null,
+            isPinned: true,
+            transitionStatus: 'mounted' as const,
+          },
+        ]
+      : [],
+  );
+}
+
+function rollbackTransactionState<TData, TContext>(
+  snapshotState: PopoverStateData<TData, TContext>,
+  snapshotControllers: Set<string> | null,
+  activeControllers: Map<string, AbortController>,
+  popoverDAG: { clear: () => void; addNode: (key: string, parentKey?: string) => void } | undefined,
+  set: (patch: Partial<PopoverStateData<TData, TContext>>) => void,
+): void {
+  rollbackActiveControllers(activeControllers, snapshotControllers);
+  restoreDAGFromState(popoverDAG, snapshotState.trail, snapshotState.floating);
+  set({
+    trail: snapshotState.trail,
+    floating: snapshotState.floating,
+    offsets: snapshotState.offsets,
+    pinnedStates: snapshotState.pinnedStates,
+    zIndexOrder: snapshotState.zIndexOrder,
+    ownerId: snapshotState.ownerId,
+    anchorElement: snapshotState.anchorElement,
+    anchorRect: snapshotState.anchorRect,
+    nestedHydrationRequestCounters: snapshotState.nestedHydrationRequestCounters,
+  });
+}
+
+function applyRehydratedState<TData, TContext>(
+  parsed: unknown,
+  set: (patch: Partial<PopoverStateData<TData, TContext>>) => void,
+): boolean {
+  if (!parsed || typeof parsed !== 'object') return false;
+  const record = parsed as Record<string, unknown>;
+  if (!Array.isArray(record.floating)) return false;
+
+  const nextFloating = parseRehydratedFloatingEntries<TData>(record.floating);
+  set({
+    floating: nextFloating,
+    offsets: (record.offsets as Record<string, { x: number; y: number }>) ?? {},
+    pinnedStates: (record.pinnedStates as Record<string, boolean>) ?? {},
+    zIndexOrder: (record.zIndexOrder as string[]) ?? [],
+  });
+  return true;
+}
+
 export function createPersistenceSlice<
   TData = unknown,
   TContext = unknown,
@@ -90,35 +185,13 @@ export function createPersistenceSlice<
         if (getCurrentState().debug) {
           console.error('Popover Transaction Rollback:', err);
         }
-        if (activeControllers.size > 0) {
-          for (const key of activeControllers.keys()) {
-            if (!snapshotControllers || !snapshotControllers.has(key)) {
-              const controller = activeControllers.get(key);
-              if (controller) controller.abort();
-              activeControllers.delete(key);
-            }
-          }
-        }
-        if (deps.popoverDAG) {
-          deps.popoverDAG.clear();
-          for (const entry of snapshotState.trail) {
-            deps.popoverDAG.addNode(entry.key, entry.parentKey);
-          }
-          for (const entry of snapshotState.floating) {
-            deps.popoverDAG.addNode(entry.key, entry.parentKey);
-          }
-        }
-        set({
-          trail: snapshotState.trail,
-          floating: snapshotState.floating,
-          offsets: snapshotState.offsets,
-          pinnedStates: snapshotState.pinnedStates,
-          zIndexOrder: snapshotState.zIndexOrder,
-          ownerId: snapshotState.ownerId,
-          anchorElement: snapshotState.anchorElement,
-          anchorRect: snapshotState.anchorRect,
-          nestedHydrationRequestCounters: snapshotState.nestedHydrationRequestCounters,
-        });
+        rollbackTransactionState(
+          snapshotState,
+          snapshotControllers,
+          activeControllers,
+          deps.popoverDAG,
+          set,
+        );
         return false;
       }
     },
@@ -178,38 +251,7 @@ export function createPersistenceSlice<
         const raw = await engine.getItem(storageKey);
         if (!raw) return false;
         const parsed = JSON.parse(raw);
-        if (!parsed || !Array.isArray(parsed.floating)) return false;
-
-        const isRawEntry = (item: unknown): item is TrailEntry<TData> =>
-          typeof item === 'object' &&
-          item !== null &&
-          typeof (item as Record<string, unknown>).key === 'string' &&
-          !['__proto__', 'constructor', 'prototype'].includes(
-            (item as Record<string, unknown>).key as string,
-          );
-
-        const nextFloating: TrailEntry<TData>[] = (parsed.floating as unknown[]).flatMap((item) =>
-          isRawEntry(item)
-            ? [
-                {
-                  ...item,
-                  status: 'success' as const,
-                  isLoading: false,
-                  error: null,
-                  isPinned: true,
-                  transitionStatus: 'mounted' as const,
-                },
-              ]
-            : [],
-        );
-
-        set({
-          floating: nextFloating,
-          offsets: parsed.offsets ?? {},
-          pinnedStates: parsed.pinnedStates ?? {},
-          zIndexOrder: parsed.zIndexOrder ?? [],
-        });
-        return true;
+        return applyRehydratedState<TData, TContext>(parsed, set);
       } catch (err) {
         if (getCurrentState().debug) {
           console.error('Popover Rehydration Error:', err);

@@ -15,21 +15,27 @@ export interface ClampBounds {
   maxY?: number;
 }
 
+function toFiniteOrDefault(val: number | undefined, fallback: number): number {
+  return val !== undefined && Number.isFinite(val) ? val : fallback;
+}
+
 function resolveValidBounds(bounds: ClampBounds): {
   minX: number;
   maxX: number;
   minY: number;
   maxY: number;
 } {
-  let minX = bounds.minX !== undefined && Number.isFinite(bounds.minX) ? bounds.minX : -Infinity;
-  let maxX = bounds.maxX !== undefined && Number.isFinite(bounds.maxX) ? bounds.maxX : Infinity;
-  let minY = bounds.minY !== undefined && Number.isFinite(bounds.minY) ? bounds.minY : -Infinity;
-  let maxY = bounds.maxY !== undefined && Number.isFinite(bounds.maxY) ? bounds.maxY : Infinity;
+  const rawMinX = toFiniteOrDefault(bounds.minX, -Infinity);
+  const rawMaxX = toFiniteOrDefault(bounds.maxX, Infinity);
+  const rawMinY = toFiniteOrDefault(bounds.minY, -Infinity);
+  const rawMaxY = toFiniteOrDefault(bounds.maxY, Infinity);
 
-  if (minX > maxX) [minX, maxX] = [maxX, minX];
-  if (minY > maxY) [minY, maxY] = [maxY, minY];
-
-  return { minX, maxX, minY, maxY };
+  return {
+    minX: Math.min(rawMinX, rawMaxX),
+    maxX: Math.max(rawMinX, rawMaxX),
+    minY: Math.min(rawMinY, rawMaxY),
+    maxY: Math.max(rawMinY, rawMaxY),
+  };
 }
 
 /**

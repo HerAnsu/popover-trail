@@ -21,9 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `resolvePopoverEntry` in `storeResolverPipeline.ts` split into cohesive resolution lifecycle steps while preserving synchronous execution contract for cached data and sync resolvers.
     - `handleCardKeyboardNavigation` in `usePopoverCard.ts` split into dedicated arrow and escape dispatch handlers.
     - `popoverFSMReducer` in `fsm.ts` modularized into state-specific transition handlers.
-- **Fallow Quality & Dead-Code Elimination**:
-  - Achieved **0 dead code issues**, **0 code duplicates**, and **0 circular dependencies** across all 90 entry points.
-  - Removed obsolete pass-through barrel `types/guardTypes.ts` and completed public facade exports in `src/lib/popover/index.ts`.
+- **Fallow Quality & Complexity Reduction**:
+  - Reduced **all 39 high-complexity functions** flagged by `fallow health` down to **0 functions above threshold** across the entire codebase.
+  - Extracted modular single-responsibility helpers across `storeResolverPipeline.ts`, `useGeometry.ts`, `usePopoverCard.ts`, `sliceResolver.ts`, `slicePersistence.ts`, `snapshotManager.ts`, `dnd.tsx`, and `storeHelpers.ts`.
+  - Achieved **0 dead code issues**, **0 code duplicates**, and **0 circular dependencies** across all 92 entry points.
   - Maintained Maintainability Index score of **91.6 (Good)** and React Doctor score of **100 / 100 Great**.
 
 ### Tests & Verification

@@ -109,9 +109,36 @@ export interface UsePopoverDraggableCardResult extends UsePopoverCardResult {
   handlePinToggle: () => void;
 }
 
+function isDragOperationPermitted(
+  entry: TrailEntry,
+  enableDrag: boolean,
+  isButtonDragEnabled: boolean,
+  isPinned: boolean,
+): boolean {
+  const allowWhenPinned = entry.allowDragWhenPinned ?? true;
+  const allowWhenUnpinned = entry.allowDragWhenUnpinned ?? true;
+  return enableDrag && isButtonDragEnabled && (isPinned ? allowWhenPinned : allowWhenUnpinned);
+}
+
+function resolveTiltParameters(
+  entry: TrailEntry,
+  enableTilt: boolean,
+  maxTiltAngle: number,
+  tiltSensitivity: number,
+) {
+  return {
+    tiltEnabled: entry.enableTilt ?? enableTilt,
+    maxTilt: entry.maxTiltAngle ?? maxTiltAngle,
+    sensitivity: entry.tiltSensitivity ?? tiltSensitivity,
+    axis: entry.dragAxis ?? 'both',
+    friction: entry.tiltFriction ?? 0.95,
+    decay: entry.tiltDecay ?? 0.82,
+  };
+}
+
 /**
- * An extended version of `usePopoverCard` that integrates `@dnd-kit/core` dragging features,
- * pointer listeners, and physical tilt physics.
+ * Custom React hook binding layout geometry, focus management, physical spring rotation,
+ * and @dnd-kit/core pointer events into a single unified popover interface.
  *
  * @param options - Hook configuration settings.
  * @returns Combined card positioning, interaction properties, and drag-and-drop handle bindings.
@@ -128,12 +155,12 @@ export function usePopoverDraggableCard({
 }: UsePopoverDraggableCardOptions): UsePopoverDraggableCardResult {
   const card = usePopoverCard({ entry, index, isPinned, placement });
 
-  const allowDragWhenPinned = entry.allowDragWhenPinned ?? true;
-  const allowDragWhenUnpinned = entry.allowDragWhenUnpinned ?? true;
-  const isButtonDragEnabled = card.buttonControls.enableDrag;
-
-  const isDragAllowed =
-    enableDrag && isButtonDragEnabled && (isPinned ? allowDragWhenPinned : allowDragWhenUnpinned);
+  const isDragAllowed = isDragOperationPermitted(
+    entry,
+    enableDrag,
+    card.buttonControls.enableDrag,
+    isPinned,
+  );
 
   // 1. Set up dnd-kit dragging
   const { setNodeRef, transform, isDragging, attributes, listeners } = useDraggable({
@@ -144,22 +171,17 @@ export function usePopoverDraggableCard({
   const domRef = useRef<HTMLDivElement | null>(null);
 
   // 2. Physics-based rotation swing setup
-  const tiltEnabled = entry.enableTilt ?? enableTilt;
-  const maxTilt = entry.maxTiltAngle ?? maxTiltAngle;
-  const sensitivity = entry.tiltSensitivity ?? tiltSensitivity;
-  const axis = entry.dragAxis ?? 'both';
-  const friction = entry.tiltFriction ?? 0.95;
-  const decay = entry.tiltDecay ?? 0.82;
+  const tilt = resolveTiltParameters(entry, enableTilt, maxTiltAngle, tiltSensitivity);
 
   const physics = usePopoverDragAndDrop({
     isDragging: isDragAllowed ? isDragging : false,
     transform: isDragAllowed ? transform : null,
-    enableTilt: tiltEnabled,
-    maxTiltAngle: maxTilt,
-    tiltSensitivity: sensitivity,
-    dragAxis: axis,
-    tiltFriction: friction,
-    tiltDecay: decay,
+    enableTilt: tilt.tiltEnabled,
+    maxTiltAngle: tilt.maxTilt,
+    tiltSensitivity: tilt.sensitivity,
+    dragAxis: tilt.axis,
+    tiltFriction: tilt.friction,
+    tiltDecay: tilt.decay,
     cardRef: domRef,
   });
 
@@ -449,6 +471,21 @@ export interface PopoverCardProps<TData> {
   dragHandle?: (props: PopoverDragHandleProps) => ReactNode;
 }
 
+function resolveFeatureFlag(featureVal?: boolean, propVal?: boolean): boolean {
+  if (featureVal !== undefined) return featureVal;
+  if (propVal !== undefined) return propVal;
+  return true;
+}
+
+function resolveCardFeatures<TData>(props: PopoverCardProps<TData>) {
+  const feat = props.features;
+  return {
+    dragEnabled: resolveFeatureFlag(feat?.drag, props.enableDrag),
+    tiltEnabled: resolveFeatureFlag(feat?.tilt, props.enableTilt),
+    focusLockEnabled: resolveFeatureFlag(feat?.focusLock, props.enableFocusLock),
+  };
+}
+
 /**
  * High-level pre-bound PopoverCard component that handles hooks, refs, styles,
  * dragging physics, focus locks, and event bindings automatically.
@@ -464,13 +501,10 @@ function PopoverCardInner<TData = unknown>(props: PopoverCardProps<TData>) {
     children,
     className = 'popover-card',
     style: customStyle,
-    features,
     dragHandle,
   } = props;
 
-  const dragEnabled = features?.drag ?? props.enableDrag ?? true;
-  const tiltEnabled = features?.tilt ?? props.enableTilt ?? true;
-  const focusLockEnabled = features?.focusLock ?? props.enableFocusLock ?? true;
+  const { dragEnabled, tiltEnabled, focusLockEnabled } = resolveCardFeatures(props);
 
   const {
     ref,

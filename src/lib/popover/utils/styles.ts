@@ -57,16 +57,30 @@ const DEFAULT_ZERO_OFFSET: Readonly<{ x: number; y: number }> = Object.freeze({
   y: 0,
 });
 
+function buildTransformString(
+  translateX: number,
+  translateY: number,
+  rotX: number,
+  rotY: number,
+  rotZ: number,
+): string {
+  const hasRotation = rotZ !== 0 || rotX !== 0 || rotY !== 0;
+  if (!hasRotation) {
+    return `translate3d(${translateX}px, ${translateY}px, 0px)`;
+  }
+  return `perspective(${DEFAULT_PERSPECTIVE_PX}px) translate3d(${translateX}px, ${translateY}px, 0px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) rotateZ(${rotZ.toFixed(2)}deg)`;
+}
+
+function storeStyleInMemoCache(key: number, style: CSSProperties): void {
+  if (styleMemoCache.size >= MAX_MEMO_CACHE_SIZE) {
+    const firstKey = styleMemoCache.keys().next().value;
+    if (firstKey) styleMemoCache.delete(firstKey);
+  }
+  styleMemoCache.set(key, style);
+}
+
 /**
- * Computes the absolute layout coordinates, drag-and-drop translations,
- * and rotation physics angles into a single React CSSProperties style object.
- *
- * @remarks
- * Coordinates are rounded to the nearest pixel (`Math.round`) to prevent sub-pixel
- * fractional layout coordinates from rendering blurry borders and blurry text.
- * Promotes the element to its own compositor layer using `willChange: "transform"`
- * to ensure hardware-accelerated transformations during fast dragging operations.
- * Uses memoization to preserve referential identity for identical inputs.
+ * Calculates deterministic, hardware-accelerated CSS properties for a popover card.
  *
  * @param params - The coordinates, offsets, and transformation properties.
  * @returns A CSS properties style object ready to be applied on the outer card element.
@@ -81,47 +95,32 @@ export function getPopoverStyles({
   rotationY = 0,
   zIndex = DEFAULT_FALLBACK_Z_INDEX,
 }: GetPopoverStylesParams): CSSProperties {
-  const safeTopPos = toFiniteNumber(finalLayoutPos?.top);
-  const safeLeftPos = toFiniteNumber(finalLayoutPos?.left);
+  const top = Math.round(toFiniteNumber(finalLayoutPos?.top));
+  const left = Math.round(toFiniteNumber(finalLayoutPos?.left));
   const safeDragX = toFiniteNumber(dragX);
   const safeDragY = toFiniteNumber(dragY);
   const safeOffsetX = toFiniteNumber(offset?.x);
   const safeOffsetY = toFiniteNumber(offset?.y);
-  const safeRotation = toFiniteNumber(rotation);
-  const safeRotationX = toFiniteNumber(rotationX);
-  const safeRotationY = toFiniteNumber(rotationY);
-  const safeZIndex = toFiniteNumber(zIndex, DEFAULT_FALLBACK_Z_INDEX);
-
-  const top = Math.round(safeTopPos);
-  const left = Math.round(safeLeftPos);
+  const safeRot = toFiniteNumber(rotation);
+  const safeRotX = toFiniteNumber(rotationX);
+  const safeRotY = toFiniteNumber(rotationY);
+  const safeZ = toFiniteNumber(zIndex, DEFAULT_FALLBACK_Z_INDEX);
 
   const isDynamic =
-    safeDragX !== 0 ||
-    safeDragY !== 0 ||
-    safeRotation !== 0 ||
-    safeRotationX !== 0 ||
-    safeRotationY !== 0;
+    safeDragX !== 0 || safeDragY !== 0 || safeRot !== 0 || safeRotX !== 0 || safeRotY !== 0;
 
-  const translateX = isDynamic
-    ? Math.round((safeDragX + safeOffsetX) * 100) / 100
-    : Math.round(safeDragX + safeOffsetX);
-  const translateY = isDynamic
-    ? Math.round((safeDragY + safeOffsetY) * 100) / 100
-    : Math.round(safeDragY + safeOffsetY);
+  const rawX = safeDragX + safeOffsetX;
+  const rawY = safeDragY + safeOffsetY;
+  const translateX = isDynamic ? Math.round(rawX * 100) / 100 : Math.round(rawX);
+  const translateY = isDynamic ? Math.round(rawY * 100) / 100 : Math.round(rawY);
 
-  const cacheKey = isDynamic ? 0 : hashStyleKey(top, left, translateX, translateY, safeZIndex);
-
+  const cacheKey = isDynamic ? 0 : hashStyleKey(top, left, translateX, translateY, safeZ);
   if (!isDynamic) {
-    const cachedStyle = styleMemoCache.get(cacheKey);
-    if (cachedStyle) {
-      return cachedStyle;
-    }
+    const cached = styleMemoCache.get(cacheKey);
+    if (cached) return cached;
   }
 
-  const hasRotation = safeRotation !== 0 || safeRotationX !== 0 || safeRotationY !== 0;
-  const transformStr = hasRotation
-    ? `perspective(${DEFAULT_PERSPECTIVE_PX}px) translate3d(${translateX}px, ${translateY}px, 0px) rotateX(${safeRotationX.toFixed(2)}deg) rotateY(${safeRotationY.toFixed(2)}deg) rotateZ(${safeRotation.toFixed(2)}deg)`
-    : `translate3d(${translateX}px, ${translateY}px, 0px)`;
+  const transformStr = buildTransformString(translateX, translateY, safeRotX, safeRotY, safeRot);
 
   const computedStyle: CSSProperties & Record<`--${string}`, string | number> = {
     position: 'absolute',
@@ -130,29 +129,25 @@ export function getPopoverStyles({
     transform: transformStr,
     backfaceVisibility: 'hidden',
     willChange: isDynamic ? 'transform' : 'auto',
-    zIndex,
+    zIndex: safeZ,
     // CSS Custom Properties for external style overrides and animations
     '--popover-translate-x': `${translateX}px`,
     '--popover-translate-y': `${translateY}px`,
     '--popover-rotate-x': `${rotationX}deg`,
     '--popover-rotate-y': `${rotationY}deg`,
     '--popover-rotate-z': `${rotation}deg`,
-    '--popover-z-index': `${zIndex}`,
+    '--popover-z-index': `${safeZ}`,
     // Standard --pt-* namespace CSS custom properties
     '--pt-top': `${top}px`,
     '--pt-left': `${left}px`,
-    '--pt-z-index': `${zIndex}`,
+    '--pt-z-index': `${safeZ}`,
     '--pt-drag-x': `${translateX}px`,
     '--pt-drag-y': `${translateY}px`,
     '--pt-tilt-deg': `${rotation}deg`,
   };
 
   if (!isDynamic) {
-    if (styleMemoCache.size >= MAX_MEMO_CACHE_SIZE) {
-      const firstKey = styleMemoCache.keys().next().value;
-      if (firstKey) styleMemoCache.delete(firstKey);
-    }
-    styleMemoCache.set(cacheKey, computedStyle);
+    storeStyleInMemoCache(cacheKey, computedStyle);
   }
 
   return computedStyle;

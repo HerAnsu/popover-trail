@@ -58,6 +58,113 @@ function extractEntryOptions<TData>(entry: TrailEntry<TData>): OpenRootOptions &
   };
 }
 
+function stopEventPropagation(event?: AnchorEventLike): void {
+  if (event && 'stopPropagation' in event && typeof event.stopPropagation === 'function') {
+    event.stopPropagation();
+  }
+}
+
+function resolveTriggerBoundingRect(
+  anchorEvent?: AnchorEventLike,
+  optionsRect?: DOMRect | null,
+): DOMRect | null {
+  if (optionsRect) return optionsRect;
+  const target = anchorEvent && 'currentTarget' in anchorEvent ? anchorEvent.currentTarget : null;
+  if (
+    target &&
+    typeof target === 'object' &&
+    'getBoundingClientRect' in target &&
+    typeof target.getBoundingClientRect === 'function'
+  ) {
+    return (target as Element).getBoundingClientRect();
+  }
+  return null;
+}
+
+function notifyEntryOpen<TData>(
+  findEntryByKey: (key: string) => TrailEntry<TData> | undefined,
+  key: string,
+): void {
+  const entry = findEntryByKey(key);
+  if (entry?.onOpen) {
+    entry.onOpen(entry);
+  }
+}
+
+function createEntryUpdatePatch<TData, TContext>(key: string, updatedEntry: TrailEntry<TData>) {
+  return (state: PopoverStateData<TData, TContext>) =>
+    findEntryInStore(state.floating, state.trail, key)
+      ? {
+          floating: state.floating.map((e: TrailEntry<TData>) =>
+            e.key === key ? updatedEntry : e,
+          ),
+          trail: state.trail.map((e: TrailEntry<TData>) => (e.key === key ? updatedEntry : e)),
+        }
+      : {};
+}
+
+function isRootAlreadyActive<TData>(
+  trail: readonly TrailEntry<TData>[],
+  currentOwnerId: string | null | undefined,
+  finalOwnerId: string,
+  key: string,
+  forceRefresh?: boolean,
+): boolean {
+  if (forceRefresh || trail.length === 0) return false;
+  const root = trail[0];
+  return (
+    root?.key === key && root?.transitionStatus !== 'unmounting' && currentOwnerId === finalOwnerId
+  );
+}
+
+function isNestedAlreadyActive<TData>(
+  existingEntry: TrailEntry<TData> | undefined,
+  sourceKey: string,
+  forceRefresh?: boolean,
+): boolean {
+  if (!existingEntry || forceRefresh) return false;
+  if (existingEntry.transitionStatus === 'unmounting') return false;
+  return existingEntry.parentKey === sourceKey || existingEntry.originalParentKey === sourceKey;
+}
+
+function buildRetryPipelineParams<TData, TContext, TPopoverKey extends string = string>(
+  key: string,
+  entry: TrailEntry<TData>,
+  effectiveParentKey: string | undefined,
+  parentData: unknown,
+  deps: SliceContext<TData, TContext, TPopoverKey>['deps'],
+) {
+  const options = extractEntryOptions(entry);
+  const updateStateForEntry = (updated: TrailEntry<TData>) =>
+    createEntryUpdatePatch<TData, TContext>(key, updated);
+
+  if (effectiveParentKey) {
+    return {
+      key,
+      parentKey: effectiveParentKey,
+      rect: entry.rect ?? null,
+      parentData,
+      options,
+      controllerKey: key,
+      incrementCounter: () => deps.incrementNestedCounter(effectiveParentKey),
+      isStale: (startedCounter: number) => deps.isNestedStale(effectiveParentKey, startedCounter),
+      insertStatePatch: updateStateForEntry,
+    };
+  }
+
+  return {
+    key,
+    parentKey: undefined,
+    rect: entry.rect ?? null,
+    parentData: undefined,
+    options,
+    controllerKey: '__root__',
+    incrementCounter: deps.incrementRootCounter,
+    isStale: deps.isRootStale,
+    insertStatePatch: updateStateForEntry,
+  };
+}
+
 export function createResolverSlice<
   TData = unknown,
   TContext = unknown,
@@ -89,38 +196,16 @@ export function createResolverSlice<
       anchorEvent?: AnchorEventLike,
       options?: Readonly<OpenRootOptions>,
     ) => {
-      if (
-        anchorEvent &&
-        'stopPropagation' in anchorEvent &&
-        typeof anchorEvent.stopPropagation === 'function'
-      ) {
-        anchorEvent.stopPropagation();
-      }
+      stopEventPropagation(anchorEvent);
       const { ownerId, trail } = get();
       const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
 
-      if (
-        !options?.forceRefresh &&
-        trail.length > 0 &&
-        trail[0]?.key === keyOrName &&
-        trail[0]?.transitionStatus !== 'unmounting' &&
-        get().ownerId === finalOwnerId
-      ) {
+      if (isRootAlreadyActive(trail, ownerId, finalOwnerId, keyOrName, options?.forceRefresh)) {
         bringToFront(keyOrName);
         return;
       }
 
-      const target =
-        anchorEvent && 'currentTarget' in anchorEvent ? anchorEvent.currentTarget : null;
-      const triggerEl =
-        target &&
-        typeof target === 'object' &&
-        'getBoundingClientRect' in target &&
-        typeof target.getBoundingClientRect === 'function'
-          ? (target as Element)
-          : null;
-      const optRect = options?.triggerRect;
-      const triggerRect = optRect ?? triggerEl?.getBoundingClientRect() ?? null;
+      const triggerRect = resolveTriggerBoundingRect(anchorEvent, options?.triggerRect);
 
       await resolvePopoverEntry({
         key: keyOrName,
@@ -134,10 +219,7 @@ export function createResolverSlice<
         insertStatePatch: (entry) => (state) => openRootState(state, finalOwnerId, entry),
       });
 
-      const entry = findEntryByKey(keyOrName);
-      if (entry?.onOpen) {
-        entry.onOpen(entry);
-      }
+      notifyEntryOpen(findEntryByKey, keyOrName);
     },
 
     openNestedWithResolver: async (
@@ -150,21 +232,15 @@ export function createResolverSlice<
       if (sourceIndex === -1) return;
 
       const existingEntry = findEntryInStore(floating, trail, keyOrName);
-      if (existingEntry && !options?.forceRefresh) {
-        if (
-          existingEntry.transitionStatus !== 'unmounting' &&
-          (existingEntry.parentKey === sourceKey || existingEntry.originalParentKey === sourceKey)
-        ) {
-          bringToFront(keyOrName);
-          return;
-        }
+      if (isNestedAlreadyActive(existingEntry, sourceKey, options?.forceRefresh)) {
+        bringToFront(keyOrName);
+        return;
       }
 
       const sourceEntry = findEntryInStore(floating, trail, sourceKey);
       if (!sourceEntry || sourceEntry.transitionStatus === 'unmounting') return;
 
-      const optRect = options?.triggerRect;
-      const rect = optRect ?? sourceEntry.rect;
+      const rect = options?.triggerRect ?? sourceEntry.rect;
 
       await resolvePopoverEntry({
         key: keyOrName,
@@ -178,10 +254,7 @@ export function createResolverSlice<
         insertStatePatch: (entry) => (state) => pushNestedState(state, sourceIndex, entry),
       });
 
-      const entry = findEntryByKey(keyOrName);
-      if (entry?.onOpen) {
-        entry.onOpen(entry);
-      }
+      notifyEntryOpen(findEntryByKey, keyOrName);
     },
 
     retryPopover: async (key: string) => {
@@ -197,46 +270,14 @@ export function createResolverSlice<
         ? findEntryInStore(floating, trail, effectiveParentKey)?.data
         : undefined;
 
-      const options = extractEntryOptions(entry);
-
-      const updateStateForEntry =
-        (updatedEntry: TrailEntry<TData>) => (state: PopoverStateData<TData, TContext>) =>
-          findEntryInStore(state.floating, state.trail, key)
-            ? {
-                floating: state.floating.map((e: TrailEntry<TData>) =>
-                  e.key === key ? updatedEntry : e,
-                ),
-                trail: state.trail.map((e: TrailEntry<TData>) =>
-                  e.key === key ? updatedEntry : e,
-                ),
-              }
-            : {};
-
-      if (effectiveParentKey) {
-        await resolvePopoverEntry({
-          key,
-          parentKey: effectiveParentKey,
-          rect: entry.rect ?? null,
-          parentData,
-          options,
-          controllerKey: key,
-          incrementCounter: () => incrementNestedCounter(effectiveParentKey),
-          isStale: (startedCounter) => isNestedStale(effectiveParentKey, startedCounter),
-          insertStatePatch: updateStateForEntry,
-        });
-      } else {
-        await resolvePopoverEntry({
-          key,
-          parentKey: undefined,
-          rect: entry.rect ?? null,
-          parentData: undefined,
-          options,
-          controllerKey: '__root__',
-          incrementCounter: incrementRootCounter,
-          isStale: isRootStale,
-          insertStatePatch: updateStateForEntry,
-        });
-      }
+      const params = buildRetryPipelineParams<TData, TContext, TPopoverKey>(
+        key,
+        entry,
+        effectiveParentKey,
+        parentData,
+        deps,
+      );
+      await resolvePopoverEntry(params);
     },
 
     prefetchPopover: async (key: string, parentData?: TData) => {

@@ -121,6 +121,47 @@ export function mergeEntryOptions<TData>(
   return merged;
 }
 
+function resolveEntryStatus<TData>(
+  data?: TData,
+  error?: Error | null,
+  isLoading = false,
+  fallbackStatus: TrailEntry<TData>['status'] = 'loading',
+): TrailEntry<TData>['status'] {
+  if (data !== undefined && data !== null) return 'success';
+  if (error) return 'error';
+  if (isLoading) return 'loading';
+  return fallbackStatus;
+}
+
+function resolveInitialTransitionStatus(
+  existing?: PopoverTransitionStatus,
+): PopoverTransitionStatus {
+  return existing && existing !== 'unmounting' ? existing : 'mounting';
+}
+
+function resolveEntryGeometryMetadata<TData>(
+  rect: DOMRect | null,
+  parentKey: string | undefined,
+  existingEntry?: TrailEntry<TData>,
+) {
+  if (!existingEntry) {
+    const validRect = rect || undefined;
+    return {
+      rect: validRect,
+      pinnedLayoutPos: undefined,
+      originalParentKey: parentKey,
+      originalRect: validRect,
+    };
+  }
+
+  return {
+    rect: rect || existingEntry.rect,
+    pinnedLayoutPos: existingEntry.pinnedLayoutPos,
+    originalParentKey: existingEntry.originalParentKey || parentKey,
+    originalRect: existingEntry.originalRect || rect || undefined,
+  };
+}
+
 /**
  * Constructs a fully initialized TrailEntry object with defaulted fallbacks.
  */
@@ -135,28 +176,16 @@ export function createTrailEntry<TData>(
   isLoading = false,
 ): TrailEntry<TData> {
   const mergedOptions = mergeEntryOptions(options, existingEntry);
+  const geom = resolveEntryGeometryMetadata(rect, parentKey, existingEntry);
 
   return {
     ...mergedOptions,
-    key: key,
+    ...geom,
+    key,
     parentKey: parentKey ?? undefined,
-    rect: rect ?? existingEntry?.rect ?? undefined,
-    pinnedLayoutPos: existingEntry?.pinnedLayoutPos ?? undefined,
-    originalParentKey: existingEntry?.originalParentKey ?? parentKey ?? undefined,
-    originalRect: existingEntry?.originalRect ?? rect ?? undefined,
-    transitionStatus:
-      existingEntry?.transitionStatus && existingEntry.transitionStatus !== 'unmounting'
-        ? existingEntry.transitionStatus
-        : 'mounting',
-    status:
-      data !== undefined && data !== null
-        ? 'success'
-        : error
-          ? 'error'
-          : isLoading
-            ? 'loading'
-            : (existingEntry?.status ?? 'loading'),
-    isLoading: isLoading ?? false,
+    transitionStatus: resolveInitialTransitionStatus(existingEntry?.transitionStatus),
+    status: resolveEntryStatus(data, error, isLoading, existingEntry?.status),
+    isLoading: Boolean(isLoading),
     error: error ?? null,
     data: data ?? existingEntry?.data ?? null,
     dataPromise: existingEntry?.dataPromise ?? undefined,

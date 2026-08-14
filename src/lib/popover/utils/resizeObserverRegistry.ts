@@ -8,6 +8,18 @@
 
 type ResizeCallback = (entry: ResizeObserverEntry) => void;
 
+function notifyElementResize(callbacks: Set<ResizeCallback>, entry: ResizeObserverEntry): void {
+  for (const callback of callbacks) {
+    try {
+      callback(entry);
+    } catch (err) {
+      if (typeof console !== 'undefined') {
+        console.error('[popover-trail]: Exception in ResizeObserver callback:', err);
+      }
+    }
+  }
+}
+
 class ResizeObserverRegistryImpl {
   private observer: ResizeObserver | null = null;
   private listeners = new Map<Element, Set<ResizeCallback>>();
@@ -24,15 +36,7 @@ class ResizeObserverRegistryImpl {
     for (const entry of toProcess.values()) {
       const callbackSet = this.listeners.get(entry.target);
       if (callbackSet) {
-        for (const callback of callbackSet) {
-          try {
-            callback(entry);
-          } catch (err) {
-            if (typeof console !== 'undefined') {
-              console.error('[popover-trail]: Exception in ResizeObserver callback:', err);
-            }
-          }
-        }
+        notifyElementResize(callbackSet, entry);
       }
     }
   };
