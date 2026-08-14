@@ -98,7 +98,7 @@ describe('Comprehensive Guardrail Error Warnings Utility', () => {
   it('validates PT-114 drag offset coordinates', () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    validateDragOffset(NaN, 50);
+    validateDragOffset(Number.NaN, 50);
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('[popover-trail warning PT-114]'),
     );

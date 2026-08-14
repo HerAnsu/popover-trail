@@ -49,7 +49,7 @@ describe('slicePinning module', () => {
     const { ctx, getState } = createMockContext();
     const pinning = createPinningSlice(ctx);
 
-    pinning.updateOffset('card-1', NaN, 50);
+    pinning.updateOffset('card-1', Number.NaN, 50);
     expect(getState().offsets['card-1']).toBeUndefined();
 
     pinning.updateOffset('card-1', 10, 20);

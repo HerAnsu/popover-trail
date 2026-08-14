@@ -380,7 +380,7 @@ export function definePopoverMiddleware<
 export function extractNumericStyle(val: unknown): number {
   if (typeof val === 'number') return Number.isNaN(val) ? 0 : val;
   if (typeof val === 'string') {
-    const parsed = parseFloat(val);
+    const parsed = Number.parseFloat(val);
     return Number.isNaN(parsed) ? 0 : parsed;
   }
   return 0;

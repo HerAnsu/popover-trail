@@ -84,7 +84,7 @@ function resolveCardAriaLabel(userLabel: unknown, entryKey: string): string {
 }
 
 const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, unknown>>(
-  function PopoverCard(props, outerRef) {
+  (props, outerRef) => {
     const {
       as,
       entry,

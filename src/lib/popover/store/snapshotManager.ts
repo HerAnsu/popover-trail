@@ -167,13 +167,16 @@ export class PopoverSnapshotManager<TData = unknown> {
         const channel = new BroadcastChannel(`${this.storageKey}_channel`);
         this.broadcastChannel = channel;
         this.messageHandler = (event: Event) => {
-          if (isSnapshotMessageEvent<TData>(event)) {
-            if (event.data && event.data.tabId !== this.tabId && this.onSnapshotRestored) {
-              try {
-                this.onSnapshotRestored(event.data);
-              } catch (err) {
-                console.warn('[SnapshotManager] Error executing onSnapshotRestored handler:', err);
-              }
+          if (
+            isSnapshotMessageEvent<TData>(event) &&
+            event.data &&
+            event.data.tabId !== this.tabId &&
+            this.onSnapshotRestored
+          ) {
+            try {
+              this.onSnapshotRestored(event.data);
+            } catch (err) {
+              console.warn('[SnapshotManager] Error executing onSnapshotRestored handler:', err);
             }
           }
         };

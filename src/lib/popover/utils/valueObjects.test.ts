@@ -10,7 +10,7 @@ describe('Geometry Value Objects', () => {
     });
 
     it('guards against NaN and Infinity values', () => {
-      const p = Point2D.of(NaN, Infinity);
+      const p = Point2D.of(Number.NaN, Infinity);
       expect(p.x).toBe(0);
       expect(p.y).toBe(0);
     });

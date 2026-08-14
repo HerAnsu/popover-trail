@@ -155,12 +155,9 @@ export function bringToFrontPatch<TData, TContext>(
 ): Partial<PopoverStateData<TData, TContext>> {
   const isPinned = state.pinnedStates[key];
 
-  let descendants: Set<string>;
-  if (isPinned) {
-    descendants = getAllDescendants([key], state.floating, state.trail, true);
-  } else {
-    descendants = getAllDescendants([key], state.floating, state.trail);
-  }
+  const descendants = isPinned
+    ? getAllDescendants([key], state.floating, state.trail, true)
+    : getAllDescendants([key], state.floating, state.trail);
 
   const keysToElevate = [key, ...descendants];
   const elevateSet = new Set(keysToElevate);

@@ -47,10 +47,12 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
   const getSelection = useCallback(
     (state: PopoverStore<TData, TContext>): TSelected => {
       const next = selector(state);
-      if (equalityFn && cacheRef.current.hasValue) {
-        if (equalityFn(cacheRef.current.value as TSelected, next)) {
-          return cacheRef.current.value as TSelected;
-        }
+      if (
+        equalityFn &&
+        cacheRef.current.hasValue &&
+        equalityFn(cacheRef.current.value as TSelected, next)
+      ) {
+        return cacheRef.current.value as TSelected;
       }
       cacheRef.current = { hasValue: true, value: next };
       return next;

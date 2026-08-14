@@ -62,7 +62,7 @@ describe('assertions utility', () => {
     });
 
     it('throws for rects with NaN or Infinity coordinates', () => {
-      expect(() => assertValidRect({ top: NaN, left: 0, width: 10, height: 10 })).toThrow(
+      expect(() => assertValidRect({ top: Number.NaN, left: 0, width: 10, height: 10 })).toThrow(
         PopoverError,
       );
       expect(() => assertValidRect({ top: 0, left: Infinity, width: 10, height: 10 })).toThrow(

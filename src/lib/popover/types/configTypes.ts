@@ -8,6 +8,9 @@ import type { Placement, Boundary } from '@floating-ui/react';
 import type { TrailEntry } from './entryTypes';
 import type { ReadonlyDeep } from './storeTypes';
 import type { StackGroupId, PopoverKey } from './branded';
+import type { PopoverThemeTokens } from '../utils/themeTokens';
+
+export type { PopoverThemeTokens };
 
 /** Branded popover key identifier type. */
 export type PopoverKeyId = PopoverKey;
@@ -72,9 +75,6 @@ export interface ClickOutsideConfig {
   popoverSelector?: string;
   onClickOutside?: (event: MouseEvent | TouchEvent) => void;
 }
-
-import type { PopoverThemeTokens } from '../utils/themeTokens';
-export type { PopoverThemeTokens };
 
 /**
  * Configuration options for hover triggers and delay buffers.

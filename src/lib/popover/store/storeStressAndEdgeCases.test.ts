@@ -71,17 +71,17 @@ describe('Store Exotic Edge-Cases & Chaos Stress Suite', () => {
       actions.pushNested(i - 1, { key: `node-${i}`, isLoading: false, error: null });
     }
 
-    expect(store.getState().trail.length).toBe(101);
+    expect(store.getState().trail).toHaveLength(101);
     expect(store.getState().trail[100]?.key).toBe('node-100');
 
     // Close from middle node (node-50)
     actions.closeByKey('node-50');
-    expect(store.getState().trail.length).toBe(50);
+    expect(store.getState().trail).toHaveLength(50);
     expect(store.getState().trail[49]?.key).toBe('node-49');
 
     // Close remaining from root
     actions.closeAll();
-    expect(store.getState().trail.length).toBe(0);
+    expect(store.getState().trail).toHaveLength(0);
     expect(store.getState().ownerId).toBeNull();
   });
 
@@ -91,11 +91,13 @@ describe('Store Exotic Edge-Cases & Chaos Stress Suite', () => {
 
     // Listener 1 throws a string
     store.getState().actions.subscribeEvent(() => {
+      // oxlint-disable-next-line eslint/no-throw-literal
       throw 'string exception';
     });
 
     // Listener 2 throws null
     store.getState().actions.subscribeEvent(() => {
+      // oxlint-disable-next-line eslint/no-throw-literal
       throw null;
     });
 
@@ -104,6 +106,7 @@ describe('Store Exotic Edge-Cases & Chaos Stress Suite', () => {
       const circular: Record<string, unknown> = {};
       circular.self = circular;
 
+      // oxlint-disable-next-line eslint/no-throw-literal
       throw circular;
     });
 
@@ -221,7 +224,7 @@ describe('Store Exotic Edge-Cases & Chaos Stress Suite', () => {
     expect(results.length).toBeGreaterThan(0);
 
     qt.clear();
-    expect(qt.retrieve([], bounds).length).toBe(0);
+    expect(qt.retrieve([], bounds)).toHaveLength(0);
     qt.dispose();
   });
 

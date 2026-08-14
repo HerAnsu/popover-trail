@@ -143,7 +143,7 @@ describe('typeGuards utility', () => {
     });
 
     it('handles NaN/Infinity in createVirtualElement safely', () => {
-      const ve = createVirtualElement(NaN, Infinity, -10, -20);
+      const ve = createVirtualElement(Number.NaN, Infinity, -10, -20);
       const rect = ve.getBoundingClientRect?.() ?? {
         x: 0,
         y: 0,
@@ -163,7 +163,7 @@ describe('typeGuards utility', () => {
 
     it('creates branded viewport coordinates', () => {
       expect(toViewportX(100)).toBe(100);
-      expect(toViewportX(NaN)).toBe(0);
+      expect(toViewportX(Number.NaN)).toBe(0);
       expect(toViewportY(200)).toBe(200);
       expect(toViewportY(Infinity)).toBe(0);
     });
@@ -193,7 +193,7 @@ describe('typeGuards utility', () => {
       expect(extractNumericStyle(120)).toBe(120);
       expect(extractNumericStyle('120px')).toBe(120);
       expect(extractNumericStyle('invalid')).toBe(0);
-      expect(extractNumericStyle(NaN)).toBe(0);
+      expect(extractNumericStyle(Number.NaN)).toBe(0);
       expect(extractNumericStyle(null)).toBe(0);
     });
 

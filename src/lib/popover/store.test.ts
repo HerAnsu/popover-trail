@@ -1011,7 +1011,7 @@ describe('createPopoverStore', () => {
       expect(store.getState().offsets['item-1']).toEqual({ x: 10, y: 20 });
 
       // Attempt to update with NaN
-      store.getState().updateOffset('item-1', NaN, 50);
+      store.getState().updateOffset('item-1', Number.NaN, 50);
 
       // Offset remains unchanged!
       expect(store.getState().offsets['item-1']).toEqual({ x: 10, y: 20 });
@@ -1392,10 +1392,10 @@ describe('createPopoverStore', () => {
       expect(controller.getState().trail[0]?.key).toBe('card-ctrl');
 
       controller.togglePin('card-ctrl');
-      expect(controller.getState().floating.length).toBe(1);
+      expect(controller.getState().floating).toHaveLength(1);
 
       controller.clear();
-      expect(controller.getState().floating.length).toBe(0);
+      expect(controller.getState().floating).toHaveLength(0);
     });
 
     it('should prefetch popover data into cache via prefetchPopover', async () => {
@@ -2037,7 +2037,7 @@ describe('createPopoverStore', () => {
         }
       }
 
-      expect(store.getState().floating.length).toBe(25);
+      expect(store.getState().floating).toHaveLength(25);
 
       store.getState().clear();
 
@@ -2227,7 +2227,7 @@ describe('createPopoverStore', () => {
         }
       }
 
-      expect(store.getState().floating.length).toBe(5);
+      expect(store.getState().floating).toHaveLength(5);
 
       store.getState().closeByKey('L0');
 

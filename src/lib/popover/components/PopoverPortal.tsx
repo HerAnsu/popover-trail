@@ -33,14 +33,12 @@ export function PopoverPortal({ children, container }: PopoverPortalProps) {
   const formattedEntries = React.useMemo(() => {
     if (!isRenderProp) return null;
     const result: Array<TrailEntry & { isPinned: boolean }> = [];
-    for (let i = 0; i < floating.length; i++) {
-      const entry = floating[i];
+    for (const entry of floating) {
       if (entry) {
         result.push({ ...entry, isPinned: true });
       }
     }
-    for (let i = 0; i < trail.length; i++) {
-      const entry = trail[i];
+    for (const entry of trail) {
       if (entry) {
         result.push({ ...entry, isPinned: false });
       }

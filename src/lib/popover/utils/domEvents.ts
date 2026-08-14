@@ -25,13 +25,12 @@ export function getEventTarget<T extends EventTarget = HTMLElement>(e: Event): T
 export function isPortalOrExcludedTarget(e: Event): boolean {
   const path = getEventPath(e);
   for (const target of path) {
-    if (target instanceof Element) {
-      if (
-        target.hasAttribute('data-popover-portal') ||
-        target.hasAttribute('data-popover-ignore-outside')
-      ) {
-        return true;
-      }
+    if (
+      target instanceof Element &&
+      (target.hasAttribute('data-popover-portal') ||
+        target.hasAttribute('data-popover-ignore-outside'))
+    ) {
+      return true;
     }
   }
   return false;
