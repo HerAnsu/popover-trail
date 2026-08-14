@@ -1,6 +1,6 @@
 {
   "name": "popover-trail",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Headless React 19 library for managing cascading popover paths, draggable floating windows, and async data hydration.",
   "keywords": [
     "async-hydration",
