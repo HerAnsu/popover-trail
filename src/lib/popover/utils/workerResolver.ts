@@ -313,7 +313,7 @@ function handleWorkerAbort(activeTasks: Map<number, AbortController>, id: number
 }
 
 async function handleWorkerResolve<TData, TContext>(
-  selfScope: WindowOrWorkerGlobalScope,
+  selfScope: WindowOrWorkerGlobalScope & { postMessage(message: unknown): void },
   activeTasks: Map<number, AbortController>,
   id: number,
   key: string,

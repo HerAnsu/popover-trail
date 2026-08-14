@@ -9,6 +9,8 @@
     "src/**/*.test.{ts,tsx}"
   ],
   "ignorePatterns": [
-    "tools/**"
+    "tools/**",
+    "dist/**",
+    "dist-app/**"
   ]
 }

@@ -131,7 +131,7 @@ function buildRetryPipelineParams<TData, TContext, TPopoverKey extends string = 
   key: string,
   entry: TrailEntry<TData>,
   effectiveParentKey: string | undefined,
-  parentData: unknown,
+  parentData: TData | null | undefined,
   deps: SliceContext<TData, TContext, TPopoverKey>['deps'],
 ) {
   const options = extractEntryOptions(entry);

@@ -139,7 +139,7 @@ function renderFunctionChild(
   triggerProps: Record<string, unknown>,
   isOpen: boolean,
   activeClassName?: string,
-  mergedRef?: React.Ref<unknown>,
+  mergedRef?: React.Ref<HTMLElement>,
 ) {
   const rawControls = triggerProps['aria-controls'];
   const ariaControls = typeof rawControls === 'string' ? rawControls : '';
@@ -165,7 +165,7 @@ function renderElementChild(
   isOpen: boolean,
   activeClassName?: string,
   handlers?: Record<string, unknown>,
-  mergedRef?: React.Ref<unknown>,
+  mergedRef?: React.Ref<HTMLElement>,
 ) {
   const mergedProps = {
     'aria-haspopup': 'dialog',

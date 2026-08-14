@@ -22,7 +22,7 @@ export function buildFloatingMiddlewareList(
   shiftOption: unknown,
   sizeOption: unknown,
   boundaryOption: Boundary | undefined,
-  padding: number | undefined,
+  padding: number | { top?: number; right?: number; bottom?: number; left?: number } | undefined,
 ) {
   const list = [offset(offsetDistance)];
 
@@ -128,8 +128,8 @@ export function useGeometryStoreConfig() {
 }
 
 export function useCollisionMergedConfig(
-  localCollision?: CollisionConfig,
-  globalCollision?: CollisionConfig,
+  localCollision?: CollisionConfig | null,
+  globalCollision?: CollisionConfig | null,
 ) {
   const boundary = localCollision?.boundary ?? globalCollision?.boundary;
   const boundaryOption = useResolvedBoundary(boundary);

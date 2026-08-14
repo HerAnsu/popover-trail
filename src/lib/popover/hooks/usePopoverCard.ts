@@ -134,24 +134,17 @@ export function usePopoverCard({
   );
 
   const handlePinToggle = useCallback(() => {
-    if (isPinned) {
-      actions.unpinPopover(entry.key);
-    } else {
-      actions.pinPopover(entry.key);
-    }
-  }, [actions, entry.key, isPinned]);
+    actions.togglePin(entry.key);
+  }, [actions, entry.key]);
 
   const onMouseEnter = useCallback(() => {
-    actions.cancelCloseTimer(entry.key);
+    actions.hoverEnter(entry.key);
   }, [actions, entry.key]);
 
   const onMouseLeave = useCallback(() => {
     if (isPinned) return;
-    const leaveDelay = entry.hoverCloseDelay ?? 300;
-    if (leaveDelay > 0) {
-      actions.scheduleClose(entry.key, leaveDelay);
-    }
-  }, [actions, entry.key, entry.hoverCloseDelay, isPinned]);
+    actions.hoverLeave(entry.key);
+  }, [actions, entry.key, isPinned]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLElement>) => {

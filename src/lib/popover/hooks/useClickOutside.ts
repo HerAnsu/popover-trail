@@ -20,12 +20,12 @@ function escapeCSSClass(className: string | undefined): string | null {
 
 function isElementMatchingPopover(
   el: HTMLElement,
-  selector: string,
+  popoverSelector: string,
   escapedIgnoreClass?: string | null,
-  ignoreClass?: string,
+  ignoreClass?: string | null,
 ): boolean {
   try {
-    if (el.matches(selector)) return true;
+    if (el.matches(popoverSelector)) return true;
   } catch {
     // Ignore invalid selector
   }
@@ -42,8 +42,8 @@ function isElementMatchingPopover(
 function isClickInsidePopover(
   path: EventTarget[],
   popoverSelector: string,
-  escapedIgnoreClass?: string,
-  ignoreClass?: string,
+  escapedIgnoreClass?: string | null,
+  ignoreClass?: string | null,
 ): boolean {
   return path.some(
     (el) =>

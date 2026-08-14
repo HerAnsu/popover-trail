@@ -218,7 +218,7 @@ function startInFlightResolver<
     const res = invokeResolverSafely(
       activeResolver,
       key,
-      parentData,
+      parentData as TData | null | undefined,
       currentContext,
       controller.signal,
     );
@@ -226,7 +226,7 @@ function startInFlightResolver<
     if (isPromise(res)) {
       const promise: Promise<TData> = (async () => {
         try {
-          return await res;
+          return (await res) as TData;
         } finally {
           inFlightPromises.delete(key);
           removeController(controllerKey);
@@ -287,10 +287,15 @@ function tryResolveFromCacheOrState<
   ) => void,
   buildEntry: (data?: TData | null, error?: Error | null, isLoading?: boolean) => TrailEntry<TData>,
 ): boolean {
-  const cachedData = getSyncCachedData(cache || storeCache, key);
+  const effectiveCache = cache ?? storeCache ?? undefined;
+  const cachedData = getSyncCachedData(effectiveCache, key);
   if (cachedData !== undefined) {
     if (!params.isStale(requestCounter)) {
-      safeSet(params.insertStatePatch(buildEntry(cachedData, null, false)));
+      safeSet(
+        params.insertStatePatch(buildEntry(cachedData, null, false)) as (
+          state: PopoverStore<TData, TContext, TPopoverKey>,
+        ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>,
+      );
     }
     return true;
   }
@@ -302,7 +307,11 @@ function tryResolveFromCacheOrState<
     !forceRefresh
   ) {
     if (!params.isStale(requestCounter)) {
-      safeSet(params.insertStatePatch(buildEntry(existingEntry.data, null, false)));
+      safeSet(
+        params.insertStatePatch(buildEntry(existingEntry.data, null, false)) as (
+          state: PopoverStore<TData, TContext, TPopoverKey>,
+        ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>,
+      );
     }
     return true;
   }
@@ -327,6 +336,7 @@ function tryLaunchSyncResolver<
   storeCache: PopoverCache<TData> | null | undefined,
   buildEntry: (data?: TData | null, error?: Error | null, isLoading?: boolean) => TrailEntry<TData>,
 ): boolean {
+  if (!activeResolver) return false;
   if (deps.inFlightPromises.has(key) && !forceRefresh) return false;
 
   const launch = startInFlightResolver(

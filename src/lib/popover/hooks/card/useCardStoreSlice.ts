@@ -64,12 +64,13 @@ export function useCardStoreSlice(entryKey: string) {
 
 export function resolveEffectiveBaseZIndex(
   entry: TrailEntry,
-  zIndexBaseMap?: Record<string, number>,
+  zIndexBaseMap?: Record<string, number> | null,
   baseZIndex?: number,
 ): number {
   if (entry.baseZIndex !== undefined) return entry.baseZIndex;
-  if (entry.stackGroup && zIndexBaseMap && zIndexBaseMap[entry.stackGroup] !== undefined) {
-    return zIndexBaseMap[entry.stackGroup];
+  if (entry.stackGroup && zIndexBaseMap) {
+    const mapped = zIndexBaseMap[entry.stackGroup];
+    if (mapped !== undefined) return mapped;
   }
   return baseZIndex ?? 1000;
 }
@@ -78,13 +79,10 @@ export function resolveCardButtonControls(
   entry: TrailEntry,
   cardFeatures?: { enablePin?: boolean; enableClose?: boolean; enableDrag?: boolean },
 ) {
-  const isPinEnabled =
-    entry.enablePin ?? cardFeatures?.enablePin ?? entry.buttonControls?.enablePin ?? true;
-  const isCloseEnabled =
-    entry.enableClose ?? cardFeatures?.enableClose ?? entry.buttonControls?.enableClose ?? true;
-  const isDragEnabled =
-    entry.enableDrag ?? cardFeatures?.enableDrag ?? entry.buttonControls?.enableDrag ?? true;
-  const customBtns = entry.customButtons ?? entry.buttonControls?.customButtons ?? [];
+  const isPinEnabled = cardFeatures?.enablePin ?? entry.buttonControls?.enablePin ?? true;
+  const isCloseEnabled = cardFeatures?.enableClose ?? entry.buttonControls?.enableClose ?? true;
+  const isDragEnabled = cardFeatures?.enableDrag ?? entry.buttonControls?.enableDrag ?? true;
+  const customBtns = entry.buttonControls?.customButtons ?? [];
 
   return {
     enablePin: isPinEnabled,

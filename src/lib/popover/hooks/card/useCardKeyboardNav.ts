@@ -30,7 +30,7 @@ function handleCustomShortcuts(
 
 function getFocusableCardElements(cardEl: HTMLElement | null): HTMLElement[] {
   if (!cardEl) return [];
-  return [...cardEl.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR)].filter(
+  return Array.from(cardEl.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR)).filter(
     (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0,
   );
 }
@@ -213,6 +213,6 @@ export function handleCardKeyboardNavigation(
   if (handleCustomShortcuts(e, cardEntry)) return;
   if (!enableArrow) return;
 
-  handleVerticalArrowNavigation(e, cardEl);
+  handleVerticalArrowNavigation(e, cardEl ?? null);
   handleHorizontalArrowNavigation(e, cardEntry, pinned, trailList, floatCount, act);
 }

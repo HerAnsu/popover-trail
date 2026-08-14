@@ -10,6 +10,7 @@ import type {
   PopoverPersistConfig,
   TrailEntry,
   PopoverStoreEvent,
+  PopoverStateData,
 } from '../../types';
 import { getSnapshotStatePatch } from '../../utils/storeHelpers';
 import type { SliceContext } from './sliceContext';

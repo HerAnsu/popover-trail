@@ -1,4 +1,9 @@
-import type { TrailEntry, OpenRootOptions, OpenNestedOptions } from '../types';
+import type {
+  TrailEntry,
+  OpenRootOptions,
+  OpenNestedOptions,
+  PopoverTransitionStatus,
+} from '../types';
 import { toFiniteNumber } from './styles';
 
 export {
