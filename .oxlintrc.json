@@ -19,7 +19,8 @@
     { "name": "@e18e", "specifier": "@e18e/eslint-plugin" },
     { "name": "@stylistic", "specifier": "@stylistic/eslint-plugin" },
     { "name": "testing-library", "specifier": "eslint-plugin-testing-library" },
-    { "name": "storybook", "specifier": "eslint-plugin-storybook" }
+    { "name": "storybook", "specifier": "eslint-plugin-storybook" },
+    { "name": "popover", "specifier": "./tools/eslint-plugin-popover/index.js" }
   ],
   "categories": {
     "correctness": "deny",
@@ -172,7 +173,26 @@
     "@e18e/prefer-flatmap-over-map-flat": "warn",
     "@e18e/no-spread-in-reduce": "warn",
     "@e18e/prefer-timer-args": "warn",
-    "@stylistic/semi": "deny"
+    "@stylistic/semi": "deny",
+
+    "popover/require-ssr-guard": "warn",
+    "popover/no-direct-dom-mutation": "warn",
+    "popover/strict-layer-boundaries": "deny",
+    "popover/no-raw-zindex-literals": "warn",
+    "popover/require-memo-on-drag-handlers": "warn",
+    "popover/no-inline-store-subscriptions": "deny",
+    "popover/enforce-timer-cleanup": "warn",
+    "popover/no-direct-state-mutation": "deny",
+    "popover/enforce-pool-release-in-finally": "warn",
+    "popover/enforce-finite-coordinates": "warn",
+    "popover/no-detached-dom-in-store": "deny",
+    "popover/enforce-focus-restoration": "warn",
+    "popover/require-aria-expanded-sync": "warn",
+    "popover/enforce-escape-handler": "warn",
+    "popover/enforce-typed-event-dispatch": "warn",
+    "popover/sanitize-snapshot-payload": "warn",
+    "popover/require-display-name": "warn",
+    "popover/prefer-early-return-on-inactive": "warn"
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"]
 }
