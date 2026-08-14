@@ -3,6 +3,14 @@ import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverCardScope } from './PopoverCardScopeContext';
 
 /**
+ * Props for the `<PopoverCard.Handle>` sub-component.
+ */
+export type PopoverCardHandleProps<E extends ElementType = 'header'> = PolymorphicProps<
+  E,
+  { children?: ReactNode }
+>;
+
+/**
  * Sub-component for the draggable handle header area of a `<PopoverCard>`.
  *
  * @remarks

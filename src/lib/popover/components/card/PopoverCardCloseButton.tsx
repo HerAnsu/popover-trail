@@ -4,6 +4,14 @@ import { usePopoverCardScope } from './PopoverCardScopeContext';
 import { getPolymorphicProps } from '../../utils/componentUtils';
 
 /**
+ * Props for the `<PopoverCard.CloseButton>` sub-component.
+ */
+export type PopoverCardCloseButtonProps<E extends ElementType = 'button'> = PolymorphicProps<
+  E,
+  { children?: ReactNode }
+>;
+
+/**
  * Sub-component for the close button of a `<PopoverCard>`.
  *
  * @remarks

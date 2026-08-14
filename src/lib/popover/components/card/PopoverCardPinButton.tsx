@@ -4,6 +4,14 @@ import { usePopoverCardScope } from './PopoverCardScopeContext';
 import { getPolymorphicProps } from '../../utils/componentUtils';
 
 /**
+ * Props for the `<PopoverCard.PinButton>` sub-component.
+ */
+export type PopoverCardPinButtonProps<E extends ElementType = 'button'> = PolymorphicProps<
+  E,
+  { children?: ReactNode }
+>;
+
+/**
  * Sub-component for the pin/unpin action button of a `<PopoverCard>`.
  *
  * @remarks

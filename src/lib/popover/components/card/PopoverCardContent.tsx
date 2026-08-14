@@ -2,6 +2,14 @@ import type { ReactNode, ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
 
 /**
+ * Props for the `<PopoverCard.Content>` sub-component.
+ */
+export type PopoverCardContentProps<E extends ElementType = 'div'> = PolymorphicProps<
+  E,
+  { children?: ReactNode }
+>;
+
+/**
  * Sub-component for the main content body container of a `<PopoverCard>`.
  *
  * @remarks
