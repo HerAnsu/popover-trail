@@ -5,6 +5,14 @@ import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
 
 /**
  * Sub-component for the Undo Action Button.
+ */
+export type PopoverTimelineUndoButtonProps<E extends ElementType = 'button'> = PolymorphicProps<
+  E,
+  { children?: ReactNode }
+>;
+
+/**
+ * Sub-component for the Undo Action Button.
  *
  * @remarks
  * Dispatches `timeline.undo()` to revert to the previous historical state.
