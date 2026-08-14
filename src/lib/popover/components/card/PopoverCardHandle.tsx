@@ -3,13 +3,16 @@ import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverCardScope } from './PopoverCardScopeContext';
 
 /**
- * Sub-component for the drag handle area of a `<PopoverCard>`.
+ * Sub-component for the draggable handle header area of a `<PopoverCard>`.
+ *
+ * @remarks
+ * Attaches pointer drag listeners and styling (`cursor: grab / grabbing`, touch action) from `useDragAndDrop`.
+ * Supports polymorphic rendering via the `as` prop (defaults to `'header'`).
+ *
+ * @template E - Underlying HTML element or component type.
+ * @param props - Polymorphic handle props with children and styles.
+ * @returns Draggable handle container element.
  */
-export type PopoverCardHandleProps<E extends ElementType = 'header'> = PolymorphicProps<
-  E,
-  { children?: ReactNode }
->;
-
 export function PopoverCardHandle<E extends ElementType = 'header'>({
   as,
   children,

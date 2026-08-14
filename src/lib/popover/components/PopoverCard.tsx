@@ -31,17 +31,19 @@ export type {
 
 /**
  * Props for the root `<PopoverCard>` Headless component.
+ *
+ * @template TData - Resolved data payload type stored within the trail entry.
  */
 export interface PopoverCardBaseProps<TData = unknown> {
-  /** The specific trail entry represented by the card. */
+  /** The specific trail entry represented by this card. */
   entry: TrailEntry<TData>;
-  /** The virtual rendering index of the card. */
+  /** The 0-based virtual rendering index of the card within the trail. */
   index: number;
-  /** True if this card is currently pinned/floating. */
+  /** Whether the card is detached into a floating window (`true`) or stacked in the trail (`false`). */
   isPinned: boolean;
-  /** Layout placement direction preference relative to the trigger. */
+  /** Layout placement direction preference relative to the trigger. Defaults to 'bottom'. */
   placement?: PopoverPlacement;
-  /** Children elements or render prop function. */
+  /** Card body content or a render prop function receiving the card scope. */
   children?: ReactNode | ((scope: PopoverCardScope<TData>) => ReactNode);
 }
 
@@ -54,16 +56,31 @@ export type PopoverCardProps<
  * Root `<PopoverCard>` Headless Unstyled Component.
  * Binds positioning, accessibility attributes, data-attributes, and CSS variables automatically.
  *
+ * @remarks
+ * Renders as a polymorphic container (`as="div"` by default, configurable to `as="article"`, `as="section"`, etc.).
+ * Includes compound subcomponents:
+ * - `PopoverCard.Handle`: Drag grip handle for pointer dragging.
+ * - `PopoverCard.PinButton`: Pin toggle button that switches between cascading trail and floating window.
+ * - `PopoverCard.CloseButton`: Close trigger that dismisses the card and its child branch.
+ * - `PopoverCard.Content`: Inner content wrapper.
+ *
+ * Automatically provides ARIA accessibility roles (`role="dialog"`, `aria-modal`, `aria-label`)
+ * and data attributes (`data-state`, `data-pinned`, `data-key`).
+ *
  * @example
  * ```tsx
  * import { PopoverCard } from 'popover-trail';
  *
- * function MyCard({ entry, index, isPinned }) {
+ * function UserCard({ entry, index, isPinned }) {
  *   return (
- *     <PopoverCard entry={entry} index={index} isPinned={isPinned} className="card-popup">
- *       <PopoverCard.Handle>Drag Me</PopoverCard.Handle>
- *       <PopoverCard.Content>{entry.data?.title}</PopoverCard.Content>
- *       <PopoverCard.CloseButton>Close</PopoverCard.CloseButton>
+ *     <PopoverCard entry={entry} index={index} isPinned={isPinned} className="card-container">
+ *       <PopoverCard.Handle className="drag-bar">Drag card</PopoverCard.Handle>
+ *       <PopoverCard.Content>
+ *         <h3>{entry.data?.name}</h3>
+ *         <p>{entry.data?.email}</p>
+ *       </PopoverCard.Content>
+ *       <PopoverCard.PinButton />
+ *       <PopoverCard.CloseButton />
  *     </PopoverCard>
  *   );
  * }

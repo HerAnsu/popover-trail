@@ -43,6 +43,15 @@ function patchEntryButtonControls<TData>(
   };
 }
 
+/**
+ * Factory creating configuration setters and responsive layout actions.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @param ctx - Slice context providing Zustand set/get methods and dependencies.
+ * @returns Config slice action methods.
+ */
 export function createConfigSlice<
   TData = unknown,
   TContext = unknown,

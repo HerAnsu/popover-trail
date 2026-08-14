@@ -28,6 +28,19 @@ function restoreCardFocus(
   document.querySelector<HTMLElement>('h1')?.focus();
 }
 
+/**
+ * Manages WAI-ARIA focus lifecycle for a popover card.
+ *
+ * @remarks
+ * Encapsulates accessibility focus behaviors:
+ * - Remembers the previously focused trigger element before mounting.
+ * - Auto-focuses a target selector or callback when specified (`autoFocusElement`).
+ * - Locks document scrolling when `lockScroll: true` is configured.
+ * - Restores focus to the original trigger element or parent card upon unmounting.
+ *
+ * @param entry - TrailEntry configuration including focusLockOptions.
+ * @param cardRef - React ref pointing to the card container element.
+ */
 export function useCardFocusManagement(
   entry: TrailEntry,
   cardRef: React.RefObject<HTMLElement | null>,

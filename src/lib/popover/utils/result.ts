@@ -22,27 +22,52 @@ export interface ErrResult<E> {
 /** Monadic Result discriminated union type. */
 export type Result<T, E = PopoverError> = OkResult<T> | ErrResult<E>;
 
-/** Constructor for successful Ok Result. */
+/**
+ * Constructor creating a successful `Ok` Result variant.
+ *
+ * @example
+ * ```typescript
+ * const res = Ok({ id: 'user-1', name: 'Alice' });
+ * if (isOk(res)) console.log(res.data.name);
+ * ```
+ *
+ * @template T - Successful payload data type.
+ * @param data - The successful data payload.
+ */
 export function Ok<T>(data: T): OkResult<T> {
   return Object.freeze({ success: true, data });
 }
 
-/** Constructor for failure Err Result. */
+/**
+ * Constructor creating a failure `Err` Result variant.
+ *
+ * @example
+ * ```typescript
+ * const res = Err(new Error('Network timeout'));
+ * if (isErr(res)) console.error(res.error.message);
+ * ```
+ *
+ * @template E - Error payload type.
+ * @param error - The error object or reason.
+ */
 export function Err<E>(error: E): ErrResult<E> {
   return Object.freeze({ success: false, error });
 }
 
-/** Type guard for Ok Result. */
+/** Type predicate asserting that a Result is an Ok variant. */
 export function isOk<T, E>(result: Result<T, E>): result is OkResult<T> {
   return result.success;
 }
 
-/** Type guard for Err Result. */
+/** Type predicate asserting that a Result is an Err variant. */
 export function isErr<T, E>(result: Result<T, E>): result is ErrResult<E> {
   return !result.success;
 }
 
-/** Maps successful data payload preserving error. */
+/**
+ * Transforms the inner value of an Ok result using a mapping function.
+ * Leaves Err results untouched.
+ */
 export function mapResult<T, U, E>(result: Result<T, E>, fn: (data: T) => U): Result<U, E> {
   if (result.success) {
     return Ok(fn(result.data));
@@ -50,7 +75,10 @@ export function mapResult<T, U, E>(result: Result<T, E>, fn: (data: T) => U): Re
   return result;
 }
 
-/** FlatMaps successful data payload to another Result. */
+/**
+ * Chains another Result-returning function onto an Ok result (monadic bind).
+ * Leaves Err results untouched.
+ */
 export function flatMapResult<T, U, E>(
   result: Result<T, E>,
   fn: (data: T) => Result<U, E>,
@@ -61,7 +89,10 @@ export function flatMapResult<T, U, E>(
   return result;
 }
 
-/** Maps error payload preserving success data. */
+/**
+ * Transforms the inner error of an Err result using a mapping function.
+ * Leaves Ok results untouched.
+ */
 export function mapErr<T, E, F>(result: Result<T, E>, fn: (error: E) => F): Result<T, F> {
   if (!result.success) {
     return Err(fn(result.error));
@@ -69,12 +100,18 @@ export function mapErr<T, E, F>(result: Result<T, E>, fn: (error: E) => F): Resu
   return result;
 }
 
-/** Unwraps result data or returns fallback value if error. */
+/**
+ * Extracts the inner value from an Ok result, or returns a fallback value if Err.
+ */
 export function unwrapOr<T, E>(result: Result<T, E>, fallback: T): T {
   return result.success ? result.data : fallback;
 }
 
-/** Unwraps result data or throws error if result is Err. */
+/**
+ * Extracts the inner value from an Ok result, or throws if Err.
+ *
+ * @throws {Error} Throws the encapsulated error if result is Err.
+ */
 export function unwrap<T, E>(result: Result<T, E>): T {
   if (result.success) {
     return result.data;
@@ -82,7 +119,17 @@ export function unwrap<T, E>(result: Result<T, E>): T {
   throw result.error instanceof Error ? result.error : new Error(String(result.error));
 }
 
-/** Pattern matches against Ok and Err result branches. */
+/**
+ * Pattern-matches against both branches of a Result, executing the corresponding branch handler.
+ *
+ * @example
+ * ```typescript
+ * const message = matchResult(result, {
+ *   ok: (user) => `Hello, ${user.name}`,
+ *   err: (err) => `Failed: ${err.message}`,
+ * });
+ * ```
+ */
 export function matchResult<T, E, R>(
   result: Result<T, E>,
   patterns: { ok: (data: T) => R; err: (error: E) => R },
@@ -90,7 +137,9 @@ export function matchResult<T, E, R>(
   return result.success ? patterns.ok(result.data) : patterns.err(result.error);
 }
 
-/** Wraps a throwing function execution into a safe Result. */
+/**
+ * Executes a potentially throwing synchronous function and wraps the result in an Ok or Err.
+ */
 export function wrapResult<T>(fn: () => T): Result<T, PopoverError> {
   try {
     return Ok(fn());
@@ -109,7 +158,9 @@ export function wrapResult<T>(fn: () => T): Result<T, PopoverError> {
   }
 }
 
-/** Wraps an async throwing promise into a safe Result. */
+/**
+ * Awaits a potentially rejecting Promise and wraps the outcome into a safe Result.
+ */
 export async function wrapAsyncResult<T>(promise: Promise<T>): Promise<Result<T, PopoverError>> {
   try {
     const data = await promise;

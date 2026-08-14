@@ -12,28 +12,38 @@ function hasUnrefMethod(timer: unknown): timer is { unref: () => void } {
 /**
  * Strongly typed cache interface mapping popover keys to their exact resolved data payload types.
  * Eliminates the need for manual type assertions (`as TData`) when retrieving cached entries.
+ *
+ * @template TCacheMap - Record mapping popover key strings to their resolved data types.
  */
 export interface TypedPopoverCache<TCacheMap extends Record<string, unknown>> {
+  /** Retrieves a cached entry by key. */
   get<K extends Extract<keyof TCacheMap, string>>(key: K): TCacheMap[K] | undefined;
+  /** Sets a cached payload for a key. */
   set<K extends Extract<keyof TCacheMap, string>>(key: K, data: TCacheMap[K]): void;
+  /** Checks if key exists and is non-expired. */
   has<K extends Extract<keyof TCacheMap, string>>(key: K): boolean;
+  /** Deletes an entry by key. */
   delete<K extends Extract<keyof TCacheMap, string>>(key: K): void;
+  /** Clears all entries. */
   clear(): void;
 }
 
 /**
- * A standard, generic in-memory cache implementation of PopoverCache
- * supporting automatic time-to-live (TTL) record expiration, maximum size
- * eviction, background garbage collection, and hit/miss statistics.
+ * Standard in-memory caching engine for popover data payloads.
+ * Supports Time-To-Live (TTL) record expiration, LRU eviction, and hit/miss auditing statistics.
  *
- * @template TData - The type of data stored inside the cache entries.
+ * @remarks
+ * Helps avoid duplicate network or asynchronous resolver calls when users re-hover or re-open cards.
  *
  * @example
  * ```typescript
- * const cache = new SimplePopoverCache<MathData>(10 * 1000, 100); // 10s TTL, max 100 entries
- * cache.set("5 + 5", { value: 10 });
- * console.log(cache.get("5 + 5")); // returns { value: 10 }
+ * const cache = new SimplePopoverCache<UserData>(5 * 60 * 1000, 100);
+ * cache.set('user:123', { name: 'Alice' });
+ *
+ * const user = cache.get('user:123'); // returns { name: 'Alice' }
  * ```
+ *
+ * @template TData - The type of data stored inside the cache entries.
  */
 export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> {
   private readonly cache = new Map<string, { data: TData; expiry: number }>();

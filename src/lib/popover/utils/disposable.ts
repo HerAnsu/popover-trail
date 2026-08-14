@@ -74,13 +74,29 @@ function safelyDisposeItem(d: ScopeDisposable | (() => void) | null | undefined)
 }
 
 /**
- * Composite container managing multiple ScopeDisposable handles and cleanup callbacks atomically.
+ * Composite container managing multiple disposable handles and cleanup callbacks atomically.
+ *
+ * @remarks
+ * Collects event listeners, intervals, and store subscriptions. When disposed (via `.dispose()` or `using`),
+ * all contained disposables are executed safely in isolation.
+ *
+ * @example
+ * ```typescript
+ * {
+ *   using bag = new CompositeDisposable();
+ *   bag.add(store.subscribe(handleChange));
+ *   bag.add(() => window.removeEventListener('resize', handleResize));
+ * } // Everything is disposed automatically upon exiting this block!
+ * ```
  */
 export class CompositeDisposable implements ScopeDisposable {
   private readonly disposables = new Set<ScopeDisposable | (() => void)>();
   private disposed = false;
 
-  /** Adds disposables or cleanup callbacks to the composite container. */
+  /**
+   * Adds one or more disposables or cleanup callbacks to the composite container.
+   * If the composite is already disposed, newly added items are disposed immediately.
+   */
   add(...disposables: (ScopeDisposable | (() => void) | null | undefined)[]): void {
     if (this.disposed) {
       for (const d of disposables) {
@@ -93,7 +109,11 @@ export class CompositeDisposable implements ScopeDisposable {
     }
   }
 
-  /** Removes a disposable handle from the container without invoking it. */
+  /**
+   * Removes a disposable handle from the container without invoking its cleanup callback.
+   *
+   * @returns True if the item was found and removed.
+   */
   remove(disposable: ScopeDisposable | (() => void)): boolean {
     return this.disposables.delete(disposable);
   }
@@ -113,7 +133,7 @@ export class CompositeDisposable implements ScopeDisposable {
     this.disposables.clear();
   }
 
-  /** Explicit resource management symbol handler for TS 5.2 `using` statements. */
+  /** Explicit resource management symbol handler for TS 5.2+ `using` statements. */
   [DISPOSE_SYMBOL as symbol](): void {
     this.dispose();
   }

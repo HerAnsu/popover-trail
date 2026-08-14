@@ -83,12 +83,26 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
 }
 
 /**
- * Hook to simplify binding an HTML element click trigger to open a root popover.
+ * Hook to bind an HTML trigger element to open a root popover.
+ *
+ * @remarks
+ * Injects necessary accessibility attributes (`aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`)
+ * and handles click or hover interaction with configurable open/close debounce delays.
+ *
+ * @example
+ * ```tsx
+ * import { usePopoverTrigger } from 'popover-trail';
+ *
+ * function TriggerButton() {
+ *   const triggerProps = usePopoverTrigger('userProfile', { placement: 'bottom-start' });
+ *   return <button {...triggerProps}>Open Profile</button>;
+ * }
+ * ```
  *
  * @param key - The unique identifier key for the root popover.
- * @param options - Custom configuration options.
+ * @param options - Custom configuration options (placement, hover delays, etc.).
  * @param explicitIsOpen - Optional pre-resolved isOpen boolean flag.
- * @returns Event handler props object (e.g. `{ onClick }`).
+ * @returns Event handler and accessibility props object (e.g. `{ onClick, 'aria-expanded': boolean, ... }`).
  */
 export function usePopoverTrigger(
   key: string,
@@ -113,13 +127,27 @@ export function usePopoverTrigger(
 }
 
 /**
- * Hook to simplify binding an HTML element click trigger to open a nested child popover.
+ * Hook to bind an HTML trigger element to open a nested child popover in the cascade trail.
  *
- * @param key - The unique identifier key for the nested popover.
+ * @remarks
+ * Automatically registers the parent-child relationship in the DAG store and computes trigger bounding box
+ * coordinates for child positioning.
+ *
+ * @example
+ * ```tsx
+ * import { usePopoverNestedTrigger } from 'popover-trail';
+ *
+ * function NestedLink({ sourceKey }: { sourceKey: string }) {
+ *   const triggerProps = usePopoverNestedTrigger('userPermissions', sourceKey);
+ *   return <button {...triggerProps}>View Permissions</button>;
+ * }
+ * ```
+ *
+ * @param key - The unique identifier key for the child nested popover.
  * @param sourceKey - The unique key of the parent popover spawning this child.
  * @param options - Custom configuration options.
  * @param explicitIsOpen - Optional pre-resolved isOpen boolean flag.
- * @returns Event handler props object (e.g. `{ onClick }`).
+ * @returns Event handler and accessibility props object (e.g. `{ onClick, 'aria-expanded': boolean, ... }`).
  */
 export function usePopoverNestedTrigger(
   key: string,

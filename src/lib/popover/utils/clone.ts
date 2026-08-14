@@ -19,8 +19,15 @@ function cloneBuiltinInstance(obj: object): object | null {
 }
 
 /**
- * Fast deep/shallow clone helper that utilizes V8 native structuredClone when available.
- * Falls back safely to shallow object/array copying if structuredClone is unavailable or fails.
+ * Deep-clones state objects and data payloads using the fastest available strategy.
+ *
+ * @remarks
+ * Utilizes native `structuredClone` when supported, and gracefully falls back to recursive
+ * object/array/Map/Set cloning when non-serializable properties (e.g. functions, DOM nodes) are encountered.
+ *
+ * @template T - Input object type.
+ * @param obj - Object, array, or primitive value to clone.
+ * @returns An isolated deep copy of the input value.
  */
 export function fastClone<T>(obj: T): T {
   if (obj === null || typeof obj !== 'object') {

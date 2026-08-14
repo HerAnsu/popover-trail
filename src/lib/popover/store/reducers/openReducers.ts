@@ -41,7 +41,18 @@ function buildActiveTrailPatch<TData, TContext>(
 }
 
 /**
- * Pure state updater for opening a root popover at the top level.
+ * Pure state reducer computing next state when opening a root popover card.
+ *
+ * @remarks
+ * If the card is already pinned in `floating`, elevates its z-index instead of duplicating it.
+ * If owned by the same trigger, appends to trail; otherwise resets trail with the new root.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @param state - Current reactive store state.
+ * @param ownerId - Identifier of the triggering element.
+ * @param entry - New root trail entry to mount.
+ * @returns Partial state patch to apply.
  */
 export function openRootState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
@@ -81,7 +92,18 @@ function computeNextTrailForNestedPush<TData, TContext>(
 }
 
 /**
- * Pure state updater for pushing or appending a nested popover into the active path.
+ * Pure state reducer computing next state when pushing a nested child card.
+ *
+ * @remarks
+ * Truncates existing trail descendants past the parent index and appends the child entry.
+ * If the card is already pinned in `floating`, brings it to the front without modifying the trail.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @param state - Current reactive store state.
+ * @param index - Index of parent card (in combined floating + trail list).
+ * @param entry - Child trail entry to attach.
+ * @returns Partial state patch to apply.
  */
 export function pushNestedState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,

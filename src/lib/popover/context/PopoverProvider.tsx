@@ -20,8 +20,33 @@ interface SchemaLike<TData, TContext> {
 }
 
 /**
- * PopoverProvider component that instantiates the Zustand store and injects it
- * into the React context tree.
+ * PopoverProvider Component.
+ * Instantiates the underlying Zustand popover store and supplies it to the React component sub-tree.
+ *
+ * @remarks
+ * Coordinates store lifecycle, prop synchronization, keyboard shortcuts (Escape / Arrow keys),
+ * click-outside listener interception, and schema/resolver binding.
+ *
+ * @example
+ * ```tsx
+ * import { PopoverProvider, createPopoverSchema, defineSchemaNode } from 'popover-trail';
+ *
+ * const schema = createPopoverSchema({
+ *   user: defineSchemaNode(async (id: string) => fetchUser(id)),
+ * });
+ *
+ * export function App() {
+ *   return (
+ *     <PopoverProvider schema={schema} baseZIndex={1000} cascadeOffsetStep={12}>
+ *       <MyApplication />
+ *     </PopoverProvider>
+ *   );
+ * }
+ * ```
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Shared context payload type.
+ * @param props - Provider configuration props.
  */
 export function PopoverProvider<TData = unknown, TContext = unknown>(
   props: PopoverProviderProps<TData, TContext>,

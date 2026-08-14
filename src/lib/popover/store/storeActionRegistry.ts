@@ -54,7 +54,23 @@ export interface ActionRegistryDependencies<
 }
 
 /**
- * Creates and registers all store actions bound to set/get Zustand methods via SliceContext.
+ * Composes all domain action slices into a unified PopoverActions object bound to Zustand set/get.
+ *
+ * @remarks
+ * Merges five modular slices:
+ * - `trailSlice`: Cascade navigation, push, close, and transition animations.
+ * - `pinningSlice`: Modeless pinning, z-index elevation, and drag offsets.
+ * - `resolverSlice`: Async data loading, optimistic dispatch, retries, and prefetching.
+ * - `configSlice`: Global options, collision avoidance, hover timers, and responsive modes.
+ * - `persistenceSlice`: Snapshot persistence, localStorage rehydration, undo, and redo.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @param set - Zustand state setter callback function.
+ * @param get - Zustand state getter callback function.
+ * @param deps - Internal subsystem dependencies.
+ * @returns Fully composed PopoverActions record.
  */
 export function createStoreActions<
   TData = unknown,

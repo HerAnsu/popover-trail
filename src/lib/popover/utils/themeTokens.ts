@@ -1,11 +1,20 @@
 import { createDisposable, type ScopeDisposable } from './disposable';
 
+/**
+ * Theme styling tokens configuring popover design variables in CSS.
+ */
 export interface PopoverThemeTokens {
+  /** Base starting z-index for the popover portal layer (defaults to 1000). */
   baseZIndex?: number;
+  /** Pixel offset distance between cascading popover cards (defaults to 24px). */
   cascadeOffset?: number;
+  /** Card enter/exit transition duration in milliseconds (defaults to 200ms). */
   transitionDurationMs?: number;
+  /** Backdrop blur radius in pixels (defaults to 8px). */
   backdropBlurPx?: number;
+  /** Box shadow string applied to popover cards. */
   cardShadow?: string;
+  /** Card corner border radius in pixels (defaults to 12px). */
   borderRadiusPx?: number;
 }
 
@@ -23,7 +32,9 @@ function injectStyleProperty(element: HTMLElement, propertyName: string, value: 
 }
 
 /**
- * Removes custom popover-trail theme tokens from a DOM container.
+ * Removes custom popover-trail theme CSS variables from a DOM container.
+ *
+ * @param element - Target container element (defaults to `document.documentElement`).
  */
 export function removeThemeTokens(
   element: HTMLElement | null = typeof document !== 'undefined' ? document.documentElement : null,
@@ -38,7 +49,27 @@ export function removeThemeTokens(
 }
 
 /**
- * Applies custom theme tokens to a DOM container (or document.documentElement) and returns a disposable handle.
+ * Injects custom theme tokens as CSS variables on a DOM container (or `document.documentElement`)
+ * and returns a disposable cleanup handle.
+ *
+ * @remarks
+ * Injects `--pt-base-z-index`, `--pt-cascade-offset`, `--pt-transition-duration`, `--pt-backdrop-blur`,
+ * `--pt-card-shadow`, and `--pt-border-radius`.
+ *
+ * @example
+ * ```typescript
+ * {
+ *   using theme = applyThemeTokens(document.body, {
+ *     cascadeOffset: 32,
+ *     borderRadiusPx: 16,
+ *   });
+ *   // Custom styles active inside this block...
+ * } // Tokens cleaned up automatically!
+ * ```
+ *
+ * @param element - Target container element (defaults to `document.documentElement`).
+ * @param tokens - Theme configuration options.
+ * @returns ScopeDisposable handle that resets the CSS variables when disposed.
  */
 export function applyThemeTokens(
   element: HTMLElement | null = typeof document !== 'undefined' ? document.documentElement : null,

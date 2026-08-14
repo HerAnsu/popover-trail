@@ -18,7 +18,24 @@ function resolvePinnedLayoutPos(
 }
 
 /**
- * Pure state updater for toggling a popover's modeless pinned/floating vs trailing status.
+ * Pure state reducer computing next state when toggling between floating (pinned) and cascade (trail) modes.
+ *
+ * @remarks
+ * When pinning:
+ * - Moves the entry from `trail` to `floating`.
+ * - Locks the current DOM coordinates into `pinnedLayoutPos`.
+ * - Elevates the card to the top of `zIndexOrder`.
+ *
+ * When unpinning:
+ * - Moves the entry from `floating` back to `trail`.
+ * - Restores its original parent linkage and relative cascade geometry.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @param state - Current reactive store state.
+ * @param key - Target popover key to pin or unpin.
+ * @param rect - Optional current DOM bounding box of the card.
+ * @returns Partial state patch to apply.
  */
 export function togglePinState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,

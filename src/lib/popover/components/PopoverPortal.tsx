@@ -4,20 +4,39 @@ import { usePopoverFloating, usePopoverTrail } from '../hooks/usePopoverSelector
 import type { TrailEntry } from '../types';
 import { validatePortalContainer } from '../utils/devWarnings';
 
+/**
+ * Props for `<PopoverPortal>`.
+ */
 export interface PopoverPortalProps {
-  /** React elements or render prop callback function. */
+  /** React elements or a render prop callback function receiving all active popover entries. */
   children: ReactNode | ((entries: Array<TrailEntry & { isPinned: boolean }>) => ReactNode);
-  /** Optional custom DOM element target. Defaults to document.body. */
+  /** Optional custom DOM container element target. Defaults to `document.body`. */
   container?: HTMLElement | (() => HTMLElement | null) | React.RefObject<HTMLElement | null>;
 }
 
 /**
- * Portal wrapper component that safely mounts children elements to `document.body`,
- * bypassing parent `overflow: hidden` layouts and clipping issues.
- * Supports direct ReactNode elements or render-prop functions receiving formatted entries.
+ * Portal wrapper component that safely mounts children elements to `document.body` or a custom container.
+ * Bypasses parent `overflow: hidden`, `clip-path`, and CSS transform stacking context limitations.
  *
- * @param props - Portal configuration props.
- * @returns The portal element.
+ * @remarks
+ * Safe for SSR: only renders the portal after client-side mounting is verified to avoid hydration mismatches.
+ * Supports direct React children or a render prop receiving the combined array of active popovers.
+ *
+ * @example
+ * ```tsx
+ * import { PopoverPortal } from 'popover-trail';
+ *
+ * function App() {
+ *   return (
+ *     <PopoverPortal>
+ *       <div className="floating-layer">...</div>
+ *     </PopoverPortal>
+ *   );
+ * }
+ * ```
+ *
+ * @param props - Portal configuration options and children content.
+ * @returns React Portal instance, or null prior to hydration.
  */
 export function PopoverPortal({ children, container }: PopoverPortalProps) {
   const [mounted, setMounted] = useState(false);

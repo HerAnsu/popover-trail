@@ -19,6 +19,15 @@ import { EMPTY_ARRAY } from '../storeDefaults';
 import { dispatchStoreEvent } from '../eventBus';
 import type { SliceContext } from './sliceContext';
 
+/**
+ * Factory creating trail cascade actions (`openRoot`, `pushNested`, `closeFrom`, `closeByKey`, `closeAll`, `clearTrail`, `closeTopmost`).
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @param ctx - Slice context providing Zustand set/get methods and dependencies.
+ * @returns Trail slice action methods.
+ */
 export function createTrailSlice<
   TData = unknown,
   TContext = unknown,

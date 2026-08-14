@@ -25,24 +25,45 @@ export {
   type CardKeyboardNavigationOptions,
 } from './card/useCardKeyboardNav';
 
+/**
+ * Options parameters for the `usePopoverCard` hook.
+ */
 export interface UsePopoverCardOptions {
+  /** The specific trail entry data represented by the card. */
   entry: TrailEntry;
+  /** The 0-based virtual rendering index of the card. */
   index: number;
+  /** Whether this card is pinned as a floating window (`true`) or stacked in the trail (`false`). */
   isPinned: boolean;
+  /** Relative alignment placement direction preference (defaults to 'bottom'). */
   placement?: PopoverPlacement;
 }
 
+/**
+ * Result object returned by the `usePopoverCard` hook.
+ */
 export interface UsePopoverCardResult {
+  /** Callback ref attached to the card DOM element to calculate positioning. */
   readonly ref: (node: HTMLDivElement | null) => void;
+  /** Compiled inline styles including top, left, z-index, and CSS custom variables. */
   readonly style: Readonly<CSSProperties>;
+  /** Whether this card currently has the highest z-index in the active stack. */
   readonly isTop: boolean;
+  /** Whether the card is currently being dragged with pointer. */
   readonly isDragging: boolean;
+  /** Imperative store action dispatchers (close, togglePin, etc.). */
   readonly actions: ReturnType<typeof usePopoverActions>;
+  /** Optional drag handle accessibility attributes and pointer event listeners. */
   readonly dragHandleProps: HTMLAttributes<HTMLElement>;
+  /** Pointer enter handler to cancel pending hover close timers. */
   readonly onMouseEnter: () => void;
+  /** Pointer leave handler to start hover close delay timer when unpinned. */
   readonly onMouseLeave: () => void;
+  /** Keyboard event handler for Escape dismiss, Arrow navigation, and focus trapping. */
   readonly onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+  /** Active mounting or unmounting transition CSS class name. */
   readonly transitionClassName: string;
+  /** Resolved button visibility and customization controls from schema or options. */
   readonly buttonControls: Readonly<{
     enablePin: boolean;
     enableClose: boolean;
@@ -55,12 +76,24 @@ export interface UsePopoverCardResult {
       onClick?: (key: string) => void;
     }>;
   }>;
+  /** Callback handler to toggle the card between trailing stack and pinned window. */
   readonly handlePinToggle: () => void;
 }
 
 /**
- * Composite hook unifying positioning, focus locks, keyboard navigation,
- * and style compilation for popover cards.
+ * Composite hook unifying Floating UI geometry, focus management, keyboard arrow navigation,
+ * transition class names, and style compilation for popover cards.
+ *
+ * @remarks
+ * Encapsulates the entire lifecycle of an active popover card:
+ * - Floating UI positioning relative to the anchor trigger element.
+ * - Stacking order calculation and topological z-index assignment.
+ * - Keyboard navigation (Escape to close current branch, Arrow Left/Right to traverse trail cards).
+ * - Automatic focus restoration when cards open and close.
+ * - CSS transition status class generation (`mounting`, `mounted`, `unmounting`).
+ *
+ * @param options - Card entry data, index, pinned status, and placement preferences.
+ * @returns Complete suite of reactive styles, event handlers, and action dispatchers.
  */
 export function usePopoverCard({
   entry,

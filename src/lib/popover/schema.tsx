@@ -17,31 +17,40 @@ import { validateSchemaKey } from './utils/devWarnings';
 /**
  * Definition node configuration for a single popover in the schema.
  *
- * @template TData - Resolved data payload type.
- * @template TParentData - Data type of parent popover if nested.
- * @template TContext - Custom context type.
+ * @template TData - Resolved data payload type returned by the resolver.
+ * @template TParentData - Data type of the parent popover when nested.
+ * @template TContext - Global shared context type passed into resolvers.
  */
 export interface PopoverSchemaNode<TData = unknown, TParentData = unknown, TContext = unknown> {
-  /** Resolver function to load data for this popover. Supports cancellable AbortSignal. */
+  /**
+   * Resolver function to load data for this popover.
+   * Supports asynchronous operations and request cancellation via AbortSignal.
+   *
+   * @param key - The unique popover key being resolved.
+   * @param parentData - Resolved data payload from the parent popover if nested.
+   * @param context - Global context object provided to the PopoverProvider.
+   * @param signal - AbortSignal triggered if the popover closes before resolution finishes.
+   * @returns Data payload directly or a Promise resolving to data.
+   */
   resolver: (
     key: string,
     parentData?: TParentData,
     context?: TContext,
     signal?: AbortSignal,
   ) => TData | Promise<TData>;
-  /** Optional list of allowed nested child popover schema keys spawned by this parent. */
+  /** Optional list of allowed child popover keys that can be spawned from this parent. */
   children?: ReadonlyArray<string>;
-  /** Default layout placement. */
+  /** Default layout placement relative to the trigger. */
   placement?: PopoverPlacement;
-  /** Default trigger distance gap offset in pixels. */
+  /** Distance gap in pixels between the trigger element and the popover. */
   offset?: number;
-  /** Boundary collision configuration. */
+  /** Boundary collision and flip behavior settings. */
   collision?: CollisionConfig;
-  /** Hover-trigger configuration. */
+  /** Hover-trigger delay and interaction settings. */
   hover?: HoverConfig;
-  /** Allow dragging when pinned. */
+  /** Whether the card can be dragged with pointer when pinned. */
   allowDragWhenPinned?: boolean;
-  /** Allow dragging when unpinned. */
+  /** Whether the card can be dragged with pointer when unpinned. */
   allowDragWhenUnpinned?: boolean;
 }
 
@@ -67,7 +76,22 @@ export type InferSchemaContext<TSchema extends PopoverSchemaDefinition> =
   TSchema[keyof TSchema] extends PopoverSchemaNode<unknown, unknown, infer TC> ? TC : unknown;
 
 /**
- * Ergonomic helper to define an individual schema node with full type inference and autocompletion.
+ * Helper to define an individual schema node with full type inference and editor autocompletion.
+ *
+ * @remarks
+ * Use this helper when defining schema nodes in separate modules before combining them into a full schema.
+ *
+ * @example
+ * ```typescript
+ * const userNode = defineSchemaNode({
+ *   resolver: async (userId: string) => fetchUser(userId),
+ *   placement: 'right',
+ *   children: ['details', 'settings'],
+ * });
+ * ```
+ *
+ * @param node - The schema node configuration object.
+ * @returns The exact typed schema node.
  */
 export function defineSchemaNode<TData, TParentData = unknown, TContext = unknown>(
   node: PopoverSchemaNode<TData, TParentData, TContext>,
@@ -181,7 +205,31 @@ function parseResolverInvocationParams<TC>(
 
 /**
  * Factory function creating a strongly typed Popover Schema.
- * Consolidates popover definitions, key types, data payload types, placement defaults, and resolvers.
+ * Consolidates popover definitions, keys, data payload types, placement defaults, and resolvers.
+ *
+ * @remarks
+ * In schema mode, all popover keys, child relationship constraints, and data payload types
+ * are inferred at compile-time. The returned instance exposes typed hooks (`useData`, `useEntry`, `useActions`)
+ * and a schema-bound `Trigger` component.
+ *
+ * @example
+ * ```tsx
+ * const schema = createPopoverSchema({
+ *   user: {
+ *     resolver: async (id: string) => fetchUser(id),
+ *     placement: 'right',
+ *     children: ['details'],
+ *   },
+ *   details: {
+ *     resolver: async (id: string, parentUser) => fetchUserDetails(id, parentUser),
+ *     placement: 'bottom',
+ *   },
+ * });
+ *
+ * // Access typed actions and data
+ * const { openRoot, pushNested } = schema.useActions();
+ * const userData = schema.useData('user');
+ * ```
  *
  * @template TSchema - The popover schema definition type.
  * @template TContext - Global shared context type.

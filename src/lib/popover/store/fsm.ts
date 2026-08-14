@@ -2,6 +2,14 @@
  * Finite State Machine (FSM / Statechart) Engine for popover-trail.
  * Provides deterministic, zero-invalid-state transitions for popover card lifecycles.
  *
+ * Lifecycle flow:
+ * - A popover starts in the Idle state.
+ * - Opening a root card or pushing a nested card transitions it to Hydrating while data loads.
+ * - Once resolved, the card enters Resolved.Trailing (stacked in cascade) or Resolved.Pinned (floating window).
+ * - Toggling pin switches the card between Resolved.Trailing and Resolved.Pinned.
+ * - If data loading fails, the card enters Error state with retry support.
+ * - Closing transitions the card to Unmounting to run exit animations before returning to Idle.
+ *
  * @module fsm
  */
 
@@ -19,14 +27,24 @@ export type ValidStateTransitions = Readonly<
   Record<PopoverStateValue, ReadonlyArray<PopoverStateValue>>
 >;
 
-/** Bitmask flags for high-performance O(1) state status checking. */
+/**
+ * Bitmask flags for high-performance O(1) state status checking without string comparisons.
+ * Used internally for ultra-fast filtering across large active popover stacks.
+ */
 export const FSMStatusBit = {
+  /** Unmounted / inactive state */
   Idle: 1,
+  /** Data resolution promise in flight */
   Hydrating: 1 << 1,
+  /** Data resolved, currently stacked in trailing breadcrumb cascade */
   ResolvedTrailing: 1 << 2,
+  /** Data resolved, currently detached as a floating modeless canvas card */
   ResolvedPinned: 1 << 3,
+  /** Data resolution failed with an Error object */
   Error: 1 << 4,
+  /** Exit animation in progress before removal from store */
   Unmounting: 1 << 5,
+  /** Composite mask for any active state that renders UI (Hydrating | Resolved.Trailing | Resolved.Pinned) */
   Active: (1 << 1) | (1 << 2) | (1 << 3),
 } as const;
 
@@ -44,6 +62,7 @@ export const STATE_VALUE_TO_BIT_MAP: Record<PopoverStateValue, number> = {
 
 /**
  * Context payload held within an FSM state node.
+ * Contains the active data, error, and pinning coordinates associated with the state.
  *
  * @template TData - The resolved data payload type.
  */

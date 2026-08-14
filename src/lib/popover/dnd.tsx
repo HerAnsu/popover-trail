@@ -82,19 +82,19 @@ function resolveDragTransformState(
 export interface UsePopoverDraggableCardOptions {
   /** The specific trail entry data represented by the card. */
   entry: TrailEntry;
-  /** The virtual rendering index of the card. */
+  /** The 0-based virtual rendering index of the card. */
   index: number;
-  /** True if this card is currently pinned/floating. */
+  /** Whether this card is currently pinned as a floating window (`true`) or stacked in the trail (`false`). */
   isPinned: boolean;
-  /** Relative alignment placement direction preference (default: "bottom"). */
+  /** Relative alignment placement direction preference (defaults to 'bottom'). */
   placement?: PopoverPlacement;
-  /** True to allow drag-and-drop movement when pinned (default: true). */
+  /** Whether to enable pointer drag-and-drop movement when pinned (defaults to true). */
   enableDrag?: boolean;
-  /** True to enable physical spring rotation (tilt/swing) effects when dragging (default: true). */
+  /** Whether to enable dynamic spring tilt and velocity swing effects when dragging (defaults to true). */
   enableTilt?: boolean;
-  /** Maximum tilt swing angle in degrees (default: 5). */
+  /** Maximum tilt swing angle limit in degrees (defaults to 5). */
   maxTiltAngle?: number;
-  /** Factor scaling tilt response to drag velocity (default: 8). */
+  /** Sensitivity multiplier scaling angular tilt response to cursor drag velocity (defaults to 8). */
   tiltSensitivity?: number;
 }
 
@@ -102,9 +102,9 @@ export interface UsePopoverDraggableCardOptions {
  * Result object returned by the `usePopoverDraggableCard` hook.
  */
 export interface UsePopoverDraggableCardResult extends UsePopoverCardResult {
-  /** True if dragging is currently permitted for this card. */
+  /** Whether pointer dragging is currently allowed for this specific card. */
   isDragAllowed: boolean;
-  /** Callback handler to toggle the pinned status of the card modelessly. */
+  /** Callback handler to toggle the pinned status of the card. */
   handlePinToggle: () => void;
 }
 
@@ -136,11 +136,34 @@ function resolveTiltParameters(
 }
 
 /**
- * Custom React hook binding layout geometry, focus management, physical spring rotation,
- * and @dnd-kit/core pointer events into a single unified popover interface.
+ * Composite hook binding Floating UI placement, focus management, physical spring rotation tilt,
+ * and `@dnd-kit/core` pointer dragging into a single unified popover interface.
  *
- * @param options - Hook configuration settings.
- * @returns Combined card positioning, interaction properties, and drag-and-drop handle bindings.
+ * @remarks
+ * Combines geometry positioning from Floating UI with dnd-kit transform offsets and Euler tilt rotation.
+ * Automatically synchronizes pixel drag offsets with the Zustand state store on drag end.
+ *
+ * @example
+ * ```tsx
+ * function CustomDraggableCard({ entry, index, isPinned }) {
+ *   const { ref, style, dragHandleProps, isDragging } = usePopoverDraggableCard({
+ *     entry,
+ *     index,
+ *     isPinned,
+ *     enableTilt: true,
+ *   });
+ *
+ *   return (
+ *     <div ref={ref} style={style}>
+ *       <div {...dragHandleProps} className="drag-handle">Drag here</div>
+ *       <div>{entry.data?.title}</div>
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @param options - Configuration options for positioning, dragging, and tilt physics.
+ * @returns Combined card positioning, interaction handlers, drag handle bindings, and pin toggle callback.
  */
 export function usePopoverDraggableCard({
   entry,
@@ -306,6 +329,34 @@ function clampToContainerBounds(
   });
 }
 
+/**
+ * High-level drag-and-drop canvas container for rendering interactive popover trails and floating cards.
+ *
+ * @remarks
+ * Embeds a `@dnd-kit/core` `DndContext` configured with Pointer, Touch, and Keyboard sensors.
+ * Manages layer stacking order (`bringToFront` on drag start), persist offsets on drag end,
+ * and boundary coordinate clamping when `restrictToWindow` or `restrictToContainer` is enabled.
+ *
+ * @example
+ * ```tsx
+ * import { PopoverCanvas, PopoverCard } from 'popover-trail/dnd';
+ *
+ * export function CanvasView() {
+ *   return (
+ *     <PopoverCanvas restrictToWindow>
+ *       {({ entry, index, isPinned }) => (
+ *         <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
+ *           <div>{entry.data?.title}</div>
+ *         </PopoverCard>
+ *       )}
+ *     </PopoverCanvas>
+ *   );
+ * }
+ * ```
+ *
+ * @template TData - Resolved data payload type.
+ * @param props - Canvas options and card render prop callback.
+ */
 export function PopoverCanvas<TData = unknown>({
   children,
   modifiers: customModifiers,

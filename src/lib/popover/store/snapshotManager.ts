@@ -77,6 +77,7 @@ function isSnapshotMessageEvent<TData>(
   );
 }
 
+/** Keys that are rejected unconditionally to prevent prototype pollution vulnerability attacks. */
 const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
 
 const DEFAULT_SNAPSHOT_STORAGE_KEY = 'pt_popover_trail_snapshot';
@@ -84,6 +85,11 @@ const DEFAULT_SNAPSHOT_STORAGE_KEY = 'pt_popover_trail_snapshot';
 const DISPOSE_SYMBOL: symbol =
   (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
+/**
+ * Sanitizes serialized payload data objects:
+ * 1. Filters out functions, promises, and undefined values that cannot be JSON serialized.
+ * 2. Filters out object keys matching prototype pollution properties (`__proto__`, etc.).
+ */
 function sanitizePayloads<TData>(
   payloads?: Record<string, TData>,
 ): Record<string, TData> | undefined {
@@ -102,6 +108,7 @@ function sanitizePayloads<TData>(
   return clean;
 }
 
+/** Validates and clamps point coordinates to safe finite numbers. */
 function sanitizePoint(
   pt: { x: number; y: number } | null | undefined,
 ): { x: number; y: number } | null {
@@ -112,6 +119,7 @@ function sanitizePoint(
   };
 }
 
+/** Sanitizes coordinate offset dictionary to ensure no unsafe keys or non-finite numbers. */
 function sanitizeOffsets(
   offsets?: Record<string, { x: number; y: number }>,
 ): Record<string, { x: number; y: number }> {

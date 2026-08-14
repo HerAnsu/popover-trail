@@ -58,6 +58,18 @@ export function clampDragCoordinates(
   return out;
 }
 
+/**
+ * Computes 3D Euler tilt rotation angles (pitch around X-axis, roll around Y-axis)
+ * from pointer velocity or drag offsets.
+ *
+ * Pitch (rotationX): Derived from vertical delta (-deltaY) so dragging down tilts the card backward.
+ * Roll (rotationY): Derived from horizontal delta (+deltaX) so dragging right tilts the card rightward.
+ *
+ * @param deltaX - Horizontal offset delta.
+ * @param deltaY - Vertical offset delta.
+ * @param maxAngle - Maximum rotation angle ceiling in degrees (default: 15).
+ * @param sensitivity - Velocity sensitivity scaling multiplier (default: 0.1).
+ */
 function computeRawTiltAngles(
   deltaX: number,
   deltaY: number,
@@ -69,6 +81,7 @@ function computeRawTiltAngles(
   const safeMaxAngle = Number.isFinite(maxAngle) && maxAngle >= 0 ? maxAngle : 15;
   const safeSensitivity = Number.isFinite(sensitivity) ? sensitivity : 0.1;
 
+  // Invert deltaY for natural pitch response (dragging down tilts top of card towards user)
   const rawX = -safeDeltaY * safeSensitivity;
   const rawY = safeDeltaX * safeSensitivity;
 
@@ -98,9 +111,10 @@ export function computeTiltMatrix(
 
 /**
  * Applies drag friction resistance factor to raw movement deltas.
+ * Formula: `delta * (1 - clampedFriction)`
  *
- * @param delta - Raw movement delta value.
- * @param friction - Resistance coefficient between 0 and 1 (default: 0.5).
+ * @param delta - Raw movement delta value in pixels.
+ * @param friction - Resistance coefficient between 0 (no resistance) and 1 (locked) (default: 0.5).
  * @returns Resistance-adjusted delta.
  */
 export function applyDragFriction(delta: number, friction = 0.5): number {

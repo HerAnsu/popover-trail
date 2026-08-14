@@ -7,8 +7,11 @@
  */
 
 /**
- * Singleton registry mapping popover keys to WeakRef<HTMLElement> anchor elements.
- * Lives outside the Zustand store to keep state 100% serializable.
+ * Singleton registry mapping popover keys to `WeakRef<HTMLElement>` anchor elements.
+ *
+ * @remarks
+ * Storing DOM node references inside `WeakRef` containers outside the Zustand store ensures
+ * that the store state remains serializable and prevents memory leaks if components unmount.
  */
 const registry = new Map<string, WeakRef<HTMLElement>>();
 const MAX_REGISTRY_SIZE_BEFORE_SWEEP = 100;
@@ -22,7 +25,12 @@ function pruneDeadRefs(): void {
 }
 
 export const TriggerRegistry = {
-  /** Register an anchor element for a popover key. */
+  /**
+   * Registers a trigger element for a popover key.
+   *
+   * @param key - Unique popover key string.
+   * @param el - DOM HTMLElement of the trigger button or container.
+   */
   register(key: string, el: HTMLElement): void {
     if (!key || !el || typeof el !== 'object') return;
     if (registry.size > MAX_REGISTRY_SIZE_BEFORE_SWEEP) {

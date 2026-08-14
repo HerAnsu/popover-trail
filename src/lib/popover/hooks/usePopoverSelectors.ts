@@ -344,11 +344,11 @@ export function usePopoverHydration<
 }
 
 /**
- * Hook to retrieve resolved data for a popover key with React 19 use() support.
+ * Hook to retrieve resolved data for a popover key with native React 19 `use(promise)` Suspense support.
  *
- * @template TData - The type of resolved data payload.
- * @param key - The unique identifier key of the popover card.
- * @returns The resolved data payload. Suspends when entry.dataPromise is pending in React 19.
+ * @remarks
+ * If `entry.dataPromise` is pending and the runtime supports `React.use()`, this hook triggers Suspense
+ * until data resolution completes, eliminating manual loading spinners and intermediate render flicker.
  *
  * @example
  * ```tsx
@@ -359,6 +359,11 @@ export function usePopoverHydration<
  *   return <div>{data?.email}</div>;
  * }
  * ```
+ *
+ * @template TData - The type of resolved data payload.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param key - The unique identifier key of the popover card.
+ * @returns The resolved data payload, or suspends if pending in React 19.
  */
 export function usePopoverData<
   TData = RegisteredDataMap[RegisteredKeys],
@@ -375,6 +380,10 @@ export function usePopoverData<
 
 /**
  * Hook to retrieve loading state of a specific popover.
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param key - The unique identifier key of the popover.
+ * @returns True if the popover is currently resolving data.
  */
 export function usePopoverIsLoading<TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
@@ -386,6 +395,10 @@ export function usePopoverIsLoading<TPopoverKey extends string = RegisteredKeys>
 
 /**
  * Hook to retrieve the error of a specific popover if any.
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param key - The unique identifier key of the popover.
+ * @returns The Error instance, or null if resolution succeeded or is in flight.
  */
 export function usePopoverError<TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
@@ -396,7 +409,10 @@ export function usePopoverError<TPopoverKey extends string = RegisteredKeys>(
 }
 
 /**
- * Hook to retrieve the root popover entry from the trail stack.
+ * Hook to retrieve the root popover entry that initiated the active cascade trail.
+ *
+ * @template TData - Resolved data payload type.
+ * @returns Root trail entry or undefined if trail is empty.
  */
 export function usePopoverRootEntry<TData = RegisteredDataMap[RegisteredKeys]>():
   | TrailEntry<TData>
@@ -405,14 +421,18 @@ export function usePopoverRootEntry<TData = RegisteredDataMap[RegisteredKeys]>()
 }
 
 /**
- * Hook to retrieve the total count of active popovers.
+ * Hook to retrieve the total count of active popovers across both trailing and floating lists.
+ *
+ * @returns Combined active popover count integer.
  */
 export function usePopoverTotalActiveCount(): number {
   return usePopoverStore((state) => state.floating.length + state.trail.length);
 }
 
 /**
- * Hook to check if the store is completely idle (0 popovers open).
+ * Hook to check if the store is completely idle (zero popovers currently open).
+ *
+ * @returns True if no popover cards are active.
  */
 export function useIsPopoverIdle(): boolean {
   return usePopoverStore((state) => state.floating.length === 0 && state.trail.length === 0);

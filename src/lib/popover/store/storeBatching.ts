@@ -8,16 +8,29 @@
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore } from '../types';
 
+/**
+ * Manager interface coordinating atomic batch updates and subscriber notification suppression.
+ */
 export interface BatchingManager {
+  /** Increments batching depth and begins notification suppression. */
   startBatch: () => void;
+  /** Decrements batching depth and flushes dirty notifications if top-level batch finished. */
   endBatch: (getState?: () => unknown) => void;
+  /** Attaches batching awareness to a Zustand store's subscriber mechanism. */
   attachSubscriber: <TData, TContext, TPopoverKey extends string>(
     store: StoreApi<PopoverStore<TData, TContext, TPopoverKey>>,
   ) => void;
 }
 
 /**
- * Executes a callback within an atomic batch update scope, returning its exact return value `R`.
+ * Executes a callback within an atomic batch update scope, suppressing subscriber notifications
+ * until the entire batch finishes, then emitting a single consolidated update.
+ *
+ * @template R - Return value type of the batched function.
+ * @param manager - Batching manager instance.
+ * @param fn - Synchronous callback executing multiple store updates.
+ * @param getState - Optional getter function to retrieve latest state snapshot.
+ * @returns The exact value returned by `fn()`.
  */
 export function batchUpdatesScope<R>(
   manager: BatchingManager,
@@ -33,8 +46,8 @@ export function batchUpdatesScope<R>(
 }
 
 /**
- * Instantiates a batching manager instance that coordinates batching state
- * and subscriber notification suppression during batchUpdates execution.
+ * Instantiates a batching manager instance coordinating batching depth
+ * and subscriber notification suppression during batch updates.
  */
 type BatchListener = (state: unknown, prevState: unknown) => void;
 

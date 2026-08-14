@@ -1,5 +1,8 @@
 /**
- * Returns the event propagation path, supporting Shadow DOM composedPath.
+ * Returns the event propagation path array, with support for Shadow DOM `composedPath()`.
+ *
+ * @param e - DOM Event instance.
+ * @returns Array of EventTarget nodes traversed during event propagation.
  */
 export function getEventPath(e: Event): EventTarget[] {
   if (typeof e.composedPath === 'function') {
@@ -10,6 +13,10 @@ export function getEventPath(e: Event): EventTarget[] {
 
 /**
  * Safely extracts the event target or primary Shadow DOM origin node from an event.
+ *
+ * @template T - Expected EventTarget or HTMLElement subclass.
+ * @param e - DOM Event instance.
+ * @returns Target element or null if unavailable.
  */
 export function getEventTarget<T extends EventTarget = HTMLElement>(e: Event): T | null {
   if (typeof e.composedPath === 'function') {
@@ -20,7 +27,11 @@ export function getEventTarget<T extends EventTarget = HTMLElement>(e: Event): T
 }
 
 /**
- * Inspects event path for elements marked with data-popover-portal or data-popover-ignore-outside.
+ * Inspects the event propagation path for elements explicitly marked with
+ * `data-popover-portal` or `data-popover-ignore-outside` attributes.
+ *
+ * @param e - DOM Event instance.
+ * @returns True if any ancestor in the event path is marked to be ignored.
  */
 export function isPortalOrExcludedTarget(e: Event): boolean {
   const path = getEventPath(e);

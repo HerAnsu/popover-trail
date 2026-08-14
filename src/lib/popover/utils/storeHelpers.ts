@@ -41,6 +41,12 @@ export { clsx } from './clsx';
 /**
  * Retrieves a popover entry safely using a virtual index that merges
  * the floating and trailing lists.
+ *
+ * @template TData - Resolved data payload type.
+ * @param floating - Active floating entries array.
+ * @param trail - Active cascading trail array.
+ * @param index - Zero-based index across combined floating + trail items.
+ * @returns Found TrailEntry or undefined if out of bounds.
  */
 export function getEntryAtIndex<TData>(
   floating: readonly TrailEntry<TData>[],
@@ -55,6 +61,12 @@ export function getEntryAtIndex<TData>(
 /**
  * Finds the virtual index of a popover entry by its unique key ID,
  * combining the floating and trailing array ranges.
+ *
+ * @template TData - Resolved data payload type.
+ * @param floating - Active floating entries array.
+ * @param trail - Active cascading trail array.
+ * @param key - Unique popover key to locate.
+ * @returns Virtual index number, or -1 if not found.
  */
 export function findEntryIndex<TData>(
   floating: readonly TrailEntry<TData>[],
@@ -70,6 +82,12 @@ export function findEntryIndex<TData>(
 /**
  * Verifies if a popover with the given key is currently active
  * in either the floating or trailing arrays.
+ *
+ * @template TData - Resolved data payload type.
+ * @param floating - Active floating entries array.
+ * @param trail - Active cascading trail array.
+ * @param key - Popover key string.
+ * @returns True if open in either floating or trail mode.
  */
 export function hasEntryWithKey<TData>(
   floating: readonly TrailEntry<TData>[],
@@ -81,6 +99,12 @@ export function hasEntryWithKey<TData>(
 
 /**
  * Safely searches for a TrailEntry by key across both floating and trailing lists.
+ *
+ * @template TData - Resolved data payload type.
+ * @param floating - Active floating entries array.
+ * @param trail - Active cascading trail array.
+ * @param key - Popover key string.
+ * @returns Found TrailEntry or undefined.
  */
 export function findEntryInStore<TData>(
   floating: readonly TrailEntry<TData>[],
@@ -92,6 +116,9 @@ export function findEntryInStore<TData>(
 
 /**
  * Sanitizes a DOMRect or DOMRectReadOnly object, ensuring valid numeric properties.
+ *
+ * @param rawRect - Input rectangle object.
+ * @returns Valid DOMRect with non-NaN finite dimensions, or null.
  */
 export function sanitizeRect(
   rawRect: { x?: number; y?: number; width?: number; height?: number } | null | undefined,
@@ -168,7 +195,18 @@ function resolveEntryGeometryMetadata<TData>(
 }
 
 /**
- * Constructs a fully initialized TrailEntry object with defaulted fallbacks.
+ * Constructs a fully initialized TrailEntry object with default properties and geometry.
+ *
+ * @template TData - Resolved data payload type.
+ * @param key - Unique popover key.
+ * @param parentKey - Parent key if nested, or undefined if root.
+ * @param rect - Initial bounding box geometry.
+ * @param options - Custom placement and animation options.
+ * @param existingEntry - Optional existing entry for reusing loaded data and position.
+ * @param data - Optional pre-resolved payload data.
+ * @param error - Optional error object if resolution failed.
+ * @param isLoading - Boolean loading state flag.
+ * @returns Fully constructed TrailEntry object.
  */
 export function createTrailEntry<TData>(
   key: string,

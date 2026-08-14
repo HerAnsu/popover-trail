@@ -4,13 +4,16 @@ import { usePopoverCardScope } from './PopoverCardScopeContext';
 import { getPolymorphicProps } from '../../utils/componentUtils';
 
 /**
- * Sub-component for the Pin/Unpin action button of a `<PopoverCard>`.
+ * Sub-component for the pin/unpin action button of a `<PopoverCard>`.
+ *
+ * @remarks
+ * Automatically retrieves the current card key and pinning state from `PopoverCardScopeContext` and dispatches `togglePin`.
+ * Reflects accessibility state via `aria-pressed` and `data-pinned` attributes.
+ *
+ * @template E - Underlying HTML element or component type.
+ * @param props - Polymorphic button props with children and click handlers.
+ * @returns Accessible pin/unpin toggle button element.
  */
-export type PopoverCardPinButtonProps<E extends ElementType = 'button'> = PolymorphicProps<
-  E,
-  { children?: ReactNode }
->;
-
 export function PopoverCardPinButton<E extends ElementType = 'button'>({
   as,
   children,

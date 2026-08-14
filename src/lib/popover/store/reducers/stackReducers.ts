@@ -147,7 +147,17 @@ export function updateEntryInLists<TData, TContext>(
 }
 
 /**
- * Pure state updater bringing a popover card to the top of the z-index depth order.
+ * Pure state reducer elevating a card and its active descendants to the top of `zIndexOrder`.
+ *
+ * @remarks
+ * Moves the target card key (and any connected child keys) to the end of the `zIndexOrder` array
+ * so they visually layer above other open floating cards.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @param state - Current reactive store state.
+ * @param key - Target popover key to elevate.
+ * @returns Partial state patch updating `zIndexOrder`, or empty object if already on top.
  */
 export function bringToFrontPatch<TData, TContext>(
   state: PopoverStateData<TData, TContext>,
@@ -181,7 +191,21 @@ export function bringToFrontPatch<TData, TContext>(
 }
 
 /**
- * Pure state updater performing garbage collection cleanup on unreferenced state records.
+ * Pure state reducer cleaning up unreferenced state records when cards close.
+ *
+ * @remarks
+ * Prunes orphaned entries from `offsets`, `pinnedStates`, `zIndexOrder`, and `nestedHydrationRequestCounters`
+ * to prevent memory leaks over long user sessions.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @param floating - Active floating entries list.
+ * @param trail - Active cascading trail list.
+ * @param offsets - Current drag offsets map.
+ * @param zIndexOrder - Current depth order list.
+ * @param pinnedStates - Current pinned states map.
+ * @param nestedHydrationRequestCounters - Current request counters map.
+ * @returns Partial state patch with pruned record dictionaries.
  */
 export function getCleanupStatePatch<TData, TContext>(
   floating: readonly TrailEntry<TData>[],
@@ -223,6 +247,9 @@ export function getCleanupStatePatch<TData, TContext>(
 
 /**
  * Builds a partial state patch object for restoring a historical snapshot.
+ *
+ * @param snapshot - Historical snapshot state data.
+ * @returns Partial state patch restoring active cards and geometry.
  */
 export function getSnapshotStatePatch<TData>(snapshot: {
   trail: readonly TrailEntry<TData>[];

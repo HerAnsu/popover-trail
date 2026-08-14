@@ -18,28 +18,53 @@ import {
   usePopoverFloatingSetup,
 } from './geometry/useFloatingSetup';
 
+/**
+ * Options passed to `usePopoverGeometry`.
+ */
 export interface UsePopoverGeometryOptions {
+  /** Identifying popover key string. */
   id: string;
+  /** Bounding rectangle of the trigger or anchor element. */
   anchorRect?: DOMRect;
+  /** Floating UI placement preference string. */
   placement?: PopoverPlacement;
+  /** Current 0-based depth index in the z-index stack. */
   zIndex: number;
+  /** True if card is actively undergoing pointer drag. */
   isDragging: boolean;
+  /** True if card is pinned as a detached floating window. */
   isPinned: boolean;
+  /** Active popover entry object. */
   entry?: TrailEntry;
+  /** Set true to enable QuadTree 2D collision avoidance nudging. */
   enableSpatialCollision?: boolean;
 }
 
+/**
+ * Result object returned by `usePopoverGeometry`.
+ */
 export interface UsePopoverGeometryResult {
+  /** Final calculated top and left screen coordinates in pixels. */
   finalLayoutPos: {
     top: number;
     left: number;
   };
+  /** Ref callback to attach to the floating card DOM node. */
   setFloating: (node: HTMLElement | null) => void;
 }
 
 /**
  * Composite hook calculating absolute positioning coordinates for popover cards.
- * Combines Floating UI positioning, responsive mode overrides, cascade offsets, and QuadTree spatial partitioning.
+ *
+ * @remarks
+ * Coordinates multiple positioning layers:
+ * 1. Pinned layout override: Returns custom pinned screen coordinates when detached.
+ * 2. Responsive mode overrides: Modals, bottom sheets, docked navigation bars on small screens.
+ * 3. Cascade offset computation: Shifts child cards along the cascade vector based on z-index depth.
+ * 4. Spatial collision avoidance: Nudges overlapping cards via QuadTree 2D spatial partitioning.
+ *
+ * @param options - Geometry calculation parameters.
+ * @returns Final layout coordinates (`top`, `left`) and floating element ref callback.
  */
 export function usePopoverGeometry({
   id,

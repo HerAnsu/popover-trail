@@ -10,6 +10,15 @@ import { reduceUpdateOffsetState } from '../storeActions';
 import { selectIsPinned } from '../storeSelectors';
 import type { SliceContext } from './sliceContext';
 
+/**
+ * Factory creating modeless pinning and floating layout actions (`togglePin`, `bringToFront`, `updateOffset`).
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @param ctx - Slice context providing Zustand set/get methods and dependencies.
+ * @returns Pinning slice action methods.
+ */
 export function createPinningSlice<
   TData = unknown,
   TContext = unknown,

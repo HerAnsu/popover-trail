@@ -35,10 +35,13 @@ export type {
   PopoverTimelineRedoButtonProps,
 };
 
+/**
+ * Base props for `<PopoverTimeline>`.
+ */
 export interface PopoverTimelineBaseProps {
   /** Optional custom CSS class name. */
   className?: string;
-  /** Children elements or render prop function. */
+  /** Children elements or a render prop function receiving the timeline scope. */
   children?: ReactNode | ((scope: PopoverTimelineScope) => ReactNode);
 }
 
@@ -50,6 +53,35 @@ export type PopoverTimelineProps<E extends ElementType = 'nav'> = PolymorphicPro
 /**
  * Root `<PopoverTimeline>` Headless Component.
  * Renders an interactive visual breadcrumb / history timeline for popover trail navigation.
+ *
+ * @remarks
+ * Renders as a polymorphic navigation container (`as="nav"` by default).
+ * Includes compound subcomponents:
+ * - `PopoverTimeline.StepList`: Container list of active trail steps.
+ * - `PopoverTimeline.Step`: Clickable breadcrumb button jumping directly to a step in the trail.
+ * - `PopoverTimeline.UndoButton`: Button to undo the last popover action.
+ * - `PopoverTimeline.RedoButton`: Button to redo the last undone popover action.
+ *
+ * @example
+ * ```tsx
+ * import { PopoverTimeline } from 'popover-trail';
+ *
+ * export function NavigationBar() {
+ *   return (
+ *     <PopoverTimeline className="trail-breadcrumbs">
+ *       <PopoverTimeline.UndoButton>Undo</PopoverTimeline.UndoButton>
+ *       <PopoverTimeline.StepList>
+ *         {({ step, index, isActive }) => (
+ *           <PopoverTimeline.Step step={step} index={index}>
+ *             {step.key}
+ *           </PopoverTimeline.Step>
+ *         )}
+ *       </PopoverTimeline.StepList>
+ *       <PopoverTimeline.RedoButton>Redo</PopoverTimeline.RedoButton>
+ *     </PopoverTimeline>
+ *   );
+ * }
+ * ```
  */
 export function PopoverTimeline<E extends ElementType = 'nav'>({
   as,

@@ -87,14 +87,25 @@ export type WorkerResolver<TData = unknown, TContext = unknown> = PopoverResolve
 
 /**
  * Creates a non-blocking PopoverResolver that executes data resolution in a background Web Worker.
- * Offloads heavy computation, network transformations, or data parsing off the main UI thread.
+ * Offloads heavy computation, network transformations, or complex data parsing off the main UI thread.
+ *
+ * @remarks
+ * Supports three worker initialization modes:
+ * - Existing Worker instance: Uses the provided Worker directly.
+ * - Worker script URL: Spawns a dedicated module worker from a file path.
+ * - Inline function: Automatically compiles the function into an inline Blob worker script.
+ *
+ * Features:
+ * - Request cancellation: Propagates AbortSignal to cancel in-flight worker tasks when a popover closes.
+ * - Zero-copy transfer: Accepts a `transferables` extractor to transfer ArrayBuffers without memory cloning.
+ * - Fault tolerance: Automatically re-spawns worker instances on unhandled runtime errors if `autoRestart` is enabled.
+ * - Graceful SSR fallback: Executes the resolver synchronously if `Worker` is undefined in non-browser environments.
  *
  * @template TData - The resolved data payload type.
- * @template TContext - The external context type.
- *
+ * @template TContext - Global shared context type.
  * @param workerOrFn - A Worker instance, script URL string, or inline resolver function.
- * @param options - Execution options (timeout, transferables, autoRestart).
- * @returns A typed PopoverResolver function augmented with `.terminate()` / `.destroy()`.
+ * @param options - Configuration options (timeout, transferables, auto-restart).
+ * @returns A typed PopoverResolver function augmented with `.terminate()` and `[Symbol.dispose]()`.
  *
  * @example
  * ```tsx
@@ -102,9 +113,8 @@ export type WorkerResolver<TData = unknown, TContext = unknown> = PopoverResolve
  *
  * const workerResolver = createWorkerResolver(
  *   async (key) => {
- *     // Executes inside Web Worker context
- *     const res = await fetch(`/api/card/${key}`);
- *     return res.json();
+ *     const response = await fetch(`/api/users/${key}`);
+ *     return response.json();
  *   },
  *   { timeoutMs: 15000, autoRestart: true }
  * );
@@ -113,9 +123,6 @@ export type WorkerResolver<TData = unknown, TContext = unknown> = PopoverResolve
  *   return <PopoverProvider resolveData={workerResolver}>...</PopoverProvider>;
  * }
  * ```
- *
- * @see {@link PopoverProvider}
- * @see {@link createPopoverStore}
  */
 export function createWorkerResolver<TData = unknown, TContext = unknown>(
   workerOrFn:
@@ -344,8 +351,26 @@ async function handleWorkerResolve<TData, TContext>(
 }
 
 /**
- * Helper to define a CSP-compliant Worker script listener for popover-trail RPC resolvers.
- * Use inside a dedicated Web Worker module file (e.g. `myWorker.ts`).
+ * Helper to define a CSP-compliant RPC message listener inside a dedicated Web Worker module.
+ *
+ * @remarks
+ * Handles message routing, abort signal propagation, error serialization, and data responses.
+ * Place this call at the top level of your worker file (e.g. `src/workers/popoverWorker.ts`).
+ *
+ * @example
+ * ```typescript
+ * // In src/workers/popoverWorker.ts:
+ * import { definePopoverWorkerRPC } from 'popover-trail';
+ *
+ * definePopoverWorkerRPC(async (key, parentData) => {
+ *   const res = await fetch(`/api/data/${key}`);
+ *   return res.json();
+ * });
+ * ```
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Custom worker context type.
+ * @param handler - Asynchronous data loader executed on every resolution request.
  */
 export function definePopoverWorkerRPC<TData = unknown, TContext = unknown>(
   handler: (key: string, parentData?: unknown, context?: TContext) => TData | Promise<TData>,

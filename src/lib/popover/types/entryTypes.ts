@@ -119,8 +119,26 @@ export type NarrowTrailEntry<
     : SuccessTrailEntry<TData>;
 
 /**
- * Exhaustive pattern matcher utility for PopoverEntryDiscriminatedState.
- * Guarantees all state branches (loading, error, success) are handled at compile-time.
+ * Exhaustive pattern matcher utility for `PopoverEntryDiscriminatedState`.
+ *
+ * @remarks
+ * Guarantees that all three lifecycle states (`loading`, `error`, `success`) are handled at compile-time.
+ * If a new variant is introduced, TypeScript will flag missing branches.
+ *
+ * @example
+ * ```tsx
+ * const content = matchEntryState(entryState, {
+ *   loading: () => <Spinner />,
+ *   error: ({ error }) => <ErrorMessage error={error} />,
+ *   success: ({ data }) => <ProfileView user={data} />,
+ * });
+ * ```
+ *
+ * @template TData - Resolved data payload type.
+ * @template R - Return value type from branch matchers.
+ * @param state - The active discriminated state object.
+ * @param matchers - Branch handlers for loading, error, and success states.
+ * @returns Result value returned by the executed branch matcher.
  */
 export function matchEntryState<TData, R>(
   state: PopoverEntryDiscriminatedState<TData>,

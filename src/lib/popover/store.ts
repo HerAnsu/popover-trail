@@ -26,16 +26,43 @@ import { createBatchingManager } from './store/storeBatching';
 import { resolvePopoverEntry, type ResolvePopoverEntryParams } from './store/storeResolverPipeline';
 
 /**
- * Instantiates and returns a generic Zustand vanilla StoreApi instance.
- * Coordinates trail linkages, floating/pinned states, drag offsets, stacking order,
- * active loaders, and abort controllers.
+ * Creates an isolated popover store managing cascading trails, pinned floating windows, and data resolution.
  *
- * @template TData - The resolved data payload type.
- * @template TContext - The shared context type.
- * @param resolveData - The active data resolver callback.
- * @param initialContext - Optional initial context values.
- * @param cache - Optional synchronous/asynchronous cache provider.
- * @returns A Zustand StoreApi instance matching PopoverStore.
+ * @remarks
+ * The store manages the full lifecycle of popover cards:
+ *
+ * 1. **Root Opening**: Clicking an anchor opens the initial card (`trail[0]`) and fetches its data via the resolver.
+ * 2. **Cascading Drilldown**: Clicking triggers inside open cards appends nested cards to the `trail` stack.
+ * 3. **Pinning & Floating**: Toggling pin detaches a card from the cascade into a standalone `floating` window with draggable coordinates.
+ * 4. **Dismissal & Undo**: Cards close on outside clicks, Escape key, or close buttons. History allows reverting changes with `undo()` and `redo()`.
+ *
+ * @example
+ * ```typescript
+ * import { createPopoverStore } from 'popover-trail';
+ *
+ * const store = createPopoverStore(async (key) => {
+ *   const res = await fetch(`/api/cards/${key}`);
+ *   return res.json();
+ * });
+ *
+ * // Open root card
+ * await store.getState().openRootWithResolver('userProfile');
+ *
+ * // Pin as floating window
+ * store.getState().togglePin('userProfile');
+ * ```
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @param resolveData - Asynchronous or synchronous data loader function.
+ * @param initialContext - Optional shared context passed to resolvers.
+ * @param cache - Optional cache provider instance for memoization.
+ * @returns Zustand vanilla StoreApi instance.
+ *
+ * @see {@link PopoverProvider}
+ * @see {@link usePopover}
+ * @see {@link usePopoverActions}
  */
 export function createPopoverStore<
   TData = unknown,

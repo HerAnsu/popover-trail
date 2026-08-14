@@ -366,6 +366,22 @@ function tryLaunchSyncResolver<
 
 /**
  * Resolves popover entry data asynchronously or synchronously and commits state patches to the store.
+ *
+ * Pipeline Lifecycle Phases:
+ * 1. DAG Node Registration: Registers parent-child hierarchy in DAG kernel.
+ * 2. Cache Inspection: Checks synchronous memory cache for instant resolution without triggering loading state.
+ * 3. Reusable State Inspection: If already resolved and !forceRefresh, reuses existing resolved data.
+ * 4. Sync Resolver Execution: Executes synchronous resolver directly without async macrotasks.
+ * 5. Async Loading State Dispatch: Dispatches optimistic loading state and commits `dataPromise` for React 19 `use()`.
+ * 6. In-Flight Await & Stale Race Guard: Awaits the pending promise and compares `requestCounter` to discard stale results.
+ * 7. Success/Error State Commit: Emits store events and writes resolved data or error into the store.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param get - Zustand getState accessor.
+ * @param params - Popover resolution parameters.
+ * @param deps - Pipeline dependency injection container.
  */
 export async function resolvePopoverEntry<
   TData = unknown,
@@ -388,6 +404,7 @@ export async function resolvePopoverEntry<
   } = params;
   const { popoverDAG, cache, resolveData, initialContext, inFlightPromises, safeSet } = deps;
 
+  // Phase 1: Register parent-child ancestry in DAG graph
   popoverDAG.addNode(key, parentKey);
   const { floating, trail, cache: storeCache } = get();
   const existingEntry = findEntryInStore(floating, trail, key);
@@ -411,7 +428,7 @@ export async function resolvePopoverEntry<
   const requestCounter = incrementCounter();
   const forceRefresh = Boolean(options?.forceRefresh);
 
-  // 1 & 2. Check synchronous cache hits or reusable existing entry
+  // Phase 2 & 3: Check synchronous cache hits or reusable existing resolved state
   if (
     tryResolveFromCacheOrState(
       cache,
@@ -428,7 +445,7 @@ export async function resolvePopoverEntry<
     return;
   }
 
-  // 3. Launch resolver function (sync or async)
+  // Phase 4: Launch resolver function (handles sync functions without async microtasks)
   const activeResolver = get().resolveData ?? resolveData;
   const currentContext = (get().context ?? initialContext) as TContext;
 
@@ -447,7 +464,7 @@ export async function resolvePopoverEntry<
   );
   if (isResolvedOrErrored) return;
 
-  // 4. Async path: insert loading state synchronously, then await in-flight promise
+  // Phase 5: Async path - insert optimistic loading state synchronously for UI responsiveness
   const inFlight = inFlightPromises.get(key);
   if (!inFlight) return;
 
@@ -456,6 +473,7 @@ export async function resolvePopoverEntry<
     safeSet(insertStatePatch(loadingEntry));
   }
 
+  // Phase 6 & 7: Await in-flight promise and commit result with stale request guard
   await awaitInFlightResolution(
     inFlight,
     key,

@@ -42,7 +42,13 @@ function scheduleNamedTimer(
 }
 
 /**
- * Creates an isolated manager for hover close and transition timers.
+ * Creates an isolated timer manager for hover leave delays and exit transition animations.
+ *
+ * @remarks
+ * Encapsulates browser `setTimeout` handles in dedicated maps, preventing orphaned timer callbacks
+ * and ensuring clean cancellation when cards are closed or unmounted.
+ *
+ * @returns TimerManager instance with schedule and cancellation methods.
  */
 export function createTimerManager(): TimerManager {
   const hoverCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();

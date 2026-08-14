@@ -165,6 +165,15 @@ function buildRetryPipelineParams<TData, TContext, TPopoverKey extends string = 
   };
 }
 
+/**
+ * Factory creating async/sync data resolution actions (`openRootWithResolver`, `openNestedWithResolver`, `retryPopover`, `prefetchPopover`).
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @param ctx - Slice context providing Zustand set/get methods and dependencies.
+ * @returns Resolver slice action methods.
+ */
 export function createResolverSlice<
   TData = unknown,
   TContext = unknown,

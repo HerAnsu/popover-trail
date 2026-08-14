@@ -5,12 +5,15 @@ import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
 
 /**
  * Sub-component for the Undo Action Button.
+ *
+ * @remarks
+ * Dispatches `timeline.undo()` to revert to the previous historical state.
+ * Automatically handles disabled state when `canUndo` is false.
+ *
+ * @template E - Underlying HTML element or component type (defaults to `'button'`).
+ * @param props - Polymorphic button props with children and click handlers.
+ * @returns Undo button element.
  */
-export type PopoverTimelineUndoButtonProps<E extends ElementType = 'button'> = PolymorphicProps<
-  E,
-  { children?: ReactNode }
->;
-
 export function PopoverTimelineUndoButton<E extends ElementType = 'button'>({
   as,
   children,
@@ -57,6 +60,17 @@ export type PopoverTimelineRedoButtonProps<E extends ElementType = 'button'> = P
   { children?: ReactNode }
 >;
 
+/**
+ * Sub-component for the Redo Action Button.
+ *
+ * @remarks
+ * Dispatches `timeline.redo()` to step forward in the history stack.
+ * Automatically handles disabled state when `canRedo` is false.
+ *
+ * @template E - Underlying HTML element or component type (defaults to `'button'`).
+ * @param props - Polymorphic button props with children and click handlers.
+ * @returns Redo button element.
+ */
 export function PopoverTimelineRedoButton<E extends ElementType = 'button'>({
   as,
   children,

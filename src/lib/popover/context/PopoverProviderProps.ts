@@ -12,6 +12,27 @@ import type {
 /**
  * Props for the {@link PopoverProvider} component.
  *
+ * @remarks
+ * Supplies the global context and root Zustand store to all nested `<PopoverTrigger>`,
+ * `<PopoverTrail>`, and `<PopoverCard>` components.
+ *
+ * @example
+ * ```tsx
+ * import { PopoverProvider } from 'popover-trail';
+ *
+ * function App() {
+ *   return (
+ *     <PopoverProvider
+ *       resolveData={async (key) => fetch(`/api/${key}`).then(r => r.json())}
+ *       enableKeyboardClose={true}
+ *       cascadeOffsetStep={24}
+ *     >
+ *       <MainContent />
+ *     </PopoverProvider>
+ *   );
+ * }
+ * ```
+ *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
  */

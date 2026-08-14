@@ -29,8 +29,11 @@ const DEFAULT_PERSPECTIVE_PX = 1000;
 
 /**
  * Computes a 32-bit integer hash from numeric style coordinates.
- * Uses multiplicative hashing with XOR to spread values across the integer space.
- * Collision probability is negligible for typical popover position ranges.
+ * Uses integer multiplication with large prime-like constants (Knuth-style multiplicative hashing)
+ * and XOR bit-shifts to disperse coordinate values evenly across the 32-bit signed integer range.
+ *
+ * Why: Avoids template string allocations (`${top}_${left}_...`) when looking up cached CSSProperties.
+ * Collisions in typical screen pixel ranges (0..4000) are virtually 0.
  */
 function hashStyleKey(top: number, left: number, tx: number, ty: number, zIndex: number): number {
   let h =
@@ -46,6 +49,7 @@ function hashStyleKey(top: number, left: number, tx: number, ty: number, zIndex:
 
 /**
  * Safely converts an unknown value to a finite number with an optional fallback (default: 0).
+ * Protects against NaN, Infinity, or undefined leaking into CSS translate properties.
  */
 export function toFiniteNumber(val: unknown, fallback = 0): number {
   return typeof val === 'number' && Number.isFinite(val) ? val : fallback;

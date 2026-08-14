@@ -17,14 +17,23 @@ import {
  * Combined event handlers and accessibility attributes passed to custom trigger render props.
  */
 export interface PopoverTriggerChildProps extends Record<string, unknown> {
+  /** ARIA popup role declaration ('dialog'). */
   'aria-haspopup': 'dialog';
+  /** Whether the associated popover card is currently open. */
   'aria-expanded': boolean;
+  /** HTML id of the controlled popover card. */
   'aria-controls': string;
+  /** Click event handler triggering popover toggle. */
   onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+  /** Pointer enter handler for hover-delayed opening. */
   onMouseEnter?: (e: React.MouseEvent<HTMLElement>) => void;
+  /** Pointer leave handler for hover-delayed closing. */
   onMouseLeave?: (e: React.MouseEvent<HTMLElement>) => void;
+  /** Keyboard handler for Enter/Space activation. */
   onKeyDown?: (e: React.KeyboardEvent<HTMLElement>) => void;
+  /** Focus event handler. */
   onFocus?: (e: React.FocusEvent<HTMLElement>) => void;
+  /** Forwarded ref for element anchoring and positioning. */
   ref?: React.Ref<HTMLElement>;
 }
 
@@ -32,11 +41,11 @@ export interface PopoverTriggerChildProps extends Record<string, unknown> {
 export interface BasePopoverTriggerProps<TPopoverKey extends string = string> {
   /** The unique key of the popover card that this trigger opens. */
   popoverKey: TPopoverKey;
-  /** Layout placement direction preference relative to the trigger. */
+  /** Layout placement direction preference relative to the trigger (e.g. 'right', 'bottom-start'). */
   placement?: PopoverPlacement;
   /** Custom distance gap offset override from trigger in pixels. */
   offset?: number;
-  /** Extra trigger options configuration. */
+  /** Extra trigger options configuration (hover delays, boundary collision behavior). */
   options?: Omit<OpenRootOptions | OpenNestedOptions, 'placement' | 'offset'>;
   /** CSS class to apply to the child element when the popover is active. */
   activeClassName?: string;
@@ -301,11 +310,34 @@ function NestedTriggerInner({
 }
 
 /**
- * Component-based trigger wrapper that declutters layout code.
- * Detects context automatically to bind either root or nested triggers,
- * and manages active class name injection.
+ * Headless trigger wrapper that anchors and toggles popover cards.
+ *
+ * @remarks
+ * Automatically detects whether it is rendered inside an active popover card:
+ * - If inside a card, acts as a nested child trigger that pushes cards onto the breadcrumb trail.
+ * - If rendered at top-level, acts as a root trigger that starts a new trail cascade.
+ *
+ * Supports regular React elements (via automatic event handler merging) or render props.
+ *
+ * @example
+ * ```tsx
+ * // Standard element child
+ * <PopoverTrigger popoverKey="userMenu">
+ *   <button type="button">Open User Menu</button>
+ * </PopoverTrigger>
+ *
+ * // Render prop child with custom styling
+ * <PopoverTrigger popoverKey="userMenu">
+ *   {(props) => (
+ *     <button {...props} className={props['aria-expanded'] ? 'active-btn' : 'idle-btn'}>
+ *       Menu
+ *     </button>
+ *   )}
+ * </PopoverTrigger>
+ * ```
  *
  * @template TPopoverKey - Union of valid popover keys.
+ * @param props - Trigger configuration props and child element.
  */
 export function PopoverTrigger<TPopoverKey extends string = string>({
   popoverKey,

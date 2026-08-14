@@ -19,7 +19,27 @@ const DISPOSE_SYMBOL: symbol =
   (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
 /**
- * Creates a tab-sync manager using native BroadcastChannel.
+ * Creates a real-time multi-tab state synchronizer using the browser BroadcastChannel API.
+ *
+ * @remarks
+ * Synchronizes popover actions (open, close, pin, reset) across separate browser tabs without server roundtrips.
+ * Automatically attaches a unique `tabId` to each message to suppress self-echo feedback loops.
+ *
+ * @example
+ * ```typescript
+ * const sync = createBroadcastSync('my-app-popovers');
+ *
+ * // Broadcast an open action to neighbor tabs
+ * sync.broadcast('OPEN', 'userCard');
+ *
+ * // Listen for events from other tabs
+ * const unsubscribe = sync.subscribe((msg) => {
+ *   console.log('Received action from tab:', msg.tabId, msg.type);
+ * });
+ * ```
+ *
+ * @param channelName - Custom BroadcastChannel name identifier (defaults to 'popover-trail-sync').
+ * @returns Sync manager instance with `broadcast`, `subscribe`, and `dispose` methods.
  */
 export function createBroadcastSync(channelName = 'popover-trail-sync') {
   const safeChannelName = channelName || 'popover-trail-sync';

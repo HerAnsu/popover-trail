@@ -42,21 +42,39 @@ export type PopoverStoreEventMap<TData = unknown> = {
   [E in PopoverStoreEvent<TData> as E['type']]: E;
 };
 
+/** Record mapping callback handlers to popover store events. */
 export type OnPopoverEventMap<TData = unknown> = Record<
   string,
   (event: PopoverStoreEvent<TData>) => void
 >;
 
+/**
+ * Represents an active step in the visual navigation timeline.
+ *
+ * @template TData - Resolved data payload type.
+ */
 export interface ActiveTimelineStep<TData = unknown> {
+  /** Unique key identifying the timeline step. */
   stepKey: string;
+  /** TrailEntry associated with this step in the stack. */
   entry: TrailEntry<TData>;
+  /** Timestamp in milliseconds when this step was opened. */
   timestamp: number;
 }
 
+/**
+ * Represents an undone step available in the redo history stack.
+ *
+ * @template TData - Resolved data payload type.
+ */
 export interface UndoneTimelineStep<TData = unknown> {
+  /** Unique key identifying the undone timeline step. */
   stepKey: string;
+  /** TrailEntry snapshot associated with this step. */
   entry: TrailEntry<TData>;
+  /** Timestamp in milliseconds when this step was recorded. */
   timestamp: number;
 }
 
+/** Alias for an active timeline step. */
 export type PopoverTimelineStep<TData = unknown> = ActiveTimelineStep<TData>;

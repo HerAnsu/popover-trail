@@ -11,17 +11,17 @@ interface UsePopoverDragAndDropOptions {
   isDragging: boolean;
   /** Current dnd-kit transform offset coordinates. */
   transform: { x: number; y: number } | null;
-  /** True to enable physical spring rotation (tilt/swing) effects when dragging. */
+  /** True to enable physical spring rotation (tilt/swing) effects when dragging (defaults to true). */
   enableTilt?: boolean;
-  /** Maximum tilt swing angle in degrees (default: 5). */
+  /** Maximum tilt swing angle in degrees (defaults to 5). */
   maxTiltAngle?: number;
-  /** Factor scaling tilt response to drag velocity (default: 8). */
+  /** Factor scaling tilt response to drag velocity (defaults to 8). */
   tiltSensitivity?: number;
-  /** Lock dragging axis to 'x', 'y', or allow 'both' (default: 'both'). */
+  /** Lock dragging axis to 'x', 'y', or allow 'both' (defaults to 'both'). */
   dragAxis?: DragAxis;
-  /** Spring friction dampening ratio when dragging (default: 0.95). */
+  /** Spring friction dampening ratio when dragging (defaults to 0.95). */
   tiltFriction?: number;
-  /** Spring inertia decay ratio when drag stops (default: 0.82). */
+  /** Spring inertia decay ratio when drag stops (defaults to 0.82). */
   tiltDecay?: number;
   /** Ref to the card DOM element for direct CSS manipulation. */
   cardRef?: React.RefObject<HTMLElement | null>;
@@ -104,8 +104,18 @@ function applyElementTiltStyles(
 }
 
 /**
- * Custom hook to track active coordinate offsets and calculate drag velocity
- * to apply dynamic physics-based spring rotation (tilt/swing) styles during drag events.
+ * Custom hook tracking coordinate offsets and calculating pointer drag velocity
+ * to apply dynamic 3D physics spring rotation (tilt/swing) styles during drag interactions.
+ *
+ * @remarks
+ * Uses Euler angle kinematics:
+ * 1. Velocity sampling calculates pointer movement speed across animation frames.
+ * 2. Exponential friction dampening smoothly caps rotation angles without jarring stops.
+ * 3. Inertia decay smoothly returns tilt back to neutral zero degrees once pointer is released.
+ * 4. Automatically disables all rotation when user enables `prefers-reduced-motion`.
+ *
+ * @param options - Drag state and physics configuration parameters.
+ * @returns Calculated rotation angles (`rotation`, `rotationX`, `rotationY`) and pixel offsets.
  */
 export function usePopoverDragAndDrop({
   isDragging,

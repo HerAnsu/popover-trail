@@ -20,7 +20,9 @@ export interface LayoutStrategyParams {
 
 /** Strategy interface for popover placement positioning. */
 export interface PopoverLayoutStrategyEngine {
+  /** Unique strategy identifier. */
   readonly id: string;
+  /** Calculates the target coordinates given trigger bounds and viewport parameters. */
   computePosition(params: LayoutStrategyParams): Point2D;
 }
 
@@ -35,7 +37,7 @@ function resolveViewportDimensions(params: LayoutStrategyParams): {
   };
 }
 
-/** Strategy computing fixed-center viewport overlay positions. */
+/** Strategy computing fixed-center viewport overlay positions (e.g. modal popups). */
 export class FixedCenterLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'fixed-center';
 
@@ -48,7 +50,7 @@ export class FixedCenterLayoutStrategy implements PopoverLayoutStrategyEngine {
   }
 }
 
-/** Strategy computing docked-bottom viewport sheet positions. */
+/** Strategy computing docked-bottom viewport sheet positions (e.g. mobile bottom sheets). */
 export class DockedBottomLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'docked-bottom';
 
@@ -87,7 +89,7 @@ const PLACEMENT_OFFSET_STRATEGIES: Record<
   'left-end': (t, o) => new Point2D(t.left - o, t.bottom),
 };
 
-/** Default relative Floating-UI layout strategy. */
+/** Default relative Floating-UI layout strategy calculating standard side/alignment offsets. */
 export class RelativeFloatingLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'floating-ui';
 
@@ -106,7 +108,21 @@ const fixedCenterLayoutStrategy = new FixedCenterLayoutStrategy();
 const dockedBottomLayoutStrategy = new DockedBottomLayoutStrategy();
 const dockedTopLayoutStrategy = new DockedTopLayoutStrategy();
 
-/** Strategy Registry Manager for layout positioning. */
+/**
+ * Registry Manager for extensible layout positioning algorithms.
+ *
+ * @remarks
+ * Allows developers to register custom placement algorithms (e.g. spiral cascades, radial rings,
+ * or custom toolbar docking) without modifying core library internals.
+ *
+ * @example
+ * ```typescript
+ * globalLayoutStrategyRegistry.register({
+ *   id: 'sidebar-dock',
+ *   computePosition: ({ viewportHeight }) => new Point2D(20, 100),
+ * });
+ * ```
+ */
 export class LayoutStrategyRegistry {
   private readonly strategies = new Map<string, PopoverLayoutStrategyEngine>();
 
@@ -117,26 +133,32 @@ export class LayoutStrategyRegistry {
     this.register(dockedTopLayoutStrategy);
   }
 
+  /** Registers a new positioning strategy instance. */
   register(strategy: PopoverLayoutStrategyEngine): void {
     if (!strategy || !strategy.id) return;
     this.strategies.set(strategy.id, strategy);
   }
 
+  /** Checks if a strategy ID exists in the registry. */
   has(id: string): boolean {
     return this.strategies.has(id);
   }
 
+  /** Unregisters a strategy by ID. */
   unregister(id: string): boolean {
     return this.strategies.delete(id);
   }
 
+  /** Returns all registered strategy IDs. */
   listStrategies(): string[] {
     return [...this.strategies.keys()];
   }
 
+  /** Retrieves a strategy engine by ID (falls back to 'floating-ui' if not found). */
   get(id: string): PopoverLayoutStrategyEngine {
     return this.strategies.get(id) ?? relativeFloatingLayoutStrategy;
   }
 }
 
+/** Global default layout strategy registry singleton. */
 export const globalLayoutStrategyRegistry = new LayoutStrategyRegistry();

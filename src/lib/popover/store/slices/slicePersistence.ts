@@ -118,6 +118,15 @@ function applyRehydratedState<TData, TContext>(
   return true;
 }
 
+/**
+ * Factory creating state persistence, batching, transaction rollback, and undo/redo time-travel actions.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @param ctx - Slice context providing Zustand set/get methods and dependencies.
+ * @returns Persistence slice action methods.
+ */
 export function createPersistenceSlice<
   TData = unknown,
   TContext = unknown,

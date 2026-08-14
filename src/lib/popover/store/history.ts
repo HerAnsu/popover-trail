@@ -25,7 +25,8 @@ export type HistorySnapshot<TData = unknown> = {
 };
 
 /**
- * Internal Ring Buffer for O(1) history state management.
+ * Internal Ring Buffer (Circular Buffer) for O(1) history state management.
+ * Maintains a fixed maximum capacity and overwrites oldest entries when full without memory reallocations.
  */
 class RingBuffer<T> {
   private buffer: (T | undefined)[];
@@ -118,9 +119,27 @@ function createHistorySnapshot<TData, TContext>(
 /**
  * Creates an isolated history state manager for undo/redo snapshots.
  *
+ * @remarks
+ * Uses fixed-size circular ring buffers to guarantee O(1) push and pop operations
+ * without unbounded array growth. Ignores redundant snapshots when state has not changed.
+ *
+ * @example
+ * ```typescript
+ * const history = createHistoryManager(20);
+ *
+ * // Record current state
+ * history.pushSnapshot(store.getState());
+ *
+ * // Undo previous user action
+ * if (history.canUndo()) {
+ *   const previousState = history.undo(store.getState());
+ *   if (previousState) store.setState(previousState);
+ * }
+ * ```
+ *
  * @template TData - Resolved data payload type.
- * @param maxHistory - Maximum number of history snapshots to retain (default: 30).
- * @returns History manager instance containing undo/redo stacks and push/clear methods.
+ * @param maxHistory - Maximum number of history snapshots to retain (defaults to 30).
+ * @returns History manager instance containing undo/redo stacks, queries, and push/undo/redo methods.
  */
 export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_HISTORY_DEPTH) {
   const undoBuffer = new RingBuffer<HistorySnapshot<TData>>(maxHistory);

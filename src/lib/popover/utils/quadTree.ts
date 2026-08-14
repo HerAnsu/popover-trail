@@ -40,7 +40,7 @@ export class QuadTree {
     this.level = level;
   }
 
-  /** Clears all items and child nodes. */
+  /** Clears all items and child nodes recursively. */
   clear(): void {
     this.items = [];
     for (const node of this.nodes) {
@@ -49,26 +49,43 @@ export class QuadTree {
     this.nodes = [];
   }
 
+  /**
+   * Subdivides the current node's 2D space into 4 equal child quadrants:
+   * Node 0: Top-Right (North-East)
+   * Node 1: Top-Left (North-West)
+   * Node 2: Bottom-Left (South-West)
+   * Node 3: Bottom-Right (South-East)
+   */
   private split(): void {
     const subWidth = this.bounds.width / 2;
     const subHeight = this.bounds.height / 2;
     const { x, y } = this.bounds;
 
+    // Node 0: Top-Right (NE)
     this.nodes[0] = new QuadTree(
       { x: x + subWidth, y, width: subWidth, height: subHeight },
       this.level + 1,
     );
+    // Node 1: Top-Left (NW)
     this.nodes[1] = new QuadTree({ x, y, width: subWidth, height: subHeight }, this.level + 1);
+    // Node 2: Bottom-Left (SW)
     this.nodes[2] = new QuadTree(
       { x, y: y + subHeight, width: subWidth, height: subHeight },
       this.level + 1,
     );
+    // Node 3: Bottom-Right (SE)
     this.nodes[3] = new QuadTree(
       { x: x + subWidth, y: y + subHeight, width: subWidth, height: subHeight },
       this.level + 1,
     );
   }
 
+  /**
+   * Determines which child quadrant a given bounding box completely fits into.
+   *
+   * @param bounds - Target bounding box to locate.
+   * @returns Quadrant index (0 = NE, 1 = NW, 2 = SW, 3 = SE), or -1 if the bounding box spans across the quadrant boundaries.
+   */
   private getIndex(bounds: BoundingBox): number {
     const verticalMidpoint = this.bounds.x + this.bounds.width / 2;
     const horizontalMidpoint = this.bounds.y + this.bounds.height / 2;
@@ -79,16 +96,21 @@ export class QuadTree {
     const fitsRight = bounds.x >= verticalMidpoint;
 
     if (fitsLeft) {
-      if (fitsTop) return 1;
-      if (fitsBottom) return 2;
+      if (fitsTop) return 1; // NW quadrant
+      if (fitsBottom) return 2; // SW quadrant
     } else if (fitsRight) {
-      if (fitsTop) return 0;
-      if (fitsBottom) return 3;
+      if (fitsTop) return 0; // NE quadrant
+      if (fitsBottom) return 3; // SE quadrant
     }
 
+    // Straddles the boundary line; must remain in the parent node
     return -1;
   }
 
+  /**
+   * Pushes items down into child sub-quadrants when capacity is exceeded.
+   * Items that span across quadrant boundaries remain in the parent node.
+   */
   private redistributeItems(): void {
     if (this.nodes.length === 0) {
       this.split();
@@ -107,7 +129,10 @@ export class QuadTree {
     this.items = remaining;
   }
 
-  /** Inserts a QuadItem into the tree index. */
+  /**
+   * Inserts a QuadItem into the tree index.
+   * If the current node exceeds `maxItems` and hasn't reached `maxLevels`, it subdivides.
+   */
   insert(item: QuadItem): void {
     if (!item || !item.bounds) return;
     if (this.nodes.length > 0) {
@@ -125,6 +150,9 @@ export class QuadTree {
     }
   }
 
+  /**
+   * Helper that traverses child quadrants that intersect with targetBounds.
+   */
   private retrieveFromChildren(
     targetBounds: BoundingBox,
     returnItems: QuadItem[],
@@ -142,7 +170,15 @@ export class QuadTree {
     }
   }
 
-  /** Retrieves items intersecting target bounds into returnItems without unnecessary allocations. */
+  /**
+   * Retrieves all items that intersect with target bounds in O(log N) average time.
+   * Uses a mutable accumulator array and Set to prevent GC allocations during render/drag loops.
+   *
+   * @param returnItems - Accumulator array to populate with colliding items.
+   * @param itemBounds - Target search area (defaults to entire tree bounds).
+   * @param seenIds - Deduplication set to avoid duplicate items.
+   * @returns Populated accumulator array with matching items.
+   */
   retrieve(
     returnItems: QuadItem[] = [],
     itemBounds?: BoundingBox,

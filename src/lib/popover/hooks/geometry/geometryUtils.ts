@@ -19,7 +19,11 @@ export function resolveMiddlewareExtraProps(option: unknown): Record<string, unk
   return typeof option === 'object' && option !== null ? (option as Record<string, unknown>) : {};
 }
 
-/** Pure calculation helper for resolving auto placement based on viewport coordinates. */
+/**
+ * Heuristic auto-placement resolver:
+ * Automatically picks `'left'` or `'right'` based on whether the anchor trigger is positioned
+ * on the right half or left half of the viewport, ensuring popovers naturally open towards center.
+ */
 export function calculateAutoPlacement(
   placement: string | undefined,
   anchorRect: DOMRect | null | undefined,
@@ -33,6 +37,12 @@ export function calculateAutoPlacement(
   return (anchorCenterX > screenCenterX ? 'left' : 'right') as Placement;
 }
 
+/**
+ * Calculates absolute layout coordinates for transformed responsive modes:
+ * - `bottom-sheet`: Docked to bottom edge of mobile viewport.
+ * - `modal`: Centered in the middle of viewport with safety margins.
+ * - `docked-top`: Anchored to top edge navigation bar.
+ */
 export function calculateResponsivePosition(
   effectiveResponsiveMode: string | undefined,
   isMobileViewport: boolean,
@@ -68,6 +78,10 @@ export function calculateResponsivePosition(
   return null;
 }
 
+/**
+ * Multiplies the cascade step offset by the card's virtual depth z-index index
+ * along the specified direction axis.
+ */
 function calculateCascadeOffset(
   zIndex: number,
   step: number,
@@ -80,6 +94,10 @@ function calculateCascadeOffset(
   return { topOffset: offsetVal, leftOffset: 0 };
 }
 
+/**
+ * Uses a QuadTree index to check if a new popover card overlaps with existing floating windows.
+ * If a collision is detected, applies a 16px diagonal nudge offset.
+ */
 function applySpatialCollisionNudge(
   id: string,
   top: number,

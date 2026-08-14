@@ -2,15 +2,19 @@
  * Represents a single node inside the popover hierarchy graph.
  */
 export interface DAGNode {
+  /** Unique identifier of this popover node. */
   key: string;
+  /** Parent popover identifier, or undefined if this is a root popover. */
   parentKey?: string;
+  /** Direct children keys spawned from this node. */
   childrenKeys: Set<string>;
+  /** Topological depth level in the cascade tree (0 for root). */
   depth: number;
 }
 
 /**
  * Directed Acyclic Graph (DAG) Kernel for popover-trail.
- * Manages parent-child relationship hierarchies, cycle prevention, and topological z-index sorting.
+ * Manages parent-child relationship hierarchies, cycle prevention, cascade pruning, and topological z-index sorting.
  *
  * @example
  * ```typescript
@@ -27,7 +31,7 @@ export class PopoverDAG {
   private nodes = new Map<string, DAGNode>();
 
   /**
-   * Clears the graph.
+   * Clears all nodes and relationships from the graph.
    */
   clear(): void {
     this.nodes.clear();
@@ -35,6 +39,11 @@ export class PopoverDAG {
 
   /**
    * Adds or updates a node in the DAG graph.
+   * Handles reparenting: if the node already had a different parent, it cleanly detaches
+   * from the old parent's child set before attaching to the new parent.
+   *
+   * @param key - Unique popover key.
+   * @param parentKey - Optional parent popover key.
    */
   addNode(key: string, parentKey?: string): void {
     let node = this.nodes.get(key);
@@ -47,6 +56,7 @@ export class PopoverDAG {
       };
       this.nodes.set(key, node);
     } else {
+      // Reparenting: cleanly unlink from previous parent if it changed
       const oldParentKey = node.parentKey;
       if (oldParentKey && oldParentKey !== parentKey) {
         const oldParentNode = this.nodes.get(oldParentKey);
@@ -57,6 +67,7 @@ export class PopoverDAG {
       node.parentKey = parentKey;
     }
 
+    // Link into parent's children set and recalculate relative depth
     if (parentKey && parentKey !== key) {
       const parentNode = this.nodes.get(parentKey);
       if (parentNode) {
@@ -112,7 +123,12 @@ export class PopoverDAG {
   }
 
   /**
-   * Populates target outSet with all descendant keys for a given parent key (Zero-allocation variant).
+   * Traverses all descendant keys for a given parent key using an iterative DFS stack.
+   * Mutates the provided `outSet` to achieve zero heap allocations in hot paths.
+   *
+   * @param parentKey - Starting root key to explore descendants for.
+   * @param outSet - Output Set to collect all discovered child keys.
+   * @returns Populated outSet with all descendant keys.
    */
   getDescendantKeysInto(parentKey: string, outSet: Set<string>): Set<string> {
     const stack: string[] = [parentKey];
@@ -123,6 +139,7 @@ export class PopoverDAG {
       const node = this.nodes.get(currentKey);
       if (node) {
         for (const childKey of node.childrenKeys) {
+          // Cycle protection guard: prevent re-visiting or looping back to root
           if (!outSet.has(childKey) && childKey !== parentKey) {
             outSet.add(childKey);
             stack.push(childKey);
@@ -136,13 +153,21 @@ export class PopoverDAG {
 
   /**
    * Returns all descendant keys for a given parent key.
+   *
+   * @param parentKey - Starting parent key.
+   * @returns Set containing all transitive children keys.
    */
   getDescendantKeys(parentKey: string): Set<string> {
     return this.getDescendantKeysInto(parentKey, new Set<string>());
   }
 
   /**
-   * Returns topological z-index ordering for nodes in the graph.
+   * Computes a deterministic topological z-index stacking order for all active nodes.
+   * Ensures parent popovers always appear under their children in the stacking order.
+   * Disconnected/orphan nodes are safely appended at the end.
+   *
+   * @param baseZIndex - Starting base z-index depth (default: 1000).
+   * @returns Map of popover keys to calculated z-index integer values.
    */
   getTopologicalZIndexOrder(baseZIndex = 1000): Map<string, number> {
     const result = new Map<string, number>();
@@ -158,17 +183,20 @@ export class PopoverDAG {
 
       result.set(key, currentZIndex++);
 
+      // Depth-first visit child nodes to stack them strictly above parents
       for (const childKey of node.childrenKeys) {
         visit(childKey);
       }
     };
 
+    // Phase 1: Traverse from top-level root nodes (nodes without parents)
     for (const [key, node] of this.nodes.entries()) {
       if (!node.parentKey) {
         visit(key);
       }
     }
 
+    // Phase 2: Traverse any orphan/island subgraphs to ensure complete coverage
     for (const [key] of this.nodes.entries()) {
       if (!visited.has(key)) {
         visit(key);

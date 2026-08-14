@@ -187,6 +187,23 @@ function resolveNavParams(
 
 /**
  * Helper function for handling Arrow navigation and custom keyboard shortcuts on popover cards.
+ *
+ * @remarks
+ * Coordinates full WAI-ARIA keyboard navigation across popovers:
+ * - Vertical arrows (Down/Up): Cycles focus through focusable controls inside the card.
+ * - Arrow Right: Clicks the currently focused trigger/link/button to drill down into a nested popover.
+ * - Arrow Left: Closes the current popover card and shifts focus back to the parent card.
+ * - Escape: Closes the active popover or topmost trail card.
+ * - Custom shortcuts: Dispatches mapped user shortcut handlers (`keyboardShortcuts`).
+ *
+ * @param eventOrOptions - KeyboardEvent instance or consolidated options object.
+ * @param cardElement - Card container DOM element.
+ * @param entry - TrailEntry of the active card.
+ * @param enableArrowNavigation - Boolean toggle for arrow key navigation.
+ * @param isPinned - Whether the card is detached/pinned.
+ * @param trail - List of active trail entries.
+ * @param floatingCount - Count of floating/pinned cards.
+ * @param actions - State actions dispatcher.
  */
 export function handleCardKeyboardNavigation(
   eventOrOptions: React.KeyboardEvent<HTMLElement> | CardKeyboardNavigationOptions,

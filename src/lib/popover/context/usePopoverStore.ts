@@ -66,8 +66,23 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
 /**
  * Hook to retrieve public popover store action dispatch methods.
  *
+ * @remarks
+ * Returns stable dispatch actions (`openRootWithResolver`, `openNestedWithResolver`, `closeByKey`,
+ * `togglePin`, `bringToFront`, `updateOffset`, `undo`, `redo`, etc.) without subscribing to state updates.
+ *
+ * @example
+ * ```tsx
+ * import { usePopoverActions } from 'popover-trail';
+ *
+ * function ResetButton() {
+ *   const actions = usePopoverActions();
+ *   return <button onClick={() => actions.closeAll()}>Close All Popovers</button>;
+ * }
+ * ```
+ *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
+ * @template TPopoverKey - Union of valid popover keys.
  * @returns Object containing dispatch actions.
  */
 export function usePopoverActions<

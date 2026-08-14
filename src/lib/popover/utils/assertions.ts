@@ -9,8 +9,10 @@ import { PopoverError, PopoverErrorCode } from './errors';
 import type { PopoverKey, OwnerId } from '../types/storeTypes';
 
 /**
- * Asserts that a value is non-nullable (not null or undefined).
+ * Asserts that a value is non-nullable (neither null nor undefined).
+ * Throws a PopoverError if the assertion fails.
  *
+ * @template T - Input value type.
  * @param value - Value to assert.
  * @param name - Property or argument variable name for diagnostic messages.
  */
@@ -25,9 +27,9 @@ export function assertNonNullable<T>(value: T, name = 'value'): asserts value is
 }
 
 /**
- * Asserts that a key string is a valid non-empty PopoverKey.
+ * Asserts that a key string is a valid, non-empty PopoverKey.
  *
- * @param key - Value to check.
+ * @param key - Identifier value to validate.
  */
 export function assertValidPopoverKey(key: unknown): asserts key is PopoverKey {
   if (typeof key !== 'string' || key.trim() === '') {
@@ -40,9 +42,9 @@ export function assertValidPopoverKey(key: unknown): asserts key is PopoverKey {
 }
 
 /**
- * Asserts that a value is a valid non-empty OwnerId.
+ * Asserts that a value is a valid, non-empty OwnerId string.
  *
- * @param ownerId - Owner ID to check.
+ * @param ownerId - Owner identifier value to validate.
  */
 export function assertValidOwnerId(ownerId: unknown): asserts ownerId is OwnerId {
   if (typeof ownerId !== 'string' || ownerId.trim() === '') {
@@ -55,9 +57,9 @@ export function assertValidOwnerId(ownerId: unknown): asserts ownerId is OwnerId
 }
 
 /**
- * Asserts that a DOMRect or bounding rectangle contains valid numeric coordinates.
+ * Asserts that a DOMRect or bounding rectangle contains valid, finite numeric coordinates.
  *
- * @param rect - Rect object to check.
+ * @param rect - Rect object to validate.
  */
 export function assertValidRect(rect: unknown): asserts rect is DOMRect {
   if (!rect || typeof rect !== 'object') {

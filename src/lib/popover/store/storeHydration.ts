@@ -17,7 +17,13 @@ function clearRecordKeys(record: Record<string, unknown>): void {
 }
 
 /**
- * Creates an isolated request hydration counter manager.
+ * Creates an isolated request hydration counter manager to prevent asynchronous race conditions.
+ *
+ * @remarks
+ * Stamping each asynchronous resolution with an incrementing counter ensures that slow responses
+ * from previous user clicks cannot overwrite newer requests for the same card or cascade.
+ *
+ * @returns Hydration counter manager with increment and stale-check methods.
  */
 export function createHydrationManager() {
   let rootCounter = 0;

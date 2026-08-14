@@ -4,13 +4,16 @@ import { usePopoverCardScope } from './PopoverCardScopeContext';
 import { getPolymorphicProps } from '../../utils/componentUtils';
 
 /**
- * Sub-component for the Close action button of a `<PopoverCard>`.
+ * Sub-component for the close button of a `<PopoverCard>`.
+ *
+ * @remarks
+ * Automatically retrieves the current card key from `PopoverCardScopeContext` and dispatches `closeByKey`.
+ * Supports polymorphic rendering via the `as` prop (e.g. `as="button"` or custom components).
+ *
+ * @template E - Underlying HTML element or component type.
+ * @param props - Polymorphic button props with children and click handlers.
+ * @returns Accessible close button element.
  */
-export type PopoverCardCloseButtonProps<E extends ElementType = 'button'> = PolymorphicProps<
-  E,
-  { children?: ReactNode }
->;
-
 export function PopoverCardCloseButton<E extends ElementType = 'button'>({
   as,
   children,

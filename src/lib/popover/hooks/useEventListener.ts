@@ -1,7 +1,17 @@
 import { useEffect, useInsertionEffect, useRef } from 'react';
 
 /**
- * Memory-safe custom React hook for binding window or element event listeners with auto cleanup on unmount.
+ * Memory-safe custom React hook for binding window or element event listeners with automatic cleanup on unmount.
+ *
+ * @remarks
+ * Synchronizes the listener handler reference via `useInsertionEffect` to prevent stale closure bugs
+ * without triggering unnecessary re-subscriptions when handler callbacks change.
+ *
+ * @template K - Event name literal key of WindowEventMap.
+ * @param eventName - Name of the DOM event to attach (e.g. 'keydown', 'resize', 'pointermove').
+ * @param handler - Callback function invoked when the event fires.
+ * @param element - Target Window, Document, or HTMLElement (defaults to `window`).
+ * @param options - Standard DOM AddEventListenerOptions (passive, capture, once).
  */
 export function useEventListener<K extends keyof WindowEventMap>(
   eventName: K,

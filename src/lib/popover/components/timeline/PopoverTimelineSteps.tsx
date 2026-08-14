@@ -11,6 +11,13 @@ export type PopoverTimelineStepListProps<E extends ElementType = 'ol'> = Polymor
   { children?: ReactNode }
 >;
 
+/**
+ * Sub-component for the timeline step list container (`<ol role="list">`).
+ *
+ * @template E - Underlying HTML element or component type (defaults to `'ol'`).
+ * @param props - Polymorphic list props and children.
+ * @returns Ordered list element wrapping timeline steps.
+ */
 export function PopoverTimelineStepList<E extends ElementType = 'ol'>({
   as,
   children,
@@ -46,6 +53,17 @@ export type PopoverTimelineStepProps<E extends ElementType = 'button'> = Polymor
   PopoverTimelineStepBaseProps
 >;
 
+/**
+ * Sub-component representing an individual step in the timeline.
+ *
+ * @remarks
+ * Clicking jumps directly to that state revision (`jumpToStep`).
+ * Supports Left/Right arrow key navigation for keyboard accessibility.
+ *
+ * @template E - Underlying HTML element or component type (defaults to `'button'`).
+ * @param props - Step properties including stepKey, index, and click handlers.
+ * @returns Interactive step button or element.
+ */
 export function PopoverTimelineStep<E extends ElementType = 'button'>({
   as,
   index,

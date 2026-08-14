@@ -27,7 +27,9 @@ import type { RegisteredKeys, RegisteredDataMap } from './types/registerTypes';
 declare const process: { env: { NODE_ENV?: string } } | undefined;
 
 /**
- * Safely inspects React internals to detect if a call is executed inside a component render pass.
+ * Inspects React dispatcher internals in development mode to detect if `createPopoverTrail`
+ * was accidentally invoked inside a component's render body instead of at the module top level.
+ * Creating factory instances on every render causes store recreation and loss of state.
  */
 function isCurrentlyRenderingInReact(): boolean {
   try {
@@ -46,12 +48,36 @@ function isCurrentlyRenderingInReact(): boolean {
 }
 
 /**
- * Factory creating pre-typed, scoped Popover components and hooks.
- * Supports passing a schema instance from `createPopoverSchema` or schema definition for end-to-end type safety.
+ * Creates pre-typed, scoped Popover components and hooks bound to a schema definition.
+ *
+ * @remarks
+ * In schema mode, all popover keys, child node constraints, and data payload types
+ * are inferred at compile-time directly from the provided schema.
+ *
+ * @example
+ * ```tsx
+ * export const trail = createPopoverTrail({
+ *   user: {
+ *     resolver: async (id: string) => fetchUser(id),
+ *     placement: 'right',
+ *   },
+ * });
+ *
+ * // Render the scoped provider
+ * function App() {
+ *   return (
+ *     <trail.PopoverProvider>
+ *       <trail.PopoverTrigger popoverKey="user">
+ *         <button type="button">Open User</button>
+ *       </trail.PopoverTrigger>
+ *     </trail.PopoverProvider>
+ *   );
+ * }
+ * ```
  *
  * @template TSchema - Schema definition mapping keys to data payloads.
- * @param schema - Schema instance or definition created via `createPopoverSchema(definition)`.
- * @returns Strongly typed suite of Popover components and hooks.
+ * @param schema - Schema instance or definition object.
+ * @returns Strongly typed suite of Popover components, triggers, and hooks.
  */
 export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
   schema: PopoverSchemaInstance<TSchema> | TSchema,
@@ -65,7 +91,30 @@ export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
 };
 
 /**
- * Factory creating generic scoped Popover components and hooks.
+ * Creates generic scoped Popover components and hooks without a predefined schema.
+ *
+ * @remarks
+ * Use this overload when popover keys and data payloads are dynamic or defined through
+ * global interface augmentation via `PopoverRegistry`.
+ *
+ * @example
+ * ```tsx
+ * export const trail = createPopoverTrail<UserPayload, AppContext>();
+ *
+ * function App() {
+ *   return (
+ *     <trail.PopoverProvider resolveData={async (key) => fetchDynamicData(key)}>
+ *       <trail.PopoverTrigger popoverKey="dynamicCard">
+ *         <button type="button">Open</button>
+ *       </trail.PopoverTrigger>
+ *     </trail.PopoverProvider>
+ *   );
+ * }
+ * ```
+ *
+ * @template TData - Default data payload type for popovers.
+ * @template TContext - Global shared context object type.
+ * @returns Scoped Popover components and hooks.
  */
 export function createPopoverTrail<
   TData = RegisteredDataMap[RegisteredKeys],
@@ -80,7 +129,8 @@ export function createPopoverTrail<
 };
 
 /**
- * Implementation of `createPopoverTrail`.
+ * Core implementation of `createPopoverTrail`.
+ * Validates module placement in development mode and returns the bound suite.
  */
 export function createPopoverTrail<
   TSchema extends PopoverSchemaDefinition = PopoverSchemaDefinition,

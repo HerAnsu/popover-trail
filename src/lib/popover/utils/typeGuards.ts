@@ -197,6 +197,9 @@ const NULL_ANCHOR_REF: ValidatedAnchorRef = Object.freeze({
 
 /**
  * Validates and converts an AnchorEventLike source into a ValidatedAnchorRef with geometry bounds.
+ *
+ * @param source - The event, element, or virtual anchor to normalize.
+ * @returns Validated anchor reference object containing a safe `getBoundingClientRect` method.
  */
 export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRef {
   if (!source) {
@@ -219,19 +222,42 @@ export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRe
   return NULL_ANCHOR_REF;
 }
 
-/** Converter creating a branded ViewportX coordinate value. */
+/**
+ * Converter creating a branded ViewportX coordinate value with NaN safety.
+ *
+ * @param x - Horizontal viewport coordinate number.
+ */
 export function toViewportX(x: number): ViewportX {
   return (Number.isFinite(x) ? x : 0) as ViewportX;
 }
 
-/** Converter creating a branded ViewportY coordinate value. */
+/**
+ * Converter creating a branded ViewportY coordinate value with NaN safety.
+ *
+ * @param y - Vertical viewport coordinate number.
+ */
 export function toViewportY(y: number): ViewportY {
   return (Number.isFinite(y) ? y : 0) as ViewportY;
 }
 
 /**
- * Utility helper to create a VirtualElement / AnchorEventLike object from coordinates.
- * Useful for opening popovers at mouse clicks, context menus, or canvas coordinates.
+ * Factory helper creating a VirtualElement / AnchorEventLike object from coordinates.
+ * Useful for opening popovers at mouse click points, context menu locations, or canvas coordinates.
+ *
+ * @example
+ * ```typescript
+ * window.addEventListener('contextmenu', (e) => {
+ *   e.preventDefault();
+ *   const virtualAnchor = createVirtualElement(e.clientX, e.clientY);
+ *   actions.openRootWithResolver('contextMenu', virtualAnchor);
+ * });
+ * ```
+ *
+ * @param x - Horizontal client X coordinate in pixels.
+ * @param y - Vertical client Y coordinate in pixels.
+ * @param width - Optional target bounding box width (defaults to 0).
+ * @param height - Optional target bounding box height (defaults to 0).
+ * @returns Virtual anchor object with a standard getBoundingClientRect method.
  */
 export function createVirtualElement(x: number, y: number, width = 0, height = 0): AnchorEventLike {
   const safeX = Number.isFinite(x) ? x : 0;

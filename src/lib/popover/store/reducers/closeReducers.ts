@@ -64,7 +64,17 @@ function resolveAllRemovedKeys<TData>(
 }
 
 /**
- * Pure state updater for closing popovers starting at a target virtual index.
+ * Pure state reducer computing next state when closing popover cards from a target index.
+ *
+ * @remarks
+ * Recursively identifies all descendants in the DAG tree. If `closePinnedDescendants` is false,
+ * detached floating/pinned descendants are preserved while trailing nodes are dismissed.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @param state - Current reactive store state.
+ * @param index - Combined index of card where closing starts.
+ * @returns Partial state patch with cleaned up trail, floating, and offsets.
  */
 export function closeFromState<TData, TContext>(
   state: PopoverStateData<TData, TContext>,

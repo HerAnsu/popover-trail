@@ -1,5 +1,12 @@
 /**
- * Shallow equality comparison utility for plain objects and arrays.
+ * Shallow equality comparison utility for plain objects, arrays, and primitive values.
+ *
+ * @remarks
+ * Uses `Object.is` for value equality and performs shallow key comparisons on object dictionaries.
+ *
+ * @param objA - First object to compare.
+ * @param objB - Second object to compare.
+ * @returns True if both values are shallowly identical.
  */
 export function shallowEqual<T>(objA: T, objB: T): boolean {
   if (Object.is(objA, objB)) return true;
@@ -43,6 +50,13 @@ function areObjectsDeepEqual(
 
 /**
  * Lightweight zero-dependency deep equality comparison helper for plain objects, arrays, and primitives.
+ *
+ * @remarks
+ * Recursively compares nested objects and arrays while ignoring unsafe prototype properties.
+ *
+ * @param a - First value to compare.
+ * @param b - Second value to compare.
+ * @returns True if deeply structural-equal.
  */
 export function isDeepEqual<T>(a: T, b: T): boolean {
   if (Object.is(a, b)) return true;

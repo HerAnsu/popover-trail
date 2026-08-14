@@ -4,9 +4,15 @@ import type { PopoverStore, ClickOutsideConfig } from '../types';
 import { isPortalOrExcludedTarget, getEventPath, getEventTarget } from '../utils/domEvents';
 import { TriggerRegistry } from '../utils/triggerRegistry';
 
+/**
+ * Hook options for click-outside event management.
+ */
 export interface UseClickOutsideOptions<TData = unknown, TContext = unknown> {
+  /** Target Zustand store instance. */
   store: StoreApi<PopoverStore<TData, TContext>>;
+  /** Configuration flags for click-outside behavior. */
   clickOutside?: ClickOutsideConfig & {
+    /** Optional custom predicate to selectively ignore clicks on specific elements. */
     shouldIgnoreClick?: (e: PointerEvent | MouseEvent) => boolean;
   };
 }
@@ -62,7 +68,14 @@ function isClickOnAnchor(
 }
 
 /**
- * Custom hook isolating click-outside capture phase event listener logic for PopoverProvider.
+ * Capture-phase click-outside listener hook for the PopoverProvider.
+ * Automatically closes active cascade trails when the user clicks or taps outside any open card or anchor.
+ *
+ * @remarks
+ * Uses event path inspection to accurately ignore clicks inside React Portals, custom ignore CSS classes,
+ * or registered trigger buttons.
+ *
+ * @param options - Store API reference and click-outside configuration settings.
  */
 export function useClickOutside<TData = unknown, TContext = unknown>({
   store,
