@@ -30,9 +30,10 @@ function handleCustomShortcuts(
 
 function getFocusableCardElements(cardEl: HTMLElement | null): HTMLElement[] {
   if (!cardEl) return [];
-  return Array.from(cardEl.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR)).filter(
-    (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0,
-  );
+  return Array.from(
+    cardEl.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR),
+    (el) => el,
+  ).filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0);
 }
 
 function isUserEditingText(el: HTMLElement | null): boolean {

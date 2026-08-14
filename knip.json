@@ -5,6 +5,5 @@
     "exports": "off",
     "types": "off"
   },
-  "ignoreDependencies": ["@changesets/cli"],
   "ignoreExportsUsedInFile": true
 }

@@ -29,8 +29,8 @@ function boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
 export class QuadTree {
   private items: QuadItem[] = [];
   private nodes: QuadTree[] = [];
-  private readonly maxItems = 4;
-  private readonly maxLevels = 5;
+  private readonly maxItems = 16;
+  private readonly maxLevels = 8;
 
   private readonly bounds: BoundingBox;
   private readonly level: number;
@@ -70,23 +70,23 @@ export class QuadTree {
   }
 
   private getIndex(bounds: BoundingBox): number {
-    let index = -1;
     const verticalMidpoint = this.bounds.x + this.bounds.width / 2;
     const horizontalMidpoint = this.bounds.y + this.bounds.height / 2;
 
-    const topQuadrant =
-      bounds.y < horizontalMidpoint && bounds.y + bounds.height < horizontalMidpoint;
-    const bottomQuadrant = bounds.y > horizontalMidpoint;
+    const fitsTop = bounds.y + bounds.height <= horizontalMidpoint;
+    const fitsBottom = bounds.y >= horizontalMidpoint;
+    const fitsLeft = bounds.x + bounds.width <= verticalMidpoint;
+    const fitsRight = bounds.x >= verticalMidpoint;
 
-    if (bounds.x < verticalMidpoint && bounds.x + bounds.width < verticalMidpoint) {
-      if (topQuadrant) index = 1;
-      else if (bottomQuadrant) index = 2;
-    } else if (bounds.x > verticalMidpoint) {
-      if (topQuadrant) index = 0;
-      else if (bottomQuadrant) index = 3;
+    if (fitsLeft) {
+      if (fitsTop) return 1;
+      if (fitsBottom) return 2;
+    } else if (fitsRight) {
+      if (fitsTop) return 0;
+      if (fitsBottom) return 3;
     }
 
-    return index;
+    return -1;
   }
 
   private redistributeItems(): void {
@@ -146,17 +146,18 @@ export class QuadTree {
   retrieve(
     returnItems: QuadItem[] = [],
     itemBounds?: BoundingBox,
-    seenIds: Set<string> = new Set(),
+    seenIds?: Set<string>,
   ): QuadItem[] {
     const targetBounds = itemBounds ?? this.bounds;
+    const seen = seenIds ?? new Set<string>();
 
     if (this.nodes.length > 0) {
-      this.retrieveFromChildren(targetBounds, returnItems, seenIds);
+      this.retrieveFromChildren(targetBounds, returnItems, seen);
     }
 
     for (const item of this.items) {
-      if (item && item.id && !seenIds.has(item.id) && boxesIntersect(item.bounds, targetBounds)) {
-        seenIds.add(item.id);
+      if (item && item.id && !seen.has(item.id) && boxesIntersect(item.bounds, targetBounds)) {
+        seen.add(item.id);
         returnItems.push(item);
       }
     }

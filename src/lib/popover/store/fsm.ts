@@ -19,6 +19,29 @@ export type ValidStateTransitions = Readonly<
   Record<PopoverStateValue, ReadonlyArray<PopoverStateValue>>
 >;
 
+/** Bitmask flags for high-performance O(1) state status checking. */
+export const FSMStatusBit = {
+  Idle: 1,
+  Hydrating: 1 << 1,
+  ResolvedTrailing: 1 << 2,
+  ResolvedPinned: 1 << 3,
+  Error: 1 << 4,
+  Unmounting: 1 << 5,
+  Active: (1 << 1) | (1 << 2) | (1 << 3),
+} as const;
+
+export type FSMStatusBit = (typeof FSMStatusBit)[keyof typeof FSMStatusBit];
+
+/** Mapping of string state names to high-performance bitmask values. */
+export const STATE_VALUE_TO_BIT_MAP: Record<PopoverStateValue, number> = {
+  Idle: FSMStatusBit.Idle,
+  Hydrating: FSMStatusBit.Hydrating,
+  'Resolved.Trailing': FSMStatusBit.ResolvedTrailing | FSMStatusBit.Active,
+  'Resolved.Pinned': FSMStatusBit.ResolvedPinned | FSMStatusBit.Active,
+  Error: FSMStatusBit.Error,
+  Unmounting: FSMStatusBit.Unmounting,
+};
+
 /**
  * Context payload held within an FSM state node.
  *
