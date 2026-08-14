@@ -2,19 +2,19 @@
 
 /**
  * Rule: popover/enforce-finite-coordinates
- * Description: Checks that Point2D.of and offset calculations don't pass unfiltered raw undefined/null
+ * Description: Enforce Number.isFinite checks on raw coordinate inputs in Point2D.of
  */
 module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure coordinate arguments are validated as finite numbers',
-      category: 'Geometry',
+      description: 'Enforce Number.isFinite checks on raw coordinate inputs in Point2D.of',
+      category: 'Geometry & Coordinates',
       recommended: true,
     },
     schema: [],
     messages: {
-      unvalidatedCoordinate: 'Coordinate parameter passed to `{{method}}` should be checked for finite numeric bounds.',
+      nonFiniteCoordinate: 'Coordinate values must be validated for finiteness (Number.isFinite).',
     },
   },
   create(context) {
@@ -29,11 +29,7 @@ module.exports = {
           node.callee.property.name === 'of' &&
           node.arguments.length < 2
         ) {
-          context.report({
-            node,
-            messageId: 'unvalidatedCoordinate',
-            data: { method: 'Point2D.of' },
-          });
+          context.report({ node, messageId: 'nonFiniteCoordinate' });
         }
       },
     };

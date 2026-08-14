@@ -2,40 +2,35 @@
 
 /**
  * Rule: popover/require-memo-on-drag-handlers
- * Description: Warns when drag or position event handlers (onDrag, onDragStart, onDragEnd)
- * are passed as inline arrow functions in JSX.
+ * Description: Require useCallback or memoized handlers for onDrag/onDragStart/onDragEnd to prevent 60/120 FPS jitter
  */
 module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Require useCallback or stable references for high-frequency drag event handlers',
+      description: 'Require useCallback or memoized handlers for onDrag/onDragStart/onDragEnd to prevent 60/120 FPS jitter',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      inlineDragHandler: 'Prop `{{name}}` receives an inline function. Wrap in `useCallback` to prevent frame drops during 60/120 FPS gestures.',
+      unmemoizedDragHandler: 'Inline arrow function in `{{prop}}` can cause frame drops during high-frequency gestures. Wrap in useCallback.',
     },
   },
   create(context) {
-    const highFrequencyProps = new Set(['onDrag', 'onDragStart', 'onDragEnd', 'onPositionChange', 'onScrollThrottled']);
-
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.')) return {};
     return {
       JSXAttribute(node) {
-        if (!node.name || !highFrequencyProps.has(node.name.name)) return;
-
+        const name = node.name && node.name.name;
         if (
+          (name === 'onDrag' || name === 'onDragStart' || name === 'onDragEnd' || name === 'onPointerMove') &&
           node.value &&
           node.value.type === 'JSXExpressionContainer' &&
-          (node.value.expression.type === 'ArrowFunctionExpression' ||
-            node.value.expression.type === 'FunctionExpression')
+          node.value.expression &&
+          node.value.expression.type === 'ArrowFunctionExpression'
         ) {
-          context.report({
-            node,
-            messageId: 'inlineDragHandler',
-            data: { name: node.name.name },
-          });
+          context.report({ node, messageId: 'unmemoizedDragHandler', data: { prop: name } });
         }
       },
     };

@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-use-isomorphic-layout-effect
- * Description: Warns against direct usage of useLayoutEffect in public hooks that may run during SSR.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,15 @@ module.exports = {
       useLayoutEffectSsrWarning: 'Using `useLayoutEffect` directly in library code triggers SSR warnings. Consider `useEffect` or safe isomorphic wrapper.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.') || filename.includes('test/')) return {};
+    return {
+      CallExpression(node) {
+        if (node.callee && node.callee.name === 'useLayoutEffect') {
+          context.report({ node, messageId: 'useLayoutEffectSsrWarning' });
+        }
+      },
+    };
   },
 };

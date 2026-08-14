@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-positive-breakpoint-width
- * Description: Validates that responsive breakpoint values are strictly positive numbers.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,20 @@ module.exports = {
       invalidBreakpoint: 'Mobile breakpoint must be a positive number greater than 0 (e.g. 768).',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          node.key.name === 'mobileBreakpoint' &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          typeof node.value.value === 'number' &&
+          node.value.value <= 0
+        ) {
+          context.report({ node, messageId: 'invalidBreakpoint' });
+        }
+      },
+    };
   },
 };

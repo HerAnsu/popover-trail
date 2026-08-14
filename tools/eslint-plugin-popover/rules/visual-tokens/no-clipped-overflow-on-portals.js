@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-clipped-overflow-on-portals
- * Description: Warns against setting overflow: hidden on the portal root container element.
- */
 module.exports = {
   meta: {
     type: 'problem',

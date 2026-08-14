@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-cleanup-after-mock-timers
- * Description: Checks that tests utilizing fake timers restore real timers in afterEach.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,10 +9,28 @@ module.exports = {
     },
     schema: [],
     messages: {
-      missingRealTimers: 'Test suite uses `vi.useFakeTimers()`. Ensure `afterEach(() => vi.useRealTimers())` is registered to prevent test pollution.',
+      missingRealTimers: 'Test file uses `vi.useFakeTimers()`. Ensure `vi.useRealTimers()` is called to prevent test pollution.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.includes('.test.')) return {};
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object &&
+          node.callee.object.name === 'vi' &&
+          node.callee.property &&
+          node.callee.property.name === 'useFakeTimers'
+        ) {
+          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          if (!src.includes('useRealTimers')) {
+            context.report({ node, messageId: 'missingRealTimers' });
+          }
+        }
+      },
+    };
   },
 };

@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-finite-inertia-velocity
- * Description: Checks that velocity values for drag physics and inertia are clamped to safe finite limits.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,20 @@ module.exports = {
       unclampedVelocity: 'Inertia velocity parameter should be clamped to avoid extreme floating offsets.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          node.key.name === 'velocity' &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          typeof node.value.value === 'number' &&
+          Math.abs(node.value.value) > 10000
+        ) {
+          context.report({ node, messageId: 'unclampedVelocity' });
+        }
+      },
+    };
   },
 };

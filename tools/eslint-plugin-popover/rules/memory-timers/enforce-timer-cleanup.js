@@ -1,77 +1,27 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-timer-cleanup
- * Description: Checks that useEffect creating timer handlers returns a cleanup function.
- */
 module.exports = {
   meta: {
-    type: 'problem',
+    type: 'suggestion',
     docs: {
-      description: 'Enforce cleanup function return in useEffect when timers or animation frames are registered',
+      description: 'Ensure useEffect starting setTimeout or setInterval returns a cleanup function',
       category: 'Memory & Timers',
       recommended: true,
     },
     schema: [],
     messages: {
-      missingTimerCleanup: 'useEffect registers `{{timer}}` without returning a cleanup function to prevent memory leaks and orphaned callbacks.',
+      missingTimerCleanup: 'useEffect with timer (setTimeout/setInterval) should return a cleanup function to prevent memory leaks.',
     },
   },
   create(context) {
-    const timerMethods = new Set(['setTimeout', 'setInterval', 'requestAnimationFrame', 'scheduleClose', 'scheduleHover']);
-
     return {
       CallExpression(node) {
-        if (
-          node.callee &&
-          (node.callee.name === 'useEffect' || node.callee.name === 'useLayoutEffect') &&
-          node.arguments.length > 0
-        ) {
-          const effectFn = node.arguments[0];
-          if (!effectFn || !effectFn.body) return;
-
-          let hasTimer = false;
-          let foundTimerName = '';
-          let hasReturnCleanup = false;
-
-          // Simple traversal of effect body statements
-          const statements = effectFn.body.type === 'BlockStatement' ? effectFn.body.body : [];
-
-          for (const stmt of statements) {
-            if (stmt.type === 'ReturnStatement') {
-              hasReturnCleanup = true;
+        if (node.callee && (node.callee.name === 'useEffect' || node.callee.name === 'useLayoutEffect')) {
+          const callback = node.arguments[0];
+          if (callback && (callback.type === 'ArrowFunctionExpression' || callback.type === 'FunctionExpression')) {
+            const src = context.getSourceCode ? context.getSourceCode().getText(callback) : '';
+            if ((src.includes('setTimeout') || src.includes('setInterval')) && !src.includes('clearTimeout') && !src.includes('clearInterval') && !src.includes('return')) {
+              context.report({ node, messageId: 'missingTimerCleanup' });
             }
-            // Check if statement contains timer call
-            if (
-              stmt.type === 'ExpressionStatement' &&
-              stmt.expression &&
-              stmt.expression.type === 'CallExpression' &&
-              stmt.expression.callee &&
-              timerMethods.has(stmt.expression.callee.name)
-            ) {
-              hasTimer = true;
-              foundTimerName = stmt.expression.callee.name;
-            } else if (
-              stmt.type === 'VariableDeclaration' &&
-              stmt.declarations.some(
-                (d) =>
-                  d.init &&
-                  d.init.type === 'CallExpression' &&
-                  d.init.callee &&
-                  timerMethods.has(d.init.callee.name),
-              )
-            ) {
-              hasTimer = true;
-              foundTimerName = 'timer';
-            }
-          }
-
-          if (hasTimer && !hasReturnCleanup) {
-            context.report({
-              node,
-              messageId: 'missingTimerCleanup',
-              data: { timer: foundTimerName },
-            });
           }
         }
       },

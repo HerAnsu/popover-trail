@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-race-condition-in-fetch
- * Description: Checks that asynchronous fetching effects use an active flag or AbortController.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      potentialRaceCondition: 'Async data resolution in `useEffect` should use an `isActive` flag or `AbortController` in cleanup.',
+      potentialRaceCondition: 'Async data resolution in useEffect should use an isActive flag or AbortController.',
     },
   },
   create(_context) {

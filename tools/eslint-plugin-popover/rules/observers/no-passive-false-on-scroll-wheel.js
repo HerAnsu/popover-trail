@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-passive-false-on-scroll-wheel
- * Description: Ensures scroll and wheel listeners use passive: true for smooth 60/120 FPS performance.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,10 +9,31 @@ module.exports = {
     },
     schema: [],
     messages: {
-      nonPassiveScroll: 'Scroll/wheel listener should use `{ passive: true }` to avoid blocking browser main thread rendering.',
+      nonPassiveScroll: 'Scroll/wheel listener should not specify `passive: false` unless preventDefault is strictly required.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.property &&
+          node.callee.property.name === 'addEventListener' &&
+          node.arguments.length >= 3
+        ) {
+          const eventType = node.arguments[0] && node.arguments[0].value;
+          if (eventType === 'scroll' || eventType === 'wheel' || eventType === 'touchmove') {
+            const opt = node.arguments[2];
+            if (opt && opt.type === 'ObjectExpression') {
+              for (const p of opt.properties) {
+                if (p.key && p.key.name === 'passive' && p.value && p.value.value === false) {
+                  context.report({ node, messageId: 'nonPassiveScroll' });
+                }
+              }
+            }
+          }
+        }
+      },
+    };
   },
 };

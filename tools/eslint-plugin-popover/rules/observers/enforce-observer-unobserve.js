@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-observer-unobserve
- * Description: Checks that ResizeObserverRegistry or IntersectionObserver observe calls return cleanup.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      missingUnobserve: 'Element observed with `{{registry}}` should be unobserved in cleanup callback to avoid memory leaks.',
+      missingUnobserve: 'Observer observe() should have corresponding unobserve() or disconnect().',
     },
   },
   create(_context) {

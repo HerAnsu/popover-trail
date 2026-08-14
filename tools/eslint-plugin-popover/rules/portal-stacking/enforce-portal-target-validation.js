@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-portal-target-validation
- * Description: Checks that portal mount nodes are verified before calling createPortal.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

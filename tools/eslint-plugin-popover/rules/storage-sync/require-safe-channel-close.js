@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/require-safe-channel-close
- * Description: Checks that BroadcastChannel instances call channel.close() in cleanup.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

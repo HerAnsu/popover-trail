@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/require-dpr-rounding-on-canvas
- * Description: Suggests scaling canvas or SVG coordinate grids by window.devicePixelRatio for crisp line rendering.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      dprScaling: 'Scale trail connection lines with `window.devicePixelRatio` to prevent blurry edges on HiDPI screens.',
+      dprScaling: 'Scale trail connection lines with window.devicePixelRatio to prevent blurry edges on HiDPI screens.',
     },
   },
   create(_context) {

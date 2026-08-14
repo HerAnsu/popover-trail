@@ -1,45 +1,30 @@
 'use strict';
-
-/**
- * Rule: popover/require-display-name
- * Description: Requires explicit displayName on memoized/forwardRef components in components directory.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Require displayName on memoized/forwardRef components',
-      category: 'API Design',
+      description: 'Ensure forwardRef and memo components define an explicit displayName for React DevTools',
+      category: 'Component API Design',
       recommended: true,
     },
     schema: [],
     messages: {
-      missingDisplayName: 'Component `{{name}}` should declare an explicit `.displayName` for React DevTools and error traces.',
+      missingDisplayName: 'Component wrapped in `{{wrapper}}` should declare an explicit `displayName`.',
     },
   },
   create(context) {
-    const rawFilename = context.filename || context.getFilename();
-    if (!rawFilename.includes('/components/') || rawFilename.includes('.test.')) {
-      return {};
-    }
-
     return {
-      ExportNamedDeclaration(node) {
+      VariableDeclarator(node) {
         if (
-          node.declaration &&
-          node.declaration.type === 'VariableDeclaration' &&
-          node.declaration.declarations
+          node.init &&
+          node.init.type === 'CallExpression' &&
+          node.init.callee &&
+          (node.init.callee.name === 'forwardRef' || node.init.callee.name === 'memo')
         ) {
-          for (const decl of node.declaration.declarations) {
-            if (
-              decl.init &&
-              decl.init.type === 'CallExpression' &&
-              decl.init.callee &&
-              (decl.init.callee.name === 'memo' ||
-                (decl.init.callee.property && decl.init.callee.property.name === 'memo'))
-            ) {
-              // Component defined with React.memo
-            }
+          const compName = node.id ? node.id.name : 'Component';
+          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          if (!src.includes(`${compName}.displayName`) && compName !== 'Component') {
+            context.report({ node, messageId: 'missingDisplayName', data: { wrapper: node.init.callee.name } });
           }
         }
       },

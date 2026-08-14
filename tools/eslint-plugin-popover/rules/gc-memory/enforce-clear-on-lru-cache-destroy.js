@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-clear-on-lru-cache-destroy
- * Description: Ensures that custom LRU cache implementations expose a clear() or reset() method.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

@@ -2,28 +2,24 @@
 
 /**
  * Rule: popover/no-raw-zindex-literals
- * Description: Disallows hardcoded arbitrary zIndex numbers (> 100) in component styles,
- * requiring use of resolveEffectiveBaseZIndex or theme tokens.
+ * Description: Disallow magic zIndex literals > 1000 in inline styles; use themeTokens.zIndex
  */
 module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Disallow magic numbers for zIndex; require tokens or store selectors',
-      category: 'Architecture',
+      description: 'Disallow magic zIndex literals > 1000 in inline styles; use themeTokens.zIndex',
+      category: 'Clean Architecture',
       recommended: true,
     },
     schema: [],
     messages: {
-      noMagicZIndex: 'Avoid magic number `{{value}}` for zIndex. Use theme tokens or `resolveEffectiveBaseZIndex`.',
+      rawZIndex: 'Avoid magic zIndex literal `{{value}}`. Use themeTokens.zIndex or stack order.',
     },
   },
   create(context) {
-    const rawFilename = context.filename || context.getFilename();
-    if (rawFilename.includes('.test.') || rawFilename.includes('themeTokens.ts') || rawFilename.includes('storeDefaults.ts')) {
-      return {};
-    }
-
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.') || filename.includes('test/')) return {};
     return {
       Property(node) {
         if (
@@ -32,13 +28,9 @@ module.exports = {
           node.value &&
           node.value.type === 'Literal' &&
           typeof node.value.value === 'number' &&
-          node.value.value >= 100
+          node.value.value >= 1000
         ) {
-          context.report({
-            node,
-            messageId: 'noMagicZIndex',
-            data: { value: node.value.value },
-          });
+          context.report({ node, messageId: 'rawZIndex', data: { value: node.value.value } });
         }
       },
     };

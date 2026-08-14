@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/sanitize-custom-html-attributes
- * Description: Warns when arbitrary unvalidated data objects are spread directly onto DOM root elements.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

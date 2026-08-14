@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-unfiltered-console-error-in-lib
- * Description: Suggests wrapping library errors in PopoverError or devWarnings rather than direct console.error.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,22 @@ module.exports = {
       rawConsoleError: 'Use `devWarning` or `Result.err()` instead of direct `console.error` in library core.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.includes('src/lib/') || filename.includes('.test.')) return {};
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object &&
+          node.callee.object.name === 'console' &&
+          node.callee.property &&
+          node.callee.property.name === 'error'
+        ) {
+          context.report({ node, messageId: 'rawConsoleError' });
+        }
+      },
+    };
   },
 };

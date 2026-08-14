@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-top-level-side-effects
- * Description: Warns against top-level side effects (DOM access, event listeners) at module load time.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

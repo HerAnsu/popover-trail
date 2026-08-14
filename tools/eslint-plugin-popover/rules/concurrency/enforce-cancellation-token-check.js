@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-cancellation-token-check
- * Description: Suggests checking signal.aborted before committing asynchronous store updates.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      missingSignalCheck: 'Check `signal?.aborted` before applying async results to prevent race conditions when popovers close quickly.',
+      missingSignalCheck: 'Check `signal?.aborted` before applying async results to prevent race conditions.',
     },
   },
   create(_context) {

@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-prevent-default-on-nav-keys
- * Description: Checks that keyboard navigation handlers for arrow/navigation keys invoke preventDefault.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      missingPreventDefault: 'Keyboard navigation handler for `{{key}}` should call `e.preventDefault()` to stop unwanted page scroll.',
+      missingPreventDefault: 'Keyboard navigation handler for arrow keys should call `e.preventDefault()`.',
     },
   },
   create(_context) {

@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-unhandled-localstorage-quota-error
- * Description: Ensures localStorage.setItem is wrapped in try/catch to prevent QuotaExceededError crashes in Safari private mode.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,10 +9,34 @@ module.exports = {
     },
     schema: [],
     messages: {
-      unhandledStorageQuota: 'Wrap `localStorage.setItem()` in try/catch or `Result.fromPromise` to handle private-mode quota limits.',
+      unhandledStorageQuota: 'Wrap `localStorage.setItem()` in try/catch to handle private-mode quota limits.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object &&
+          node.callee.object.name === 'localStorage' &&
+          node.callee.property &&
+          node.callee.property.name === 'setItem'
+        ) {
+          let parent = node.parent;
+          let inTry = false;
+          while (parent) {
+            if (parent.type === 'TryStatement') {
+              inTry = true;
+              break;
+            }
+            parent = parent.parent;
+          }
+          if (!inTry) {
+            context.report({ node, messageId: 'unhandledStorageQuota' });
+          }
+        }
+      },
+    };
   },
 };

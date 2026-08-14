@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-orphan-cleanup-on-parent-close
- * Description: Ensures parent popover close actions recursively clear downstream descendant cards.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/require-safe-quadtree-bounds
- * Description: Ensures spatial index bounds passed to QuadTree or collision engines have strictly positive dimensions.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,26 @@ module.exports = {
       invalidBounds: 'Spatial index boundary box must have positive width and height (width > 0, height > 0).',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      NewExpression(node) {
+        if (node.callee && node.callee.name === 'QuadTree' && node.arguments.length > 0) {
+          const arg = node.arguments[0];
+          if (arg && arg.type === 'ObjectExpression') {
+            for (const prop of arg.properties) {
+              if (
+                prop.key &&
+                (prop.key.name === 'width' || prop.key.name === 'height') &&
+                prop.value &&
+                prop.value.type === 'Literal' &&
+                prop.value.value <= 0
+              ) {
+                context.report({ node, messageId: 'invalidBounds' });
+              }
+            }
+          }
+        }
+      },
+    };
   },
 };

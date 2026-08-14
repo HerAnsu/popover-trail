@@ -2,19 +2,19 @@
 
 /**
  * Rule: popover/enforce-typed-event-dispatch
- * Description: Prevents dispatching arbitrary untyped string objects to eventBus.
+ * Description: Ensure eventBus.emit calls provide a valid string event name
  */
 module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure eventBus events use standard typed schemas',
-      category: 'Cross-Tab & Events',
+      description: 'Ensure eventBus.emit calls provide a valid string event name',
+      category: 'Cross-Tab Bus',
       recommended: true,
     },
     schema: [],
     messages: {
-      untypedEvent: 'Event dispatch should conform to PopoverEvent union types.',
+      untypedEvent: 'EventBus emit calls must provide non-empty string event identifier.',
     },
   },
   create(context) {
@@ -27,12 +27,9 @@ module.exports = {
           node.callee.object.name === 'eventBus' &&
           node.callee.property &&
           node.callee.property.name === 'emit' &&
-          node.arguments.length === 0
+          (node.arguments.length === 0 || (node.arguments[0].type === 'Literal' && !node.arguments[0].value))
         ) {
-          context.report({
-            node,
-            messageId: 'untypedEvent',
-          });
+          context.report({ node, messageId: 'untypedEvent' });
         }
       },
     };

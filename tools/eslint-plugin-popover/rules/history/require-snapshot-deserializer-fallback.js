@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/require-snapshot-deserializer-fallback
- * Description: Ensures custom deserializers handle invalid or corrupted JSON gracefully.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      missingFallback: 'Snapshot deserializer should catch parsing errors and return null or fallback initial state.',
+      missingFallback: 'Snapshot deserializer should catch parsing errors and return fallback state.',
     },
   },
   create(_context) {

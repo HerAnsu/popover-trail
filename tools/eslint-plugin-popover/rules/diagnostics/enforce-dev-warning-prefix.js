@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-dev-warning-prefix
- * Description: Ensures development warning messages begin with standard [popover-trail] prefix.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,20 @@ module.exports = {
       missingWarningPrefix: 'Warning message in devWarnings should start with `[popover-trail]`.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.name === 'devWarning' &&
+          node.arguments.length >= 2 &&
+          node.arguments[1].type === 'Literal' &&
+          typeof node.arguments[1].value === 'string' &&
+          !node.arguments[1].value.startsWith('[popover-trail]')
+        ) {
+          context.report({ node: node.arguments[1], messageId: 'missingWarningPrefix' });
+        }
+      },
+    };
   },
 };

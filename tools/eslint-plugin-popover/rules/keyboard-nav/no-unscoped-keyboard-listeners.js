@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-unscoped-keyboard-listeners
- * Description: Warns against attaching global keydown listeners without verifying popover active state.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

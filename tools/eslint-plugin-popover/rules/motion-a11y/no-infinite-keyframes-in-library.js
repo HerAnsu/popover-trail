@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-infinite-keyframes-in-library
- * Description: Disallows continuous infinite looping animations in default card styles to avoid battery drain.
- */
 module.exports = {
   meta: {
     type: 'problem',
@@ -17,7 +12,20 @@ module.exports = {
       infiniteAnimation: 'Infinite animation loops in default card styles can drain battery and violate vestibular a11y.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          (node.key.name === 'animation' || node.key.name === 'animationIterationCount') &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          typeof node.value.value === 'string' &&
+          node.value.value.includes('infinite')
+        ) {
+          context.report({ node, messageId: 'infiniteAnimation' });
+        }
+      },
+    };
   },
 };

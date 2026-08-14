@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-unique-stack-group-ids
- * Description: Checks that stack group identifiers are non-empty strings.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,19 @@ module.exports = {
       invalidGroupId: 'Stack group identifier should be a non-empty string.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          node.key.name === 'groupId' &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          node.value.value === ''
+        ) {
+          context.report({ node, messageId: 'invalidGroupId' });
+        }
+      },
+    };
   },
 };

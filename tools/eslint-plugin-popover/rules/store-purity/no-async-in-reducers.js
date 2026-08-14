@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-async-in-reducers
- * Description: Prohibits declaring async functions or returning promises inside synchronous state reducers.
- */
 module.exports = {
   meta: {
     type: 'problem',

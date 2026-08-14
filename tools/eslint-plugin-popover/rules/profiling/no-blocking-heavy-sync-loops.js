@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-blocking-heavy-sync-loops
- * Description: Warns against deep nested loops in real-time frame render callbacks.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,10 +9,16 @@ module.exports = {
     },
     schema: [],
     messages: {
-      heavySyncLoop: 'Nested loop inside frame calculation pipeline may drop frames at 60/120 FPS.',
+      heavySyncLoop: 'Deeply nested loops inside frame calculation pipelines may drop frames at 60/120 FPS.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    let loopDepth = 0;
+    return {
+      ForStatement() { loopDepth++; if (loopDepth >= 3) context.report({ node: arguments[0], messageId: 'heavySyncLoop' }); },
+      'ForStatement:exit'() { loopDepth--; },
+      WhileStatement() { loopDepth++; if (loopDepth >= 3) context.report({ node: arguments[0], messageId: 'heavySyncLoop' }); },
+      'WhileStatement:exit'() { loopDepth--; },
+    };
   },
 };

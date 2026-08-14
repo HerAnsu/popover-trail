@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-event-listener-target-check
- * Description: Checks that global event listeners verify target availability before calling addEventListener.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

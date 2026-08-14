@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-direct-history-stack-push
- * Description: Prevents direct array mutations on history.past or history.future.
- */
 module.exports = {
   meta: {
     type: 'problem',
@@ -14,10 +9,29 @@ module.exports = {
     },
     schema: [],
     messages: {
-      directHistoryMutation: 'Direct mutation of `history.{{stack}}` is prohibited. Use `push()`, `undo()`, or `redo()` methods.',
+      directHistoryMutation: 'Direct mutation of `history.{{stack}}` is prohibited. Use push(), undo(), or redo() methods.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.property &&
+          ['push', 'splice'].includes(node.callee.property.name) &&
+          node.callee.object &&
+          node.callee.object.type === 'MemberExpression' &&
+          node.callee.object.object &&
+          node.callee.object.object.name === 'history'
+        ) {
+          context.report({
+            node,
+            messageId: 'directHistoryMutation',
+            data: { stack: node.callee.object.property.name },
+          });
+        }
+      },
+    };
   },
 };

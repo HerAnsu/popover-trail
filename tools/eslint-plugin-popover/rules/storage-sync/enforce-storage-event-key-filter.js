@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-storage-event-key-filter
- * Description: Checks that window storage event listeners check e.key before processing.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,26 @@ module.exports = {
       unfilteredStorageEvent: 'Storage event listener should check `e.key === targetKey` before re-hydrating store state.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.property &&
+          node.callee.property.name === 'addEventListener' &&
+          node.arguments.length >= 2 &&
+          node.arguments[0].value === 'storage'
+        ) {
+          const handler = node.arguments[1];
+          if (handler && (handler.type === 'ArrowFunctionExpression' || handler.type === 'FunctionExpression')) {
+            const param = handler.params[0] ? handler.params[0].name : null;
+            const src = context.getSourceCode ? context.getSourceCode().getText(handler) : '';
+            if (param && !src.includes(`${param}.key`)) {
+              context.report({ node, messageId: 'unfilteredStorageEvent' });
+            }
+          }
+        }
+      },
+    };
   },
 };

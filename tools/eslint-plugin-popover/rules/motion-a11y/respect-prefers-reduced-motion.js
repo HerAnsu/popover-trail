@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/respect-prefers-reduced-motion
- * Description: Ensures animation configurations check or support prefers-reduced-motion media query.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      respectReducedMotion: 'Ensure animation presets disable or reduce duration when `prefers-reduced-motion` is matched.',
+      respectReducedMotion: 'Ensure animation presets disable or reduce duration when prefers-reduced-motion is matched.',
     },
   },
   create(_context) {

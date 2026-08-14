@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-console-time-in-production
- * Description: Disallows unguarded console.time and console.timeEnd in library runtime.
- */
 module.exports = {
   meta: {
     type: 'problem',
@@ -14,10 +9,25 @@ module.exports = {
     },
     schema: [],
     messages: {
-      noConsoleTime: 'Unguarded `console.time()` is prohibited in library builds. Use performanceSentinel or devTiming.',
+      noConsoleTime: 'Unguarded `console.time()` is prohibited in library builds.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.')) return {};
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object &&
+          node.callee.object.name === 'console' &&
+          node.callee.property &&
+          (node.callee.property.name === 'time' || node.callee.property.name === 'timeEnd')
+        ) {
+          context.report({ node, messageId: 'noConsoleTime' });
+        }
+      },
+    };
   },
 };

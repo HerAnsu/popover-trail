@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-zero-damping-in-spring
- * Description: Prevents setting spring physics damping <= 0 which causes infinite oscillation loops.
- */
 module.exports = {
   meta: {
     type: 'problem',
@@ -14,10 +9,23 @@ module.exports = {
     },
     schema: [],
     messages: {
-      zeroDamping: 'Spring damping ratio must be greater than 0 to guarantee animation settling and prevent infinite loops.',
+      zeroDamping: 'Spring damping ratio must be greater than 0 to guarantee animation settling.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          node.key.name === 'damping' &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          typeof node.value.value === 'number' &&
+          node.value.value <= 0
+        ) {
+          context.report({ node, messageId: 'zeroDamping' });
+        }
+      },
+    };
   },
 };

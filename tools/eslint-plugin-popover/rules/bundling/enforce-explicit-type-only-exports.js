@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-explicit-type-only-exports
- * Description: Suggests using `export type { ... }` when re-exporting pure TypeScript types.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

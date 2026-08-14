@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-tabindex-greater-than-zero
- * Description: Prohibits positive tabIndex values in popover components.
- */
 module.exports = {
   meta: {
     type: 'problem',

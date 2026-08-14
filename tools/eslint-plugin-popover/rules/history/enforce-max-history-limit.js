@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-max-history-limit
- * Description: Ensures history stack buffers specify a finite max limit to prevent unbounded memory growth.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

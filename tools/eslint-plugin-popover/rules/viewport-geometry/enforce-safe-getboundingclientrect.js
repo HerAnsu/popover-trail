@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-safe-getboundingclientrect
- * Description: Suggests null-safe checks on getBoundingClientRect return values.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      safeRectAccess: 'Verify element existence before invoking `getBoundingClientRect()`.',
+      safeRectAccess: 'Verify element existence before invoking getBoundingClientRect().',
     },
   },
   create(_context) {

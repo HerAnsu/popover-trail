@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-dom-access-in-worker-resolver
- * Description: Prohibits accessing DOM objects (window, document) within dedicated Web Worker resolver scripts.
- */
 module.exports = {
   meta: {
     type: 'problem',
@@ -17,7 +12,15 @@ module.exports = {
       workerDomAccess: 'DOM objects (`{{name}}`) are not available inside Web Worker scopes.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (!filename.includes('worker') || filename.includes('.test.')) return {};
+    return {
+      Identifier(node) {
+        if (node.name === 'document' || (node.name === 'window' && node.parent && node.parent.type !== 'UnaryExpression')) {
+          context.report({ node, messageId: 'workerDomAccess', data: { name: node.name } });
+        }
+      },
+    };
   },
 };

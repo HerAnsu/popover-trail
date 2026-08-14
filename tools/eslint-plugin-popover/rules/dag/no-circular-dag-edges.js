@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-circular-dag-edges
- * Description: Suggests running cycle detection before adding parent-child edges in PopoverDAG.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

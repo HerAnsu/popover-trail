@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-negative-zindex-in-layers
- * Description: Prohibits negative zIndex values in popover styles or stacking layers.
- */
 module.exports = {
   meta: {
     type: 'problem',
@@ -17,7 +12,20 @@ module.exports = {
       negativeZIndex: 'Negative zIndex is disallowed. Popover layers must be positive integers.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          (node.key.name === 'zIndex' || node.key.value === 'zIndex') &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          typeof node.value.value === 'number' &&
+          node.value.value < 0
+        ) {
+          context.report({ node, messageId: 'negativeZIndex' });
+        }
+      },
+    };
   },
 };

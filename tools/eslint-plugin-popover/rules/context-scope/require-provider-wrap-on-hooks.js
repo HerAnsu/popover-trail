@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/require-provider-wrap-on-hooks
- * Description: Warns when popover consumption hooks are used in root application components without a Provider.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      providerRequired: 'Hook `{{hook}}` requires an enclosing `<PopoverProvider>` to resolve trail context.',
+      providerRequired: 'Hook `{{hook}}` requires an enclosing PopoverProvider.',
     },
   },
   create(_context) {

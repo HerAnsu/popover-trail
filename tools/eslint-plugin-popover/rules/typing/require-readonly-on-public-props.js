@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/require-readonly-on-public-props
- * Description: Suggests marking public interface properties as readonly.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

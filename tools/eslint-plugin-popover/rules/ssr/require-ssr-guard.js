@@ -2,68 +2,44 @@
 
 /**
  * Rule: popover/require-ssr-guard
- * Description: Warns or errors when accessing browser-specific globals (window, document, DOMRect, navigator)
- * at top-level module scope without a typeof check.
+ * Description: Ensure direct window/document access is guarded against SSR crashes
  */
 module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Require typeof window guard before accessing browser globals outside effects',
-      category: 'SSR & Safety',
+      description: 'Ensure direct window/document access is guarded against SSR crashes',
+      category: 'SSR & DOM Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      unguardedBrowserGlobal: 'Direct top-level access to "{{name}}" is unsafe in SSR environments. Protect with `typeof window !== "undefined"` or move inside a useEffect/callback.',
+      unguardedBrowserApi: 'Direct access to `{{name}}` at module level can crash in SSR (Next.js/Remix). Wrap in useEffect or typeof window check.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename();
-    if (filename.includes('.test.') || filename.includes('tests/') || filename.includes('main.tsx')) {
+    if (
+      filename.includes('.test.') ||
+      filename.includes('test/') ||
+      filename.endsWith('main.tsx') ||
+      filename.endsWith('main.ts')
+    ) {
       return {};
     }
-
-    const browserGlobals = new Set(['window', 'document', 'localStorage', 'sessionStorage']);
-
+    let depth = 0;
     return {
+      FunctionDeclaration() { depth++; },
+      'FunctionDeclaration:exit'() { depth--; },
+      FunctionExpression() { depth++; },
+      'FunctionExpression:exit'() { depth--; },
+      ArrowFunctionExpression() { depth++; },
+      'ArrowFunctionExpression:exit'() { depth--; },
       Identifier(node) {
-        if (!browserGlobals.has(node.name)) return;
-
-        // Ignore if part of typeof window
-        const parent = node.parent;
-        if (parent && parent.type === 'UnaryExpression' && parent.operator === 'typeof') {
-          return;
-        }
-
-        // Ignore property definitions or declaration identifiers
-        if (parent && (parent.type === 'Property' || parent.type === 'MemberExpression') && parent.property === node && !parent.computed) {
-          return;
-        }
-
-        // Check if inside module top-level (Program level VariableDeclaration)
-        let curr = node.parent;
-        let isInsideFunctionOrBlock = false;
-        while (curr) {
-          if (
-            curr.type === 'FunctionDeclaration' ||
-            curr.type === 'FunctionExpression' ||
-            curr.type === 'ArrowFunctionExpression' ||
-            curr.type === 'ClassMethod' ||
-            curr.type === 'MethodDefinition'
-          ) {
-            isInsideFunctionOrBlock = true;
-            break;
-          }
-          curr = curr.parent;
-        }
-
-        if (!isInsideFunctionOrBlock) {
-          context.report({
-            node,
-            messageId: 'unguardedBrowserGlobal',
-            data: { name: node.name },
-          });
+        if (depth === 0 && (node.name === 'window' || node.name === 'document')) {
+          if (node.parent && node.parent.type === 'UnaryExpression' && node.parent.operator === 'typeof') return;
+          if (node.parent && node.parent.type === 'MemberExpression' && node.parent.property === node) return;
+          context.report({ node, messageId: 'unguardedBrowserApi', data: { name: node.name } });
         }
       },
     };

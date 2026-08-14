@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-inline-style-override-on-tokens
- * Description: Warns when hardcoded hex colors or shadows override design tokens in library core.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      hardcodedColor: 'Avoid hardcoded color `{{value}}` in core components. Prefer CSS custom properties or themeTokens.',
+      hardcodedColor: 'Avoid hardcoded color `{{value}}` in core components. Prefer CSS custom properties.',
     },
   },
   create(_context) {

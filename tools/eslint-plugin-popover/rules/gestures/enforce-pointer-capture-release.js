@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-pointer-capture-release
- * Description: Checks that pointer captures via setPointerCapture are paired with releasePointerCapture.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      unreleasedPointerCapture: 'Element with `setPointerCapture` should release pointer capture on pointerup/pointercancel.',
+      unreleasedPointerCapture: 'Element with setPointerCapture should release pointer capture on pointerup/pointercancel.',
     },
   },
   create(_context) {

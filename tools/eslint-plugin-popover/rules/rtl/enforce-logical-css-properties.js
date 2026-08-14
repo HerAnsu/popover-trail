@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-logical-css-properties
- * Description: Suggests using CSS logical properties (insetInlineStart, marginInlineStart) for internationalization.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      useLogicalProperty: 'Consider using logical property `{{logical}}` instead of physical `{{physical}}` for RTL compatibility.',
+      useLogicalProperty: 'Consider using logical property instead of physical left/right for RTL compatibility.',
     },
   },
   create(_context) {

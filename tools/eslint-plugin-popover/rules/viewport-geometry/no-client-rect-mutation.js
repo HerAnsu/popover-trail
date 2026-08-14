@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-client-rect-mutation
- * Description: Prohibits mutating DOMRect or DOMRectReadOnly property values.
- */
 module.exports = {
   meta: {
     type: 'problem',
@@ -17,7 +12,20 @@ module.exports = {
       mutateDOMRect: 'DOMRect properties are read-only in browsers. Create a new plain object or Rect value object.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      AssignmentExpression(node) {
+        if (
+          node.left &&
+          node.left.type === 'MemberExpression' &&
+          node.left.object &&
+          node.left.object.name === 'rect' &&
+          node.left.property &&
+          ['x', 'y', 'width', 'height', 'top', 'bottom', 'left', 'right'].includes(node.left.property.name)
+        ) {
+          context.report({ node, messageId: 'mutateDOMRect' });
+        }
+      },
+    };
   },
 };

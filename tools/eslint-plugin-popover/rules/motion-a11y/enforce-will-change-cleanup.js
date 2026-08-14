@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-will-change-cleanup
- * Description: Checks that will-change: transform properties are cleared after gesture finishes to prevent GPU memory retention.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      willChangeCleanup: 'Reset `willChange: "auto"` when card transition completes to free GPU memory.',
+      willChangeCleanup: 'Reset willChange to "auto" when card transition completes to free GPU memory.',
     },
   },
   create(_context) {

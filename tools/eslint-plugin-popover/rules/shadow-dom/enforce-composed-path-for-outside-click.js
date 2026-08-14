@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-composed-path-for-outside-click
- * Description: Checks that outside-click detectors use event.composedPath() for Shadow DOM traversal.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

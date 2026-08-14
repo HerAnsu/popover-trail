@@ -2,7 +2,7 @@
 
 /**
  * Rule: popover/prefer-performance-now-over-date-now
- * Description: Suggests performance.now() over Date.now() for high-precision gesture velocity and animation timers.
+ * Description: Prefer performance.now() for monotonic high-precision physics and gesture timing
  */
 module.exports = {
   meta: {
@@ -17,7 +17,23 @@ module.exports = {
       usePerformanceNow: 'Use `performance.now()` instead of `Date.now()` for monotonic sub-millisecond precision.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.') || !filename.includes('src/lib/')) return {};
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object &&
+          node.callee.object.name === 'Date' &&
+          node.callee.property &&
+          node.callee.property.name === 'now' &&
+          (filename.includes('gesture') || filename.includes('physics') || filename.includes('animation'))
+        ) {
+          context.report({ node, messageId: 'usePerformanceNow' });
+        }
+      },
+    };
   },
 };

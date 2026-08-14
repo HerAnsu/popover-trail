@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-viewport-resize-without-debounce
- * Description: Suggests throttling or debouncing on window resize event listeners.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

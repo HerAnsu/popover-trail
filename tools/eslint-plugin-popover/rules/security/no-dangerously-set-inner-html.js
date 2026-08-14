@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-dangerously-set-inner-html
- * Description: Prohibits dangerouslySetInnerHTML in popover library components to prevent XSS.
- */
 module.exports = {
   meta: {
     type: 'problem',

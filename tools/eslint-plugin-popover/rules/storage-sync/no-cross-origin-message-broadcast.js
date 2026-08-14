@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-cross-origin-message-broadcast
- * Description: Prohibits using targetOrigin '*' in window.postMessage calls within the library.
- */
 module.exports = {
   meta: {
     type: 'problem',
@@ -17,7 +12,21 @@ module.exports = {
       wildcardPostMessage: 'Avoid `postMessage(data, "*")`. Specify explicit target origin or use window.location.origin.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.property &&
+          node.callee.property.name === 'postMessage' &&
+          node.arguments.length >= 2 &&
+          node.arguments[1].type === 'Literal' &&
+          node.arguments[1].value === '*'
+        ) {
+          context.report({ node, messageId: 'wildcardPostMessage' });
+        }
+      },
+    };
   },
 };

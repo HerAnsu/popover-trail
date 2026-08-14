@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-high-contrast-outline
- * Description: Suggests visible focus outline styling for interactive controls.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

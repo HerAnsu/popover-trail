@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-shallow-equal-on-composite-selectors
- * Description: Checks that usePopoverStore selectors returning object literals pass shallowEqual as second argument.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

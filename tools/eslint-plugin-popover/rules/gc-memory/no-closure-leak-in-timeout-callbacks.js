@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-closure-leak-in-timeout-callbacks
- * Description: Warns when closure variables in long-lived timers retain heavy references.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

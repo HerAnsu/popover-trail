@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-hardcoded-rgba-in-svg
- * Description: Suggests using currentColor or design tokens in SVG icons instead of hardcoded RGBA.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

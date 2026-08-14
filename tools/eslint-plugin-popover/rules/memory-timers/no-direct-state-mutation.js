@@ -1,46 +1,32 @@
 'use strict';
-
-/**
- * Rule: popover/no-direct-state-mutation
- * Description: Disallows direct mutation of store state properties (state.trail.push, state.floating = ...)
- * in store selectors or UI hooks.
- */
 module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow direct mutations on store state collections',
+      description: 'Disallow direct mutating array operations (push, splice, pop) on store state slices in selectors',
       category: 'Memory & Timers',
       recommended: true,
     },
     schema: [],
     messages: {
-      noDirectStateMutation: 'Direct mutation of `state.{{property}}` is prohibited. State must be treated as immutable through reducers and action dispatchers.',
+      mutatingStoreState: 'Direct array mutation `{{method}}()` is prohibited on state objects. Return immutable copies.',
     },
   },
   create(context) {
-    const rawFilename = context.filename || context.getFilename();
-    if (rawFilename.includes('.test.') || rawFilename.includes('tests/')) {
-      return {};
-    }
-
-    const mutableCollections = new Set(['trail', 'floating', 'offsets', 'pinnedStates', 'zIndexOrder']);
-
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.')) return {};
     return {
-      AssignmentExpression(node) {
+      CallExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
-          node.left.object &&
-          node.left.object.name === 'state' &&
-          node.left.property &&
-          mutableCollections.has(node.left.property.name)
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.property &&
+          ['push', 'splice', 'pop', 'shift', 'unshift'].includes(node.callee.property.name)
         ) {
-          context.report({
-            node,
-            messageId: 'noDirectStateMutation',
-            data: { property: node.left.property.name },
-          });
+          const obj = node.callee.object;
+          if (obj && obj.type === 'MemberExpression' && obj.object && (obj.object.name === 'state' || obj.object.name === 'prev')) {
+            context.report({ node, messageId: 'mutatingStoreState', data: { method: node.callee.property.name } });
+          }
         }
       },
     };

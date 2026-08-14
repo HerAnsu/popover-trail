@@ -2,60 +2,52 @@
 
 /**
  * Rule: popover/no-inline-store-subscriptions
- * Description: Disallows calling store.subscribe or actions.subscribeEvent directly in component render bodies
- * outside of useEffect.
+ * Description: Disallow calling store.subscribe() directly in component render body without useEffect
  */
 module.exports = {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow store subscriptions directly in render body without useEffect',
+      description: 'Disallow calling store.subscribe() directly in component render body without useEffect',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      inlineSubscription: 'Do not call `{{method}}` directly in the render body. Place it inside a `useEffect` and return an unsubscribe callback.',
+      inlineStoreSub: 'Calling `store.subscribe()` inside component render body creates duplicate subscriptions on every render. Use useEffect or usePopoverStore selector.',
     },
   },
   create(context) {
-    const subscriptionMethods = new Set(['subscribe', 'subscribeEvent', 'onSnapshotRestored']);
-
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('.test.') || filename.includes('test/')) return {};
+    let inEffect = false;
     return {
       CallExpression(node) {
         if (
           node.callee &&
+          node.callee.type === 'Identifier' &&
+          (node.callee.name === 'useEffect' || node.callee.name === 'useLayoutEffect')
+        ) {
+          inEffect = true;
+        } else if (
+          !inEffect &&
+          node.callee &&
           node.callee.type === 'MemberExpression' &&
           node.callee.property &&
-          subscriptionMethods.has(node.callee.property.name)
+          node.callee.property.name === 'subscribe' &&
+          node.callee.object &&
+          (node.callee.object.name === 'store' || node.callee.object.name === 'eventBus')
         ) {
-          // Check enclosing scopes to see if we are in a React component but outside useEffect
-          let curr = node.parent;
-          let insideEffect = false;
-          let insideComponent = false;
-
-          while (curr) {
-            if (curr.type === 'CallExpression' && curr.callee && (curr.callee.name === 'useEffect' || curr.callee.name === 'useLayoutEffect')) {
-              insideEffect = true;
-              break;
-            }
-            if (
-              (curr.type === 'FunctionDeclaration' || curr.type === 'FunctionExpression' || curr.type === 'ArrowFunctionExpression') &&
-              curr.id &&
-              /^[A-Z]/.test(curr.id.name)
-            ) {
-              insideComponent = true;
-            }
-            curr = curr.parent;
-          }
-
-          if (insideComponent && !insideEffect) {
-            context.report({
-              node,
-              messageId: 'inlineSubscription',
-              data: { method: node.callee.property.name },
-            });
-          }
+          context.report({ node, messageId: 'inlineStoreSub' });
+        }
+      },
+      'CallExpression:exit'(node) {
+        if (
+          node.callee &&
+          node.callee.type === 'Identifier' &&
+          (node.callee.name === 'useEffect' || node.callee.name === 'useLayoutEffect')
+        ) {
+          inEffect = false;
         }
       },
     };

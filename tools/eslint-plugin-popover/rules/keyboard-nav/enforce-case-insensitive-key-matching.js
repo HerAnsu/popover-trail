@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-case-insensitive-key-matching
- * Description: Checks that custom shortcut key matching checks handle canonical key names.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,10 +9,27 @@ module.exports = {
     },
     schema: [],
     messages: {
-      shortcutCasing: 'Keyboard shortcut matching should handle case sensitivity consistently.',
+      shortcutCasing: 'Keyboard key matching for `{{key}}` should use canonical TitleCase `{{canonical}}`.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      BinaryExpression(node) {
+        if (
+          node.operator === '===' &&
+          node.left &&
+          node.left.property &&
+          node.left.property.name === 'key' &&
+          node.right &&
+          node.right.type === 'Literal'
+        ) {
+          if (node.right.value === 'escape') {
+            context.report({ node, messageId: 'shortcutCasing', data: { key: 'escape', canonical: 'Escape' } });
+          } else if (node.right.value === 'enter') {
+            context.report({ node, messageId: 'shortcutCasing', data: { key: 'enter', canonical: 'Enter' } });
+          }
+        }
+      },
+    };
   },
 };

@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-touch-action-none-on-draggable
- * Description: Suggests touch-action: none on draggable drag handle elements to prevent mobile pan interference.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

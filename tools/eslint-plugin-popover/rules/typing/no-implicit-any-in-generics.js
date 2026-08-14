@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-implicit-any-in-generics
- * Description: Suggests providing default generic type arguments where appropriate.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      missingGenericDefault: 'Provide default type argument for generic parameter `<{{name}}>` (e.g. `<{{name}} = unknown>`).',
+      missingGenericDefault: 'Provide default type argument for generic parameter.',
     },
   },
   create(_context) {

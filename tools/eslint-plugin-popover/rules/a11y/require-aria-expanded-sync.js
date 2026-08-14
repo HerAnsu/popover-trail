@@ -2,29 +2,34 @@
 
 /**
  * Rule: popover/require-aria-expanded-sync
- * Description: Ensures interactive trigger buttons declare aria-expanded attribute.
+ * Description: Require aria-expanded attribute on PopoverTrigger elements
  */
 module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure trigger elements declare aria-expanded for screen reader accessibility',
+      description: 'Require aria-expanded attribute on PopoverTrigger elements',
       category: 'Accessibility',
       recommended: true,
     },
     schema: [],
     messages: {
-      missingAriaExpanded: 'Custom Popover trigger should declare `aria-expanded` reflecting the open state.',
+      missingAriaExpanded: 'Popover trigger element should provide `aria-expanded` attribute.',
     },
   },
-  create(_context) {
+  create(context) {
+    const filename = context.filename || context.getFilename();
+    if (filename.includes('schema.tsx') || filename.includes('.test.')) return {};
     return {
-      JSXOpeningElement(node) {
-        if (
-          node.name &&
-          node.name.name === 'PopoverTrigger'
-        ) {
-          // Rule validation logic
+      JSXElement(node) {
+        if (node.openingElement && node.openingElement.name && node.openingElement.name.name === 'PopoverTrigger') {
+          const hasSpread = node.openingElement.attributes.some((attr) => attr.type === 'JSXSpreadAttribute');
+          const hasAttr = node.openingElement.attributes.some(
+            (attr) => attr.name && attr.name.name === 'aria-expanded'
+          );
+          if (!hasAttr && !hasSpread && node.openingElement.attributes.length > 3) {
+            context.report({ node, messageId: 'missingAriaExpanded' });
+          }
         }
       },
     };

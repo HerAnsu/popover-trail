@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-redundant-floating-middleware
- * Description: Prevents duplicate middleware declarations in the same floating middleware array.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,26 @@ module.exports = {
       duplicateMiddleware: 'Middleware `{{name}}` is duplicated in the floating middleware pipeline.',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          node.key.name === 'middleware' &&
+          node.value &&
+          node.value.type === 'ArrayExpression'
+        ) {
+          const names = new Set();
+          for (const el of node.value.elements) {
+            if (el && el.type === 'CallExpression' && el.callee && el.callee.name) {
+              if (names.has(el.callee.name)) {
+                context.report({ node: el, messageId: 'duplicateMiddleware', data: { name: el.callee.name } });
+              }
+              names.add(el.callee.name);
+            }
+          }
+        }
+      },
+    };
   },
 };

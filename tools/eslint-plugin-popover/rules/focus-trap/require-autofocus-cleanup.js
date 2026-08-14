@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/require-autofocus-cleanup
- * Description: Checks that autofocusing on card mount stores previous activeElement for restoration.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

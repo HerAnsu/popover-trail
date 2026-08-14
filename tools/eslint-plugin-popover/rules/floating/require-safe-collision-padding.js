@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/require-safe-collision-padding
- * Description: Ensures collision padding numbers passed to flip/shift middleware are non-negative.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -17,7 +12,20 @@ module.exports = {
       negativePadding: 'Collision padding must be non-negative (>= 0).',
     },
   },
-  create(_context) {
-    return {};
+  create(context) {
+    return {
+      Property(node) {
+        if (
+          node.key &&
+          (node.key.name === 'padding' || node.key.name === 'collisionPadding') &&
+          node.value &&
+          node.value.type === 'Literal' &&
+          typeof node.value.value === 'number' &&
+          node.value.value < 0
+        ) {
+          context.report({ node, messageId: 'negativePadding' });
+        }
+      },
+    };
   },
 };

@@ -1,15 +1,9 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-middleware-order
- * Description: Checks that Floating UI middleware pipelines adhere to standard positioning order
- * (offset -> flip -> shift -> size -> arrow -> hide).
- */
 module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure Floating UI middleware are arranged in canonical sequence to prevent jitter',
+      description: 'Ensure Floating UI middleware are arranged in canonical sequence',
       category: 'Floating UI',
       recommended: true,
     },

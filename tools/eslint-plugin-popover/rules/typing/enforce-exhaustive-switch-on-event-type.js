@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-exhaustive-switch-on-event-type
- * Description: Suggests exhaustive default branch with assertNever on event/action type switches.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      exhaustiveSwitch: 'Switch on `{{discriminant}}` should include default case with exhaustive check (`assertNever(action)`).',
+      exhaustiveSwitch: 'Switch on `{{discriminant}}` should include default case with exhaustive check.',
     },
   },
   create(_context) {

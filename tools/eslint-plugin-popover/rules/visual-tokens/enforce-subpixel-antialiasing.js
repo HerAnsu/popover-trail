@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-subpixel-antialiasing
- * Description: Suggests antialiased font smoothing classes on card text roots.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
@@ -14,7 +9,7 @@ module.exports = {
     },
     schema: [],
     messages: {
-      fontSmoothing: 'Card text containers benefit from `-webkit-font-smoothing: antialiased` for crisp rendering across operating systems.',
+      fontSmoothing: 'Card text containers benefit from `-webkit-font-smoothing: antialiased` for crisp rendering.',
     },
   },
   create(_context) {

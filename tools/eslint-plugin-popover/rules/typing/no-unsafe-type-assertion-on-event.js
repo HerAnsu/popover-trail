@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/no-unsafe-type-assertion-on-event
- * Description: Warns against raw event casting without runtime type guards.
- */
 module.exports = {
   meta: {
     type: 'suggestion',

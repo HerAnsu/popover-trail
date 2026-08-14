@@ -1,20 +1,15 @@
 'use strict';
-
-/**
- * Rule: popover/prefer-early-return-on-inactive
- * Description: Suggests early returns in sub-render functions when card status is inactive/closed.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage early exit when popover items are inactive or unmounted',
-      category: 'API Design',
+      description: 'Prefer early return null when popover is inactive or not mounted',
+      category: 'Component API Design',
       recommended: true,
     },
     schema: [],
     messages: {
-      earlyReturnSuggested: 'Consider early return when active state is false to bypass computation.',
+      earlyReturn: 'Prefer early return null when isOpen / isMounted is false.',
     },
   },
   create(_context) {

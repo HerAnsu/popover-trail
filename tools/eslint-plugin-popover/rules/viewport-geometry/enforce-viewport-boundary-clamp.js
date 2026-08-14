@@ -1,9 +1,4 @@
 'use strict';
-
-/**
- * Rule: popover/enforce-viewport-boundary-clamp
- * Description: Suggests clamping coordinate calculation outputs to window boundaries.
- */
 module.exports = {
   meta: {
     type: 'suggestion',
