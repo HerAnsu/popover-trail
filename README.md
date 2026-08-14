@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.png" alt="popover-trail banner" width="100%" />
+</p>
+
 # popover-trail
 
 Headless React 19 library for nested cascading popovers and draggable floating windows with async data resolution.
