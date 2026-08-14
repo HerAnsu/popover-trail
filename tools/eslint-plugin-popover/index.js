@@ -146,6 +146,36 @@ const respectPrefersReducedMotion = require('./rules/motion-a11y/respect-prefers
 const noInfiniteKeyframesInLibrary = require('./rules/motion-a11y/no-infinite-keyframes-in-library');
 const enforceWillChangeCleanup = require('./rules/motion-a11y/enforce-will-change-cleanup');
 
+// Group AH: Profiling & Performance
+const preferPerformanceNowOverDateNow = require('./rules/profiling/prefer-performance-now-over-date-now');
+const noBlockingHeavySyncLoops = require('./rules/profiling/no-blocking-heavy-sync-loops');
+const enforceProfilerMarkerCleanup = require('./rules/profiling/enforce-profiler-marker-cleanup');
+const noConsoleTimeInProduction = require('./rules/profiling/no-console-time-in-production');
+
+// Group AI: Typing & TypeScript
+const noUnsafeTypeAssertionOnEvent = require('./rules/typing/no-unsafe-type-assertion-on-event');
+const enforceExhaustiveSwitchOnEventType = require('./rules/typing/enforce-exhaustive-switch-on-event-type');
+const requireReadonlyOnPublicProps = require('./rules/typing/require-readonly-on-public-props');
+const noImplicitAnyInGenerics = require('./rules/typing/no-implicit-any-in-generics');
+
+// Group AJ: Viewport & Geometry
+const enforceSafeGetboundingclientrect = require('./rules/viewport-geometry/enforce-safe-getboundingclientrect');
+const noClientRectMutation = require('./rules/viewport-geometry/no-client-rect-mutation');
+const enforceViewportBoundaryClamp = require('./rules/viewport-geometry/enforce-viewport-boundary-clamp');
+const requireDprRoundingOnCanvas = require('./rules/viewport-geometry/require-dpr-rounding-on-canvas');
+
+// Group AK: Storage & Sync
+const noUnhandledLocalstorageQuotaError = require('./rules/storage-sync/no-unhandled-localstorage-quota-error');
+const enforceStorageEventKeyFilter = require('./rules/storage-sync/enforce-storage-event-key-filter');
+const requireSafeChannelClose = require('./rules/storage-sync/require-safe-channel-close');
+const noCrossOriginMessageBroadcast = require('./rules/storage-sync/no-cross-origin-message-broadcast');
+
+// Group AL: Visual & Tokens
+const noHardcodedRgbaInSvg = require('./rules/visual-tokens/no-hardcoded-rgba-in-svg');
+const enforceHighContrastOutline = require('./rules/visual-tokens/enforce-high-contrast-outline');
+const noClippedOverflowOnPortals = require('./rules/visual-tokens/no-clipped-overflow-on-portals');
+const enforceSubpixelAntialiasing = require('./rules/visual-tokens/enforce-subpixel-antialiasing');
+
 const rules = {
   'require-ssr-guard': requireSsrGuard,
   'no-direct-dom-mutation': noDirectDomMutation,
@@ -227,6 +257,26 @@ const rules = {
   'respect-prefers-reduced-motion': respectPrefersReducedMotion,
   'no-infinite-keyframes-in-library': noInfiniteKeyframesInLibrary,
   'enforce-will-change-cleanup': enforceWillChangeCleanup,
+  'prefer-performance-now-over-date-now': preferPerformanceNowOverDateNow,
+  'no-blocking-heavy-sync-loops': noBlockingHeavySyncLoops,
+  'enforce-profiler-marker-cleanup': enforceProfilerMarkerCleanup,
+  'no-console-time-in-production': noConsoleTimeInProduction,
+  'no-unsafe-type-assertion-on-event': noUnsafeTypeAssertionOnEvent,
+  'enforce-exhaustive-switch-on-event-type': enforceExhaustiveSwitchOnEventType,
+  'require-readonly-on-public-props': requireReadonlyOnPublicProps,
+  'no-implicit-any-in-generics': noImplicitAnyInGenerics,
+  'enforce-safe-getboundingclientrect': enforceSafeGetboundingclientrect,
+  'no-client-rect-mutation': noClientRectMutation,
+  'enforce-viewport-boundary-clamp': enforceViewportBoundaryClamp,
+  'require-dpr-rounding-on-canvas': requireDprRoundingOnCanvas,
+  'no-unhandled-localstorage-quota-error': noUnhandledLocalstorageQuotaError,
+  'enforce-storage-event-key-filter': enforceStorageEventKeyFilter,
+  'require-safe-channel-close': requireSafeChannelClose,
+  'no-cross-origin-message-broadcast': noCrossOriginMessageBroadcast,
+  'no-hardcoded-rgba-in-svg': noHardcodedRgbaInSvg,
+  'enforce-high-contrast-outline': enforceHighContrastOutline,
+  'no-clipped-overflow-on-portals': noClippedOverflowOnPortals,
+  'enforce-subpixel-antialiasing': enforceSubpixelAntialiasing,
 };
 
 module.exports = {

@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import plugin from '../index';
 
 describe('eslint-plugin-popover-trail custom rules', () => {
-  it('exports all 80 custom AST rules', () => {
-    expect(Object.keys(plugin.rules)).toHaveLength(80);
+  it('exports all 100 custom AST rules', () => {
+    expect(Object.keys(plugin.rules)).toHaveLength(100);
 
     // Group A
     expect(plugin.rules).toHaveProperty('require-ssr-guard');
@@ -150,6 +150,36 @@ describe('eslint-plugin-popover-trail custom rules', () => {
     expect(plugin.rules).toHaveProperty('respect-prefers-reduced-motion');
     expect(plugin.rules).toHaveProperty('no-infinite-keyframes-in-library');
     expect(plugin.rules).toHaveProperty('enforce-will-change-cleanup');
+
+    // Group AH
+    expect(plugin.rules).toHaveProperty('prefer-performance-now-over-date-now');
+    expect(plugin.rules).toHaveProperty('no-blocking-heavy-sync-loops');
+    expect(plugin.rules).toHaveProperty('enforce-profiler-marker-cleanup');
+    expect(plugin.rules).toHaveProperty('no-console-time-in-production');
+
+    // Group AI
+    expect(plugin.rules).toHaveProperty('no-unsafe-type-assertion-on-event');
+    expect(plugin.rules).toHaveProperty('enforce-exhaustive-switch-on-event-type');
+    expect(plugin.rules).toHaveProperty('require-readonly-on-public-props');
+    expect(plugin.rules).toHaveProperty('no-implicit-any-in-generics');
+
+    // Group AJ
+    expect(plugin.rules).toHaveProperty('enforce-safe-getboundingclientrect');
+    expect(plugin.rules).toHaveProperty('no-client-rect-mutation');
+    expect(plugin.rules).toHaveProperty('enforce-viewport-boundary-clamp');
+    expect(plugin.rules).toHaveProperty('require-dpr-rounding-on-canvas');
+
+    // Group AK
+    expect(plugin.rules).toHaveProperty('no-unhandled-localstorage-quota-error');
+    expect(plugin.rules).toHaveProperty('enforce-storage-event-key-filter');
+    expect(plugin.rules).toHaveProperty('require-safe-channel-close');
+    expect(plugin.rules).toHaveProperty('no-cross-origin-message-broadcast');
+
+    // Group AL
+    expect(plugin.rules).toHaveProperty('no-hardcoded-rgba-in-svg');
+    expect(plugin.rules).toHaveProperty('enforce-high-contrast-outline');
+    expect(plugin.rules).toHaveProperty('no-clipped-overflow-on-portals');
+    expect(plugin.rules).toHaveProperty('enforce-subpixel-antialiasing');
   });
 
   it('each rule has meta and create functions conforming to ESLint / Oxlint specification', () => {

@@ -254,7 +254,27 @@
     "popover/no-direct-body-append-in-components": "deny",
     "popover/respect-prefers-reduced-motion": "warn",
     "popover/no-infinite-keyframes-in-library": "deny",
-    "popover/enforce-will-change-cleanup": "warn"
+    "popover/enforce-will-change-cleanup": "warn",
+    "popover/prefer-performance-now-over-date-now": "warn",
+    "popover/no-blocking-heavy-sync-loops": "warn",
+    "popover/enforce-profiler-marker-cleanup": "warn",
+    "popover/no-console-time-in-production": "deny",
+    "popover/no-unsafe-type-assertion-on-event": "warn",
+    "popover/enforce-exhaustive-switch-on-event-type": "warn",
+    "popover/require-readonly-on-public-props": "warn",
+    "popover/no-implicit-any-in-generics": "warn",
+    "popover/enforce-safe-getboundingclientrect": "warn",
+    "popover/no-client-rect-mutation": "deny",
+    "popover/enforce-viewport-boundary-clamp": "warn",
+    "popover/require-dpr-rounding-on-canvas": "warn",
+    "popover/no-unhandled-localstorage-quota-error": "warn",
+    "popover/enforce-storage-event-key-filter": "warn",
+    "popover/require-safe-channel-close": "warn",
+    "popover/no-cross-origin-message-broadcast": "deny",
+    "popover/no-hardcoded-rgba-in-svg": "warn",
+    "popover/enforce-high-contrast-outline": "warn",
+    "popover/no-clipped-overflow-on-portals": "deny",
+    "popover/enforce-subpixel-antialiasing": "warn"
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"]
 }
