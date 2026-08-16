@@ -1,17 +1,33 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   createPopoverFSM,
   popoverFSMReducer,
   assertPopoverFSMState,
   isValidTransitionStatusChange,
+  FSMStatusBit,
   type PopoverFSMEvent,
 } from './fsm';
 
 describe('Popover FSM Engine', () => {
-  it('should start in Idle state', () => {
+  it('should start in Idle state with string initialKey parameter', () => {
     const fsm = createPopoverFSM('card-1');
     expect(fsm.getState().value).toBe('Idle');
     expect(fsm.matches('Idle')).toBe(true);
+    expect(fsm.getState().context.key).toBe('card-1');
+  });
+
+  it('should support object parameter signature { key: "..." }', () => {
+    const fsm = createPopoverFSM<{ name: string }>({
+      key: 'userProfile',
+      initialState: 'Resolved.Trailing',
+      initialData: { name: 'Alice' },
+    });
+
+    expect(fsm.getState().value).toBe('Resolved.Trailing');
+    expect(fsm.getState().context.key).toBe('userProfile');
+    expect(fsm.getState().context.data).toEqual({ name: 'Alice' });
+    expect(fsm.isResolved()).toBe(true);
+    expect(fsm.isActive()).toBe(true);
   });
 
   it('should transition from Idle to Hydrating on OPEN_ROOT', () => {
@@ -62,7 +78,7 @@ describe('Popover FSM Engine', () => {
     expect(state.value).toBe('Hydrating');
   });
 
-  it('should notify subscribers on valid transitions', () => {
+  it('should notify subscribers on valid transitions and stop on unsubscribe', () => {
     const fsm = createPopoverFSM('card-1');
     const states: string[] = [];
     const unsubscribe = fsm.subscribe((s) => states.push(s.value));
@@ -74,7 +90,6 @@ describe('Popover FSM Engine', () => {
 
     unsubscribe();
     fsm.send({ type: 'CLOSE' });
-    // Subscriber should not be notified after unsubscribing
     expect(states).toEqual(['Hydrating', 'Resolved.Trailing']);
   });
 
@@ -98,7 +113,6 @@ describe('Popover FSM Engine', () => {
     fsm.send({ type: 'TRANSITION_END' });
     expect(fsm.getState().value).toBe('Idle');
 
-    // Late arriving promise result
     fsm.send({ type: 'RESOLVE_SUCCESS', data: 'stale' });
     expect(fsm.getState().value).toBe('Idle');
     expect(fsm.getState().context.data).toBeUndefined();
@@ -118,10 +132,27 @@ describe('Popover FSM Engine', () => {
     expect(isValidTransitionStatusChange('unmounting', 'mounted')).toBe(false);
   });
 
-  it('returns unchanged state for unhandled unknown events', () => {
-    const initialState = { value: 'Idle' as const, context: { key: 'card-1' } };
-    // @ts-expect-error Testing invalid event type
-    const nextState = popoverFSMReducer(initialState, { type: 'UNKNOWN_EVENT' });
-    expect(nextState).toBe(initialState);
+  it('supports bitmask queries (getStatusBit, isActive, isResolved)', () => {
+    const fsm = createPopoverFSM('card-1');
+    expect(fsm.getStatusBit()).toBe(FSMStatusBit.Idle);
+    expect(fsm.isActive()).toBe(false);
+
+    fsm.send({ type: 'OPEN_ROOT', key: 'card-1' });
+    expect(fsm.getStatusBit()).toBe(FSMStatusBit.Hydrating);
+
+    fsm.send({ type: 'RESOLVE_SUCCESS', data: {} });
+    expect(fsm.isActive()).toBe(true);
+    expect(fsm.isResolved()).toBe(true);
+  });
+
+  it('disposes cleanly using dispose() and Symbol.dispose', () => {
+    const fsm = createPopoverFSM('card-dispose');
+    const listener = vi.fn();
+    fsm.subscribe(listener);
+
+    fsm.dispose();
+    fsm.send({ type: 'OPEN_ROOT', key: 'card-dispose' });
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });

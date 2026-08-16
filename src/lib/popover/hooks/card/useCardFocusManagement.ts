@@ -1,6 +1,35 @@
+/**
+ * Focus & Scroll Locking Lifecycle Management for popover cards.
+ *
+ * @module hooks/card/useCardFocusManagement
+ */
+
 import { useEffect, useRef } from 'react';
 import type { TrailEntry } from '../../types';
 import { focusParentCard } from './useCardKeyboardNav';
+
+let activeScrollLockCount = 0;
+let originalBodyOverflow: string | null = null;
+
+function acquireScrollLock(): void {
+  if (typeof document === 'undefined') return;
+  if (activeScrollLockCount === 0) {
+    originalBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+  activeScrollLockCount++;
+}
+
+function releaseScrollLock(): void {
+  if (typeof document === 'undefined') return;
+  if (activeScrollLockCount > 0) {
+    activeScrollLockCount--;
+    if (activeScrollLockCount === 0) {
+      document.body.style.overflow = originalBodyOverflow ?? '';
+      originalBodyOverflow = null;
+    }
+  }
+}
 
 function tryRestorePreviousElementFocus(
   cardElement: HTMLElement | null,
@@ -11,6 +40,7 @@ function tryRestorePreviousElementFocus(
 
   const activeEl = document.activeElement;
   const isFocusInside = cardElement?.contains(activeEl) || activeEl === document.body || !activeEl;
+
   if (isFocusInside) {
     previouslyFocused.focus();
     return true;
@@ -25,18 +55,16 @@ function restoreCardFocus(
 ): void {
   if (tryRestorePreviousElementFocus(cardElement, previouslyFocused)) return;
   if (parentKey && focusParentCard(parentKey)) return;
-  document.querySelector<HTMLElement>('h1')?.focus();
 }
 
 /**
- * Manages WAI-ARIA focus lifecycle for a popover card.
+ * Manages WAI-ARIA focus lifecycle and body scroll lock for a popover card.
  *
  * @remarks
- * Encapsulates accessibility focus behaviors:
- * - Remembers the previously focused trigger element before mounting.
- * - Auto-focuses a target selector or callback when specified (`autoFocusElement`).
- * - Locks document scrolling when `lockScroll: true` is configured.
- * - Restores focus to the original trigger element or parent card upon unmounting.
+ * - Remembers previously focused trigger before mounting.
+ * - Manages ref-counted body scroll lock (`lockScroll: true`) to prevent nested unlock races.
+ * - Auto-focuses custom selectors or callbacks (`autoFocusElement`).
+ * - Restores focus to trigger or parent card on unmount.
  *
  * @param entry - TrailEntry configuration including focusLockOptions.
  * @param cardRef - React ref pointing to the card container element.
@@ -47,6 +75,7 @@ export function useCardFocusManagement(
 ): void {
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
+  // Capture active element on mount and restore on unmount
   useEffect(() => {
     if (typeof document !== 'undefined') {
       previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
@@ -59,26 +88,29 @@ export function useCardFocusManagement(
     };
   }, [entry.parentKey, entry.focusLockOptions?.returnFocus, cardRef]);
 
+  // Handle autoFocusElement
   useEffect(() => {
     if (!entry.focusLockOptions?.autoFocusElement || typeof document === 'undefined') return;
     const autoFocus = entry.focusLockOptions.autoFocusElement;
     const target =
       typeof autoFocus === 'function'
         ? autoFocus()
-        : typeof autoFocus === 'string' && autoFocus.trim() !== ''
+        : autoFocus.trim() !== ''
           ? document.querySelector<HTMLElement>(autoFocus)
           : null;
+
     if (target && typeof target.focus === 'function') {
       target.focus();
     }
   }, [entry.focusLockOptions, entry.focusLockOptions?.autoFocusElement]);
 
+  // Ref-counted scroll lock
   useEffect(() => {
     if (!entry.focusLockOptions?.lockScroll || typeof document === 'undefined') return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+
+    acquireScrollLock();
     return () => {
-      document.body.style.overflow = originalOverflow;
+      releaseScrollLock();
     };
   }, [entry.focusLockOptions?.lockScroll]);
 }

@@ -19,9 +19,27 @@ export interface QuadItem {
   bounds: BoundingBox;
 }
 
-function boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
+/**
+ * Determines whether two bounding boxes intersect.
+ * Correctly handles zero-dimension bounds (points and edges) using inclusive boundaries.
+ */
+export function boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
+  if (!a || !b) return false;
+
+  const isPointOrEdgeA = a.width === 0 || a.height === 0;
+  const isPointOrEdgeB = b.width === 0 || b.height === 0;
+
+  if (isPointOrEdgeA || isPointOrEdgeB) {
+    return (
+      a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y
+    );
+  }
+
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
+
+const DISPOSE_SYMBOL: symbol =
+  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
 /**
  * 2D QuadTree Spatial Partitioning Index.
@@ -29,15 +47,30 @@ function boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
 export class QuadTree {
   private items: QuadItem[] = [];
   private nodes: QuadTree[] = [];
-  private readonly maxItems = 16;
-  private readonly maxLevels = 8;
+  private readonly maxItems: number;
+  private readonly maxLevels: number;
 
   private readonly bounds: BoundingBox;
   private readonly level: number;
 
-  constructor(bounds: BoundingBox, level = 0) {
-    this.bounds = bounds;
-    this.level = level;
+  /**
+   * Initializes a 2D QuadTree spatial index.
+   *
+   * @param bounds - Spatial boundary bounding box.
+   * @param maxItems - Max capacity of items per quadrant before subdivision (default: 16).
+   * @param maxLevels - Max recursive quadrant subdivision depth (default: 8).
+   * @param level - Internal current depth level (default: 0).
+   */
+  constructor(bounds: BoundingBox, maxItems = 16, maxLevels = 8, level = 0) {
+    this.bounds = {
+      x: Number.isFinite(bounds?.x) ? bounds.x : 0,
+      y: Number.isFinite(bounds?.y) ? bounds.y : 0,
+      width: Number.isFinite(bounds?.width) && bounds.width >= 0 ? bounds.width : 0,
+      height: Number.isFinite(bounds?.height) && bounds.height >= 0 ? bounds.height : 0,
+    };
+    this.maxItems = Number.isFinite(maxItems) && maxItems > 0 ? maxItems : 16;
+    this.maxLevels = Number.isFinite(maxLevels) && maxLevels > 0 ? maxLevels : 8;
+    this.level = Number.isFinite(level) && level >= 0 ? level : 0;
   }
 
   /** Clears all items and child nodes recursively. */
@@ -47,6 +80,15 @@ export class QuadTree {
       node.clear();
     }
     this.nodes = [];
+  }
+
+  /** Total count of items indexed across this node and all sub-quadrants. */
+  get size(): number {
+    let count = this.items.length;
+    for (const node of this.nodes) {
+      count += node.size;
+    }
+    return count;
   }
 
   /**
@@ -60,23 +102,35 @@ export class QuadTree {
     const subWidth = this.bounds.width / 2;
     const subHeight = this.bounds.height / 2;
     const { x, y } = this.bounds;
+    const nextLevel = this.level + 1;
 
     // Node 0: Top-Right (NE)
     this.nodes[0] = new QuadTree(
       { x: x + subWidth, y, width: subWidth, height: subHeight },
-      this.level + 1,
+      this.maxItems,
+      this.maxLevels,
+      nextLevel,
     );
     // Node 1: Top-Left (NW)
-    this.nodes[1] = new QuadTree({ x, y, width: subWidth, height: subHeight }, this.level + 1);
+    this.nodes[1] = new QuadTree(
+      { x, y, width: subWidth, height: subHeight },
+      this.maxItems,
+      this.maxLevels,
+      nextLevel,
+    );
     // Node 2: Bottom-Left (SW)
     this.nodes[2] = new QuadTree(
       { x, y: y + subHeight, width: subWidth, height: subHeight },
-      this.level + 1,
+      this.maxItems,
+      this.maxLevels,
+      nextLevel,
     );
     // Node 3: Bottom-Right (SE)
     this.nodes[3] = new QuadTree(
       { x: x + subWidth, y: y + subHeight, width: subWidth, height: subHeight },
-      this.level + 1,
+      this.maxItems,
+      this.maxLevels,
+      nextLevel,
     );
   }
 
@@ -84,7 +138,7 @@ export class QuadTree {
    * Determines which child quadrant a given bounding box completely fits into.
    *
    * @param bounds - Target bounding box to locate.
-   * @returns Quadrant index (0 = NE, 1 = NW, 2 = SW, 3 = SE), or -1 if the bounding box spans across the quadrant boundaries.
+   * @returns Quadrant index (0 = NE, 1 = NW, 2 = SW, 3 = SE), or -1 if spanning boundaries.
    */
   private getIndex(bounds: BoundingBox): number {
     const verticalMidpoint = this.bounds.x + this.bounds.width / 2;
@@ -103,13 +157,12 @@ export class QuadTree {
       if (fitsBottom) return 3; // SE quadrant
     }
 
-    // Straddles the boundary line; must remain in the parent node
+    // Straddles quadrant midpoint boundaries; must stay in parent node
     return -1;
   }
 
   /**
    * Pushes items down into child sub-quadrants when capacity is exceeded.
-   * Items that span across quadrant boundaries remain in the parent node.
    */
   private redistributeItems(): void {
     if (this.nodes.length === 0) {
@@ -118,10 +171,10 @@ export class QuadTree {
 
     const remaining: QuadItem[] = [];
     for (const currentItem of this.items) {
-      if (!currentItem) continue;
+      if (!currentItem || !currentItem.bounds) continue;
       const index = this.getIndex(currentItem.bounds);
-      if (index !== -1) {
-        this.nodes[index]?.insert(currentItem);
+      if (index !== -1 && this.nodes[index]) {
+        this.nodes[index].insert(currentItem);
       } else {
         remaining.push(currentItem);
       }
@@ -131,14 +184,14 @@ export class QuadTree {
 
   /**
    * Inserts a QuadItem into the tree index.
-   * If the current node exceeds `maxItems` and hasn't reached `maxLevels`, it subdivides.
    */
   insert(item: QuadItem): void {
-    if (!item || !item.bounds) return;
+    if (!item || !item.id || !item.bounds) return;
+
     if (this.nodes.length > 0) {
       const index = this.getIndex(item.bounds);
-      if (index !== -1) {
-        this.nodes[index]?.insert(item);
+      if (index !== -1 && this.nodes[index]) {
+        this.nodes[index].insert(item);
         return;
       }
     }
@@ -151,6 +204,30 @@ export class QuadTree {
   }
 
   /**
+   * Removes a specific item by its unique ID from the QuadTree index.
+   *
+   * @param id - Item unique identifier.
+   * @returns True if item was found and removed.
+   */
+  remove(id: string): boolean {
+    if (!id) return false;
+
+    const itemIdx = this.items.findIndex((item) => item.id === id);
+    if (itemIdx !== -1) {
+      this.items.splice(itemIdx, 1);
+      return true;
+    }
+
+    for (const node of this.nodes) {
+      if (node.remove(id)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Helper that traverses child quadrants that intersect with targetBounds.
    */
   private retrieveFromChildren(
@@ -159,10 +236,11 @@ export class QuadTree {
     seenIds: Set<string>,
   ): void {
     const index = this.getIndex(targetBounds);
-    if (index !== -1) {
-      this.nodes[index]?.retrieve(returnItems, targetBounds, seenIds);
+    if (index !== -1 && this.nodes[index]) {
+      this.nodes[index].retrieve(returnItems, targetBounds, seenIds);
       return;
     }
+
     for (const node of this.nodes) {
       if (boxesIntersect(node.bounds, targetBounds)) {
         node.retrieve(returnItems, targetBounds, seenIds);
@@ -204,5 +282,9 @@ export class QuadTree {
   /** ScopeDisposable handle clearing all quad partitions. */
   dispose(): void {
     this.clear();
+  }
+
+  [DISPOSE_SYMBOL](): void {
+    this.dispose();
   }
 }

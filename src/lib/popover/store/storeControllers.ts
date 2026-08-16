@@ -5,13 +5,11 @@
  * @module storeControllers
  */
 
+const DISPOSE_SYMBOL: symbol =
+  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
+
 /**
  * Creates an isolated AbortController and in-flight Promise manager for the store.
- *
- * @remarks
- * Eliminates duplicate network requests when multiple triggers or fast user interactions request
- * the same popover key simultaneously. Automatically aborts stale in-flight requests when
- * parent popovers are closed or unmounted.
  *
  * @template TData - Resolved data payload type.
  * @returns Controller manager instance with registration, cancellation, and deduplication methods.
@@ -70,5 +68,6 @@ export function createControllerManager<TData = unknown>() {
       inFlightPromises.delete(key);
     },
     dispose: abortAllControllers,
+    [DISPOSE_SYMBOL]: abortAllControllers,
   };
 }

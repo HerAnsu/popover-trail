@@ -2,46 +2,98 @@ import React, { type ReactNode, type ElementType, type KeyboardEvent } from 'rea
 import { clsx } from '../../utils/clsx';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
+import type { PopoverTimelineItem, UsePopoverTimelineResult } from '../../hooks/usePopoverTimeline';
 
 /**
- * Sub-component for the timeline step list container.
+ * Context object passed to StepList render-prop callbacks.
  */
-export type PopoverTimelineStepListProps<E extends ElementType = 'ol'> = PolymorphicProps<
+export interface PopoverTimelineStepListContext<TData = unknown> {
+  history: PopoverTimelineItem<TData>[];
+  currentIndex: number;
+  timeline: UsePopoverTimelineResult<TData>;
+}
+
+export type PopoverTimelineStepListChildren<TData = unknown> =
+  | ReactNode
+  | ((context: PopoverTimelineStepListContext<TData>) => ReactNode)
+  | ((item: PopoverTimelineItem<TData>, active: boolean, index: number) => ReactNode);
+
+/**
+ * Subcomponent for the timeline step list container.
+ */
+export type PopoverTimelineStepListProps<
+  E extends ElementType = 'ol',
+  TData = unknown,
+> = PolymorphicProps<
   E,
-  { children?: ReactNode }
+  {
+    children: PopoverTimelineStepListChildren<TData>;
+  }
 >;
 
 /**
- * Sub-component for the timeline step list container (`<ol role="list">`).
+ * Subcomponent for the timeline step list container (`<ol role="list">`).
+ * Supports both standard React children and render-prop patterns.
  *
  * @template E - Underlying HTML element or component type (defaults to `'ol'`).
  * @param props - Polymorphic list props and children.
  * @returns Ordered list element wrapping timeline steps.
  */
-export function PopoverTimelineStepList<E extends ElementType = 'ol'>({
+export function PopoverTimelineStepList<E extends ElementType = 'ol', TData = unknown>({
   as,
   children,
   className,
   ...restProps
-}: PopoverTimelineStepListProps<E>) {
-  const Component = as || 'ol';
+}: PopoverTimelineStepListProps<E, TData>) {
+  const Component = as ?? 'ol';
+  const { timeline } = usePopoverTimelineScope();
   const mergedClassName = clsx('pt-timeline-step-list', className);
+
+  let renderedContent: ReactNode = null;
+
+  if (typeof children === 'function') {
+    const fn = children as Function;
+    // Check if render-prop expects context object ({ history, ... }) or per-item callback (item, active)
+    if (fn.length <= 1) {
+      const result = fn({
+        history: timeline.history,
+        currentIndex: timeline.currentIndex,
+        timeline,
+      });
+
+      // If function returned undefined (was expecting item), fallback to item map
+      renderedContent =
+        result !== undefined
+          ? result
+          : timeline.history.map((item, idx) => fn(item, idx === timeline.currentIndex, idx));
+    } else {
+      renderedContent = timeline.history.map((item, idx) =>
+        fn(item, idx === timeline.currentIndex, idx),
+      );
+    }
+  } else {
+    renderedContent = children;
+  }
 
   return (
     <Component className={mergedClassName} role="list" {...restProps}>
-      {children}
+      {renderedContent}
     </Component>
   );
 }
 
 /**
- * Sub-component for an individual step item in the timeline.
+ * Base props for an individual step item in the timeline.
  */
 export interface PopoverTimelineStepBaseProps {
-  /** Virtual step index. */
-  index: number;
+  /** 0-based virtual step index. */
+  index?: number;
+  /** Alias for index. */
+  stepIndex?: number;
   /** Key of the primary popover entry at this step. */
-  stepKey: string;
+  stepKey?: string;
+  /** Active status override. */
+  active?: boolean;
   /** Optional title or label for the step. */
   label?: string;
   /** Children elements or fallback label. */
@@ -54,20 +106,21 @@ export type PopoverTimelineStepProps<E extends ElementType = 'button'> = Polymor
 >;
 
 /**
- * Sub-component representing an individual step in the timeline.
+ * Subcomponent representing an individual step in the timeline.
  *
  * @remarks
- * Clicking jumps directly to that state revision (`jumpToStep`).
- * Supports Left/Right arrow key navigation for keyboard accessibility.
+ * Clicking jumps directly to that step. Supports Left/Right arrow key navigation.
  *
  * @template E - Underlying HTML element or component type (defaults to `'button'`).
- * @param props - Step properties including stepKey, index, and click handlers.
+ * @param props - Step properties including index, stepKey, label, and click handlers.
  * @returns Interactive step button or element.
  */
 export function PopoverTimelineStep<E extends ElementType = 'button'>({
   as,
   index,
+  stepIndex,
   stepKey,
+  active,
   label,
   children,
   className,
@@ -75,13 +128,15 @@ export function PopoverTimelineStep<E extends ElementType = 'button'>({
   onKeyDown,
   ...restProps
 }: PopoverTimelineStepProps<E>) {
-  const Component = as || 'button';
+  const Component = as ?? 'button';
   const { timeline } = usePopoverTimelineScope();
 
-  const isCurrent = timeline.currentIndex === index;
+  const effectiveIndex = index ?? stepIndex ?? 0;
+  const isCurrent = active ?? timeline.currentIndex === effectiveIndex;
+  const effectiveKey = stepKey ?? label ?? `step-${effectiveIndex}`;
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    timeline.jumpToStep(index);
+    timeline.jumpToStep(effectiveIndex);
     if (typeof onClick === 'function') {
       onClick(e);
     }
@@ -90,10 +145,10 @@ export function PopoverTimelineStep<E extends ElementType = 'button'>({
   const handleKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key === 'ArrowLeft' && timeline.canUndo) {
       e.preventDefault();
-      timeline.jumpToStep(Math.max(0, index - 1));
+      timeline.jumpToStep(Math.max(0, effectiveIndex - 1));
     } else if (e.key === 'ArrowRight' && timeline.canRedo) {
       e.preventDefault();
-      timeline.jumpToStep(Math.min(timeline.history.length - 1, index + 1));
+      timeline.jumpToStep(Math.min(timeline.history.length - 1, effectiveIndex + 1));
     }
     if (typeof onKeyDown === 'function') {
       onKeyDown(e);
@@ -107,14 +162,14 @@ export function PopoverTimelineStep<E extends ElementType = 'button'>({
   return (
     <Component
       className={mergedClassName}
-      data-index={index}
-      data-key={stepKey}
+      data-index={effectiveIndex}
+      data-key={effectiveKey}
       data-current={isCurrent ? 'true' : 'false'}
       aria-current={isCurrent ? 'step' : undefined}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       {...restProps}>
-      {children ?? label ?? stepKey}
+      {children ?? label ?? effectiveKey}
     </Component>
   );
 }

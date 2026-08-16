@@ -12,11 +12,11 @@ export type PopoverCardPinButtonProps<E extends ElementType = 'button'> = Polymo
 >;
 
 /**
- * Sub-component for the pin/unpin action button of a `<PopoverCard>`.
+ * Subcomponent for the pin/unpin action button of a `<PopoverCard>`.
  *
  * @remarks
  * Automatically retrieves the current card key and pinning state from `PopoverCardScopeContext` and dispatches `togglePin`.
- * Reflects accessibility state via `aria-pressed` and `data-pinned` attributes.
+ * Measures accurate screen coordinates using the card's scope ref without relying on static CSS selectors.
  *
  * @template E - Underlying HTML element or component type.
  * @param props - Polymorphic button props with children and click handlers.
@@ -30,7 +30,7 @@ export function PopoverCardPinButton<E extends ElementType = 'button'>({
   ...restProps
 }: PopoverCardPinButtonProps<E>) {
   const { Component, buttonProps } = getPolymorphicProps(as);
-  const { entry, isPinned, actions } = usePopoverCardScope();
+  const { entry, isPinned, actions, cardRef } = usePopoverCardScope();
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -38,12 +38,21 @@ export function PopoverCardPinButton<E extends ElementType = 'button'>({
         e.preventDefault();
         return;
       }
-      const cardEl = (e.currentTarget as HTMLElement).closest('.popover-card');
-      const rect = cardEl ? cardEl.getBoundingClientRect() : entry.rect;
+
+      // Safe hierarchy resolution:
+      // 1. Direct cardRef from scope
+      // 2. Fallback to the closest dialog / popover-card element
+      // 3. Fallback to anchor trigger entry.rect
+      const targetEl =
+        cardRef?.current ??
+        (e.currentTarget as HTMLElement).closest('[role="dialog"]') ??
+        (e.currentTarget as HTMLElement).closest('.popover-card');
+
+      const rect = targetEl ? targetEl.getBoundingClientRect() : entry.rect;
       actions.togglePin(entry.key, rect ?? undefined);
       onClick?.(e);
     },
-    [disabled, actions, entry.key, entry.rect, onClick],
+    [disabled, actions, entry.key, entry.rect, cardRef, onClick],
   );
 
   return (

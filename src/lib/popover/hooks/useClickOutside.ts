@@ -25,7 +25,7 @@ function escapeCSSClass(className: string | undefined): string | null {
 }
 
 function isElementMatchingPopover(
-  el: HTMLElement,
+  el: Element,
   popoverSelector: string,
   escapedIgnoreClass?: string | null,
   ignoreClass?: string | null,
@@ -33,15 +33,17 @@ function isElementMatchingPopover(
   try {
     if (el.matches(popoverSelector)) return true;
   } catch {
-    // Ignore invalid selector
+    // Ignore invalid selector syntax
   }
+
   if (escapedIgnoreClass) {
     try {
       if (el.matches(escapedIgnoreClass)) return true;
     } catch {
-      if (ignoreClass && el.classList.contains(ignoreClass)) return true;
+      if (ignoreClass && el.classList?.contains(ignoreClass)) return true;
     }
   }
+
   return false;
 }
 
@@ -53,14 +55,14 @@ function isClickInsidePopover(
 ): boolean {
   return path.some(
     (el) =>
-      el instanceof HTMLElement &&
+      el instanceof Element &&
       isElementMatchingPopover(el, popoverSelector, escapedIgnoreClass, ignoreClass),
   );
 }
 
 function isClickOnAnchor(
   path: EventTarget[],
-  target: HTMLElement | null,
+  target: Element | null,
   anchorEl: Element | null | undefined,
 ): boolean {
   if (!anchorEl) return false;
@@ -69,11 +71,10 @@ function isClickOnAnchor(
 
 /**
  * Capture-phase click-outside listener hook for the PopoverProvider.
- * Automatically closes active cascade trails when the user clicks or taps outside any open card or anchor.
+ * Automatically closes active cascade trails when the user clicks outside any open card or anchor.
  *
  * @remarks
- * Uses event path inspection to accurately ignore clicks inside React Portals, custom ignore CSS classes,
- * or registered trigger buttons.
+ * Robustly inspects composed event paths, supporting Shadow DOM, SVG elements, portals, and custom ignore selectors.
  *
  * @param options - Store API reference and click-outside configuration settings.
  */
@@ -98,10 +99,10 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
 
     const handleClickOutside = (e: PointerEvent | MouseEvent) => {
       if (isPortalOrExcludedTarget(e)) return;
-      if (shouldIgnoreClickRef.current && shouldIgnoreClickRef.current(e)) return;
+      if (shouldIgnoreClickRef.current?.(e)) return;
 
       const path = getEventPath(e);
-      const target = getEventTarget<HTMLElement>(e) ?? (e.target as HTMLElement);
+      const target = getEventTarget<Element>(e) ?? (e.target as Element | null);
       const state = store.getState();
 
       if (isClickInsidePopover(path, popoverSelector, escapedIgnoreClass, ignoreClass)) {
@@ -118,10 +119,12 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
 
     const eventType =
       typeof window !== 'undefined' && 'PointerEvent' in window ? 'pointerdown' : 'mousedown';
+
     document.addEventListener(eventType, handleClickOutside as EventListener, { capture: true });
-    return () =>
+    return () => {
       document.removeEventListener(eventType, handleClickOutside as EventListener, {
         capture: true,
       });
+    };
   }, [enabled, escapedIgnoreClass, ignoreClass, popoverSelector, store]);
 }

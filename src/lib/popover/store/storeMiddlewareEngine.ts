@@ -1,4 +1,13 @@
+/**
+ * Middleware Engine for intercepting and transforming PopoverStore state patches.
+ *
+ * @module storeMiddlewareEngine
+ */
+
 import type { PopoverMiddleware, PopoverStore } from '../types';
+
+const DISPOSE_SYMBOL: symbol =
+  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
 function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
   val: unknown,
@@ -58,9 +67,13 @@ export class PopoverMiddlewareEngine<
     this.clear();
   }
 
+  public [DISPOSE_SYMBOL](): void {
+    this.dispose();
+  }
+
   /**
    * Pipeline runner executing registered middleware interceptors on state patches.
-   * If any middleware returns false, the update is cancelled (returns false).
+   * If any middleware returns false, the update is canceled (returns false).
    */
   public apply(
     initialPatch: Partial<PopoverStore<TData, TContext, TPopoverKey>>,

@@ -8,7 +8,6 @@ import { invariant } from '../utils/invariant';
 
 /**
  * Hook to retrieve the raw store API instance directly, without subscribing to state changes.
- * Useful for performance-sensitive imperative writes (e.g. inside drag events or event handlers).
  *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
@@ -26,7 +25,7 @@ export function usePopoverStoreApi<TData = unknown, TContext = unknown>(): Store
 
 /**
  * Custom selector hook for direct access to reactive slices of the Popover Zustand store.
- * Pure React 18 / 19 Concurrent Mode compatible selector implementation with custom equality support.
+ * Compatible with React 18 / 19 Concurrent Mode with custom equality memoization support.
  *
  * @template TSelected - The extracted state slice type.
  * @template TData - The type of resolved data payloads.
@@ -42,7 +41,14 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
   equalityFn?: (a: TSelected, b: TSelected) => boolean,
 ): TSelected {
   const store = usePopoverStoreApi<TData, TContext>();
+  const prevSelectorRef = useRef(selector);
   const cacheRef = useRef<{ hasValue: boolean; value?: TSelected }>({ hasValue: false });
+
+  // Invalidate cache immediately when the selector function instance changes
+  if (prevSelectorRef.current !== selector) {
+    prevSelectorRef.current = selector;
+    cacheRef.current = { hasValue: false };
+  }
 
   const getSelection = useCallback(
     (state: PopoverStore<TData, TContext>): TSelected => {
@@ -65,20 +71,6 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
 
 /**
  * Hook to retrieve public popover store action dispatch methods.
- *
- * @remarks
- * Returns stable dispatch actions (`openRootWithResolver`, `openNestedWithResolver`, `closeByKey`,
- * `togglePin`, `bringToFront`, `updateOffset`, `undo`, `redo`, etc.) without subscribing to state updates.
- *
- * @example
- * ```tsx
- * import { usePopoverActions } from 'popover-trail';
- *
- * function ResetButton() {
- *   const actions = usePopoverActions();
- *   return <button onClick={() => actions.closeAll()}>Close All Popovers</button>;
- * }
- * ```
  *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.

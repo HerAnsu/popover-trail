@@ -48,71 +48,77 @@ export interface UsePopoverTimelineResult<TData = unknown> {
  * Hook to access and control the visual breadcrumb timeline and undo/redo history navigation.
  *
  * @remarks
- * Connects directly to the store's RingBuffer undo/redo engine and active trail stack.
- *
- * @example
- * ```tsx
- * import { usePopoverTimeline } from 'popover-trail';
- *
- * function TimelineBar() {
- *   const { canUndo, undo, canRedo, redo } = usePopoverTimeline();
- *   return (
- *     <div>
- *       <button disabled={!canUndo} onClick={undo}>Undo</button>
- *       <button disabled={!canRedo} onClick={redo}>Redo</button>
- *     </div>
- *   );
- * }
- * ```
+ * Dynamically constructs timeline step items from active cascade trail cards and floating windows,
+ * and binds directly to the store's undo/redo history manager.
  *
  * @template TData - The type of resolved data payload.
  * @returns Timeline step items, active step index, undo/redo triggers, and jumpToStep callback.
  */
 export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<TData> {
   const actions = usePopoverActions<TData>();
-  const canUndo = usePopoverStore(
-    (state) => Boolean(state.stateRevision !== undefined) && state.actions.canUndo(),
-  );
-  const canRedo = usePopoverStore(
-    (state) => Boolean(state.stateRevision !== undefined) && state.actions.canRedo(),
-  );
+
+  // Reactively track undo/redo availability from store state
+  const canUndo = usePopoverStore((state) => state.canUndo?.() ?? false);
+  const canRedo = usePopoverStore((state) => state.canRedo?.() ?? false);
+
   const trail = usePopoverTrail<TData>();
   const floating = usePopoverFloating<TData>();
 
+  // Construct real chronological step items from the active trail and pinned cards
   const history = useMemo<PopoverTimelineItem<TData>[]>(() => {
-    const activeTrailKeys = trail.map((e) => e.key);
-    const activePinnedKeys = floating.map((e) => e.key);
-    const primaryKey = activeTrailKeys.at(-1) ?? activePinnedKeys[0] ?? 'root';
+    if (trail.length === 0 && floating.length === 0) {
+      return [];
+    }
 
-    return [
-      {
-        stepIndex: 0,
-        trailKeys: activeTrailKeys,
-        pinnedKeys: activePinnedKeys,
-        primaryKey,
-      },
-    ];
+    const pinnedKeys = floating.map((e) => e.key);
+
+    // If there is an active cascading trail, each depth level is an interactive step
+    if (trail.length > 0) {
+      return trail.map((entry, idx) => ({
+        stepIndex: idx,
+        trailKeys: trail.slice(0, idx + 1).map((e) => e.key),
+        pinnedKeys,
+        primaryKey: entry.key,
+        payload: (entry.data ?? undefined) as TData | undefined,
+      }));
+    }
+
+    // If only floating/pinned windows exist
+    return floating.map((entry, idx) => ({
+      stepIndex: idx,
+      trailKeys: [],
+      pinnedKeys,
+      primaryKey: entry.key,
+      payload: (entry.data ?? undefined) as TData | undefined,
+    }));
   }, [trail, floating]);
+
+  const currentIndex = useMemo(() => {
+    if (history.length === 0) return 0;
+    return history.length - 1;
+  }, [history.length]);
 
   const jumpToStep = useCallback(
     (stepIndex: number) => {
       if (stepIndex < 0 || stepIndex >= history.length) return;
       const targetStep = history[stepIndex];
-      if (targetStep && targetStep.trailKeys.length > 0) {
-        const lastKey = targetStep.trailKeys.at(-1);
-        if (lastKey) {
-          actions.bringToFront(lastKey);
-        }
+      if (!targetStep) return;
+
+      // Bring target popover to front and focus
+      if (targetStep.primaryKey) {
+        actions.bringToFront(targetStep.primaryKey);
       }
     },
     [history, actions],
   );
 
-  useDebugValue(`Timeline Step 1/${history.length} [CanUndo: ${canUndo}, CanRedo: ${canRedo}]`);
+  useDebugValue(
+    `Timeline [Steps: ${history.length}, Current: ${currentIndex}, CanUndo: ${canUndo}, CanRedo: ${canRedo}]`,
+  );
 
   return {
     history,
-    currentIndex: 0,
+    currentIndex,
     canUndo,
     canRedo,
     undo: actions.undo,

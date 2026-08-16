@@ -24,6 +24,10 @@ import { PopoverDAG } from './utils/dag';
 import { getInitialStoreState, EMPTY_ARRAY, EMPTY_OBJECT } from './store/storeDefaults';
 import { createBatchingManager } from './store/storeBatching';
 import { resolvePopoverEntry, type ResolvePopoverEntryParams } from './store/storeResolverPipeline';
+import { SimplePopoverCache } from './utils/cache';
+
+const DISPOSE_SYMBOL: symbol =
+  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
 /**
  * Creates an isolated popover store managing cascading trails, pinned floating windows, and data resolution.
@@ -37,7 +41,7 @@ import { resolvePopoverEntry, type ResolvePopoverEntryParams } from './store/sto
  * 4. **Dismissal & Undo**: Cards close on outside clicks, Escape key, or close buttons. History allows reverting changes with `undo()` and `redo()`.
  *
  * @example
- * ```typescript
+ * ```TypeScript
  * import { createPopoverStore } from 'popover-trail';
  *
  * const store = createPopoverStore(async (key) => {
@@ -57,12 +61,8 @@ import { resolvePopoverEntry, type ResolvePopoverEntryParams } from './store/sto
  * @template TPopoverKey - Union of valid popover string keys.
  * @param resolveData - Asynchronous or synchronous data loader function.
  * @param initialContext - Optional shared context passed to resolvers.
- * @param cache - Optional cache provider instance for memoization.
+ * @param cache - Optional cache provider instance for memoization (defaults to SimplePopoverCache).
  * @returns Zustand vanilla StoreApi instance.
- *
- * @see {@link PopoverProvider}
- * @see {@link usePopover}
- * @see {@link usePopoverActions}
  */
 export function createPopoverStore<
   TData = unknown,
@@ -73,6 +73,9 @@ export function createPopoverStore<
   initialContext?: TContext,
   cache?: PopoverCache<TData>,
 ) {
+  // Built-in cache fallback so prefetchPopover and resolution caching work out of the box
+  const effectiveCache: PopoverCache<TData> = cache ?? new SimplePopoverCache<TData>();
+
   const controllerManager = createControllerManager<TData>();
   const hydrationManager = createHydrationManager();
   const popoverDAG = new PopoverDAG();
@@ -167,7 +170,7 @@ export function createPopoverStore<
 
     const resolverPipelineDeps = {
       popoverDAG,
-      cache,
+      cache: effectiveCache,
       resolveData,
       initialContext,
       inFlightPromises,
@@ -209,12 +212,16 @@ export function createPopoverStore<
         startBatch: batchingManager.startBatch,
         endBatch: () => batchingManager.endBatch(get),
         middlewareEngine,
-        cache,
+        cache: effectiveCache,
         popoverDAG,
       }),
     );
 
-    const initialState = getInitialStoreState<TData, TContext>(resolveData, initialContext, cache);
+    const initialState = getInitialStoreState<TData, TContext>(
+      resolveData,
+      initialContext,
+      effectiveCache,
+    );
 
     return {
       ...initialState,
@@ -226,6 +233,20 @@ export function createPopoverStore<
   });
 
   batchingManager.attachSubscriber<TData, TContext, TPopoverKey>(store);
+
+  // Attach explicit resource disposal handle
+  const dispose = () => {
+    store.getState().destroy();
+    controllerManager.dispose();
+    timerManager.dispose();
+    popoverDAG.clear();
+    middlewareEngine.dispose();
+  };
+
+  Object.assign(store, {
+    dispose,
+    [DISPOSE_SYMBOL]: dispose,
+  });
 
   return store;
 }

@@ -124,24 +124,43 @@ function handleHorizontalArrowNavigation(
   handleEscapeNavigation(e, cardEntry, pinned, trailList, floatCount, act);
 }
 
+/**
+ * Focuses the parent popover card in the cascade tree by resolving its DOM ID or data-key.
+ *
+ * @param parentKey - Unique key string of the parent card.
+ * @returns True if the parent card was found and focused.
+ */
 export function focusParentCard(parentKey: string): boolean {
-  if (typeof document === 'undefined') return false;
+  if (typeof document === 'undefined' || !parentKey) return false;
+
   const escapedKey =
     typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
       ? CSS.escape(parentKey)
       : parentKey.replace(/[^a-zA-Z0-9_-]/g, '');
-  const parentCard = document.querySelector<HTMLElement>(`[aria-labelledby="title-${escapedKey}"]`);
+
+  // Robust multi-selector lookup matching PopoverCard and dnd PopoverCard DOM structures
+  const parentCard =
+    document.querySelector<HTMLElement>(`#popover-card-${escapedKey}`) ??
+    document.querySelector<HTMLElement>(`[data-key="${escapedKey}"]`) ??
+    document.querySelector<HTMLElement>(`[aria-labelledby="title-${escapedKey}"]`);
+
   if (!parentCard) return false;
 
   const firstFocusable = parentCard.querySelector<HTMLElement>(
     "button, a, input, select, textarea, [tabindex]:not([tabindex='-1'])",
   );
-  if (firstFocusable) {
+
+  if (firstFocusable && typeof firstFocusable.focus === 'function') {
     firstFocusable.focus();
     return true;
   }
-  parentCard.focus();
-  return true;
+
+  if (typeof parentCard.focus === 'function') {
+    parentCard.focus();
+    return true;
+  }
+
+  return false;
 }
 
 function isNavOptionsObject(
@@ -186,24 +205,7 @@ function resolveNavParams(
 }
 
 /**
- * Helper function for handling Arrow navigation and custom keyboard shortcuts on popover cards.
- *
- * @remarks
- * Coordinates full WAI-ARIA keyboard navigation across popovers:
- * - Vertical arrows (Down/Up): Cycles focus through focusable controls inside the card.
- * - Arrow Right: Clicks the currently focused trigger/link/button to drill down into a nested popover.
- * - Arrow Left: Closes the current popover card and shifts focus back to the parent card.
- * - Escape: Closes the active popover or topmost trail card.
- * - Custom shortcuts: Dispatches mapped user shortcut handlers (`keyboardShortcuts`).
- *
- * @param eventOrOptions - KeyboardEvent instance or consolidated options object.
- * @param cardElement - Card container DOM element.
- * @param entry - TrailEntry of the active card.
- * @param enableArrowNavigation - Boolean toggle for arrow key navigation.
- * @param isPinned - Whether the card is detached/pinned.
- * @param trail - List of active trail entries.
- * @param floatingCount - Count of floating/pinned cards.
- * @param actions - State actions dispatcher.
+ * Handles Arrow navigation and custom keyboard shortcuts on popover cards.
  */
 export function handleCardKeyboardNavigation(
   eventOrOptions: React.KeyboardEvent<HTMLElement> | CardKeyboardNavigationOptions,

@@ -26,6 +26,24 @@ describe('<PopoverTimeline /> Component', () => {
     expect(React.isValidElement(timelineElement)).toBe(true);
   });
 
+  it('supports render-prop children in StepList', () => {
+    const element = (
+      <PopoverTimeline>
+        <PopoverTimeline.StepList>
+          {({ history }) =>
+            history.map((item) => (
+              <PopoverTimeline.Step key={item.primaryKey} stepIndex={item.stepIndex}>
+                {item.primaryKey}
+              </PopoverTimeline.Step>
+            ))
+          }
+        </PopoverTimeline.StepList>
+      </PopoverTimeline>
+    );
+
+    expect(React.isValidElement(element)).toBe(true);
+  });
+
   it('supports polymorphic as prop on PopoverTimeline components', () => {
     const element = (
       <PopoverTimeline as="div">

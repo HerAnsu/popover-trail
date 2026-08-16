@@ -4,14 +4,14 @@
  * @module components/card/PopoverCardScopeContext
  */
 
-import { createContext, useContext } from 'react';
+import React, { createContext, useContext } from 'react';
 import type { TrailEntry } from '../../types';
 import type { UsePopoverCardResult } from '../../hooks/usePopoverCard';
 import type { usePopoverActions } from '../../context';
-import { validateCardSubComponentScope } from '../../utils/devWarnings';
+import { validateCardSubComponentScope } from '../../validators';
 
 /**
- * Inner state scope passed to `<PopoverCard>` compound sub-components.
+ * Inner state scope passed to `<PopoverCard>` compound subcomponents.
  *
  * @template TData - Resolved data payload type.
  */
@@ -24,8 +24,10 @@ export interface PopoverCardScope<TData = unknown> {
   isPinned: boolean;
   /** Positioning, styling, and drag handle props from usePopoverCard. */
   card: UsePopoverCardResult;
-  /** Bound store actions dispatcher. */
+  /** Bound store actions' dispatcher. */
   actions: ReturnType<typeof usePopoverActions>;
+  /** Direct DOM ref to the root card container element. */
+  cardRef?: React.RefObject<HTMLElement | null>;
 }
 
 export const PopoverCardScopeContext = createContext<PopoverCardScope | null>(null);
