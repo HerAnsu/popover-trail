@@ -5,6 +5,7 @@ import type {
   PopoverTransitionStatus,
 } from '../types';
 import { toFiniteNumber } from './styles';
+import { extractDisplayOptions, mergeDisplayOptions } from './displayOptions';
 
 export {
   updateEntryInLists,
@@ -24,7 +25,7 @@ export {
 export function isPromise<T>(value: unknown): value is Promise<T> {
   if (value instanceof Promise) return true;
   if ((typeof value !== 'object' && typeof value !== 'function') || value === null) return false;
-  return typeof (value as { then?: unknown }).then === 'function';
+  return 'then' in value && typeof value.then === 'function';
 }
 
 /**
@@ -43,16 +44,13 @@ export { clsx } from './clsx';
  * the floating and trailing lists.
  *
  * @template TData - Resolved data payload type.
- * @param floating - Active floating entries array.
- * @param trail - Active cascading trail array.
- * @param index - Zero-based index across combined floating + trail items.
- * @returns Found TrailEntry or undefined if out of bounds.
+ * @template TPopoverKey - Union of valid popover string keys.
  */
-export function getEntryAtIndex<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
+export function getEntryAtIndex<TData, TPopoverKey extends string = string>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
   index: number,
-): TrailEntry<TData> | undefined {
+): TrailEntry<TData, TPopoverKey> | undefined {
   if (index < 0 || index >= floating.length + trail.length) return undefined;
   if (index < floating.length) return floating[index];
   return trail[index - floating.length];
@@ -63,14 +61,11 @@ export function getEntryAtIndex<TData>(
  * combining the floating and trailing array ranges.
  *
  * @template TData - Resolved data payload type.
- * @param floating - Active floating entries array.
- * @param trail - Active cascading trail array.
- * @param key - Unique popover key to locate.
- * @returns Virtual index number, or -1 if not found.
+ * @template TPopoverKey - Union of valid popover string keys.
  */
-export function findEntryIndex<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
+export function findEntryIndex<TData, TPopoverKey extends string = string>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
   key: string,
 ): number {
   const fi = floating.findIndex((e) => e.key === key);
@@ -84,14 +79,11 @@ export function findEntryIndex<TData>(
  * in either the floating or trailing arrays.
  *
  * @template TData - Resolved data payload type.
- * @param floating - Active floating entries array.
- * @param trail - Active cascading trail array.
- * @param key - Popover key string.
- * @returns True if open in either floating or trail mode.
+ * @template TPopoverKey - Union of valid popover string keys.
  */
-export function hasEntryWithKey<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
+export function hasEntryWithKey<TData, TPopoverKey extends string = string>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
   key: string,
 ): boolean {
   return floating.some((e) => e.key === key) || trail.some((e) => e.key === key);
@@ -101,24 +93,18 @@ export function hasEntryWithKey<TData>(
  * Safely searches for a TrailEntry by key across both floating and trailing lists.
  *
  * @template TData - Resolved data payload type.
- * @param floating - Active floating entries array.
- * @param trail - Active cascading trail array.
- * @param key - Popover key string.
- * @returns Found TrailEntry or undefined.
+ * @template TPopoverKey - Union of valid popover string keys.
  */
-export function findEntryInStore<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
+export function findEntryInStore<TData, TPopoverKey extends string = string>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
   key: string,
-): TrailEntry<TData> | undefined {
+): TrailEntry<TData, TPopoverKey> | undefined {
   return floating.find((e) => e.key === key) ?? trail.find((e) => e.key === key);
 }
 
 /**
  * Sanitizes a DOMRect or DOMRectReadOnly object, ensuring valid numeric properties.
- *
- * @param rawRect - Input rectangle object.
- * @returns Valid DOMRect with non-NaN finite dimensions, or null.
  */
 export function sanitizeRect(
   rawRect: { x?: number; y?: number; width?: number; height?: number } | null | undefined,
@@ -132,33 +118,44 @@ export function sanitizeRect(
   );
 }
 
-export function mergeEntryOptions<TData>(
-  options?: OpenRootOptions & OpenNestedOptions,
-  existingEntry?: TrailEntry<TData>,
-): Partial<TrailEntry<TData>> {
-  const merged: Partial<TrailEntry<TData>> = {};
-  if (existingEntry) {
-    Object.assign(merged, existingEntry);
+/**
+ * Canonical Smart Constructor creating an initial TrailEntry conforming to all invariant domain defaults.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @param key - Unique popover string identifier.
+ * @param options - Visual display and interaction flags.
+ * @param ownerId - Optional owning trigger ID.
+ * @param parentKey - Optional parent popover key in hierarchy.
+ * @returns Fully normalized TrailEntry instance.
+ */
+export function createInitialTrailEntry<TData, TPopoverKey extends string = string>(
+  key: TPopoverKey,
+  options?: Partial<OpenRootOptions & OpenNestedOptions> & { isLoading?: boolean; rect?: DOMRect },
+  _ownerId?: string | null,
+  parentKey?: TPopoverKey,
+): TrailEntry<TData, TPopoverKey> {
+  const displayOptions = extractDisplayOptions(options);
+  const entry: TrailEntry<TData, TPopoverKey> = {
+    key,
+    parentKey,
+    isLoading: options?.isLoading ?? false,
+    error: null,
+    transitionStatus: 'mounted',
+    ...displayOptions,
+  };
+  if (options?.rect !== undefined) {
+    entry.rect = options.rect;
   }
-  if (options) {
-    for (const key in options) {
-      if (Object.hasOwn(options, key)) {
-        const val = options[key as keyof typeof options];
-        if (val !== undefined) {
-          (merged as Record<string, unknown>)[key] = val;
-        }
-      }
-    }
-  }
-  return merged;
+  return entry;
 }
 
-function resolveEntryStatus<TData>(
+function resolveEntryStatus<TData, TPopoverKey extends string = string>(
   data?: TData,
   error?: Error | null,
   isLoading = false,
-  fallbackStatus: TrailEntry<TData>['status'] = 'loading',
-): TrailEntry<TData>['status'] {
+  fallbackStatus: TrailEntry<TData, TPopoverKey>['status'] = 'loading',
+): TrailEntry<TData, TPopoverKey>['status'] {
   if (data !== undefined && data !== null) return 'success';
   if (error) return 'error';
   if (isLoading) return 'loading';
@@ -171,10 +168,10 @@ function resolveInitialTransitionStatus(
   return existing && existing !== 'unmounting' ? existing : 'mounting';
 }
 
-function resolveEntryGeometryMetadata<TData>(
+function resolveEntryGeometryMetadata<TData, TPopoverKey extends string = string>(
   rect: DOMRect | null,
-  parentKey: string | undefined,
-  existingEntry?: TrailEntry<TData>,
+  parentKey: TPopoverKey | undefined,
+  existingEntry?: TrailEntry<TData, TPopoverKey>,
 ) {
   if (!existingEntry) {
     const validRect = rect || undefined;
@@ -196,29 +193,19 @@ function resolveEntryGeometryMetadata<TData>(
 
 /**
  * Constructs a fully initialized TrailEntry object with default properties and geometry.
- *
- * @template TData - Resolved data payload type.
- * @param key - Unique popover key.
- * @param parentKey - Parent key if nested, or undefined if root.
- * @param rect - Initial bounding box geometry.
- * @param options - Custom placement and animation options.
- * @param existingEntry - Optional existing entry for reusing loaded data and position.
- * @param data - Optional pre-resolved payload data.
- * @param error - Optional error object if resolution failed.
- * @param isLoading - Boolean loading state flag.
- * @returns Fully constructed TrailEntry object.
  */
-export function createTrailEntry<TData>(
-  key: string,
-  parentKey: string | undefined,
+export function createTrailEntry<TData, TPopoverKey extends string = string>(
+  key: TPopoverKey,
+  parentKey: TPopoverKey | undefined,
   rect: DOMRect | null,
   options: (OpenRootOptions & OpenNestedOptions) | undefined,
-  existingEntry?: TrailEntry<TData>,
+  existingEntry?: TrailEntry<TData, TPopoverKey>,
   data?: TData,
   error: Error | null = null,
   isLoading = false,
-): TrailEntry<TData> {
-  const mergedOptions = mergeEntryOptions(options, existingEntry);
+): TrailEntry<TData, TPopoverKey> {
+  const baseOptions = existingEntry ? extractDisplayOptions(existingEntry) : {};
+  const mergedOptions = mergeDisplayOptions(baseOptions, options);
   const geom = resolveEntryGeometryMetadata(rect, parentKey, existingEntry);
 
   return {
@@ -236,47 +223,47 @@ export function createTrailEntry<TData>(
 }
 
 /** Constructs an entry in 'success' status with resolved payload data. */
-export function createSuccessEntry<TData>(
-  key: string,
-  parentKey: string | undefined,
+export function createSuccessEntry<TData, TPopoverKey extends string = string>(
+  key: TPopoverKey,
+  parentKey: TPopoverKey | undefined,
   rect: DOMRect | null,
   options: (OpenRootOptions & OpenNestedOptions) | undefined,
   data: TData,
-  existingEntry?: TrailEntry<TData>,
-): TrailEntry<TData> {
+  existingEntry?: TrailEntry<TData, TPopoverKey>,
+): TrailEntry<TData, TPopoverKey> {
   return createTrailEntry(key, parentKey, rect, options, existingEntry, data, null, false);
 }
 
 /** Constructs an entry in 'loading' status. */
-export function createLoadingEntry<TData>(
-  key: string,
-  parentKey: string | undefined,
+export function createLoadingEntry<TData, TPopoverKey extends string = string>(
+  key: TPopoverKey,
+  parentKey: TPopoverKey | undefined,
   rect: DOMRect | null,
   options: (OpenRootOptions & OpenNestedOptions) | undefined,
-  existingEntry?: TrailEntry<TData>,
-): TrailEntry<TData> {
+  existingEntry?: TrailEntry<TData, TPopoverKey>,
+): TrailEntry<TData, TPopoverKey> {
   return createTrailEntry(key, parentKey, rect, options, existingEntry, undefined, null, true);
 }
 
 /** Constructs an entry in 'error' status with an associated Error object. */
-export function createErrorEntry<TData>(
-  key: string,
-  parentKey: string | undefined,
+export function createErrorEntry<TData, TPopoverKey extends string = string>(
+  key: TPopoverKey,
+  parentKey: TPopoverKey | undefined,
   rect: DOMRect | null,
   options: (OpenRootOptions & OpenNestedOptions) | undefined,
   error: Error,
-  existingEntry?: TrailEntry<TData>,
-): TrailEntry<TData> {
+  existingEntry?: TrailEntry<TData, TPopoverKey>,
+): TrailEntry<TData, TPopoverKey> {
   return createTrailEntry(key, parentKey, rect, options, existingEntry, undefined, error, false);
 }
 
 /** Constructs an entry in 'idle' status. */
-export function createIdleEntry<TData>(
-  key: string,
-  parentKey: string | undefined,
+export function createIdleEntry<TData, TPopoverKey extends string = string>(
+  key: TPopoverKey,
+  parentKey: TPopoverKey | undefined,
   rect: DOMRect | null,
   options: (OpenRootOptions & OpenNestedOptions) | undefined,
-  existingEntry?: TrailEntry<TData>,
-): TrailEntry<TData> {
+  existingEntry?: TrailEntry<TData, TPopoverKey>,
+): TrailEntry<TData, TPopoverKey> {
   return createTrailEntry(key, parentKey, rect, options, existingEntry, undefined, null, false);
 }

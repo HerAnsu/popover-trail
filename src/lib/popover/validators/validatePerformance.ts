@@ -1,16 +1,14 @@
+import { wrapResult } from '../utils/result';
+
 export function markPerformance(name: string): void {
   if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
-    try {
-      performance.mark(name);
-    } catch {
-      // Ignore performance mark errors in restricted environments
-    }
+    wrapResult(() => performance.mark(name));
   }
 }
 
 export function measurePerformance(name: string, startMark: string, endMark?: string): void {
   if (typeof performance !== 'undefined' && typeof performance.measure === 'function') {
-    try {
+    wrapResult(() => {
       performance.measure(name, startMark, endMark);
       if (typeof performance.clearMarks === 'function') {
         performance.clearMarks(startMark);
@@ -18,8 +16,6 @@ export function measurePerformance(name: string, startMark: string, endMark?: st
           performance.clearMarks(endMark);
         }
       }
-    } catch {
-      // Ignore performance measure errors
-    }
+    });
   }
 }

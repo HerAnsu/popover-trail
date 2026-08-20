@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      potentialRaceCondition: 'Async data resolution in useEffect should use an isActive flag or AbortController.',
+      potentialRaceCondition:
+        'Async data resolution in useEffect should use an isActive flag or AbortController.',
     },
   },
   create(context) {

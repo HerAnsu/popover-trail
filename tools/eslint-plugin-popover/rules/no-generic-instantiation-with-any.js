@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      noAnyInGeneric: 'Do not use "any" as type parameter in {{ name }}<any>; use unknown or explicit types.',
+      noAnyInGeneric:
+        'Do not use "any" as type parameter in {{ name }}<any>; use unknown or explicit types.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       TSTypeReference(node) {

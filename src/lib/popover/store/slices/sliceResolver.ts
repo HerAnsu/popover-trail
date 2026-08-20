@@ -1,6 +1,6 @@
 /**
  * Data Resolver Domain Action Slice for popover-trail.
- * Encapsulates async/sync data resolution actions (openRootWithResolver, openNestedWithResolver, retryPopover, prefetchPopover).
+ * Encapsulates async/sync data resolution actions (openRootWithResolver, openNestedWithResolver, retryPopover, prefetchPopover, invalidate).
  *
  * @module sliceResolver
  */
@@ -11,6 +11,7 @@ import type {
   AnchorEventLike,
   TrailEntry,
   PopoverStateData,
+  StatePatch,
 } from '../../types';
 import {
   findEntryInStore,
@@ -19,49 +20,25 @@ import {
   pushNestedState,
 } from '../../utils/storeHelpers';
 import { selectEntryByKey } from '../storeSelectors';
-import { invokeResolverSafely } from '../storeResolverPipeline';
+import { invokeResolverSafely, type ResolvePopoverEntryParams } from '../storeResolverPipeline';
+import { extractDisplayOptions } from '../../utils/displayOptions';
 import type { SliceContext } from './sliceContext';
-
-/**
- * Extracts display/layout options from an existing TrailEntry to reconstruct
- * the original options object for re-resolution (e.g. retry).
- * Keeps `retryPopover` free of repetitive field-by-field copy.
- */
-function extractEntryOptions<TData>(entry: TrailEntry<TData>): OpenRootOptions & OpenNestedOptions {
-  return {
-    collision: entry.collision,
-    hover: entry.hover,
-    ariaDescribedby: entry.ariaDescribedby,
-    allowDragWhenUnpinned: entry.allowDragWhenUnpinned,
-    allowDragWhenPinned: entry.allowDragWhenPinned,
-    placement: entry.placement,
-    offset: entry.offset,
-    exitTransitionDuration: entry.exitTransitionDuration,
-    baseZIndex: entry.baseZIndex,
-    cascadeOffsetStep: entry.cascadeOffsetStep,
-    cascadeOffsetDirection: entry.cascadeOffsetDirection,
-    enableTilt: entry.enableTilt,
-    maxTiltAngle: entry.maxTiltAngle,
-    tiltSensitivity: entry.tiltSensitivity,
-    dragAxis: entry.dragAxis,
-    tiltFriction: entry.tiltFriction,
-    tiltDecay: entry.tiltDecay,
-    mountingClassName: entry.mountingClassName,
-    unmountingClassName: entry.unmountingClassName,
-    mountedClassName: entry.mountedClassName,
-    stackGroup: entry.stackGroup,
-    layoutStrategy: entry.layoutStrategy,
-    keyboardShortcuts: entry.keyboardShortcuts,
-    focusLockOptions: entry.focusLockOptions,
-    buttonControls: entry.buttonControls,
-    responsiveMode: entry.responsiveMode,
-  };
-}
 
 function stopEventPropagation(event?: AnchorEventLike): void {
   if (event && 'stopPropagation' in event && typeof event.stopPropagation === 'function') {
     event.stopPropagation();
   }
+}
+
+function hasBoundingClientRect(
+  target: unknown,
+): target is { getBoundingClientRect: () => DOMRect } {
+  return (
+    typeof target === 'object' &&
+    target !== null &&
+    'getBoundingClientRect' in target &&
+    typeof target.getBoundingClientRect === 'function'
+  );
 }
 
 function resolveTriggerBoundingRect(
@@ -70,20 +47,15 @@ function resolveTriggerBoundingRect(
 ): DOMRect | null {
   if (optionsRect) return optionsRect;
   const target = anchorEvent && 'currentTarget' in anchorEvent ? anchorEvent.currentTarget : null;
-  if (
-    target &&
-    typeof target === 'object' &&
-    'getBoundingClientRect' in target &&
-    typeof target.getBoundingClientRect === 'function'
-  ) {
-    return (target as Element).getBoundingClientRect();
+  if (hasBoundingClientRect(target)) {
+    return target.getBoundingClientRect();
   }
   return null;
 }
 
-function notifyEntryOpen<TData>(
-  findEntryByKey: (key: string) => TrailEntry<TData> | undefined,
-  key: string,
+function notifyEntryOpen<TData, TPopoverKey extends string>(
+  findEntryByKey: (key: string) => TrailEntry<TData, TPopoverKey> | undefined,
+  key: TPopoverKey,
 ): void {
   const entry = findEntryByKey(key);
   if (entry?.onOpen) {
@@ -91,23 +63,26 @@ function notifyEntryOpen<TData>(
   }
 }
 
-function createEntryUpdatePatch<TData, TContext>(key: string, updatedEntry: TrailEntry<TData>) {
-  return (state: PopoverStateData<TData, TContext>) =>
+function createEntryUpdatePatch<TData, TContext, TPopoverKey extends string>(
+  key: TPopoverKey,
+  updatedEntry: TrailEntry<TData, TPopoverKey>,
+) {
+  return (
+    state: PopoverStateData<TData, TContext, TPopoverKey>,
+  ): StatePatch<TData, TContext, TPopoverKey> =>
     findEntryInStore(state.floating, state.trail, key)
       ? {
-          floating: state.floating.map((e: TrailEntry<TData>) =>
-            e.key === key ? updatedEntry : e,
-          ),
-          trail: state.trail.map((e: TrailEntry<TData>) => (e.key === key ? updatedEntry : e)),
+          floating: state.floating.map((e) => (e.key === key ? updatedEntry : e)),
+          trail: state.trail.map((e) => (e.key === key ? updatedEntry : e)),
         }
       : {};
 }
 
-function isRootAlreadyActive<TData>(
-  trail: readonly TrailEntry<TData>[],
+function isRootAlreadyActive<TData, TPopoverKey extends string>(
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
   currentOwnerId: string | null | undefined,
   finalOwnerId: string,
-  key: string,
+  key: TPopoverKey,
   forceRefresh?: boolean,
 ): boolean {
   if (forceRefresh || trail.length === 0) return false;
@@ -117,9 +92,9 @@ function isRootAlreadyActive<TData>(
   );
 }
 
-function isNestedAlreadyActive<TData>(
-  existingEntry: TrailEntry<TData> | undefined,
-  sourceKey: string,
+function isNestedAlreadyActive<TData, TPopoverKey extends string>(
+  existingEntry: TrailEntry<TData, TPopoverKey> | undefined,
+  sourceKey: TPopoverKey,
   forceRefresh?: boolean,
 ): boolean {
   if (!existingEntry || forceRefresh) return false;
@@ -128,22 +103,22 @@ function isNestedAlreadyActive<TData>(
 }
 
 function buildRetryPipelineParams<TData, TContext, TPopoverKey extends string = string>(
-  key: string,
-  entry: TrailEntry<TData>,
-  effectiveParentKey: string | undefined,
+  key: TPopoverKey,
+  entry: TrailEntry<TData, TPopoverKey>,
+  effectiveParentKey: TPopoverKey | undefined,
   parentData: TData | null | undefined,
   deps: SliceContext<TData, TContext, TPopoverKey>['deps'],
-) {
-  const options = extractEntryOptions(entry);
-  const updateStateForEntry = (updated: TrailEntry<TData>) =>
-    createEntryUpdatePatch<TData, TContext>(key, updated);
+): ResolvePopoverEntryParams<TData, TContext, TPopoverKey> {
+  const options = extractDisplayOptions(entry);
+  const updateStateForEntry = (updated: TrailEntry<TData, TPopoverKey>) =>
+    createEntryUpdatePatch<TData, TContext, TPopoverKey>(key, updated);
 
   if (effectiveParentKey) {
     return {
       key,
       parentKey: effectiveParentKey,
       rect: entry.rect ?? null,
-      parentData,
+      parentData: parentData ?? undefined,
       options,
       controllerKey: key,
       incrementCounter: () => deps.incrementNestedCounter(effectiveParentKey),
@@ -166,13 +141,7 @@ function buildRetryPipelineParams<TData, TContext, TPopoverKey extends string = 
 }
 
 /**
- * Factory creating async/sync data resolution actions (`openRootWithResolver`, `openNestedWithResolver`, `retryPopover`, `prefetchPopover`).
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover string keys.
- * @param ctx - Slice context providing Zustand set/get methods and dependencies.
- * @returns Resolver slice action methods.
+ * Factory creating async/sync data resolution actions.
  */
 export function createResolverSlice<
   TData = unknown,
@@ -191,17 +160,17 @@ export function createResolverSlice<
     cache,
   } = deps;
 
-  const bringToFront = (key: string) => {
+  const bringToFront = (key: TPopoverKey) => {
     set((state) => {
-      const entry = selectEntryByKey<TData>(key)(state);
+      const entry = selectEntryByKey<TData, TPopoverKey>(key)(state);
       if (entry?.transitionStatus === 'unmounting') return {};
       return { zIndexOrder: [...state.zIndexOrder.filter((k) => k !== key), key] };
     });
   };
 
-  return {
+  const slice = {
     openRootWithResolver: async (
-      keyOrName: string,
+      keyOrName: TPopoverKey,
       anchorEvent?: AnchorEventLike,
       options?: Readonly<OpenRootOptions>,
     ) => {
@@ -225,15 +194,16 @@ export function createResolverSlice<
         controllerKey: '__root__',
         incrementCounter: incrementRootCounter,
         isStale: isRootStale,
-        insertStatePatch: (entry) => (state) => openRootState(state, finalOwnerId, entry),
+        insertStatePatch: (entry: TrailEntry<TData, TPopoverKey>) => (state) =>
+          openRootState(state, finalOwnerId, entry),
       });
 
-      notifyEntryOpen(findEntryByKey, keyOrName);
+      notifyEntryOpen<TData, TPopoverKey>(findEntryByKey, keyOrName);
     },
 
     openNestedWithResolver: async (
-      keyOrName: string,
-      sourceKey: string,
+      keyOrName: TPopoverKey,
+      sourceKey: TPopoverKey,
       options?: Readonly<OpenNestedOptions>,
     ) => {
       const { floating, trail } = get();
@@ -260,13 +230,14 @@ export function createResolverSlice<
         controllerKey: keyOrName,
         incrementCounter: () => incrementNestedCounter(sourceKey),
         isStale: (startedCounter) => isNestedStale(sourceKey, startedCounter),
-        insertStatePatch: (entry) => (state) => pushNestedState(state, sourceIndex, entry),
+        insertStatePatch: (entry: TrailEntry<TData, TPopoverKey>) => (state) =>
+          pushNestedState(state, sourceIndex, entry),
       });
 
-      notifyEntryOpen(findEntryByKey, keyOrName);
+      notifyEntryOpen<TData, TPopoverKey>(findEntryByKey, keyOrName);
     },
 
-    retryPopover: async (key: string) => {
+    retryPopover: async (key: TPopoverKey) => {
       const { floating, trail } = get();
       const entry = findEntryInStore(floating, trail, key);
       if (!entry || entry.isLoading) return;
@@ -289,7 +260,7 @@ export function createResolverSlice<
       await resolvePopoverEntry(params);
     },
 
-    prefetchPopover: async (key: string, parentData?: TData) => {
+    prefetchPopover: async (key: TPopoverKey, parentData?: TData) => {
       const cached = cache?.get(key);
       if (cached !== undefined) return cached;
 
@@ -315,5 +286,40 @@ export function createResolverSlice<
         activeControllers.delete(key);
       }
     },
+
+    /**
+     * Atomically invalidates one or more popover keys in a single batched pass.
+     */
+    invalidate: async (keyOrKeys: TPopoverKey | readonly TPopoverKey[]): Promise<void> => {
+      const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
+      if (keys.length === 0) return;
+
+      const fetchPromises: Promise<void>[] = [];
+
+      get().actions.batchUpdates(() => {
+        for (const key of keys) {
+          if (!key) continue;
+
+          cache?.delete(key);
+
+          const { floating, trail } = get();
+          const activeEntry = findEntryInStore(floating, trail, key);
+
+          if (activeEntry) {
+            const inFlightCtrl = activeControllers.get(key);
+            if (inFlightCtrl && activeEntry.isLoading) {
+              inFlightCtrl.abort();
+              activeControllers.delete(key);
+            }
+
+            fetchPromises.push(slice.retryPopover(key));
+          }
+        }
+      });
+
+      await Promise.all(fetchPromises);
+    },
   };
+
+  return slice;
 }

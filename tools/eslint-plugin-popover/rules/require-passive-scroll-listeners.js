@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce passive: true on scroll and touch event listeners for high scroll performance.',
+      description:
+        'Enforce passive: true on scroll and touch event listeners for high scroll performance.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      requirePassive: 'Global scroll and touchmove listeners should specify { passive: true } for optimal framerates.',
+      requirePassive:
+        'Global scroll and touchmove listeners should specify { passive: true } for optimal framerates.',
     },
   },
   create(context) {

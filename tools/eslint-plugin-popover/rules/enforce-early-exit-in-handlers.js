@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      preferEarlyExit: 'Handler {{ name }} has deeply nested if-blocks (> 4 levels); consider early return guards.',
+      preferEarlyExit:
+        'Handler {{ name }} has deeply nested if-blocks (> 4 levels); consider early return guards.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {

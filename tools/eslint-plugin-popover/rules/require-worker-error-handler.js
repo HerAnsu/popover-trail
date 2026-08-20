@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Require worker.onerror handler to prevent uncaught worker crashes from going unnoticed.',
+      description:
+        'Require worker.onerror handler to prevent uncaught worker crashes from going unnoticed.',
       category: 'Robustness',
       recommended: true,
     },
@@ -21,11 +22,20 @@ export default {
 
     return {
       NewExpression(node) {
-        if (node.callee && node.callee.name === 'Worker' && node.parent && node.parent.type === 'VariableDeclarator') {
+        if (
+          node.callee &&
+          node.callee.name === 'Worker' &&
+          node.parent &&
+          node.parent.type === 'VariableDeclarator'
+        ) {
           const varName = node.parent.id?.name;
           if (varName) {
             const scope = context.getSourceCode ? context.getSourceCode().getText() : '';
-            if (scope && !scope.includes(`${varName}.onerror`) && !scope.includes(`${varName}.addEventListener('error'`)) {
+            if (
+              scope &&
+              !scope.includes(`${varName}.onerror`) &&
+              !scope.includes(`${varName}.addEventListener('error'`)
+            ) {
               context.report({
                 node,
                 messageId: 'requireWorkerOnError',

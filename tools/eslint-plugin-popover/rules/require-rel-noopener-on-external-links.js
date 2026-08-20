@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce rel="noopener noreferrer" on target="_blank" links to prevent reverse tabnabbing.',
+      description:
+        'Enforce rel="noopener noreferrer" on target="_blank" links to prevent reverse tabnabbing.',
       category: 'Security',
       recommended: true,
     },
@@ -21,7 +22,11 @@ export default {
 
     return {
       JSXElement(node) {
-        if (node.openingElement && node.openingElement.name && node.openingElement.name.name === 'a') {
+        if (
+          node.openingElement &&
+          node.openingElement.name &&
+          node.openingElement.name.name === 'a'
+        ) {
           const targetAttr = node.openingElement.attributes.find(
             (a) => a.name && a.name.name === 'target',
           );

@@ -65,17 +65,37 @@ export class Point2D {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  /**
+   * Clamps the point coordinates within the specified minimum and maximum bounds.
+   *
+   * @param minX - Minimum X value.
+   * @param maxX - Maximum X value.
+   * @param minY - Minimum Y value.
+   * @param maxY - Maximum Y value.
+   * @returns New clamped Point2D instance.
+   */
   clamp(minX: number, maxX: number, minY: number, maxY: number): Point2D {
     const clampedX = Math.max(minX, Math.min(maxX, this.x));
     const clampedY = Math.max(minY, Math.min(maxY, this.y));
     return new Point2D(clampedX, clampedY);
   }
 
+  /**
+   * Checks whether this point has identical coordinates to another point.
+   *
+   * @param other - Target point to compare.
+   * @returns `true` if coordinates match.
+   */
   equals(other?: { x: number; y: number } | null): boolean {
     if (!other) return false;
     return this.x === other.x && this.y === other.y;
   }
 
+  /**
+   * Serializes the point to a plain `{ x, y }` coordinates object.
+   *
+   * @returns Plain object with x and y coordinates.
+   */
   toObject(): { x: number; y: number } {
     return { x: this.x, y: this.y };
   }

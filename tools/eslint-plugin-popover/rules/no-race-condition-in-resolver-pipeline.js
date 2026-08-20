@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce checking signal.aborted before committing resolved payload to avoid stale data races.',
+      description:
+        'Enforce checking signal.aborted before committing resolved payload to avoid stale data races.',
       category: 'Concurrency',
       recommended: true,
     },
     schema: [],
     messages: {
-      checkSignalBeforeCommit: 'Check signal.aborted before committing async resolution result to store.',
+      checkSignalBeforeCommit:
+        'Check signal.aborted before committing async resolution result to store.',
     },
   },
   create(context) {

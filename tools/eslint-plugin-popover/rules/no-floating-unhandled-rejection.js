@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      noUnhandledPromise: 'Promise must be awaited, caught, or explicitly voided with "void promise.catch(...)".',
+      noUnhandledPromise:
+        'Promise must be awaited, caught, or explicitly voided with "void promise.catch(...)".',
     },
   },
   create(context) {

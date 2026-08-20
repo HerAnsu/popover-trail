@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow storing HTMLElement instances in module-level global variables which prevents garbage collection.',
+      description:
+        'Disallow storing HTMLElement instances in module-level global variables which prevents garbage collection.',
       category: 'Memory',
       recommended: true,
     },
     schema: [],
     messages: {
-      noStaticDomRetain: 'Do not retain DOM element in top-level module variable "{{ name }}"; use weak references or store state.',
+      noStaticDomRetain:
+        'Do not retain DOM element in top-level module variable "{{ name }}"; use weak references or store state.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       VariableDeclarator(node) {

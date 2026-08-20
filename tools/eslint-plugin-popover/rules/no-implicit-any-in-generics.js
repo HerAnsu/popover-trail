@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      missingGenericDefault: 'Provide default type argument for generic parameter in library interface.',
+      missingGenericDefault:
+        'Provide default type argument for generic parameter in library interface.',
     },
   },
   create(context) {
@@ -17,7 +18,11 @@ export default {
     if (!filename.includes('src/lib/types/')) return {};
     return {
       TSTypeParameter(node) {
-        if (!node.default && node.name && (node.name.name === 'TData' || node.name.name === 'TPayload')) {
+        if (
+          !node.default &&
+          node.name &&
+          (node.name.name === 'TData' || node.name.name === 'TPayload')
+        ) {
           context.report({ node, messageId: 'missingGenericDefault' });
         }
       },

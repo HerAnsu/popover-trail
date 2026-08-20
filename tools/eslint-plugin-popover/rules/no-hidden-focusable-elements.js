@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      noAriaHiddenOnFocusable: 'Do not place aria-hidden="true" on focusable <{{ tag }}> element; use inert or remove tabIndex.',
+      noAriaHiddenOnFocusable:
+        'Do not place aria-hidden="true" on focusable <{{ tag }}> element; use inert or remove tabIndex.',
     },
   },
   create(context) {

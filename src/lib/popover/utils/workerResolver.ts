@@ -1,4 +1,6 @@
 import type { PopoverResolver } from '../types';
+import { wrapResult, wrapAsyncResult, isOk } from './result';
+import { DISPOSE_SYMBOL } from './disposable';
 
 /**
  * Options parameters for the `createWorkerResolver` factory.
@@ -146,15 +148,12 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
     }
 
     if (typeof workerOrFn === 'string') {
-      try {
-        return new Worker(workerOrFn, { type: 'module' });
-      } catch {
-        return null;
-      }
+      const initResult = wrapResult(() => new Worker(workerOrFn, { type: 'module' }));
+      return isOk(initResult) ? initResult.data : null;
     }
 
     if (typeof workerOrFn === 'function') {
-      try {
+      const initResult = wrapResult(() => {
         if (workerScriptUrl) {
           URL.revokeObjectURL(workerScriptUrl);
           workerScriptUrl = null;
@@ -165,9 +164,8 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
         const blob = new Blob([script], { type: 'application/javascript' });
         workerScriptUrl = URL.createObjectURL(blob);
         return new Worker(workerScriptUrl);
-      } catch {
-        return null;
-      }
+      });
+      return isOk(initResult) ? initResult.data : null;
     }
 
     return null;
@@ -208,7 +206,7 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
       };
 
       const handleMessage = (e: MessageEvent) => {
-        if (e.data && e.data.id === requestId) {
+        if (e.data?.id === requestId) {
           cleanup();
           if (e.data.success) {
             resolve(e.data.data as TData);
@@ -225,8 +223,8 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
           onWorkerError(errorObj);
         }
 
-        if (autoRestart && typeof workerOrFn !== 'string' && !(workerOrFn instanceof Worker)) {
-          try {
+        if (autoRestart) {
+          wrapResult(() => {
             if (worker) {
               worker.terminate();
             }
@@ -235,9 +233,7 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
               workerScriptUrl = null;
             }
             worker = initWorker();
-          } catch {
-            // Ignore restart failure
-          }
+          });
         }
 
         reject(errorObj);
@@ -245,11 +241,9 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
 
       const handleAbort = () => {
         cleanup();
-        try {
+        wrapResult(() => {
           currentWorker.postMessage({ action: 'abort', id: requestId });
-        } catch {
-          // Ignore worker postMessage error during abort
-        }
+        });
         const abortError =
           typeof DOMException !== 'undefined'
             ? new DOMException('Aborted by signal', 'AbortError')
@@ -298,9 +292,6 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
     }
   };
 
-  const DISPOSE_SYMBOL: symbol =
-    (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
-
   Object.assign(resolver, {
     terminate,
     destroy: terminate,
@@ -333,21 +324,25 @@ async function handleWorkerResolve<TData, TContext>(
     activeTasks.set(id, controller);
   }
 
-  try {
-    const result = await handler(key, parentData, context);
-    if (controller && controller.signal.aborted) {
-      return;
-    }
-    selfScope.postMessage({ id, success: true, data: result });
-  } catch (err) {
+  const taskResult = await wrapAsyncResult(
+    Promise.resolve().then(() => handler(key, parentData, context)),
+  );
+  if (controller?.signal.aborted) {
+    activeTasks.delete(id);
+    return;
+  }
+
+  if (isOk(taskResult)) {
+    selfScope.postMessage({ id, success: true, data: taskResult.data });
+  } else {
+    const errorMsg = taskResult.error.message;
     selfScope.postMessage({
       id,
       success: false,
-      error: err instanceof Error ? err.message : String(err),
+      error: errorMsg,
     });
-  } finally {
-    activeTasks.delete(id);
   }
+  activeTasks.delete(id);
 }
 
 /**

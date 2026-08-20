@@ -3,13 +3,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage useEffect or SSR-safe isomorphic layout effects to prevent Next.js/SSR warnings',
+      description:
+        'Encourage useEffect or SSR-safe isomorphic layout effects to prevent Next.js/SSR warnings',
       category: 'Hooks Polish',
       recommended: true,
     },
     schema: [],
     messages: {
-      useLayoutEffectSsrWarning: 'Using `useLayoutEffect` directly in library code triggers SSR warnings. Consider `useEffect` or safe isomorphic wrapper.',
+      useLayoutEffectSsrWarning:
+        'Using `useLayoutEffect` directly in library code triggers SSR warnings. Consider `useEffect` or safe isomorphic wrapper.',
     },
   },
   create(context) {

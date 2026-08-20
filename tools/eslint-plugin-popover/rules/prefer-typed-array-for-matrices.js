@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend Float32Array or Float64Array for 4x4 matrix storage to maximize SIMD performance.',
+      description:
+        'Recommend Float32Array or Float64Array for 4x4 matrix storage to maximize SIMD performance.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestTypedArray: 'Matrix {{ name }} initialized as plain array; consider Float32Array for zero-GC math operations.',
+      suggestTypedArray:
+        'Matrix {{ name }} initialized as plain array; consider Float32Array for zero-GC math operations.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       VariableDeclarator(node) {

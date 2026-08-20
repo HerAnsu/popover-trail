@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      rawConsoleError: 'Use `devWarning` or `Result.err()` instead of direct `console.error` in library core.',
+      rawConsoleError:
+        'Use `devWarning` or `Result.err()` instead of direct `console.error` in library core.',
     },
   },
   create(context) {

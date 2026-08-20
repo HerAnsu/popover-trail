@@ -1,24 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import { createHistoryManager } from './history';
-import type { PopoverStore } from '../types';
+import { createMockStoreState } from '../testing/createMockStoreState';
 
 describe('HistoryManager', () => {
   it('initializes with empty undo and redo stacks', () => {
     const history = createHistoryManager(5);
     expect(history.undoStack).toHaveLength(0);
     expect(history.redoStack).toHaveLength(0);
+    expect(history.canUndo()).toBe(false);
+    expect(history.canRedo()).toBe(false);
   });
 
   it('pushes snapshot into undoStack and clears redoStack', () => {
     const history = createHistoryManager(5);
-    const mockState = {
-      trail: [{ key: 'node-1' }],
+    const mockState = createMockStoreState({
+      trail: [{ key: 'node-1', isLoading: false, error: null }],
       floating: [],
       offsets: { 'node-1': { x: 10, y: 20 } },
       pinnedStates: { 'node-1': false },
       zIndexOrder: ['node-1'],
       ownerId: 'owner-1',
-    } as unknown as PopoverStore;
+    });
 
     history.pushSnapshot(mockState);
 
@@ -31,14 +33,16 @@ describe('HistoryManager', () => {
     const history = createHistoryManager(maxHistory);
 
     for (let i = 1; i <= 5; i++) {
-      history.pushSnapshot({
-        trail: [],
-        floating: [],
-        offsets: {},
-        pinnedStates: {},
-        zIndexOrder: [],
-        ownerId: `owner-${i}`,
-      } as unknown as PopoverStore);
+      history.pushSnapshot(
+        createMockStoreState({
+          trail: [],
+          floating: [],
+          offsets: {},
+          pinnedStates: {},
+          zIndexOrder: [],
+          ownerId: `owner-${i}`,
+        }),
+      );
     }
 
     expect(history.undoStack).toHaveLength(maxHistory);
@@ -46,43 +50,64 @@ describe('HistoryManager', () => {
     expect(history.undoStack[2]?.ownerId).toBe('owner-5');
   });
 
-  it('clears undoStack and redoStack on clearHistory()', () => {
+  it('generates full timeline projection via getTimeline()', () => {
     const history = createHistoryManager(5);
-    history.pushSnapshot({
-      trail: [],
+
+    const state1 = createMockStoreState({
+      trail: [{ key: 's1', isLoading: false, error: null }],
       floating: [],
       offsets: {},
       pinnedStates: {},
-      zIndexOrder: [],
-      ownerId: 'owner-1',
-    } as unknown as PopoverStore);
+      zIndexOrder: ['s1'],
+      ownerId: 'o1',
+    });
 
-    expect(history.undoStack).toHaveLength(1);
-    history.clearHistory();
-    expect(history.undoStack).toHaveLength(0);
-    expect(history.redoStack).toHaveLength(0);
+    const state2 = createMockStoreState({
+      trail: [
+        { key: 's1', isLoading: false, error: null },
+        { key: 's2', isLoading: false, error: null },
+      ],
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: ['s1', 's2'],
+      ownerId: 'o2',
+    });
+
+    history.pushSnapshot(state1);
+
+    const timeline = history.getTimeline(state2);
+    expect(timeline.past).toHaveLength(1);
+    expect(timeline.past[0]?.ownerId).toBe('o1');
+    expect(timeline.present.ownerId).toBe('o2');
+    expect(timeline.future).toHaveLength(0);
+    expect(timeline.canUndo).toBe(true);
+    expect(timeline.canRedo).toBe(false);
   });
 
   it('handles complete undo/redo cycle correctly', () => {
     const history = createHistoryManager(5);
 
-    const state1 = {
-      trail: [{ key: 'step-1' }],
+    const state1 = createMockStoreState({
+      trail: [{ key: 'step-1', isLoading: false, error: null }],
       floating: [],
       offsets: {},
       pinnedStates: {},
       zIndexOrder: ['step-1'],
       ownerId: 'owner-1',
-    } as unknown as PopoverStore;
+    });
 
-    const state2 = {
-      trail: [{ key: 'step-1' }, { key: 'step-2' }],
+    const state2 = createMockStoreState({
+      trail: [
+        { key: 'step-1', isLoading: false, error: null },
+        { key: 'step-2', isLoading: false, error: null },
+      ],
       floating: [],
       offsets: {},
       pinnedStates: {},
       zIndexOrder: ['step-1', 'step-2'],
       ownerId: 'owner-2',
-    } as unknown as PopoverStore;
+    });
 
     history.pushSnapshot(state1);
     history.pushSnapshot(state2);
@@ -99,16 +124,16 @@ describe('HistoryManager', () => {
 
   it('deduplicates identical consecutive snapshots', () => {
     const history = createHistoryManager(5);
-    const trailRef = [{ key: 'card-1' }];
+    const trailRef = [{ key: 'card-1', isLoading: false, error: null }];
 
-    const mockState = {
+    const mockState = createMockStoreState({
       trail: trailRef,
       floating: [],
       offsets: {},
       pinnedStates: {},
       zIndexOrder: ['card-1'],
       ownerId: 'owner-1',
-    } as unknown as PopoverStore;
+    });
 
     history.pushSnapshot(mockState);
     history.pushSnapshot(mockState); // Identical reference push
@@ -116,11 +141,21 @@ describe('HistoryManager', () => {
     expect(history.undoStack).toHaveLength(1);
   });
 
-  it('returns null safely when undo() or redo() is called on empty stacks', () => {
+  it('cleans up via dispose() and Symbol.dispose', () => {
     const history = createHistoryManager(5);
-    const mockState = {} as unknown as PopoverStore;
+    history.pushSnapshot(
+      createMockStoreState({
+        trail: [],
+        floating: [],
+        offsets: {},
+        pinnedStates: {},
+        zIndexOrder: [],
+        ownerId: 'o1',
+      }),
+    );
 
-    expect(history.undo(mockState)).toBeNull();
-    expect(history.redo(mockState)).toBeNull();
+    expect(history.undoStack).toHaveLength(1);
+    history.dispose();
+    expect(history.undoStack).toHaveLength(0);
   });
 });

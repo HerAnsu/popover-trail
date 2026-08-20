@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Boundary } from '@floating-ui/react';
+import { wrapResult, isOk } from '../../utils/result';
 
 export function useResolvedBoundary(
   boundary?: Boundary | (() => Boundary | null | undefined),
@@ -10,13 +11,9 @@ export function useResolvedBoundary(
 
   useEffect(() => {
     if (typeof boundary === 'function') {
-      try {
-        const el = boundary();
-        if (el) {
-          setResolvedBoundary(el);
-        }
-      } catch {
-        // Fail-safe for early mount phases where DOM nodes might not be created yet
+      const boundaryResult = wrapResult(() => boundary());
+      if (isOk(boundaryResult) && boundaryResult.data) {
+        setResolvedBoundary(boundaryResult.data);
       }
     } else {
       setResolvedBoundary(boundary);

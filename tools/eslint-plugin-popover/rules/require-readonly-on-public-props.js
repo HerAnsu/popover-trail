@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      useReadonly: 'Consider marking public prop `{{name}}` as `readonly` to prevent accidental mutation.',
+      useReadonly:
+        'Consider marking public prop `{{name}}` as `readonly` to prevent accidental mutation.',
     },
   },
   create(context) {

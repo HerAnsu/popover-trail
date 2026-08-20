@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow store slices from modifying private internal fields belonging to other slices directly.',
+      description:
+        'Disallow store slices from modifying private internal fields belonging to other slices directly.',
       category: 'Architecture',
       recommended: true,
     },
     schema: [],
     messages: {
-      noCrossSliceMutation: 'Do not mutate private slice state {{ prop }} across domain boundary; use public action setter.',
+      noCrossSliceMutation:
+        'Do not mutate private slice state {{ prop }} across domain boundary; use public action setter.',
     },
   },
   create(context) {

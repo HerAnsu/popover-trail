@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow calling localStorage.setItem during active pointer drag or mousemove ticks.',
+      description:
+        'Disallow calling localStorage.setItem during active pointer drag or mousemove ticks.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      noSyncStorageInDrag: 'Synchronous localStorage I/O in drag event handlers causes frame drops. Debounce or save on dragEnd.',
+      noSyncStorageInDrag:
+        'Synchronous localStorage I/O in drag event handlers causes frame drops. Debounce or save on dragEnd.',
     },
   },
   create(context) {

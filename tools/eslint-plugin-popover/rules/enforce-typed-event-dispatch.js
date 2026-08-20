@@ -27,7 +27,8 @@ export default {
           node.callee.object.name === 'eventBus' &&
           node.callee.property &&
           node.callee.property.name === 'emit' &&
-          (node.arguments.length === 0 || (node.arguments[0].type === 'Literal' && !node.arguments[0].value))
+          (node.arguments.length === 0 ||
+            (node.arguments[0].type === 'Literal' && !node.arguments[0].value))
         ) {
           context.report({ node, messageId: 'untypedEvent' });
         }

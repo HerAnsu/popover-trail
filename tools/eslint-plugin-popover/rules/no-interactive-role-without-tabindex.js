@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce tabIndex on non-button elements assigned role="button" or role="menuitem".',
+      description:
+        'Enforce tabIndex on non-button elements assigned role="button" or role="menuitem".',
       category: 'Accessibility',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireTabIndex: 'Element with interactive role="{{ role }}" must specify tabIndex={0} or be a native button.',
+      requireTabIndex:
+        'Element with interactive role="{{ role }}" must specify tabIndex={0} or be a native button.',
     },
   },
   create(context) {

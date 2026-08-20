@@ -12,12 +12,18 @@ export default {
     },
     schema: [],
     messages: {
-      suggestContentVisibility: 'Trail container with large card stacks should include content-visibility: auto for offscreen nodes.',
+      suggestContentVisibility:
+        'Trail container with large card stacks should include content-visibility: auto for offscreen nodes.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('PopoverTrail')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('PopoverTrail')
+    )
+      return {};
 
     return {
       JSXElement(node) {
@@ -26,7 +32,9 @@ export default {
           node.openingElement.name &&
           node.openingElement.name.name === 'div'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node.openingElement) : '';
+          const src = context.getSourceCode
+            ? context.getSourceCode().getText(node.openingElement)
+            : '';
           if (src.includes('popover-trail-container') && !src.includes('contentVisibility')) {
             context.report({
               node,

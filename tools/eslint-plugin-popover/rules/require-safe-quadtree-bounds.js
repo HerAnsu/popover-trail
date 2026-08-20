@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      invalidBounds: 'Spatial index boundary box must have positive width and height (width > 0, height > 0).',
+      invalidBounds:
+        'Spatial index boundary box must have positive width and height (width > 0, height > 0).',
     },
   },
   create(context) {

@@ -1,13 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { SliceContext } from './sliceContext';
+import { createMockSliceContext } from '../../testing/createMockSliceContext';
 
 describe('sliceContext interface', () => {
   it('defines the unified SliceContext container shape', () => {
-    const mockCtx: SliceContext = {
-      set: () => {},
-      get: () => ({}) as unknown,
-      deps: {} as unknown,
-    };
+    const mockCtx = createMockSliceContext();
 
     expect(mockCtx.set).toBeDefined();
     expect(mockCtx.get).toBeDefined();

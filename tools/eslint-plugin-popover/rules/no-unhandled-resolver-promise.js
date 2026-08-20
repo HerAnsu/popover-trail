@@ -3,7 +3,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure async resolver pipelines handle errors with .catch() or Result.fromPromise()',
+      description:
+        'Ensure async resolver pipelines handle errors with .catch() or Result.fromPromise()',
       category: 'Concurrency',
       recommended: true,
     },

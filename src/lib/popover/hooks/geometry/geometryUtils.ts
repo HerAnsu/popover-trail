@@ -1,7 +1,7 @@
 import type { Placement } from '@floating-ui/react';
-import type { TrailEntry } from '../../types';
+import type { TrailEntry, DragOffset, PopoverStore } from '../../types';
+import type { StoreApi } from 'zustand';
 import { QuadTree, type BoundingBox } from '../../utils/quadTree';
-import type { usePopoverStoreApi } from '../../context/usePopoverStore';
 
 /**
  * Helper to safely measure current viewport bounds across SSR and browser environments.
@@ -16,7 +16,7 @@ export function getViewportBounds(): { width: number; height: number } {
 
 /** Pure helper to extract middleware extra properties. */
 export function resolveMiddlewareExtraProps(option: unknown): Record<string, unknown> {
-  return typeof option === 'object' && option !== null ? (option as Record<string, unknown>) : {};
+  return typeof option === 'object' && option !== null ? { ...option } : {};
 }
 
 /**
@@ -25,16 +25,16 @@ export function resolveMiddlewareExtraProps(option: unknown): Record<string, unk
  * on the right half or left half of the viewport, ensuring popovers naturally open towards center.
  */
 export function calculateAutoPlacement(
-  placement: string | undefined,
+  placement: Placement | 'auto' | undefined,
   anchorRect: DOMRect | null | undefined,
 ): Placement | undefined {
-  if (placement !== 'auto') return placement as Placement | undefined;
-  if (!anchorRect) return 'right' as Placement;
+  if (placement !== 'auto') return placement;
+  if (!anchorRect) return 'right';
 
   const screenCenterX = typeof window !== 'undefined' ? window.innerWidth / 2 : 500;
   const anchorCenterX = anchorRect.left + anchorRect.width / 2;
 
-  return (anchorCenterX > screenCenterX ? 'left' : 'right') as Placement;
+  return anchorCenterX > screenCenterX ? 'left' : 'right';
 }
 
 /**
@@ -79,22 +79,6 @@ export function calculateResponsivePosition(
 }
 
 /**
- * Multiplies the cascade step offset by the card's virtual depth z-index index
- * along the specified direction axis.
- */
-function calculateCascadeOffset(
-  zIndex: number,
-  step: number,
-  direction: 'left' | 'right' | 'top' | 'bottom',
-): { topOffset: number; leftOffset: number } {
-  const offsetVal = zIndex * step;
-  if (direction === 'left') return { topOffset: 0, leftOffset: -offsetVal };
-  if (direction === 'right') return { topOffset: 0, leftOffset: offsetVal };
-  if (direction === 'top') return { topOffset: -offsetVal, leftOffset: 0 };
-  return { topOffset: offsetVal, leftOffset: 0 };
-}
-
-/**
  * Uses a QuadTree index to check if a new popover card overlaps with existing floating windows.
  * If a collision is detected, applies a 16px diagonal nudge offset.
  */
@@ -105,7 +89,7 @@ function applySpatialCollisionNudge(
   winWidth: number,
   winHeight: number,
   activeFloating: readonly TrailEntry<unknown>[],
-  activeOffsets: Record<string, { x: number; y: number }>,
+  activeOffsets: Readonly<Partial<Record<string, Readonly<DragOffset>>>>,
 ): { top: number; left: number } {
   const spatialBounds: BoundingBox = { x: 0, y: 0, width: winWidth, height: winHeight };
   const spatialTree = new QuadTree(spatialBounds);
@@ -139,37 +123,41 @@ function calculateBaseOffsetPosition(
   zIndex: number,
   step: number,
   direction: 'left' | 'right' | 'top' | 'bottom',
-  y: number | null,
-  x: number | null,
+  y: number,
+  x: number,
 ): { baseTop: number; baseLeft: number } {
-  const { topOffset, leftOffset } = calculateCascadeOffset(zIndex, step, direction);
-  return {
-    baseTop: (y ?? 0) + topOffset,
-    baseLeft: (x ?? 0) + leftOffset,
-  };
+  const offsetVal = zIndex * step;
+  if (direction === 'left') return { baseTop: y, baseLeft: x - offsetVal };
+  if (direction === 'right') return { baseTop: y, baseLeft: x + offsetVal };
+  if (direction === 'top') return { baseTop: y - offsetVal, baseLeft: x };
+  return { baseTop: y + offsetVal, baseLeft: x };
 }
 
-export function resolveUnpinnedLayoutPosition(
-  id: string,
-  entry: TrailEntry | undefined,
-  cascadeOffsetStep: number,
-  resolvedPlacement: string,
-  zIndex: number,
-  y: number | null,
-  x: number | null,
-  enableSpatialCollision: boolean,
-  storeApi: ReturnType<typeof usePopoverStoreApi>,
-  winWidth: number,
-  winHeight: number,
-): { top: number; left: number } {
-  const step = entry?.cascadeOffsetStep ?? cascadeOffsetStep;
-  const direction = (entry?.cascadeOffsetDirection ??
-    (resolvedPlacement.startsWith('left') ? 'left' : 'right')) as
-    | 'left'
-    | 'right'
-    | 'top'
-    | 'bottom';
-  const { baseTop, baseLeft } = calculateBaseOffsetPosition(zIndex, step, direction, y, x);
+export function computeCascadePosition({
+  zIndex,
+  step,
+  direction,
+  y,
+  x,
+  enableSpatialCollision,
+  storeApi,
+  id,
+  winWidth,
+  winHeight,
+}: {
+  zIndex: number;
+  step: number;
+  direction?: 'left' | 'right' | 'top' | 'bottom';
+  y: number;
+  x: number;
+  enableSpatialCollision?: boolean;
+  storeApi: StoreApi<PopoverStore<unknown, unknown>>;
+  id: string;
+  winWidth: number;
+  winHeight: number;
+}): { top: number; left: number } {
+  const effectiveDirection = direction ?? 'right';
+  const { baseTop, baseLeft } = calculateBaseOffsetPosition(zIndex, step, effectiveDirection, y, x);
 
   if (enableSpatialCollision) {
     const { floating: activeFloating, offsets: activeOffsets } = storeApi.getState();
@@ -188,4 +176,44 @@ export function resolveUnpinnedLayoutPosition(
     top: baseTop,
     left: baseLeft,
   };
+}
+
+export function resolveUnpinnedLayoutPosition(
+  id: string,
+  entry: TrailEntry | undefined,
+  cascadeOffsetStep: number,
+  resolvedPlacement: string | undefined,
+  zIndex: number,
+  y: number | null,
+  x: number | null,
+  enableSpatialCollision: boolean | undefined,
+  storeApi: StoreApi<PopoverStore<unknown, unknown>>,
+  winWidth: number,
+  winHeight: number,
+): { top: number; left: number } {
+  if (entry?.pinnedLayoutPos) {
+    return { top: entry.pinnedLayoutPos.top, left: entry.pinnedLayoutPos.left };
+  }
+
+  let direction: 'left' | 'right' | 'top' | 'bottom' = 'bottom';
+  if (resolvedPlacement?.startsWith('left')) {
+    direction = 'left';
+  } else if (resolvedPlacement?.startsWith('right')) {
+    direction = 'right';
+  } else if (resolvedPlacement?.startsWith('top')) {
+    direction = 'top';
+  }
+
+  return computeCascadePosition({
+    zIndex,
+    step: cascadeOffsetStep,
+    direction,
+    y: y ?? 0,
+    x: x ?? 0,
+    enableSpatialCollision,
+    storeApi,
+    id,
+    winWidth,
+    winHeight,
+  });
 }

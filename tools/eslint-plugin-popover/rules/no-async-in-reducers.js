@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      asyncReducer: 'Reducers in `reducers/` must be synchronous. Use store controllers or resolver pipelines for asynchronous workflows.',
+      asyncReducer:
+        'Reducers in `reducers/` must be synchronous. Use store controllers or resolver pipelines for asynchronous workflows.',
     },
   },
   create(context) {

@@ -4,7 +4,7 @@
  * @module components/card/PopoverCardScopeContext
  */
 
-import React, { createContext, useContext } from 'react';
+import { createContext, useContext, type RefObject } from 'react';
 import type { TrailEntry } from '../../types';
 import type { UsePopoverCardResult } from '../../hooks/usePopoverCard';
 import type { usePopoverActions } from '../../context';
@@ -27,11 +27,18 @@ export interface PopoverCardScope<TData = unknown> {
   /** Bound store actions' dispatcher. */
   actions: ReturnType<typeof usePopoverActions>;
   /** Direct DOM ref to the root card container element. */
-  cardRef?: React.RefObject<HTMLElement | null>;
+  cardRef?: RefObject<HTMLElement | null>;
 }
 
-export const PopoverCardScopeContext = createContext<PopoverCardScope | null>(null);
+export const PopoverCardScopeContext = createContext<PopoverCardScope<unknown> | null>(null);
 PopoverCardScopeContext.displayName = 'PopoverCardScopeContext';
+
+function assertCardScope<TData>(ctx: unknown): asserts ctx is PopoverCardScope<TData> {
+  validateCardSubComponentScope(Boolean(ctx), 'SubComponent');
+  if (!ctx) {
+    throw new Error('<PopoverCard> sub-components must be rendered within a <PopoverCard>');
+  }
+}
 
 /**
  * Hook providing access to the current `<PopoverCard>` scope context.
@@ -41,11 +48,8 @@ PopoverCardScopeContext.displayName = 'PopoverCardScopeContext';
  *
  * @returns The active card scope object.
  */
-export function usePopoverCardScope() {
+export function usePopoverCardScope<TData = unknown>(): PopoverCardScope<TData> {
   const ctx = useContext(PopoverCardScopeContext);
-  validateCardSubComponentScope(Boolean(ctx), 'SubComponent');
-  if (!ctx) {
-    throw new Error('<PopoverCard> sub-components must be rendered within a <PopoverCard>');
-  }
+  assertCardScope<TData>(ctx);
   return ctx;
 }

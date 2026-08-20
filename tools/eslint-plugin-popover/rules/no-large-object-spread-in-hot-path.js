@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Disallow repeated full object spread in high-frequency drag/tick calculation paths.',
+      description:
+        'Disallow repeated full object spread in high-frequency drag/tick calculation paths.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      noLargeSpreadInHotPath: 'Avoid full state object spread in hot drag animation loops; mutate preallocated coordinate structs.',
+      noLargeSpreadInHotPath:
+        'Avoid full state object spread in hot drag animation loops; mutate preallocated coordinate structs.',
     },
   },
   create(context) {

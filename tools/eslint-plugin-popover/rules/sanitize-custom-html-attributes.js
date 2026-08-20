@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      unfilteredSpread: 'Spreading unsanitized user props directly on DOM root can lead to invalid DOM properties.',
+      unfilteredSpread:
+        'Spreading unsanitized user props directly on DOM root can lead to invalid DOM properties.',
     },
   },
   create(context) {

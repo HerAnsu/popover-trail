@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Disallow transition: all; specify explicit transform or opacity to prevent CPU layout calculations.',
+      description:
+        'Disallow transition: all; specify explicit transform or opacity to prevent CPU layout calculations.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      noTransitionAll: 'Avoid "transition: all"; specify explicit properties like "transform, opacity".',
+      noTransitionAll:
+        'Avoid "transition: all"; specify explicit properties like "transform, opacity".',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       Property(node) {

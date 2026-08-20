@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow explicit any in store action payloads; use unknown or generic type variables.',
+      description:
+        'Disallow explicit any in store action payloads; use unknown or generic type variables.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      noAnyInAction: 'Do not use explicit "any" in action payload; use generic <TData = unknown> or unknown.',
+      noAnyInAction:
+        'Do not use explicit "any" in action payload; use generic <TData = unknown> or unknown.',
     },
   },
   create(context) {

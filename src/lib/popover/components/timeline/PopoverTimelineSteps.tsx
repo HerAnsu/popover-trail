@@ -13,10 +13,13 @@ export interface PopoverTimelineStepListContext<TData = unknown> {
   timeline: UsePopoverTimelineResult<TData>;
 }
 
-export type PopoverTimelineStepListChildren<TData = unknown> =
-  | ReactNode
+export type PopoverTimelineStepListRenderProp<TData = unknown> =
   | ((context: PopoverTimelineStepListContext<TData>) => ReactNode)
   | ((item: PopoverTimelineItem<TData>, active: boolean, index: number) => ReactNode);
+
+export type PopoverTimelineStepListChildren<TData = unknown> =
+  | ReactNode
+  | PopoverTimelineStepListRenderProp<TData>;
 
 /**
  * Subcomponent for the timeline step list container.
@@ -30,6 +33,30 @@ export type PopoverTimelineStepListProps<
     children: PopoverTimelineStepListChildren<TData>;
   }
 >;
+
+function invokeStepListRenderProp<TData>(
+  fn: PopoverTimelineStepListRenderProp<TData>,
+  timeline: UsePopoverTimelineResult<TData>,
+): ReactNode {
+  if (fn.length <= 1) {
+    const contextFn = fn as (context: PopoverTimelineStepListContext<TData>) => ReactNode;
+    const result = contextFn({
+      history: timeline.history,
+      currentIndex: timeline.currentIndex,
+      timeline,
+    });
+    if (result !== undefined) {
+      return result;
+    }
+  }
+
+  const itemFn = fn as (
+    item: PopoverTimelineItem<TData>,
+    active: boolean,
+    index: number,
+  ) => ReactNode;
+  return timeline.history.map((item, idx) => itemFn(item, idx === timeline.currentIndex, idx));
+}
 
 /**
  * Subcomponent for the timeline step list container (`<ol role="list">`).
@@ -46,34 +73,11 @@ export function PopoverTimelineStepList<E extends ElementType = 'ol', TData = un
   ...restProps
 }: PopoverTimelineStepListProps<E, TData>) {
   const Component = as ?? 'ol';
-  const { timeline } = usePopoverTimelineScope();
+  const { timeline } = usePopoverTimelineScope<TData>();
   const mergedClassName = clsx('pt-timeline-step-list', className);
 
-  let renderedContent: ReactNode = null;
-
-  if (typeof children === 'function') {
-    const fn = children as Function;
-    // Check if render-prop expects context object ({ history, ... }) or per-item callback (item, active)
-    if (fn.length <= 1) {
-      const result = fn({
-        history: timeline.history,
-        currentIndex: timeline.currentIndex,
-        timeline,
-      });
-
-      // If function returned undefined (was expecting item), fallback to item map
-      renderedContent =
-        result !== undefined
-          ? result
-          : timeline.history.map((item, idx) => fn(item, idx === timeline.currentIndex, idx));
-    } else {
-      renderedContent = timeline.history.map((item, idx) =>
-        fn(item, idx === timeline.currentIndex, idx),
-      );
-    }
-  } else {
-    renderedContent = children;
-  }
+  const renderedContent: ReactNode =
+    typeof children === 'function' ? invokeStepListRenderProp(children, timeline) : children;
 
   return (
     <Component className={mergedClassName} role="list" {...restProps}>

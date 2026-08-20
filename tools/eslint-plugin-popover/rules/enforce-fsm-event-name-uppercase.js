@@ -17,7 +17,12 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('fsm')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('fsm')
+    )
+      return {};
 
     return {
       Property(node) {

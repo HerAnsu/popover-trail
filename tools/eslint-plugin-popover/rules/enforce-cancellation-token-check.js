@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      missingSignalCheck: 'Check `signal?.aborted` before applying async results to prevent race conditions.',
+      missingSignalCheck:
+        'Check `signal?.aborted` before applying async results to prevent race conditions.',
     },
   },
   create(context) {

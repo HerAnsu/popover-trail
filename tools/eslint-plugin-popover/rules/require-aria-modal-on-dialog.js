@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce aria-modal="true" on modal popover card containers when focus locking is enabled.',
+      description:
+        'Enforce aria-modal="true" on modal popover card containers when focus locking is enabled.',
       category: 'Accessibility',
       recommended: true,
     },
@@ -35,7 +36,13 @@ export default {
           const focusLockAttr = node.openingElement.attributes.find(
             (a) => a.name && a.name.name === 'data-popover-modal',
           );
-          if (roleAttr && roleAttr.value && roleAttr.value.value === 'dialog' && focusLockAttr && !modalAttr) {
+          if (
+            roleAttr &&
+            roleAttr.value &&
+            roleAttr.value.value === 'dialog' &&
+            focusLockAttr &&
+            !modalAttr
+          ) {
             context.report({
               node,
               messageId: 'requireAriaModal',

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi } from 'vitest';
 import { handleCardKeyboardNavigation, usePopoverCard } from './usePopoverCard';
-import { TrailEntry } from '../types';
+import type { TrailEntry } from '../types';
 
 describe('usePopoverCard hook & keyboard navigation', () => {
   it('exports usePopoverCard hook function', () => {
     expect(typeof usePopoverCard).toBe('function');
   });
+
+  function createMockKeyEvent(
+    key: string,
+  ): Pick<React.KeyboardEvent<HTMLElement>, 'key' | 'preventDefault'> {
+    return {
+      key,
+      preventDefault: vi.fn(),
+    };
+  }
 
   describe('handleCardKeyboardNavigation', () => {
     it('executes custom keyboardShortcuts on entry when key matches', () => {
@@ -19,11 +28,7 @@ describe('usePopoverCard hook & keyboard navigation', () => {
         },
       };
 
-      const event = {
-        key: 'Escape',
-        preventDefault: vi.fn(),
-      } as unknown as React.KeyboardEvent<HTMLElement>;
-
+      const event = createMockKeyEvent('Escape');
       const actions = { closeFrom: vi.fn() };
 
       handleCardKeyboardNavigation(event, null, entry, true, false, [entry], 0, actions);
@@ -36,11 +41,7 @@ describe('usePopoverCard hook & keyboard navigation', () => {
       const entry1: TrailEntry = { key: 'root-1', isLoading: false, error: null };
       const entry2: TrailEntry = { key: 'child-1', isLoading: false, error: null };
 
-      const event = {
-        key: 'ArrowLeft',
-        preventDefault: vi.fn(),
-      } as unknown as React.KeyboardEvent<HTMLElement>;
-
+      const event = createMockKeyEvent('ArrowLeft');
       const actions = { closeFrom: vi.fn() };
 
       handleCardKeyboardNavigation(event, null, entry2, true, false, [entry1, entry2], 0, actions);

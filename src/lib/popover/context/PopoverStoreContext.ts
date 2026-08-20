@@ -1,13 +1,10 @@
 import { createContext } from 'react';
-import type { StoreApi } from 'zustand/vanilla';
-import type { PopoverStore } from '../types';
 
 /**
  * Context container holding the Zustand StoreApi instance.
+ * Erased to unknown at context boundary to allow arbitrary generic stores.
  *
  * @internal
  */
-export const PopoverStoreContext = createContext<StoreApi<PopoverStore<unknown, unknown>> | null>(
-  null,
-);
+export const PopoverStoreContext = createContext<unknown>(null);
 PopoverStoreContext.displayName = 'PopoverStoreContext';

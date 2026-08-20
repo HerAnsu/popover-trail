@@ -31,7 +31,7 @@ export const TriggerRegistry = {
    * @param key - Unique popover key string.
    * @param el - DOM HTMLElement of the trigger button or container.
    */
-  register(key: string, el: HTMLElement): void {
+  register(key: string, el?: HTMLElement | null): void {
     if (!key || !el || typeof el !== 'object') return;
     if (registry.size > MAX_REGISTRY_SIZE_BEFORE_SWEEP) {
       pruneDeadRefs();

@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      useTypeExport: 'Use `export type` when re-exporting pure TypeScript types to assist bundler elision.',
+      useTypeExport:
+        'Use `export type` when re-exporting pure TypeScript types to assist bundler elision.',
     },
   },
   create(context) {
@@ -18,7 +19,11 @@ export default {
     return {
       ExportNamedDeclaration(node) {
         if (node.exportKind === 'type') return;
-        if (node.declaration && (node.declaration.type === 'TSTypeAliasDeclaration' || node.declaration.type === 'TSInterfaceDeclaration')) {
+        if (
+          node.declaration &&
+          (node.declaration.type === 'TSTypeAliasDeclaration' ||
+            node.declaration.type === 'TSInterfaceDeclaration')
+        ) {
           context.report({ node, messageId: 'useTypeExport' });
         }
       },

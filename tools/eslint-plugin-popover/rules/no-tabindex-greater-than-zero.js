@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      positiveTabIndex: 'Avoid positive tabIndex values (`tabIndex > 0`). Use 0 for focusable or -1 for programmatic focus.',
+      positiveTabIndex:
+        'Avoid positive tabIndex values (`tabIndex > 0`). Use 0 for focusable or -1 for programmatic focus.',
     },
   },
   create(context) {

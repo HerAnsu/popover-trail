@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend TypeScript satisfies operator instead of "as Type" for object literals.',
+      description:
+        'Recommend TypeScript satisfies operator instead of "as Type" for object literals.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      preferSatisfies: 'Prefer "satisfies {{ type }}" instead of unsafe "as {{ type }}" for object literals.',
+      preferSatisfies:
+        'Prefer "satisfies {{ type }}" instead of unsafe "as {{ type }}" for object literals.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       TSAsExpression(node) {

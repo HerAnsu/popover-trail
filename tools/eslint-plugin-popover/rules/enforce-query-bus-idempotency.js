@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce CQRS query handlers are pure reads and do not dispatch mutation commands.',
+      description:
+        'Enforce CQRS query handlers are pure reads and do not dispatch mutation commands.',
       category: 'CQRS',
       recommended: true,
     },
     schema: [],
     messages: {
-      noMutationInQuery: 'Query handler must not dispatch mutation commands; queries must be idempotent.',
+      noMutationInQuery:
+        'Query handler must not dispatch mutation commands; queries must be idempotent.',
     },
   },
   create(context) {

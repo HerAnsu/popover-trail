@@ -3,13 +3,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure vi.useRealTimers is called in test cleanup when vi.useFakeTimers is used',
+      description:
+        'Ensure vi.useRealTimers is called in test cleanup when vi.useFakeTimers is used',
       category: 'Testing & Harness',
       recommended: true,
     },
     schema: [],
     messages: {
-      missingRealTimers: 'Test file uses `vi.useFakeTimers()`. Ensure `vi.useRealTimers()` is called to prevent test pollution.',
+      missingRealTimers:
+        'Test file uses `vi.useFakeTimers()`. Ensure `vi.useRealTimers()` is called to prevent test pollution.',
     },
   },
   create(context) {

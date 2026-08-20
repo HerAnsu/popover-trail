@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce forwarding AbortSignal to nested async operations for prompt cancellation.',
+      description:
+        'Enforce forwarding AbortSignal to nested async operations for prompt cancellation.',
       category: 'Concurrency',
       recommended: true,
     },
     schema: [],
     messages: {
-      passSignal: 'Pass available AbortSignal to async fetch or nested resolver to avoid wasted bandwidth on card close.',
+      passSignal:
+        'Pass available AbortSignal to async fetch or nested resolver to avoid wasted bandwidth on card close.',
     },
   },
   create(context) {

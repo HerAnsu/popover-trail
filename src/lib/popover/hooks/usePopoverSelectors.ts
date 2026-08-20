@@ -15,9 +15,17 @@ import {
   selectIsPinned,
   selectOffset,
   selectHasEntry,
+  selectParentKey,
+  selectChildrenKeys,
+  selectBreadcrumbs,
+  selectPopoverDepth,
 } from '../store/storeSelectors';
 
-import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
+import type {
+  RegisteredKeys,
+  RegisteredDataMap,
+  ResolveRegisteredData,
+} from '../types/registerTypes';
 import { shallowEqual } from '../utils/equality';
 import { findEntryInStore } from '../utils/storeHelpers';
 
@@ -25,17 +33,21 @@ export type { UsePopoverResult };
 
 const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
-type ReactUseFn = <T>(promise: Promise<T>) => T;
-const REACT_USE: ReactUseFn | undefined =
-  typeof (React as { use?: unknown }).use === 'function'
-    ? (React as { use: ReactUseFn }).use
-    : undefined;
+const REACT_USE = 'use' in React && typeof React.use === 'function' ? React.use : undefined;
 
 /**
- * Hook to retrieve the active trailing popover cascade array.
+ * Returns the array of active cascading trail popover entries (root at index 0).
  *
- * @template TData - The type of resolved data payloads.
- * @returns Array of trailing popover entries in order.
+ * @template TData - Type of data payload associated with popover entries.
+ * @returns Readonly array of active trail entries.
+ *
+ * @example
+ * ```tsx
+ * function TrailBreadcrumbs() {
+ *   const trail = usePopoverTrail();
+ *   return <span>Depth: {trail.length}</span>;
+ * }
+ * ```
  */
 export function usePopoverTrail<
   TData = RegisteredDataMap[RegisteredKeys],
@@ -44,10 +56,10 @@ export function usePopoverTrail<
 }
 
 /**
- * Hook to retrieve the active modeless floating (pinned) popovers array.
+ * Returns the array of active pinned/floating popover entries.
  *
- * @template TData - The type of resolved data payloads.
- * @returns Array of floating popover entries.
+ * @template TData - Type of data payload associated with popover entries.
+ * @returns Readonly array of floating entries.
  */
 export function usePopoverFloating<
   TData = RegisteredDataMap[RegisteredKeys],
@@ -56,76 +68,120 @@ export function usePopoverFloating<
 }
 
 /**
- * Hook to retrieve coordinate offsets of all active popovers.
- *
- * @returns Record of offset coordinate objects mapped by popover key.
+ * Returns a dictionary mapping popover keys to their current `(x, y)` drag offsets.
+ * Uses shallow equality comparison to prevent unnecessary re-renders.
  */
 export function usePopoverOffsets() {
   return usePopoverStore((state) => state.offsets, shallowEqual);
 }
 
 /**
- * Hook to retrieve the pinning state of a specific popover.
+ * Checks whether a specific popover card is currently pinned.
  *
- * @param key - The unique identifier key of the popover.
- * @returns True if the popover is currently pinned/floating.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @param key - Unique popover key.
+ * @returns `true` if the popover is pinned, `false` otherwise.
  */
 export function useIsPopoverPinned<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore(selectIsPinned(key));
 }
 
-/**
- * Hook to retrieve a popover entry (either trailing or floating) by its unique key ID.
- *
- * @template TData - The type of resolved data payloads.
- * @param key - The unique identifier key of the popover.
- * @returns The matching TrailEntry or undefined if not found.
- */
-export function usePopoverEntry<
-  TData = RegisteredDataMap[RegisteredKeys],
-  TPopoverKey extends string = RegisteredKeys,
->(key: TPopoverKey): TrailEntry<TData> | undefined {
-  return usePopoverStore(selectEntryByKey<TData>(key));
+/** Symmetric alias for `useIsPopoverPinned`. */
+export const usePopoverIsPinned = useIsPopoverPinned;
+
+function isEntryWithStatus<
+  TData,
+  S extends 'loading' | 'error' | 'success',
+  TPopoverKey extends string = string,
+>(
+  entry: TrailEntry<TData, TPopoverKey>,
+  expectedStatus: string,
+): entry is NarrowTrailEntry<TData, S, TPopoverKey> {
+  return getEntryState(entry).status === expectedStatus;
 }
 
 /**
- * Hook to retrieve a popover entry with guaranteed status narrowing.
+ * Retrieves the `TrailEntry` for a specific popover key from either trail or floating stack.
+ * Automatically infers payload data type based on the registered schema.
  *
- * @template TData - The type of resolved data payloads.
- * @template S - Status string discriminator ('loading' | 'error' | 'success').
- * @param key - The unique identifier key of the popover.
- * @param expectedStatus - Target status discriminator.
- * @returns The matching narrowed entry or undefined if not found or status mismatch.
+ * @template K - Target popover key string.
+ * @template TData - Resolved data payload type (inferred from `K`).
+ * @param key - Unique popover key.
+ * @returns The matching `TrailEntry` or `undefined` if closed.
+ *
+ * @example
+ * ```tsx
+ * function CardStatus({ cardKey }: { cardKey: string }) {
+ *   const entry = usePopoverEntry(cardKey);
+ *   if (!entry) return null;
+ *   return <span>Status: {entry.status}</span>;
+ * }
+ * ```
+ */
+export function usePopoverEntry<
+  K extends RegisteredKeys = RegisteredKeys,
+  TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
+>(key: K): TrailEntry<TData, K> | undefined {
+  return usePopoverStore(selectEntryByKey<TData, K>(key));
+}
+
+/**
+ * Retrieves a popover entry with compile-time state narrowing.
+ * When `expectedStatus` matches, TypeScript narrows the returned entry to `LoadingTrailEntry`, `ErrorTrailEntry`, or `SuccessTrailEntry`.
+ *
+ * @template K - Target popover key string.
+ * @template S - Expected lifecycle status (`'loading'` | `'error'` | `'success'`, defaults to `'success'`).
+ * @template TData - Resolved data payload type.
+ * @param key - Unique popover key.
+ * @param expectedStatus - Target status to check (defaults to `'success'`).
+ * @returns Narrowed entry if status matches, or `undefined`.
+ *
+ * @example
+ * ```tsx
+ * function UserView({ cardKey }: { cardKey: string }) {
+ *   const entry = usePopoverEntryStatus(cardKey, 'success');
+ *   if (!entry) return <Spinner />;
+ *   return <div>{entry.data.name}</div>; // entry.data is guaranteed non-null
+ * }
+ * ```
  */
 export function usePopoverEntryStatus<
-  TData = RegisteredDataMap[RegisteredKeys],
+  K extends RegisteredKeys = RegisteredKeys,
+  TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
+>(key: K): NarrowTrailEntry<TData, 'success', K> | undefined;
+export function usePopoverEntryStatus<
+  K extends RegisteredKeys = RegisteredKeys,
   S extends 'loading' | 'error' | 'success' = 'success',
-  TPopoverKey extends string = RegisteredKeys,
->(key: TPopoverKey, expectedStatus: S = 'success' as S): NarrowTrailEntry<TData, S> | undefined {
-  const entry = usePopoverEntry<TData, TPopoverKey>(key);
+  TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
+>(key: K, expectedStatus: S): NarrowTrailEntry<TData, S, K> | undefined;
+export function usePopoverEntryStatus<
+  K extends RegisteredKeys = RegisteredKeys,
+  S extends 'loading' | 'error' | 'success' = 'success',
+  TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
+>(key: K, expectedStatus?: S): NarrowTrailEntry<TData, S, K> | undefined {
+  const entry = usePopoverEntry<K, TData>(key);
   if (!entry) return undefined;
-  const currentStatus = getEntryState(entry).status;
-  if (currentStatus === expectedStatus) {
-    return entry as NarrowTrailEntry<TData, S>;
+  if (isEntryWithStatus<TData, S, K>(entry, expectedStatus ?? 'success')) {
+    return entry;
   }
   return undefined;
 }
 
 /**
- * Hook to retrieve the z-index stack position index of a popover.
+ * Returns the z-index stacking order index for a popover key (-1 if not mounted).
  *
- * @param key - The unique identifier key of the popover.
- * @returns The 0-based z-index depth index, or -1 if not found.
+ * @param key - Unique popover key.
+ * @returns Visual stacking index (higher = on top).
  */
 export function usePopoverZIndex<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore((state) => state.zIndexOrder.indexOf(key));
 }
 
 /**
- * Hook to verify if a popover is currently focused and at the top of the z-index stack.
+ * Checks whether a specific popover card is at the top of the z-index stack.
  *
- * @param key - The unique identifier key of the popover.
- * @returns True if the popover is topmost.
+ * @param key - Unique popover key.
+ * @returns `true` if the popover is topmost.
  */
 export function useIsPopoverTopMost<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore(
@@ -133,40 +189,41 @@ export function useIsPopoverTopMost<TPopoverKey extends string = RegisteredKeys>
   );
 }
 
+/** Symmetric alias for `useIsPopoverTopMost`. */
+export const usePopoverIsTopMost = useIsPopoverTopMost;
+
 /**
- * Hook to retrieve the coordinate offset of a specific popover.
+ * Returns the current `(x, y)` drag position offset for a specific popover card.
  *
- * @param key - The unique identifier key of the popover.
- * @returns The coordinate offset object.
+ * @param key - Unique popover key.
+ * @returns `{ x: number, y: number }` offset.
  */
 export function usePopoverOffset<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore(selectOffset(key), shallowEqual);
 }
 
 /**
- * Hook to retrieve the global context value.
+ * Returns the global application context value passed to `PopoverProvider`.
  *
- * @template TContext - The type of context.
- * @returns The active context object.
+ * @template TContext - External context type.
+ * @returns Active context value or null.
  */
 export function usePopoverContext<TContext = unknown>() {
   return usePopoverStore((state: PopoverStore<unknown, TContext>) => state.context);
 }
 
 /**
- * Hook to retrieve the global collision boundary settings.
- *
- * @returns The collision configuration object.
+ * Returns the active collision boundary detection settings.
  */
 export function usePopoverCollisionConfig() {
   return usePopoverStore((state) => state.collisionConfig);
 }
 
 /**
- * Hook to check if a specific popover key is currently open (exists in trail or floating lists).
+ * Checks whether a specific popover key is currently open (either in the cascade trail or pinned).
  *
- * @param key - The unique identifier key of the popover.
- * @returns True if the popover is active and open.
+ * @param key - Unique popover key.
+ * @returns `true` if open, `false` otherwise.
  */
 export function useIsPopoverOpen<TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
@@ -174,32 +231,92 @@ export function useIsPopoverOpen<TPopoverKey extends string = RegisteredKeys>(
   return usePopoverStore(selectHasEntry(key));
 }
 
+/** Symmetric alias for `useIsPopoverOpen`. */
+export const usePopoverIsOpen = useIsPopoverOpen;
+
 /**
- * Unified hook combining data, open status, pinning, z-index, and actions for a single popover.
+ * Returns the parent popover key for a given card, establishing the cascade hierarchy.
  *
- * @template TData - The type of resolved data payload.
- * @template TContext - The type of shared global context.
- * @template TPopoverKey - Union of valid popover keys.
+ * @param key - Child popover key.
+ * @returns Parent key string or undefined if root.
+ */
+export function usePopoverParentKey<TPopoverKey extends string = RegisteredKeys>(
+  key: TPopoverKey,
+): string | undefined {
+  return usePopoverStore(selectParentKey(key));
+}
+
+/**
+ * Returns the keys of all direct children popover cards spawned from this parent card.
  *
- * @param key - The unique identifier key of the popover.
- * @returns Unified data values and action wrappers.
+ * @param key - Parent popover key.
+ * @returns Array of child key strings.
+ */
+export function usePopoverChildrenKeys<TPopoverKey extends string = RegisteredKeys>(
+  key: TPopoverKey,
+): readonly string[] {
+  return usePopoverStore(selectChildrenKeys(key), shallowEqual);
+}
+
+/**
+ * Returns the full ancestral path of popover keys from the root down to the target key.
+ *
+ * @param key - Target popover key.
+ * @returns Array of ancestor keys including target key.
  *
  * @example
  * ```tsx
- * import { usePopover } from 'popover-trail';
+ * const breadcrumbs = usePopoverBreadcrumbs('userSettings');
+ * // ['rootWorkspace', 'userProfile', 'userSettings']
+ * ```
+ */
+export function usePopoverBreadcrumbs<TPopoverKey extends string = RegisteredKeys>(
+  key: TPopoverKey,
+): readonly string[] {
+  return usePopoverStore(selectBreadcrumbs(key), shallowEqual);
+}
+
+/**
+ * Returns the 0-based depth level of a popover card in the cascade tree (0 = root).
  *
- * function ProfileCard() {
- *   const { data, isOpen, isPinned, close, pin } = usePopover<UserData>('userProfile');
+ * @param key - Target popover key.
+ * @returns Depth number (-1 if closed).
+ */
+export function usePopoverDepth<TPopoverKey extends string = RegisteredKeys>(
+  key: TPopoverKey,
+): number {
+  return usePopoverStore(selectPopoverDepth(key));
+}
+
+/**
+ * All-in-one hook combining entry state, open/pin flags, z-index, and actions for a single popover card.
+ *
+ * @template K - Target popover key string.
+ * @template TData - Resolved data payload type (inferred from `K`).
+ * @template TContext - Global external context type.
+ * @param key - Unique popover key.
+ * @returns Object with entry, state, isOpen, isPinned, zIndex, isTop, data, error, close(), pin(), bringToFront().
+ *
+ * @example
+ * ```tsx
+ * function ProfilePopover({ id }: { id: string }) {
+ *   const { isOpen, isPinned, data, isLoading, close, pin } = usePopover(`profile-${id}`);
  *   if (!isOpen) return null;
- *   return <div><h2>{data?.name}</h2><button onClick={close}>Close</button></div>;
+ *   return (
+ *     <div>
+ *       <h2>{data?.name}</h2>
+ *       <button onClick={() => pin(rect)}>Pin</button>
+ *       <button onClick={close}>Close</button>
+ *     </div>
+ *   );
  * }
  * ```
  */
 export function usePopover<
-  TData = RegisteredDataMap[RegisteredKeys],
+  K extends RegisteredKeys = RegisteredKeys,
+  TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
   TContext = unknown,
-  TPopoverKey extends string = RegisteredKeys,
->(key: TPopoverKey): UsePopoverResult<TData> {
+>(key: K): UsePopoverResult<TData> {
   const slice = usePopoverStore(
     useCallback(
       (state: PopoverStore<TData, TContext>) => {
@@ -225,7 +342,7 @@ export function usePopover<
     shallowEqual,
   );
 
-  const actions = usePopoverActions<TData, TContext, TPopoverKey>();
+  const actions = usePopoverActions<TData, TContext, K>();
 
   const close = useCallback(() => actions.closeByKey(key, { transition: true }), [actions, key]);
   const pin = useCallback((rect: DOMRect) => actions.togglePin(key, rect), [actions, key]);
@@ -274,18 +391,29 @@ export type PopoverHydrationState<TData = unknown> =
   | { status: 'error'; isHydrating: false; isHydrated: false; data: undefined; error: Error };
 
 /**
- * Hook to track loading/error status and trigger manual data reloads for a popover card.
+ * Tracks the async hydration and data loading lifecycle for a specific popover card.
+ * Provides `isLoading`, `error`, `data`, and a `reload()` function.
  *
- * @template TData - The type of resolved data payload.
- * @param key - The unique identifier key of the popover card.
- * @returns Object containing state discriminated union, isLoading status, error, and reload trigger callback.
+ * @template K - Target popover key string.
+ * @template TData - Resolved data payload type (inferred from `K`).
+ * @param key - Unique popover key.
+ *
+ * @example
+ * ```tsx
+ * function DataCard({ cardKey }: { cardKey: string }) {
+ *   const { data, isLoading, error, reload } = usePopoverHydration(cardKey);
+ *   if (isLoading) return <Spinner />;
+ *   if (error) return <button onClick={reload}>Retry</button>;
+ *   return <div>{data?.name}</div>;
+ * }
+ * ```
  */
 export function usePopoverHydration<
-  TData = RegisteredDataMap[RegisteredKeys],
-  TPopoverKey extends string = RegisteredKeys,
->(key: TPopoverKey) {
+  K extends RegisteredKeys = RegisteredKeys,
+  TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
+>(key: K) {
   const actions = usePopoverActions();
-  const entry = usePopoverEntry<TData, TPopoverKey>(key);
+  const entry = usePopoverEntry<K, TData>(key);
   const reload = useCallback(() => {
     void actions.retryPopover(key);
   }, [actions, key]);
@@ -326,14 +454,6 @@ export function usePopoverHydration<
     }
   }
 
-  useDebugValue(
-    state.status === 'hydrating'
-      ? `Hydrating "${key}"...`
-      : state.status === 'error'
-        ? `Hydration Error: ${state.error.message}`
-        : `Hydrated "${key}"`,
-  );
-
   return {
     state,
     isLoading: state.isHydrating,
@@ -344,32 +464,27 @@ export function usePopoverHydration<
 }
 
 /**
- * Hook to retrieve resolved data for a popover key with native React 19 `use(promise)` Suspense support.
+ * Retrieves the resolved data payload for a specific popover key.
+ * Compatible with React 19 `use(promise)` Suspense boundaries when `dataPromise` is available.
  *
- * @remarks
- * If `entry.dataPromise` is pending and the runtime supports `React.use()`, this hook triggers Suspense
- * until data resolution completes, eliminating manual loading spinners and intermediate render flicker.
+ * @template K - Target popover key string.
+ * @template TData - Resolved data payload type (inferred from `K`).
+ * @param key - Unique popover key.
+ * @returns Resolved data payload, or `null` / `undefined` if not resolved.
  *
  * @example
  * ```tsx
- * import { usePopoverData } from 'popover-trail';
- *
- * function UserDetails() {
- *   const data = usePopoverData<UserData>('userProfile');
- *   return <div>{data?.email}</div>;
+ * function UserHeader({ userKey }: { userKey: string }) {
+ *   const user = usePopoverData(userKey);
+ *   return <h1>{user?.name ?? 'Loading...'}</h1>;
  * }
  * ```
- *
- * @template TData - The type of resolved data payload.
- * @template TPopoverKey - Union of valid popover keys.
- * @param key - The unique identifier key of the popover card.
- * @returns The resolved data payload, or suspends if pending in React 19.
  */
 export function usePopoverData<
-  TData = RegisteredDataMap[RegisteredKeys],
-  TPopoverKey extends string = RegisteredKeys,
->(key: TPopoverKey): TData | null | undefined {
-  const entry = usePopoverEntry<TData, TPopoverKey>(key);
+  K extends RegisteredKeys = RegisteredKeys,
+  TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
+>(key: K): TData | null | undefined {
+  const entry = usePopoverEntry<K, TData>(key);
   if (entry?.error) return entry.data;
 
   if (entry?.dataPromise && typeof REACT_USE === 'function') {
@@ -379,11 +494,10 @@ export function usePopoverData<
 }
 
 /**
- * Hook to retrieve loading state of a specific popover.
+ * Checks whether data resolution is currently in progress for a specific popover card.
  *
- * @template TPopoverKey - Union of valid popover keys.
- * @param key - The unique identifier key of the popover.
- * @returns True if the popover is currently resolving data.
+ * @param key - Unique popover key.
+ * @returns `true` if loading, `false` otherwise.
  */
 export function usePopoverIsLoading<TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
@@ -393,12 +507,14 @@ export function usePopoverIsLoading<TPopoverKey extends string = RegisteredKeys>
   );
 }
 
+/** Symmetric alias for `usePopoverIsLoading`. */
+export const useIsPopoverLoading = usePopoverIsLoading;
+
 /**
- * Hook to retrieve the error of a specific popover if any.
+ * Retrieves the error encountered during data resolution for a specific popover card.
  *
- * @template TPopoverKey - Union of valid popover keys.
- * @param key - The unique identifier key of the popover.
- * @returns The Error instance, or null if resolution succeeded or is in flight.
+ * @param key - Unique popover key.
+ * @returns `Error` instance or `null`.
  */
 export function usePopoverError<TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
@@ -408,32 +524,36 @@ export function usePopoverError<TPopoverKey extends string = RegisteredKeys>(
   );
 }
 
+/** Symmetric alias for `usePopoverError`. */
+export const useIsPopoverError = usePopoverError;
+
 /**
- * Hook to retrieve the root popover entry that initiated the active cascade trail.
+ * Retrieves the root `TrailEntry` that initiated the active cascade stack (index 0).
  *
  * @template TData - Resolved data payload type.
- * @returns Root trail entry or undefined if trail is empty.
+ * @returns Root entry or `undefined` if trail is empty.
  */
 export function usePopoverRootEntry<TData = RegisteredDataMap[RegisteredKeys]>():
   | TrailEntry<TData>
   | undefined {
-  return usePopoverStore((state) => state.trail[0] as TrailEntry<TData> | undefined);
+  return usePopoverStore<TrailEntry<TData> | undefined, TData>((state) => state.trail[0]);
 }
 
 /**
- * Hook to retrieve the total count of active popovers across both trailing and floating lists.
- *
- * @returns Combined active popover count integer.
+ * Returns the total count of currently open popover cards (trail + floating).
  */
 export function usePopoverTotalActiveCount(): number {
   return usePopoverStore((state) => state.floating.length + state.trail.length);
 }
 
 /**
- * Hook to check if the store is completely idle (zero popovers currently open).
+ * Checks whether the popover system is completely idle (0 open cards in trail and floating list).
  *
- * @returns True if no popover cards are active.
+ * @returns `true` if idle, `false` if any popover is open.
  */
 export function useIsPopoverIdle(): boolean {
   return usePopoverStore((state) => state.floating.length === 0 && state.trail.length === 0);
 }
+
+/** Symmetric alias for `useIsPopoverIdle`. */
+export const usePopoverIsIdle = useIsPopoverIdle;

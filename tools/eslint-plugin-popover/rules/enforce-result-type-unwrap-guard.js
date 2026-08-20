@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      suggestResultGuard: 'Accessing property {{ prop }} directly without checking ok/isSuccess guard.',
+      suggestResultGuard:
+        'Accessing property {{ prop }} directly without checking ok/isSuccess guard.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       MemberExpression(node) {

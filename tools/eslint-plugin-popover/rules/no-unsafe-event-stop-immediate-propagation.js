@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow stopImmediatePropagation which breaks composability with host app listeners.',
+      description:
+        'Disallow stopImmediatePropagation which breaks composability with host app listeners.',
       category: 'Correctness',
       recommended: true,
     },
     schema: [],
     messages: {
-      noStopImmediate: 'Avoid stopImmediatePropagation(); use stopPropagation() or custom event delegation.',
+      noStopImmediate:
+        'Avoid stopImmediatePropagation(); use stopPropagation() or custom event delegation.',
     },
   },
   create(context) {

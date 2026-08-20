@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { invokeResolverSafely } from './storeResolverPipeline';
 
 describe('storeResolverPipeline module', () => {
@@ -18,17 +18,35 @@ describe('storeResolverPipeline module', () => {
     expect(res).toBe('data-card-2');
   });
 
-  it('handles object parameter fallback signature when first positional call fails', () => {
+  it('handles object parameter fallback signature when first positional call fails with TypeError', () => {
     const resolver = (args: unknown) => {
-      if (typeof args !== 'object' || args === null) throw new Error('Expected object argument');
+      if (typeof args !== 'object' || args === null) {
+        throw new TypeError('Expected object argument');
+      }
       const obj = args as { key: string };
       return `fallback-${obj.key}`;
     };
     const controller = new AbortController();
 
-    // @ts-expect-error - testing fallback invocation path
     const res = invokeResolverSafely(resolver, 'card-3', null, undefined, controller.signal);
     expect(res).toBe('fallback-card-3');
+  });
+
+  it('does NOT re-execute resolver if a genuine business Error is thrown in positional call', () => {
+    let callCount = 0;
+    const failingResolver = vi.fn((_key: string) => {
+      callCount++;
+      throw new Error('User 404 Not Found');
+    });
+
+    const controller = new AbortController();
+
+    expect(() =>
+      invokeResolverSafely(failingResolver, 'user-404', null, undefined, controller.signal),
+    ).toThrow('User 404 Not Found');
+
+    // Guaranteed called exactly once, no blind retry
+    expect(callCount).toBe(1);
   });
 
   it('passes AbortSignal to resolver function properly', async () => {
@@ -46,5 +64,13 @@ describe('storeResolverPipeline module', () => {
     expect(capturedSignal?.aborted).toBe(false);
     controller.abort();
     expect(capturedSignal?.aborted).toBe(true);
+  });
+
+  it('throws structured PopoverError if resolver is not a function', () => {
+    const controller = new AbortController();
+    // @ts-expect-error Testing invalid resolver type
+    expect(() => invokeResolverSafely(null, 'k', null, undefined, controller.signal)).toThrow(
+      /resolver must be a function/,
+    );
   });
 });

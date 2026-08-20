@@ -6,18 +6,25 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce schema version number in state serialization objects for migration compatibility.',
+      description:
+        'Enforce schema version number in state serialization objects for migration compatibility.',
       category: 'Persistence',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireSnapshotVersion: 'Serialized state object should include a numeric "version" property.',
+      requireSnapshotVersion:
+        'Serialized state object should include a numeric "version" property.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('snapshot') && !filename.includes('Persistence')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      (!filename.includes('snapshot') && !filename.includes('Persistence'))
+    )
+      return {};
 
     return {
       CallExpression(node) {

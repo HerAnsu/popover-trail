@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce calling controller.abort() in useEffect cleanup when creating an AbortController.',
+      description:
+        'Enforce calling controller.abort() in useEffect cleanup when creating an AbortController.',
       category: 'Concurrency',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireAbortCleanup: 'AbortController created in effect should be aborted in the return cleanup function.',
+      requireAbortCleanup:
+        'AbortController created in effect should be aborted in the return cleanup function.',
     },
   },
   create(context) {
@@ -21,7 +23,12 @@ export default {
 
     return {
       NewExpression(node) {
-        if (node.callee && node.callee.name === 'AbortController' && node.parent && node.parent.type === 'VariableDeclarator') {
+        if (
+          node.callee &&
+          node.callee.name === 'AbortController' &&
+          node.parent &&
+          node.parent.type === 'VariableDeclarator'
+        ) {
           const varName = node.parent.id?.name;
           if (varName) {
             const scope = context.getSourceCode ? context.getSourceCode().getText() : '';

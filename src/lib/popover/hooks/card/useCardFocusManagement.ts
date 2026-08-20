@@ -54,20 +54,13 @@ function restoreCardFocus(
   parentKey?: string,
 ): void {
   if (tryRestorePreviousElementFocus(cardElement, previouslyFocused)) return;
-  if (parentKey && focusParentCard(parentKey)) return;
+  if (parentKey) {
+    focusParentCard(parentKey);
+  }
 }
 
 /**
  * Manages WAI-ARIA focus lifecycle and body scroll lock for a popover card.
- *
- * @remarks
- * - Remembers previously focused trigger before mounting.
- * - Manages ref-counted body scroll lock (`lockScroll: true`) to prevent nested unlock races.
- * - Auto-focuses custom selectors or callbacks (`autoFocusElement`).
- * - Restores focus to trigger or parent card on unmount.
- *
- * @param entry - TrailEntry configuration including focusLockOptions.
- * @param cardRef - React ref pointing to the card container element.
  */
 export function useCardFocusManagement(
   entry: TrailEntry,
@@ -75,10 +68,9 @@ export function useCardFocusManagement(
 ): void {
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
-  // Capture active element on mount and restore on unmount
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      previouslyFocusedElementRef.current = document.activeElement;
     }
     const cardElement = cardRef.current;
 
@@ -88,7 +80,6 @@ export function useCardFocusManagement(
     };
   }, [entry.parentKey, entry.focusLockOptions?.returnFocus, cardRef]);
 
-  // Handle autoFocusElement
   useEffect(() => {
     if (!entry.focusLockOptions?.autoFocusElement || typeof document === 'undefined') return;
     const autoFocus = entry.focusLockOptions.autoFocusElement;
@@ -104,7 +95,6 @@ export function useCardFocusManagement(
     }
   }, [entry.focusLockOptions, entry.focusLockOptions?.autoFocusElement]);
 
-  // Ref-counted scroll lock
   useEffect(() => {
     if (!entry.focusLockOptions?.lockScroll || typeof document === 'undefined') return;
 

@@ -70,12 +70,12 @@ describe('Type Safety Guards & Event Predicates', () => {
   });
 
   it('creates typed popover controller with bounded key operations', () => {
-    const store = createPopoverStore(async (key) => ({ key }));
-    const controller = createPopoverController<unknown, unknown, 'card-1' | 'card-2'>(
-      store as unknown as Parameters<
-        typeof createPopoverController<unknown, unknown, 'card-1' | 'card-2'>
-      >[0],
+    const store = createPopoverStore<unknown, unknown, 'card-1' | 'card-2'>(
+      async (key: string) => ({
+        key,
+      }),
     );
+    const controller = createPopoverController(store);
 
     expect(controller).toBeDefined();
     expect(typeof controller.closeByKey).toBe('function');
@@ -180,7 +180,7 @@ describe('Type Safety Guards & Event Predicates', () => {
     };
     expect(typeof onEventMap.listener).toBe('function');
 
-    const step: PopoverLib.PopoverTimelineStep<string> = {
+    const step: PopoverLib.ActiveTimelineStep<string> = {
       stepKey: 's1',
       entry: { key: 'k1', status: 'loading', isLoading: true, error: null, data: null },
       timestamp: 100,
@@ -195,10 +195,9 @@ describe('Type Safety Guards & Event Predicates', () => {
     expect(undone.stepKey).toBe('u1');
 
     const config: PopoverLib.PopoverConfig<string> = {
-      enableArrowNavigation: true,
-      debug: false,
+      closePinnedDescendants: true,
     };
-    expect(config.enableArrowNavigation).toBe(true);
+    expect(config.closePinnedDescendants).toBe(true);
 
     const tokens: PopoverLib.PopoverThemeTokens = {
       baseZIndex: 1000,

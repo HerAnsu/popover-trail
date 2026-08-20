@@ -9,14 +9,22 @@ export default {
     },
     schema: [],
     messages: {
-      suboptimalMiddlewareOrder: 'Floating UI middleware order may cause positioning jitter. Recommended: offset -> flip -> shift -> size.',
+      suboptimalMiddlewareOrder:
+        'Floating UI middleware order may cause positioning jitter. Recommended: offset -> flip -> shift -> size.',
     },
   },
   create(context) {
     return {
       Property(node) {
-        if (node.key && node.key.name === 'middleware' && node.value && node.value.type === 'ArrayExpression') {
-          const names = node.value.elements.map((el) => el.callee && el.callee.name).filter(Boolean);
+        if (
+          node.key &&
+          node.key.name === 'middleware' &&
+          node.value &&
+          node.value.type === 'ArrayExpression'
+        ) {
+          const names = node.value.elements
+            .map((el) => el.callee && el.callee.name)
+            .filter(Boolean);
           const flipIdx = names.indexOf('flip');
           const offsetIdx = names.indexOf('offset');
           if (flipIdx !== -1 && offsetIdx !== -1 && offsetIdx > flipIdx) {

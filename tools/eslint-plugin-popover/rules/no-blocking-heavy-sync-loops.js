@@ -9,16 +9,27 @@ export default {
     },
     schema: [],
     messages: {
-      heavySyncLoop: 'Deeply nested loops inside frame calculation pipelines may drop frames at 60/120 FPS.',
+      heavySyncLoop:
+        'Deeply nested loops inside frame calculation pipelines may drop frames at 60/120 FPS.',
     },
   },
   create(context) {
     let loopDepth = 0;
     return {
-      ForStatement() { loopDepth++; if (loopDepth >= 3) context.report({ node: arguments[0], messageId: 'heavySyncLoop' }); },
-      'ForStatement:exit'() { loopDepth--; },
-      WhileStatement() { loopDepth++; if (loopDepth >= 3) context.report({ node: arguments[0], messageId: 'heavySyncLoop' }); },
-      'WhileStatement:exit'() { loopDepth--; },
+      ForStatement() {
+        loopDepth++;
+        if (loopDepth >= 3) context.report({ node: arguments[0], messageId: 'heavySyncLoop' });
+      },
+      'ForStatement:exit'() {
+        loopDepth--;
+      },
+      WhileStatement() {
+        loopDepth++;
+        if (loopDepth >= 3) context.report({ node: arguments[0], messageId: 'heavySyncLoop' });
+      },
+      'WhileStatement:exit'() {
+        loopDepth--;
+      },
     };
   },
 };

@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage checking if target is object before using "in" operator on arbitrary unknown values.',
+      description:
+        'Encourage checking if target is object before using "in" operator on arbitrary unknown values.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestSafeInOperator: 'Using "in" operator on {{ target }} without null/object check can throw on primitives.',
+      suggestSafeInOperator:
+        'Using "in" operator on {{ target }} without null/object check can throw on primitives.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       BinaryExpression(node) {

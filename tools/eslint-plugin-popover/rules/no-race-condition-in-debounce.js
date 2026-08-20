@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      requireClearTimeoutBeforeDebounce: 'Clear previous timeout before scheduling next debounce to prevent race conditions.',
+      requireClearTimeoutBeforeDebounce:
+        'Clear previous timeout before scheduling next debounce to prevent race conditions.',
     },
   },
   create(context) {

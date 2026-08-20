@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      suggestTransformOrigin: 'Style transformOrigin "{{ value }}" should specify both X and Y axes.',
+      suggestTransformOrigin:
+        'Style transformOrigin "{{ value }}" should specify both X and Y axes.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       Property(node) {

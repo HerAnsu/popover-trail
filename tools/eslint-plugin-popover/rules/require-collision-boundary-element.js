@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce that collision boundary option is a valid Element, selector, or clippings/viewport string.',
+      description:
+        'Enforce that collision boundary option is a valid Element, selector, or clippings/viewport string.',
       category: 'Floating',
       recommended: true,
     },
     schema: [],
     messages: {
-      invalidBoundary: 'Collision boundary must be an Element, Document, "clippingsAncestors", or array of Elements.',
+      invalidBoundary:
+        'Collision boundary must be an Element, Document, "clippingsAncestors", or array of Elements.',
     },
   },
   create(context) {

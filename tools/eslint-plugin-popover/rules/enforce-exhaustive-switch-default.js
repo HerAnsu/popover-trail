@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce default: assertNever(...) branch in switch statements for exhaustive type checking.',
+      description:
+        'Enforce default: assertNever(...) branch in switch statements for exhaustive type checking.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireDefaultInSwitch: 'Switch statement on discriminated union should include a default exhaustive assertion branch.',
+      requireDefaultInSwitch:
+        'Switch statement on discriminated union should include a default exhaustive assertion branch.',
     },
   },
   create(context) {

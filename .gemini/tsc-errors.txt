@@ -1,0 +1,4 @@
+﻿src/lib/popover/store/cqrs.test.ts(33,4): error TS1005: ')' expected.
+src/lib/popover/store/cqrs.test.ts(35,2): error TS1005: ')' expected.
+src/lib/popover/store/cqrs.test.ts(180,1): error TS1128: Declaration or statement expected.
+src/lib/popover/store/cqrs.test.ts(180,2): error TS1128: Declaration or statement expected.

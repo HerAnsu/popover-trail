@@ -47,7 +47,7 @@ describe('triggerRegistry utility', () => {
   it('safely handles empty/null keys and reports size', () => {
     expect(TriggerRegistry.size).toBe(0);
     TriggerRegistry.register('', createMockElement());
-    TriggerRegistry.register('valid', null as unknown as HTMLElement);
+    TriggerRegistry.register('valid', null);
     expect(TriggerRegistry.size).toBe(0);
 
     const el = createMockElement();

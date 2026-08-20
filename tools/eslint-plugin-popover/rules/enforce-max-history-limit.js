@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      unboundedHistory: 'History buffer capacity should be capped with a maximum limit (maxHistory > 0).',
+      unboundedHistory:
+        'History buffer capacity should be capped with a maximum limit (maxHistory > 0).',
     },
   },
   create(context) {

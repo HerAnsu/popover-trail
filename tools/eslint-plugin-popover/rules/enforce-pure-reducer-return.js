@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      impureReducer: 'Reducer function in store should be pure and not call Math.random or Date.now.',
+      impureReducer:
+        'Reducer function in store should be pure and not call Math.random or Date.now.',
     },
   },
   create(context) {

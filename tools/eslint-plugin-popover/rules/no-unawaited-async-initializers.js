@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow calling async methods in class constructors without storing the initialization promise.',
+      description:
+        'Disallow calling async methods in class constructors without storing the initialization promise.',
       category: 'Concurrency',
       recommended: true,
     },
     schema: [],
     messages: {
-      noUntrackedAsyncInCtor: 'Do not invoke unawaited async method "{{ name }}" in constructor; use static async factory or store ready promise.',
+      noUntrackedAsyncInCtor:
+        'Do not invoke unawaited async method "{{ name }}" in constructor; use static async factory or store ready promise.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       MethodDefinition(node) {

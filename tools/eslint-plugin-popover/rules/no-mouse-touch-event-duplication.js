@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      duplicateTrigger: 'Direct dual binding of onMouseDown and onTouchStart without pointer events may cause dual triggers on mobile.',
+      duplicateTrigger:
+        'Direct dual binding of onMouseDown and onTouchStart without pointer events may cause dual triggers on mobile.',
     },
   },
   create(context) {

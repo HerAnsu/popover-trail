@@ -12,12 +12,18 @@ export default {
     },
     schema: [],
     messages: {
-      requireRoleDescription: 'Compound widget <{{ name }}> with role="{{ role }}" should provide an aria-roledescription.',
+      requireRoleDescription:
+        'Compound widget <{{ name }}> with role="{{ role }}" should provide an aria-roledescription.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('PopoverTimeline')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('PopoverTimeline')
+    )
+      return {};
 
     return {
       JSXElement(node) {
@@ -26,8 +32,14 @@ export default {
           node.openingElement.name &&
           node.openingElement.name.name === 'nav'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node.openingElement) : '';
-          if (src.includes('role="navigation"') && !src.includes('aria-roledescription') && !src.includes('aria-label')) {
+          const src = context.getSourceCode
+            ? context.getSourceCode().getText(node.openingElement)
+            : '';
+          if (
+            src.includes('role="navigation"') &&
+            !src.includes('aria-roledescription') &&
+            !src.includes('aria-label')
+          ) {
             context.report({
               node,
               messageId: 'requireRoleDescription',

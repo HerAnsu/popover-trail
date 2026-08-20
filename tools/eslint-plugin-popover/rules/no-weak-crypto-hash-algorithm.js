@@ -17,13 +17,22 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       Literal(node) {
         if (
           typeof node.value === 'string' &&
-          (node.value === 'MD5' || node.value === 'md5' || node.value === 'SHA-1' || node.value === 'sha1')
+          (node.value === 'MD5' ||
+            node.value === 'md5' ||
+            node.value === 'SHA-1' ||
+            node.value === 'sha1')
         ) {
           const parent = node.parent;
           if (parent && (parent.type === 'CallExpression' || parent.type === 'Property')) {

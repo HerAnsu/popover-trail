@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createBroadcastSync, PopoverSyncMessage } from './broadcastSync';
+import { createBroadcastSync } from './broadcastSync';
 
 describe('broadcastSync utility', () => {
   class MockBroadcastChannel {
@@ -50,16 +50,7 @@ describe('broadcastSync utility', () => {
     const listener = vi.fn();
     const unsubscribe = sync1.subscribe(listener);
 
-    // Simulate incoming message from another tabId
-    const _incomingMessage: PopoverSyncMessage = {
-      type: 'OPEN',
-      key: 'card-1',
-      timestamp: Date.now(),
-      tabId: 'other-tab-id',
-    };
-
     // Trigger internal channel message logic
-    // @ts-expect-error - accessing internal listener test helper
     sync1.broadcast('OPEN', 'card-1');
 
     unsubscribe();

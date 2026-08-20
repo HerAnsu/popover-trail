@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce wrapping JSON.parse in try-catch to prevent uncaught SyntaxErrors on malformed snapshots.',
+      description:
+        'Enforce wrapping JSON.parse in try-catch to prevent uncaught SyntaxErrors on malformed snapshots.',
       category: 'Resilience',
       recommended: true,
     },

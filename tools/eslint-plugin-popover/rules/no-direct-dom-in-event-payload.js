@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow passing raw HTMLElement instances inside event bus payloads; pass string keys or serializable bounds instead.',
+      description:
+        'Disallow passing raw HTMLElement instances inside event bus payloads; pass string keys or serializable bounds instead.',
       category: 'Architecture',
       recommended: true,
     },
     schema: [],
     messages: {
-      noDomInPayload: 'Do not include raw DOM Element in EventBus payload. Use popover key or serialized rect.',
+      noDomInPayload:
+        'Do not include raw DOM Element in EventBus payload. Use popover key or serialized rect.',
     },
   },
   create(context) {
@@ -33,7 +35,9 @@ export default {
           for (const prop of props) {
             if (
               prop.key &&
-              (prop.key.name === 'element' || prop.key.name === 'targetElement' || prop.key.name === 'domNode')
+              (prop.key.name === 'element' ||
+                prop.key.name === 'targetElement' ||
+                prop.key.name === 'domNode')
             ) {
               context.report({
                 node: prop,

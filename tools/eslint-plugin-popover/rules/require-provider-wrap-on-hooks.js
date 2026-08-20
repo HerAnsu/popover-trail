@@ -25,7 +25,11 @@ export default {
         ) {
           const src = context.getSourceCode ? context.getSourceCode().getText(node.parent) : '';
           if (src.includes('undefined') && !src.includes('throw')) {
-            context.report({ node, messageId: 'providerRequired', data: { hook: 'usePopoverContext' } });
+            context.report({
+              node,
+              messageId: 'providerRequired',
+              data: { hook: 'usePopoverContext' },
+            });
           }
         }
       },

@@ -1,22 +1,19 @@
 /**
  * Close and Hierarchy Cleanup State Reducers for popover-trail store.
- * Decomposed following Clean Code guidelines (Single Responsibility, Step-Down Rule).
  *
  * @module store/reducers/closeReducers
  */
 
-import type { TrailEntry, PopoverStateData } from '../../types';
+import type { TrailEntry, PopoverStateData, StatePatch } from '../../types';
 import { getAllDescendants, getCleanupStatePatch } from './stackReducers';
+import type { PopoverDAG } from '../../utils/dag';
 
-/**
- * Helper extracting direct popover keys slated for closure based on index position.
- */
-function getDirectClosedKeys<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
+function getDirectClosedKeys<TData, TPopoverKey extends string = string>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
   index: number,
   isFloating: boolean,
-): string[] {
+): TPopoverKey[] {
   if (isFloating) {
     const entry = floating[index];
     return entry ? [entry.key] : [];
@@ -25,11 +22,11 @@ function getDirectClosedKeys<TData>(
   return trail.slice(trailIndex).map((e) => e.key);
 }
 
-function shouldIncludeDescendant(
-  key: string,
+function shouldIncludeDescendant<TPopoverKey extends string = string>(
+  key: TPopoverKey,
   closePinnedDescendants: boolean,
-  pinnedStates?: Record<string, boolean>,
-  floatingSet?: Set<string>,
+  pinnedStates?: Readonly<Partial<Record<TPopoverKey, boolean>>>,
+  floatingSet?: Set<TPopoverKey>,
 ): boolean {
   if (closePinnedDescendants) return true;
   if (pinnedStates) return !pinnedStates[key];
@@ -37,18 +34,22 @@ function shouldIncludeDescendant(
   return true;
 }
 
-/**
- * Helper resolving full set of closed keys including child descendants.
- */
-function resolveAllRemovedKeys<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
-  directClosedKeys: string[],
+function resolveAllRemovedKeys<TData, TPopoverKey extends string = string>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
+  directClosedKeys: TPopoverKey[],
   closePinnedDescendants: boolean,
-  pinnedStates?: Record<string, boolean>,
-): Set<string> {
-  const result = new Set<string>(directClosedKeys);
-  const descendants = getAllDescendants(directClosedKeys, floating, trail);
+  pinnedStates?: Readonly<Partial<Record<TPopoverKey, boolean>>>,
+  dag?: PopoverDAG<TPopoverKey>,
+): Set<TPopoverKey> {
+  const result = new Set<TPopoverKey>(directClosedKeys);
+  const descendants = getAllDescendants<TData, TPopoverKey>(
+    directClosedKeys,
+    floating,
+    trail,
+    false,
+    dag,
+  );
   const floatingSet =
     !closePinnedDescendants && !pinnedStates && floating.length > 0
       ? new Set(floating.map((e) => e.key))
@@ -65,21 +66,12 @@ function resolveAllRemovedKeys<TData>(
 
 /**
  * Pure state reducer computing next state when closing popover cards from a target index.
- *
- * @remarks
- * Recursively identifies all descendants in the DAG tree. If `closePinnedDescendants` is false,
- * detached floating/pinned descendants are preserved while trailing nodes are dismissed.
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @param state - Current reactive store state.
- * @param index - Combined index of card where closing starts.
- * @returns Partial state patch with cleaned up trail, floating, and offsets.
  */
-export function closeFromState<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
+export function closeFromState<TData, TContext, TPopoverKey extends string = string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
   index: number,
-): Partial<PopoverStateData<TData, TContext>> {
+  dag?: PopoverDAG<TPopoverKey>,
+): StatePatch<TData, TContext, TPopoverKey> {
   const totalCount = state.floating.length + state.trail.length;
   if (index < 0 || index >= totalCount) return {};
 
@@ -93,17 +85,18 @@ export function closeFromState<TData, TContext>(
     directClosedKeys,
     state.closePinnedDescendants,
     state.pinnedStates,
+    dag,
   );
 
   const nextFloating = state.floating.filter((e) => !removedKeys.has(e.key));
   const nextTrail = state.trail.filter((e) => !removedKeys.has(e.key));
 
-  const nextPinnedStates = { ...state.pinnedStates };
+  const nextPinnedStates: Partial<Record<TPopoverKey, boolean>> = { ...state.pinnedStates };
   for (const key of removedKeys) {
     nextPinnedStates[key] = false;
   }
 
-  const cleanupPatch = getCleanupStatePatch<TData, TContext>(
+  const cleanupPatch = getCleanupStatePatch<TData, TContext, TPopoverKey>(
     nextFloating,
     nextTrail,
     state.offsets,
@@ -122,13 +115,14 @@ export function closeFromState<TData, TContext>(
 /**
  * Computes the set of popover keys to remove when closing from a target index.
  */
-export function getRemovedKeysForClose<TData>(
-  floating: readonly TrailEntry<TData>[],
-  trail: readonly TrailEntry<TData>[],
+export function getRemovedKeysForClose<TData, TPopoverKey extends string = string>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
   index: number,
   closePinnedDescendants: boolean,
-  pinnedStates?: Record<string, boolean>,
-): { isFloating: boolean; removedKeys: Set<string> } | null {
+  pinnedStates?: Readonly<Partial<Record<TPopoverKey, boolean>>>,
+  dag?: PopoverDAG<TPopoverKey>,
+): { isFloating: boolean; removedKeys: Set<TPopoverKey> } | null {
   const totalCount = floating.length + trail.length;
   if (index < 0 || index >= totalCount) return null;
 
@@ -140,6 +134,7 @@ export function getRemovedKeysForClose<TData>(
     directClosedKeys,
     closePinnedDescendants,
     pinnedStates,
+    dag,
   );
 
   return {

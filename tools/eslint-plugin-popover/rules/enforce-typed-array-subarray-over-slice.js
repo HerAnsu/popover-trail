@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend TypedArray.subarray() instead of slice() to avoid copying underlying buffer memory.',
+      description:
+        'Recommend TypedArray.subarray() instead of slice() to avoid copying underlying buffer memory.',
       category: 'Performance',
       recommended: true,
     },
@@ -17,7 +18,13 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       CallExpression(node) {

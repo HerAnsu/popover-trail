@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      requireBoundedCache: 'Internal cache Map should have a MAX_SIZE check or LRU eviction to prevent unbounded memory growth.',
+      requireBoundedCache:
+        'Internal cache Map should have a MAX_SIZE check or LRU eviction to prevent unbounded memory growth.',
     },
   },
   create(context) {
@@ -23,7 +24,12 @@ export default {
       ClassDeclaration(node) {
         if (node.id && node.id.name.includes('Cache')) {
           const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
-          if (body && !body.includes('maxSize') && !body.includes('capacity') && !body.includes('size >=')) {
+          if (
+            body &&
+            !body.includes('maxSize') &&
+            !body.includes('capacity') &&
+            !body.includes('size >=')
+          ) {
             context.report({
               node,
               messageId: 'requireBoundedCache',

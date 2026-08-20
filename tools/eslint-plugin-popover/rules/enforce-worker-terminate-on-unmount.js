@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      missingTerminate: 'Dedicated Web Worker instance should be terminated via `worker.terminate()` in cleanup.',
+      missingTerminate:
+        'Dedicated Web Worker instance should be terminated via `worker.terminate()` in cleanup.',
     },
   },
   create(context) {

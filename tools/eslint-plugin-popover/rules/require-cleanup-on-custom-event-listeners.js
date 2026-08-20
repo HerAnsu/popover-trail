@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce that store and event bus subscription methods return an unsubscribe function.',
+      description:
+        'Enforce that store and event bus subscription methods return an unsubscribe function.',
       category: 'Memory',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireUnsubscribeHandle: 'Subscription method {{ name }} should return an unsubscribe cleanup function.',
+      requireUnsubscribeHandle:
+        'Subscription method {{ name }} should return an unsubscribe cleanup function.',
     },
   },
   create(context) {
@@ -23,7 +25,12 @@ export default {
       MethodDefinition(node) {
         if (node.key && (node.key.name === 'subscribe' || node.key.name === 'on')) {
           const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
-          if (body && !body.includes('return () =>') && !body.includes('return () => {') && !body.includes('return function')) {
+          if (
+            body &&
+            !body.includes('return () =>') &&
+            !body.includes('return () => {') &&
+            !body.includes('return function')
+          ) {
             context.report({
               node,
               messageId: 'requireUnsubscribeHandle',

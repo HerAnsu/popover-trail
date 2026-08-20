@@ -87,55 +87,40 @@ function composeEventHandlers<E extends React.SyntheticEvent>(
 }
 
 function useComposedTriggerHandlers(
-  triggerProps: Record<string, unknown>,
-  childProps?: Record<string, unknown>,
+  triggerProps: React.DOMAttributes<HTMLElement>,
+  childProps?: React.DOMAttributes<HTMLElement>,
 ) {
   const onClick = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      composeEventHandlers(
-        triggerProps.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
-        childProps?.onClick as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
-      )(e);
+      composeEventHandlers(triggerProps.onClick, childProps?.onClick)(e);
     },
     [triggerProps.onClick, childProps?.onClick],
   );
 
   const onMouseEnter = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      composeEventHandlers(
-        triggerProps.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
-        childProps?.onMouseEnter as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
-      )(e);
+      composeEventHandlers(triggerProps.onMouseEnter, childProps?.onMouseEnter)(e);
     },
     [triggerProps.onMouseEnter, childProps?.onMouseEnter],
   );
 
   const onMouseLeave = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      composeEventHandlers(
-        triggerProps.onMouseLeave as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
-        childProps?.onMouseLeave as ((e: React.MouseEvent<HTMLElement>) => void) | undefined,
-      )(e);
+      composeEventHandlers(triggerProps.onMouseLeave, childProps?.onMouseLeave)(e);
     },
     [triggerProps.onMouseLeave, childProps?.onMouseLeave],
   );
 
   const onKeyDown = React.useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
-      composeEventHandlers(
-        triggerProps.onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined,
-        childProps?.onKeyDown as ((e: React.KeyboardEvent<HTMLElement>) => void) | undefined,
-      )(e);
+      composeEventHandlers(triggerProps.onKeyDown, childProps?.onKeyDown)(e);
     },
     [triggerProps.onKeyDown, childProps?.onKeyDown],
   );
 
   const onFocus = React.useCallback(
     (e: React.FocusEvent<HTMLElement>) => {
-      composeEventHandlers(
-        triggerProps.onFocus as ((e: React.FocusEvent<HTMLElement>) => void) | undefined,
-        childProps?.onFocus as ((e: React.FocusEvent<HTMLElement>) => void) | undefined,
-      )(e);
+      composeEventHandlers(triggerProps.onFocus, childProps?.onFocus)(e);
     },
     [triggerProps.onFocus, childProps?.onFocus],
   );
@@ -168,22 +153,30 @@ function renderFunctionChild(
   return children(fullProps);
 }
 
+function extractChildProps(child: React.ReactElement | null): Record<string, unknown> {
+  if (child && typeof child.props === 'object' && child.props !== null) {
+    return { ...child.props };
+  }
+  return {};
+}
+
 function renderElementChild(
-  validChild: React.ReactElement<Record<string, unknown>>,
+  validChild: React.ReactElement,
   triggerProps: Record<string, unknown>,
   isOpen: boolean,
   activeClassName?: string,
   handlers?: Record<string, unknown>,
   mergedRef?: React.Ref<HTMLElement>,
 ) {
+  const childProps = extractChildProps(validChild);
   const mergedProps = {
     'aria-haspopup': 'dialog',
     'aria-expanded': isOpen,
     ...triggerProps,
-    ...validChild.props,
+    ...childProps,
     className:
       clsx(
-        typeof validChild.props.className === 'string' ? validChild.props.className : undefined,
+        typeof childProps.className === 'string' ? childProps.className : undefined,
         isOpen && activeClassName,
       ) || undefined,
     ...handlers,
@@ -212,12 +205,15 @@ function TriggerRenderer({
   children: React.ReactElement | ((props: PopoverTriggerChildProps) => React.ReactNode);
 }) {
   const isFunctionChild = typeof children === 'function';
-  const child = isFunctionChild
-    ? null
-    : (React.Children.only(children) as React.ReactElement<Record<string, unknown>>);
-
-  const handlers = useComposedTriggerHandlers(triggerProps, child?.props);
+  const validChild = isFunctionChild ? null : React.Children.only(children);
+  const childRef =
+    validChild && React.isValidElement(validChild) && 'ref' in validChild
+      ? (validChild.ref as React.Ref<HTMLElement>)
+      : undefined;
+  const childProps = extractChildProps(validChild);
   const nodeRef = useRef<HTMLElement | null>(null);
+  const handlers = useComposedTriggerHandlers(triggerProps, childProps);
+  const mergedRef = useMergedRef(nodeRef, childRef);
 
   useEffect(() => {
     const el = nodeRef.current;
@@ -229,18 +225,22 @@ function TriggerRenderer({
     };
   }, [popoverKey]);
 
-  const childRef =
-    typeof children !== 'function' && React.isValidElement(children)
-      ? (children as React.ReactElement<Record<string, unknown>> & { ref?: React.Ref<unknown> }).ref
-      : undefined;
-  const mergedRef = useMergedRef(nodeRef, childRef);
-
   if (typeof children === 'function') {
     return renderFunctionChild(children, triggerProps, isOpen, activeClassName, mergedRef);
   }
 
-  const validChild = React.Children.only(children) as React.ReactElement<Record<string, unknown>>;
-  return renderElementChild(validChild, triggerProps, isOpen, activeClassName, handlers, mergedRef);
+  if (validChild) {
+    return renderElementChild(
+      validChild,
+      triggerProps,
+      isOpen,
+      activeClassName,
+      handlers,
+      mergedRef,
+    );
+  }
+
+  return null;
 }
 
 /**

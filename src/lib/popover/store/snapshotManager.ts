@@ -6,8 +6,10 @@
  * @module snapshotManager
  */
 
-import { validateStorageKey } from '../utils/devWarnings';
+import { validateStorageKey } from '../validators';
 import { generateTabId } from '../utils/uuid';
+import { wrapResult, isOk, isErr } from '../utils/result';
+import { DISPOSE_SYMBOL } from '../utils/disposable';
 
 /** Current schema version tag for stored snapshot payloads. */
 const SNAPSHOT_VERSION = '1.0.3';
@@ -57,6 +59,10 @@ export interface SnapshotManagerOptions<TData = unknown> {
   deserialize?: (raw: string) => PopoverSnapshotData<TData>;
 }
 
+function isRecord(val: unknown): val is Record<string, unknown> {
+  return typeof val === 'object' && val !== null && !Array.isArray(val);
+}
+
 function areKeysSafe(keys: Iterable<unknown>): boolean {
   for (const key of keys) {
     if (typeof key !== 'string' || UNSAFE_KEYS_SET.has(key)) return false;
@@ -67,23 +73,35 @@ function areKeysSafe(keys: Iterable<unknown>): boolean {
 function isSnapshotMessageEvent<TData>(
   event: Event,
 ): event is MessageEvent<PopoverSnapshotData<TData>> {
-  if (typeof event !== 'object' || event === null || !('data' in event)) return false;
-  const d = (event as MessageEvent).data;
-  return (
-    typeof d === 'object' &&
-    d !== null &&
-    Array.isArray((d as Record<string, unknown>).trailKeys) &&
-    Array.isArray((d as Record<string, unknown>).pinnedKeys)
-  );
+  if (typeof MessageEvent !== 'undefined' && event instanceof MessageEvent) {
+    const d = event.data;
+    return (
+      typeof d === 'object' &&
+      d !== null &&
+      'trailKeys' in d &&
+      Array.isArray(d.trailKeys) &&
+      'pinnedKeys' in d &&
+      Array.isArray(d.pinnedKeys)
+    );
+  }
+  if ('data' in event) {
+    const d = event.data;
+    return (
+      typeof d === 'object' &&
+      d !== null &&
+      'trailKeys' in d &&
+      Array.isArray(d.trailKeys) &&
+      'pinnedKeys' in d &&
+      Array.isArray(d.pinnedKeys)
+    );
+  }
+  return false;
 }
 
 /** Keys that are rejected unconditionally to prevent prototype pollution vulnerability attacks. */
 const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
 
 const DEFAULT_SNAPSHOT_STORAGE_KEY = 'pt_popover_trail_snapshot';
-
-const DISPOSE_SYMBOL: symbol =
-  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
 
 /**
  * Sanitizes serialized payload data objects:
@@ -136,15 +154,13 @@ function sanitizeOffsets(
 function isPayloadSafe(payloads: unknown): boolean {
   if (payloads === undefined) return true;
   if (typeof payloads !== 'object' || payloads === null) return false;
-  return areKeysSafe(Object.keys(payloads as object));
+  return areKeysSafe(Object.keys(payloads));
 }
 
 function areSnapshotKeysValid(trailKeys: unknown, pinnedKeys: unknown, offsets: unknown): boolean {
   if (!Array.isArray(trailKeys) || !Array.isArray(pinnedKeys)) return false;
   if (typeof offsets !== 'object' || offsets === null) return false;
-  return (
-    areKeysSafe(trailKeys) && areKeysSafe(pinnedKeys) && areKeysSafe(Object.keys(offsets as object))
-  );
+  return areKeysSafe(trailKeys) && areKeysSafe(pinnedKeys) && areKeysSafe(Object.keys(offsets));
 }
 
 /**
@@ -171,8 +187,9 @@ export class PopoverSnapshotManager<TData = unknown> {
     this.deserializer = options.deserialize;
 
     if (options.enableBroadcastChannel && typeof BroadcastChannel !== 'undefined') {
-      try {
-        const channel = new BroadcastChannel(`${this.storageKey}_channel`);
+      const channelResult = wrapResult(() => new BroadcastChannel(`${this.storageKey}_channel`));
+      if (isOk(channelResult)) {
+        const channel = channelResult.data;
         this.broadcastChannel = channel;
         this.messageHandler = (event: Event) => {
           if (
@@ -181,15 +198,17 @@ export class PopoverSnapshotManager<TData = unknown> {
             event.data.tabId !== this.tabId &&
             this.onSnapshotRestored
           ) {
-            try {
-              this.onSnapshotRestored(event.data);
-            } catch (err) {
-              console.warn('[SnapshotManager] Error executing onSnapshotRestored handler:', err);
+            const restoreResult = wrapResult(() => this.onSnapshotRestored?.(event.data));
+            if (isErr(restoreResult)) {
+              console.warn(
+                '[SnapshotManager] Error executing onSnapshotRestored handler:',
+                restoreResult.error,
+              );
             }
           }
         };
         channel.addEventListener('message', this.messageHandler);
-      } catch {
+      } else {
         this.broadcastChannel = null;
       }
     }
@@ -222,20 +241,21 @@ export class PopoverSnapshotManager<TData = unknown> {
    */
   saveSnapshot(snapshot: PopoverSnapshotData<TData>): void {
     if (this.storageType !== 'none' && typeof window !== 'undefined') {
-      try {
-        const storage = window[this.storageType];
+      const writeResult = wrapResult(() => {
+        const storage =
+          this.storageType === 'localStorage' ? window.localStorage : window.sessionStorage;
         const raw = this.serializer ? this.serializer(snapshot) : JSON.stringify(snapshot);
         storage.setItem(this.storageKey, raw);
-      } catch (err) {
-        console.warn('[SnapshotManager] Failed to write snapshot to storage:', err);
+      });
+      if (isErr(writeResult)) {
+        console.warn('[SnapshotManager] Failed to write snapshot to storage:', writeResult.error);
       }
     }
 
     if (this.broadcastChannel) {
-      try {
-        this.broadcastChannel.postMessage(snapshot);
-      } catch (err) {
-        console.warn('[SnapshotManager] BroadcastChannel sync failed:', err);
+      const postResult = wrapResult(() => this.broadcastChannel?.postMessage(snapshot));
+      if (isErr(postResult)) {
+        console.warn('[SnapshotManager] BroadcastChannel sync failed:', postResult.error);
       }
     }
   }
@@ -244,11 +264,10 @@ export class PopoverSnapshotManager<TData = unknown> {
    * Type predicate validating snapshot structure and protecting against prototype pollution.
    */
   private isValidSnapshot(data: unknown): data is PopoverSnapshotData<TData> {
-    if (typeof data !== 'object' || data === null) return false;
-    const record = data as Record<string, unknown>;
-    if (record.version !== SNAPSHOT_VERSION) return false;
-    if (!areSnapshotKeysValid(record.trailKeys, record.pinnedKeys, record.offsets)) return false;
-    return isPayloadSafe(record.payloads);
+    if (!isRecord(data)) return false;
+    if (data.version !== SNAPSHOT_VERSION) return false;
+    if (!areSnapshotKeysValid(data.trailKeys, data.pinnedKeys, data.offsets)) return false;
+    return isPayloadSafe(data.payloads);
   }
 
   /**
@@ -259,15 +278,20 @@ export class PopoverSnapshotManager<TData = unknown> {
   loadSnapshot(): PopoverSnapshotData<TData> | null {
     if (this.storageType === 'none' || typeof window === 'undefined') return null;
 
-    try {
-      const storage = window[this.storageType];
+    const loadResult = wrapResult(() => {
+      const storage =
+        this.storageType === 'localStorage' ? window.localStorage : window.sessionStorage;
       const raw = storage.getItem(this.storageKey);
       if (!raw) return null;
-      const parsed: unknown = this.deserializer ? this.deserializer(raw) : JSON.parse(raw);
-      return this.isValidSnapshot(parsed) ? parsed : null;
-    } catch {
-      return null;
-    }
+      try {
+        const parsed: unknown = this.deserializer ? this.deserializer(raw) : JSON.parse(raw);
+        return this.isValidSnapshot(parsed) ? parsed : null;
+      } catch {
+        return null;
+      }
+    });
+
+    return isOk(loadResult) ? loadResult.data : null;
   }
 
   /**
@@ -275,12 +299,11 @@ export class PopoverSnapshotManager<TData = unknown> {
    */
   clearSnapshot(): void {
     if (this.storageType !== 'none' && typeof window !== 'undefined') {
-      try {
-        const storage = window[this.storageType];
+      wrapResult(() => {
+        const storage =
+          this.storageType === 'localStorage' ? window.localStorage : window.sessionStorage;
         storage.removeItem(this.storageKey);
-      } catch {
-        // Ignore storage removal errors
-      }
+      });
     }
   }
 

@@ -1,76 +1,94 @@
 /**
  * Command Query Responsibility Segregation (CQRS) Dispatcher Wrappers for popover-trail.
- * Explicitly separates read-only Query Selectors from state-mutating Command Dispatchers.
  *
  * @module cqrs
  */
 
 import type { StoreApi } from 'zustand/vanilla';
-import type { PopoverStore, PopoverActions, PopoverStateData } from '../types/storeTypes';
+import type {
+  PopoverStore,
+  PopoverActions,
+  PopoverStateData,
+  AnchorEventLike,
+  OpenRootOptions,
+  OpenNestedOptions,
+  DefaultDataMap,
+  ResolveDataFromMap,
+} from '../types';
 import type { TrailEntry } from '../types/entryTypes';
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
 import { findEntryInStore } from '../utils/storeHelpers';
-import { selectTopmostEntry } from './storeSelectors';
+import {
+  selectTopmostEntry,
+  selectParentKey,
+  selectChildrenKeys,
+  selectBreadcrumbs,
+  selectPopoverDepth,
+  selectTrailBranch,
+} from './storeSelectors';
+import { DISPOSE_SYMBOL } from '../utils/disposable';
 
 const ZERO_OFFSET = Object.freeze({ x: 0, y: 0 });
 
+function isStoreApi<TStore>(value: unknown): value is StoreApi<TStore> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'getState' in value &&
+    typeof value.getState === 'function'
+  );
+}
+
 /**
- * Read-Only Query Bus wrapping PopoverStore.
- * Provides guaranteed 100% side-effect-free state queries, getters, and computed metrics.
+ * Query Bus providing read-only, declarative access to popover store state and derived selectors.
  *
  * @template TData - Resolved data payload type.
  * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover keys.
+ * @template TPopoverKey - Popover key union type.
+ * @template TDataMap - Map of keys to specific data payload types.
  */
 export class PopoverQueryBus<
   TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
   TPopoverKey extends string = RegisteredKeys,
+  TDataMap extends Record<string, unknown> = DefaultDataMap<TPopoverKey, TData>,
 > {
-  private readonly getStoreState: () => PopoverStateData<TData, TContext>;
+  private readonly getStoreState: () => PopoverStateData<TData, TContext, TPopoverKey>;
 
-  constructor(getStoreState: () => PopoverStateData<TData, TContext>) {
+  constructor(getStoreState: () => PopoverStateData<TData, TContext, TPopoverKey>) {
     this.getStoreState = getStoreState;
   }
 
-  /** Read-only active trailing cascade cards array. */
-  get trail(): readonly TrailEntry<TData>[] {
+  get trail(): readonly TrailEntry<TData, TPopoverKey>[] {
     return this.getStoreState().trail;
   }
 
-  /** Read-only pinned floating window cards array. */
-  get floating(): readonly TrailEntry<TData>[] {
+  get floating(): readonly TrailEntry<TData, TPopoverKey>[] {
     return this.getStoreState().floating;
   }
 
-  /** Unique owner trigger identifier for the active root trail. */
   get ownerId(): string | null {
     return this.getStoreState().ownerId;
   }
 
-  /** Global shared context object. */
   get context(): TContext | null {
     return this.getStoreState().context;
   }
 
-  /** Topological z-index stacking key order array. */
-  get zIndexOrder(): readonly string[] {
+  get zIndexOrder(): readonly TPopoverKey[] {
     return this.getStoreState().zIndexOrder;
   }
 
-  /** Total count of all currently active (trailing + floating) popovers. */
   get activeCount(): number {
     const s = this.getStoreState();
     return s.trail.length + s.floating.length;
   }
 
-  /** True if no popover cards are currently active. */
   get isIdle(): boolean {
     const s = this.getStoreState();
     return s.trail.length === 0 && s.floating.length === 0;
   }
 
-  /** Discriminated high-level status of the store. */
   get discriminatedStatus(): 'idle' | 'active-trail' | 'pinned-only' {
     const s = this.getStoreState();
     if (s.trail.length > 0) return 'active-trail';
@@ -78,65 +96,115 @@ export class PopoverQueryBus<
     return 'idle';
   }
 
-  /** Topmost active card in the stacking order. */
-  get topmost(): TrailEntry<TData> | undefined {
+  get topmost(): TrailEntry<TData, TPopoverKey> | undefined {
     return selectTopmostEntry(this.getStoreState());
   }
 
-  /** Root card that initiated the active cascade trail. */
-  get root(): TrailEntry<TData> | undefined {
+  get root(): TrailEntry<TData, TPopoverKey> | undefined {
     return this.getStoreState().trail[0];
   }
 
-  /** Retrieves a specific trail entry by key if active. */
-  getEntry(key: TPopoverKey): TrailEntry<TData> | undefined {
-    const state = this.getStoreState();
-    return findEntryInStore(state.floating, state.trail, key);
+  get snapshot(): {
+    trail: readonly TrailEntry<TData, TPopoverKey>[];
+    floating: readonly TrailEntry<TData, TPopoverKey>[];
+    offsets: Readonly<Partial<Record<TPopoverKey, Readonly<{ x: number; y: number }>>>>;
+    pinnedStates: Readonly<Partial<Record<TPopoverKey, boolean>>>;
+    zIndexOrder: readonly TPopoverKey[];
+    ownerId: string | null;
+  } {
+    const s = this.getStoreState();
+    return {
+      trail: s.trail,
+      floating: s.floating,
+      offsets: s.offsets,
+      pinnedStates: s.pinnedStates,
+      zIndexOrder: s.zIndexOrder,
+      ownerId: s.ownerId,
+    };
   }
 
-  /** Returns true if a specific popover key is currently open. */
+  getEntry<K extends TPopoverKey>(
+    key: K,
+  ): TrailEntry<ResolveDataFromMap<TDataMap, K, TData>, TPopoverKey> | undefined {
+    const state = this.getStoreState();
+    return findEntryInStore(state.floating, state.trail, key) as
+      | TrailEntry<ResolveDataFromMap<TDataMap, K, TData>, TPopoverKey>
+      | undefined;
+  }
+
   hasEntry(key: TPopoverKey): boolean {
     const state = this.getStoreState();
     return Boolean(findEntryInStore(state.floating, state.trail, key));
   }
 
-  /** Returns true if a specific popover is currently resolving async data. */
+  isOpen(key: TPopoverKey): boolean {
+    return this.hasEntry(key);
+  }
+
   isLoading(key: TPopoverKey): boolean {
     const state = this.getStoreState();
     return Boolean(findEntryInStore(state.floating, state.trail, key)?.isLoading);
   }
 
-  /** Returns the resolution Error object for a key, or null if healthy. */
   getError(key: TPopoverKey): Error | null {
     const state = this.getStoreState();
     return findEntryInStore(state.floating, state.trail, key)?.error ?? null;
   }
 
-  /** Returns the resolved data payload for a key, or null if not yet resolved. */
-  getData(key: TPopoverKey): TData | null {
+  /**
+   * Type-safe data accessor that automatically infers exact data payload from TDataMap.
+   */
+  getData<K extends TPopoverKey>(key: K): ResolveDataFromMap<TDataMap, K, TData> | null {
     const state = this.getStoreState();
-    return findEntryInStore(state.floating, state.trail, key)?.data ?? null;
+    const entry = findEntryInStore(state.floating, state.trail, key);
+    return (entry?.data as ResolveDataFromMap<TDataMap, K, TData>) ?? null;
   }
 
-  /** Returns true if a specific popover is detached as a pinned floating window. */
   isPinned(key: TPopoverKey): boolean {
     const states = this.getStoreState().pinnedStates;
-    return typeof key === 'string' && Object.hasOwn(states, key) ? Boolean(states[key]) : false;
+    return Object.hasOwn(states, key) ? Boolean(states[key]) : false;
   }
 
-  /** Returns current drag offset coordinates { x, y } in pixels for a given key. */
+  isTopmost(key: TPopoverKey): boolean {
+    const order = this.getStoreState().zIndexOrder;
+    return order.length > 0 && order.at(-1) === key;
+  }
+
   getOffset(key: TPopoverKey): { x: number; y: number } {
     return this.getStoreState().offsets[key] ?? ZERO_OFFSET;
   }
+
+  getParent(key: TPopoverKey): TPopoverKey | undefined {
+    return selectParentKey<TPopoverKey>(key)(this.getStoreState());
+  }
+
+  getChildren(key: TPopoverKey): readonly TPopoverKey[] {
+    return selectChildrenKeys<TPopoverKey>(key)(this.getStoreState());
+  }
+
+  getBreadcrumbs(key: TPopoverKey): readonly TPopoverKey[] {
+    return selectBreadcrumbs<TPopoverKey>(key)(this.getStoreState());
+  }
+
+  getBranch(key: TPopoverKey): readonly TrailEntry<TData, TPopoverKey>[] {
+    return selectTrailBranch<TData, TPopoverKey>(key)(this.getStoreState());
+  }
+
+  getDepth(key: TPopoverKey): number {
+    return selectPopoverDepth(key)(this.getStoreState());
+  }
+
+  dispose(): void {}
+
+  [DISPOSE_SYMBOL](): void {}
 }
 
 /**
- * Side-Effecting Command Bus wrapping PopoverActions dispatchers.
- * Dispatches state-mutating actions (open, close, pin, drag, undo/redo).
+ * Command Bus providing imperative dispatch actions for popover lifecycle and history operations.
  *
  * @template TData - Resolved data payload type.
  * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover keys.
+ * @template TPopoverKey - Popover key union type.
  */
 export class PopoverCommandBus<
   TData = RegisteredDataMap[RegisteredKeys],
@@ -154,109 +222,154 @@ export class PopoverCommandBus<
       typeof actionsOrGetter === 'function' ? actionsOrGetter : () => actionsOrGetter;
   }
 
-  /** Opens a new root popover card. */
-  openRoot(ownerId: string, entry: TrailEntry<TData>): void {
+  openRoot(ownerId: string, entry: TrailEntry<TData, TPopoverKey>): void {
     this.getActions().openRoot(ownerId, entry);
   }
 
-  /** Pushes a nested child popover card onto the active trail. */
-  openNested(index: number, entry: TrailEntry<TData>): void {
+  openNested(index: number, entry: TrailEntry<TData, TPopoverKey>): void {
     this.getActions().pushNested(index, entry);
   }
 
-  /** Closes a popover card by key along with its descendant subtree. */
-  close(key: TPopoverKey): void {
-    this.getActions().closeByKey(key);
+  async openRootWithResolver(
+    keyOrName: TPopoverKey,
+    anchorEvent?: AnchorEventLike,
+    options?: Readonly<OpenRootOptions>,
+  ): Promise<void> {
+    await this.getActions().openRootWithResolver(keyOrName, anchorEvent, options);
   }
 
-  /** Closes all open popovers (both trailing and pinned). */
+  async openNestedWithResolver(
+    keyOrName: TPopoverKey,
+    sourceKey: TPopoverKey,
+    options?: Readonly<OpenNestedOptions>,
+  ): Promise<void> {
+    await this.getActions().openNestedWithResolver(keyOrName, sourceKey, options);
+  }
+
+  close(key: TPopoverKey, options?: { transition?: boolean }): void {
+    this.getActions().closeByKey(key, options);
+  }
+
+  closeTopmost(options?: { transition?: boolean }): void {
+    this.getActions().closeTopmost(options);
+  }
+
+  clearTrail(): void {
+    this.getActions().clearTrail();
+  }
+
   clearAll(): void {
     this.getActions().closeAll();
   }
 
-  /** Toggles a card between trailing stack and pinned floating window. */
   togglePin(key: TPopoverKey, rect?: DOMRect): void {
     this.getActions().togglePin(key, rect);
   }
 
-  /** Elevates a card to the highest visual layer in the stacking order. */
   bringToFront(key: TPopoverKey): void {
     this.getActions().bringToFront(key);
   }
 
-  /** Updates the persistent drag translation coordinates for a card. */
   updateOffset(key: TPopoverKey, x: number, y: number): void {
     this.getActions().updateOffset(key, x, y);
   }
 
-  /** Reverts to the previous recorded history snapshot. */
+  async retry(key: TPopoverKey): Promise<void> {
+    await this.getActions().retryPopover(key);
+  }
+
+  async prefetch(key: TPopoverKey, parentData?: TData): Promise<TData | undefined> {
+    return this.getActions().prefetchPopover(key, parentData);
+  }
+
+  async invalidate(keyOrKeys: TPopoverKey | readonly TPopoverKey[]): Promise<void> {
+    await this.getActions().invalidate(keyOrKeys);
+  }
+
+  subscribeKey(
+    key: TPopoverKey,
+    listener: (
+      entry: TrailEntry<TData, TPopoverKey> | undefined,
+      prevEntry: TrailEntry<TData, TPopoverKey> | undefined,
+    ) => void,
+  ): () => void {
+    return this.getActions().subscribeKey(key, listener);
+  }
+
   undo(): void {
     this.getActions().undo();
   }
 
-  /** Re-applies the next recorded history snapshot. */
   redo(): void {
     this.getActions().redo();
   }
 
-  /** Clears all cards and resets the bus. */
+  batch(fn: (bus: PopoverCommandBus<TData, TContext, TPopoverKey>) => void): void {
+    this.getActions().batchUpdates(() => {
+      fn(this);
+    });
+  }
+
+  transition(fn: (bus: PopoverCommandBus<TData, TContext, TPopoverKey>) => void): void {
+    this.getActions().runTransition(() => {
+      fn(this);
+    });
+  }
+
   dispose(): void {
     this.clearAll();
+  }
+
+  [DISPOSE_SYMBOL](): void {
+    this.dispose();
   }
 }
 
 /**
- * Factory creating paired CQRS QueryBus and CommandBus instances for a popover store instance.
+ * Creates paired Query and Command buses for CQRS architecture over a popover store.
  *
- * @remarks
- * Decouples read queries from write mutations. Ideal for domain services, telemetry monitors,
- * or background orchestration scripts that should not accidentally trigger store updates.
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Popover key union type.
+ * @template TDataMap - Map of keys to specific data payload types.
+ * @param storeOrApi - PopoverStore instance, Zustand StoreApi, or getter function.
+ * @returns Object with `{ queryBus, commandBus }`.
  *
  * @example
  * ```typescript
  * const { queryBus, commandBus } = createCQRSBuses(store);
- *
- * // Read-only query
- * console.log('Active count:', queryBus.activeCount);
- * console.log('Is idle:', queryBus.isIdle);
- *
- * // Command dispatch
- * commandBus.close('user-card');
+ * console.log(queryBus.isOpen('user'));
+ * commandBus.close('user');
  * ```
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover keys.
- * @param storeOrApi - Store instance, StoreApi, or dynamic getState accessor function.
- * @returns Object containing `queryBus` and `commandBus`.
  */
 export function createCQRSBuses<
-  TData = RegisteredDataMap[RegisteredKeys],
+  TData = unknown,
   TContext = unknown,
-  TPopoverKey extends string = RegisteredKeys,
+  TPopoverKey extends string = string,
+  TDataMap extends Record<string, unknown> = Record<string, never>,
 >(
   storeOrApi:
     | PopoverStore<TData, TContext, TPopoverKey>
     | StoreApi<PopoverStore<TData, TContext, TPopoverKey>>
     | (() => PopoverStore<TData, TContext, TPopoverKey>),
 ): {
-  queryBus: PopoverQueryBus<TData, TContext, TPopoverKey>;
+  queryBus: PopoverQueryBus<TData, TContext, TPopoverKey, TDataMap>;
   commandBus: PopoverCommandBus<TData, TContext, TPopoverKey>;
 } {
   const getState = (): PopoverStore<TData, TContext, TPopoverKey> => {
     if (typeof storeOrApi === 'function') {
       return storeOrApi();
     }
-    if ('getState' in storeOrApi && typeof storeOrApi.getState === 'function') {
+    if (isStoreApi<PopoverStore<TData, TContext, TPopoverKey>>(storeOrApi)) {
       return storeOrApi.getState();
     }
-    return storeOrApi as PopoverStore<TData, TContext, TPopoverKey>;
+    return storeOrApi;
   };
 
   const getActions = (): PopoverActions<TData, TContext, TPopoverKey> => getState().actions;
 
   return {
-    queryBus: new PopoverQueryBus(getState),
-    commandBus: new PopoverCommandBus(getActions),
+    queryBus: new PopoverQueryBus<TData, TContext, TPopoverKey, TDataMap>(getState),
+    commandBus: new PopoverCommandBus<TData, TContext, TPopoverKey>(getActions),
   };
 }

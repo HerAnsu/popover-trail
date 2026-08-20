@@ -66,7 +66,7 @@ export class DockedBottomLayoutStrategy implements PopoverLayoutStrategyEngine {
 export class DockedTopLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'docked-top';
 
-  computePosition(): Point2D {
+  computePosition(_params: LayoutStrategyParams): Point2D {
     return Point2D.zero();
   }
 }

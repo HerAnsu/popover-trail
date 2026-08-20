@@ -12,12 +12,18 @@ export default {
     },
     schema: [],
     messages: {
-      requireHistoryLimit: 'HistoryManager initialization should configure a maximum stack size limit.',
+      requireHistoryLimit:
+        'HistoryManager initialization should configure a maximum stack size limit.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('history')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('history')
+    )
+      return {};
 
     return {
       NewExpression(node) {

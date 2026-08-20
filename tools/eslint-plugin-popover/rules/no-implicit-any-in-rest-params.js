@@ -12,18 +12,26 @@ export default {
     },
     schema: [],
     messages: {
-      requireRestParamType: 'Rest parameter "...{{ name }}" must have an explicit type annotation (e.g. unknown[]).',
+      requireRestParamType:
+        'Rest parameter "...{{ name }}" must have an explicit type annotation (e.g. unknown[]).',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       RestElement(node) {
         if (
           node.parent &&
-          (node.parent.type === 'FunctionDeclaration' || node.parent.type === 'FunctionExpression') &&
+          (node.parent.type === 'FunctionDeclaration' ||
+            node.parent.type === 'FunctionExpression') &&
           !node.typeAnnotation &&
           node.argument &&
           node.argument.type === 'Identifier' &&

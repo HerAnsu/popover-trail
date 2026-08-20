@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce pure state transformations in reducers by disallowing fetch or timer side effects.',
+      description:
+        'Enforce pure state transformations in reducers by disallowing fetch or timer side effects.',
       category: 'Store Purity',
       recommended: true,
     },
     schema: [],
     messages: {
-      noSideEffectsInReducer: 'Reducer function must be pure and synchronous; side-effect {{ method }} is forbidden.',
+      noSideEffectsInReducer:
+        'Reducer function must be pure and synchronous; side-effect {{ method }} is forbidden.',
     },
   },
   create(context) {

@@ -5,9 +5,34 @@ All notable changes to the `popover-trail` package will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-20
+
+### Added
+- **Typed schema builder (`createPopoverSchema`)**: Added `createPopoverSchema` and `defineSchemaNode` for building type-safe popover cascades with automatic type inference for resolved data, parents, children, and breadcrumbs. Generates node-specific hooks (`useData`, `useEntry`, `usePopover`, `useBreadcrumbs`, `useChildren`, `useParent`, `useDepth`, `useIsOpen`, `useIsPinned`, `useIsTopMost`, `useIsLoading`) and actions.
+- **React 19 action hooks**: Added `usePopoverAction` for React 19 Server Actions and Transitions, and `usePopoverOptimistic` for optimistic updates with automatic fallback adapters for React 18 (`useCrossVersionActionState`, `useCrossVersionOptimistic`).
+- **Transition scheduler (`TransitionScheduler`)**: Added centralized transition coordinator with `ScopeDisposable` resource cleanup to manage mounting and unmounting animations without detached timer leaks.
+- **Object pool (`ObjectPool`)**: Added reusable object pool for 2D points and bounding boxes to reduce GC pauses during high-frequency drag gestures and QuadTree collision checks.
+- **Theme tokens (`themeTokens.ts`)**: Added CSS custom property injector supporting scoped theme tokens and cleanup handles via `[Symbol.dispose]`.
+- **Memory leak sentinel (`memorySentinel.ts`)**: Added development-time tracking of detached popover DOM elements using `FinalizationRegistry`.
+- **Branded types and validation**: Added `PopoverKey`, `OwnerId`, and `DOMRectLike` branded types, along with runtime assertions (`assertValidPopoverKey`, `assertValidRect`) and type guards (`isResolvedEntry`, `isLoadingEntry`, `isErrorEntry`).
+
+### Refactored
+- **Strict type system**: Removed all `any` and double-casts (`as unknown as`) across store slices, actions, and hooks in favor of generics and discriminated unions.
+- **Data resolver pipeline**: Split `storeResolverPipeline.ts` into isolated modules (`pipelineCache.ts`, `pipelineExecution.ts`, `resolverTypes.ts`). `invokeResolverSafely` now handles both positional `(key, parentData, context, signal)` and object `({ key, parentData, context, signal })` resolver signatures without redundant re-invocations on error.
+- **Store persistence and cleanup**: Extracted state sanitization, serialization, and transactional rollbacks into `persistenceHelpers.ts`. Unified `clear`, `closeAll`, and `clearTrail` state patches in `sliceTrail.ts`.
+- **Card store selectors**: Refactored `useCardStoreSlice.ts` with explicit `CardStoreSliceData` interfaces and granular property selectors to minimize unnecessary re-renders.
+- **RingBuffer history**: Replaced unbounded arrays in `history.ts` with a bounded `RingBuffer` for undo/redo state snapshots.
+- **Documentation**: Added JSDoc comments across all public exports and internal store utilities with `@template`, `@param`, `@returns`, and `@example` snippets.
+
+### Tests & Verification
+- Expanded test suite to **526 passing tests** across **87 test files**.
+- 0 lint errors across 520 files (oxlint).
+- 0 TypeScript compilation errors.
+
 ## [1.1.2] - 2026-08-13
 
 ### Refactored & Code Quality
+
 - **React Doctor & Accessibility Polish**:
   - Replaced custom dialog structures with HTML5 `<dialog>` element in `dnd.tsx`, preserving native accessibility and dialog semantics.
   - Eliminated ref mutations during render across animation and geometry hooks (`useGeometry.ts`, `useDragAndDrop.ts`).
@@ -44,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Maintained Maintainability Index score of **91.5 (Good)** and React Doctor score of **100 / 100 Great**.
 
 ### Tests & Verification
+
 - **Test Suite Expansion**:
   - Added comprehensive stress, concurrency, and edge-case suites in `storeStressAndEdgeCases.test.ts`.
   - Added complete CQRS `PopoverQueryBus` and `PopoverCommandBus` property and method test coverage.
@@ -53,11 +79,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.1] - 2026-08-13
 
 ### Fixed
+
 - **Drag-and-Drop Tilt Physics (`dnd.tsx`)**: Fixed missing `cardRef` in `usePopoverDragAndDrop` call inside `usePopoverDraggableCard`, restoring element-level spring rotation angle mutations (`--pt-rotate-z`) during drag gestures.
 - **Store Subscription Deduplication (`PopoverTrigger.tsx`, `usePopoverTriggers.ts`)**: Added optional `explicitIsOpen` parameter to `usePopoverTrigger` and `usePopoverNestedTrigger` to skip duplicate store state subscriptions in trigger inner components.
 - **Stable Click-Outside Event Listeners (`useClickOutside.ts`)**: Ref-wrapped `shouldIgnoreClick` callback to prevent capture-phase document event listeners from detaching and re-attaching on inline function updates.
 
 ### Performance & Memory Optimizations
+
 - **Zero-Dependency `equalityFn` Store Selector Memoization (`usePopoverStore.ts`)**: Implemented a pure, zero-dependency ref-memoized selector mechanism inside `usePopoverStore` compatible with Zustand 5 and React 18/19 Concurrent Mode, preventing unnecessary component re-renders when using custom equality functions (e.g. `shallowEqual`).
 - **Batched Geometry Store Selectors (`useGeometry.ts`)**: Consolidated 4 separate `usePopoverStore` selector calls into a single batched pass with `shallowEqual`.
 - **Render & Prop Sync Optimizations (`usePopoverPropSync.ts`, `PopoverPortal.tsx`, `PopoverTrail.tsx`)**:
@@ -66,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ref-wrapped `filter` callback in `PopoverTrail.tsx` to avoid array re-filtering on parent re-renders.
 
 ### Refactored & Standards
+
 - **React 19 Internal Dispatcher Support (`factory.tsx`, `usePopoverSelectors.ts`)**: Added support for React 19 `__CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED` fallback alongside `__SECRET_INTERNALS...`.
 - **Sub-Component Decoupling (`componentUtils.ts`)**: Centralized `getPolymorphicProps` and `createSubComponentClickHandler` into `utils/componentUtils.ts`, resolving sibling dependency between `PopoverCardPinButton` and `PopoverCardCloseButton`.
 - **Explicit Resource Management Cleanups (`broadcastSync.ts`, `disposable.ts`)**: Cleaned up `Symbol.dispose ?? Symbol.for('Symbol.dispose')` fallback declarations.
@@ -73,6 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2026-08-13
 
 ### Fixed & Hardened
+
 - **React 19 Rules of Hooks in Portal**: Resolved hook order mismatch in `PopoverPortal.tsx` by moving `useMemo` above conditional return checks.
 - **CQRS QueryBus Dynamism**: Fixed stale initial state capture in `createCQRSBuses` by providing dynamic store state evaluation getters (`getState()`).
 - **Resolver Pipeline & Cancellation**: Fixed aborted promise leakage in `inFlightPromises` to prevent stale promise reuse upon re-resolution.
@@ -81,12 +111,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **V8 Hidden Classes Protection**: Replaced `delete` key loops in `storeHydration.ts` with safe property clearing to preserve V8 fast-mode hidden classes.
 
 ### Performance & Memory Optimizations
+
 - **Re-render Cascade Prevention**: Memoized scope objects in `usePopoverCard` and `usePopoverTimeline`, preventing unnecessary re-renders across all compound card & timeline subcomponents.
 - **QuadTree $O(N)$ Rebalancing**: Replaced `splice` inside QuadTree redistribution loops with linear array filtering, reducing spatial partitioning complexity from $O(N^2)$ to $O(N)$.
 - **Zero-Allocation Close Resolvers**: Optimized pinned popover checking in `closeReducers.ts` using direct $O(1)$ `pinnedStates[key]` reads without `new Set()` allocations.
 - **Integer Coordinate Hashing**: Enhanced coordinate bitwise hashing in `styles.ts` using `Math.round` and `Math.imul` to prevent float truncation hash collisions.
 
 ### Refactored & Standards
+
 - **React 19 Context & Ref Alignment**: Migrated all Context Providers (`PopoverProvider`, `PopoverCard`, `PopoverTimeline`, `dnd`) to native React 19 `<Context value={...}>` syntax and direct `ref` prop passing.
 - **TS 5.2+ Resource Management**: Added `[Symbol.dispose]` / `[DISPOSE_SYMBOL]` explicit resource disposal handles across `PopoverSnapshotManager`, `BroadcastSync`, and `WorkerResolver`.
 - **DRY Modules**: Centralized session ID generation into `uuid.ts` and polymorphic button helpers into `componentUtils.ts`.
@@ -95,6 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.9] - 2026-08-12
 
 ### Fixed
+
 - **React 18/19 StrictMode Compatibility**: Replaced destructive `destroy()` store cleanup with non-destructive `reset()` on Provider unmount.
 - **Canvas DND Indexing**: Fixed virtual index inversion in `PopoverCanvas` so floating entries receive indices `0 ... floating.length - 1`.
 - **Style Math & Rotation Safety**: Fixed potential `.toFixed(2)` runtime type errors by sanitizing rotation angles.
@@ -102,6 +135,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Memory Sentinel**: Fixed event listener leak in `BroadcastChannel` sync on channel disposal.
 
 ### Refactored
+
 - **Function Composition & Decomposition**: Decomposed heavy nested ternaries and repetitive prop spreads across 16 core areas (`dnd.tsx`, `pinReducers`, polymorphic components, `useGeometry`, `snapshotManager`, `history`).
 - **Object Merging**: Replaced 30 inline fallback ternaries in `createTrailEntry` with a clean `mergeEntryOptions` strategy.
 - **Placement Strategies**: Replaced placement `switch-case` branches with a lookup map (`PLACEMENT_OFFSET_STRATEGIES`).
@@ -109,6 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.8] - 2026-08-09
 
 ### Refactored
+
 - **Code Cleanliness & Type Safety**:
   - Eliminated all non-null assertion operators (`!`) across hooks and helper functions.
   - Refactored `handleCardKeyboardNavigation` to use a safe options object pattern with default fallbacks.

@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow direct invocation of potentially non-function optional chained properties.',
+      description:
+        'Disallow direct invocation of potentially non-function optional chained properties.',
       category: 'Type Safety',
       recommended: true,
     },
@@ -21,11 +22,7 @@ export default {
 
     return {
       CallExpression(node) {
-        if (
-          node.callee &&
-          node.callee.type === 'ChainExpression' &&
-          !node.optional
-        ) {
+        if (node.callee && node.callee.type === 'ChainExpression' && !node.optional) {
           context.report({
             node,
             messageId: 'unsafeOptionalCall',

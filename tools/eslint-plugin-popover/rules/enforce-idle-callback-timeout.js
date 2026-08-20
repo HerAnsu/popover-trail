@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend passing { timeout: ... } to requestIdleCallback to ensure callback fires under heavy load.',
+      description:
+        'Recommend passing { timeout: ... } to requestIdleCallback to ensure callback fires under heavy load.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestIdleTimeout: 'Pass a { timeout: number } options object as second argument to requestIdleCallback.',
+      suggestIdleTimeout:
+        'Pass a { timeout: number } options object as second argument to requestIdleCallback.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       CallExpression(node) {

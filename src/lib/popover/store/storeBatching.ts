@@ -1,37 +1,56 @@
 /**
- * Store Batching Manager for popover-trail.
- * Manages atomic batching updates and subscriber notification suppression.
+ * High-Performance Store Batching & Microtask Coalescing Engine for popover-trail.
+ * Automatically coalesces multiple synchronous state mutations into a single subscriber notification
+ * via queueMicrotask using the Single Master Dispatcher pattern.
  *
  * @module storeBatching
  */
 
 import type { StoreApi } from 'zustand/vanilla';
-import type { PopoverStore } from '../types';
+import { wrapResult, isErr } from '../utils/result';
+import { DISPOSE_SYMBOL } from '../utils/disposable';
 
-/**
- * Manager interface coordinating atomic batch updates and subscriber notification suppression.
- */
+export type BatchListener<TState = unknown> = (state: TState, prevState: TState) => void;
+
 export interface BatchingManager {
-  /** Increments batching depth and begins notification suppression. */
   startBatch: () => void;
-  /** Decrements batching depth and flushes dirty notifications if top-level batch finished. */
   endBatch: (getState?: () => unknown) => void;
-  /** Attaches batching awareness to a Zustand store's subscriber mechanism. */
-  attachSubscriber: <TData, TContext, TPopoverKey extends string>(
-    store: StoreApi<PopoverStore<TData, TContext, TPopoverKey>>,
-  ) => void;
+  flushSync: (getState?: () => unknown) => void;
+  attachSubscriber: <TState = unknown>(store: StoreApi<TState>) => void;
+  dispose: () => void;
+  [DISPOSE_SYMBOL]?: () => void;
 }
 
-/**
- * Executes a callback within an atomic batch update scope, suppressing subscriber notifications
- * until the entire batch finishes, then emitting a single consolidated update.
- *
- * @template R - Return value type of the batched function.
- * @param manager - Batching manager instance.
- * @param fn - Synchronous callback executing multiple store updates.
- * @param getState - Optional getter function to retrieve latest state snapshot.
- * @returns The exact value returned by `fn()`.
- */
+function scheduleMicrotask(callback: () => void): void {
+  if (typeof queueMicrotask === 'function') {
+    queueMicrotask(callback);
+  } else if (typeof requestAnimationFrame !== 'undefined') {
+    requestAnimationFrame(() => {
+      callback();
+    });
+  } else {
+    void (async () => {
+      await Promise.resolve();
+      callback();
+    })().catch((err: unknown) => {
+      console.error('[popover-trail]: Microtask execution error:', err);
+    });
+  }
+}
+
+function notifyBatchSubscribers(
+  listeners: Set<BatchListener>,
+  currentState: unknown,
+  previousState: unknown,
+): void {
+  for (const listener of listeners) {
+    const notifyResult = wrapResult(() => listener(currentState, previousState));
+    if (isErr(notifyResult)) {
+      console.error('[popover-trail]: Exception in batch subscriber listener:', notifyResult.error);
+    }
+  }
+}
+
 export function batchUpdatesScope<R>(
   manager: BatchingManager,
   fn: () => R,
@@ -46,97 +65,143 @@ export function batchUpdatesScope<R>(
 }
 
 /**
- * Instantiates a batching manager instance coordinating batching depth
- * and subscriber notification suppression during batch updates.
+ * Creates a state batching manager instance.
+ *
+ * @param autoBatchMicrotasks - If true, automatically batches synchronous updates within a single microtask turn.
  */
-type BatchListener = (state: unknown, prevState: unknown) => void;
-
-function notifyBatchSubscribers(
-  listeners: Set<BatchListener>,
-  getState?: () => unknown,
-  initialBatchState?: unknown,
-): void {
-  if (!getState) return;
-  const currentState = getState();
-  const prevStateToUse = initialBatchState ?? currentState;
-  for (const listener of listeners) {
-    try {
-      listener(currentState, prevStateToUse);
-    } catch (err) {
-      console.error('[popover-trail]: Exception in subscriber:', err);
-    }
-  }
-}
-
-export function createBatchingManager(): BatchingManager {
-  let batchDepth = 0;
+export function createBatchingManager(autoBatchMicrotasks = true): BatchingManager {
   let isBatchDirty = false;
+  let batchDepth = 0;
+  let isMicrotaskQueued = false;
+  let isDisposed = false;
   let initialBatchState: unknown = undefined;
+  let activeGetState: (() => unknown) | undefined = undefined;
+  let masterUnsubscribe: (() => void) | null = null;
+
   const batchListeners = new Set<BatchListener>();
 
-  return {
+  const flush = (getState?: () => unknown) => {
+    isMicrotaskQueued = false;
+    if (isDisposed || batchDepth > 0) return;
+
+    const getter = getState ?? activeGetState;
+    if (isBatchDirty && getter) {
+      isBatchDirty = false;
+      const currentState = getter();
+      const prevStateToUse = initialBatchState ?? currentState;
+      initialBatchState = undefined;
+      notifyBatchSubscribers(batchListeners, currentState, prevStateToUse);
+    } else {
+      initialBatchState = undefined;
+    }
+  };
+
+  const manager: BatchingManager = {
     startBatch: () => {
       if (batchDepth === 0) {
         isBatchDirty = false;
       }
       batchDepth++;
     },
+
     endBatch: (getState?: () => unknown) => {
       if (batchDepth > 0) {
         batchDepth--;
       }
       if (batchDepth === 0) {
-        if (isBatchDirty) {
-          isBatchDirty = false;
-          notifyBatchSubscribers(batchListeners, getState, initialBatchState);
-        }
-        initialBatchState = undefined;
+        flush(getState);
       }
     },
-    attachSubscriber: <TData, TContext, TPopoverKey extends string>(
-      store: StoreApi<PopoverStore<TData, TContext, TPopoverKey>>,
-    ) => {
-      // Typed alias scoped to this call's generics — no `as` casts needed
-      type TypedListener = (
-        state: PopoverStore<TData, TContext, TPopoverKey>,
-        prevState: PopoverStore<TData, TContext, TPopoverKey>,
-      ) => void;
+
+    flushSync: (getState?: () => unknown) => {
+      flush(getState);
+    },
+
+    attachSubscriber: <TState = unknown>(store: StoreApi<TState>) => {
+      activeGetState = store.getState.bind(store);
 
       const rawSubscribe = store.subscribe.bind(store);
 
+      masterUnsubscribe = rawSubscribe((state, prevState) => {
+        if (isDisposed) return;
+
+        if (initialBatchState === undefined) {
+          initialBatchState = prevState;
+        }
+        isBatchDirty = true;
+
+        if (batchDepth > 0) {
+          return;
+        }
+
+        if (autoBatchMicrotasks) {
+          if (!isMicrotaskQueued) {
+            isMicrotaskQueued = true;
+            scheduleMicrotask(() => {
+              flush(store.getState);
+            });
+          }
+          return;
+        }
+
+        const currentState = state;
+        const previousState = initialBatchState ?? prevState;
+        initialBatchState = undefined;
+        isBatchDirty = false;
+        notifyBatchSubscribers(batchListeners, currentState, previousState);
+      });
+
+      type TypedListener = (state: TState, prevState: TState) => void;
+      interface ZustandSubscribeWithSelector<S> {
+        (listener: (state: S, prevState: S) => void): () => void;
+        <T>(
+          listener: (selectedState: T) => void,
+          selector: (state: S) => T,
+          equalityFn?: (a: T, b: T) => boolean,
+        ): () => void;
+      }
+
       store.subscribe = ((listener: unknown, selector?: unknown, equalityFn?: unknown) => {
         if (typeof selector === 'function') {
-          return (rawSubscribe as Function)(listener, selector, equalityFn);
+          const subscribeWithSelector = rawSubscribe as ZustandSubscribeWithSelector<TState>;
+          return subscribeWithSelector(
+            listener as (selectedState: unknown) => void,
+            selector as (state: TState) => unknown,
+            equalityFn as ((a: unknown, b: unknown) => boolean) | undefined,
+          );
         }
+
         const typedListener = listener as TypedListener;
         const handler: BatchListener = (s, p) => {
           if (s !== undefined && p !== undefined) {
-            typedListener(
-              s as PopoverStore<TData, TContext, TPopoverKey>,
-              p as PopoverStore<TData, TContext, TPopoverKey>,
-            );
+            typedListener(s as TState, p as TState);
           }
         };
+
         batchListeners.add(handler);
-        const unsubRaw = rawSubscribe((state, prevState) => {
-          if (batchDepth > 0) {
-            if (initialBatchState === undefined) {
-              initialBatchState = prevState;
-            }
-            isBatchDirty = true;
-            return;
-          }
-          try {
-            typedListener(state, prevState);
-          } catch (err) {
-            console.error('[popover-trail]: Exception in subscriber:', err);
-          }
-        });
+
         return () => {
           batchListeners.delete(handler);
-          unsubRaw();
         };
       }) as typeof store.subscribe;
     },
+
+    dispose: () => {
+      isDisposed = true;
+      isMicrotaskQueued = false;
+      isBatchDirty = false;
+      initialBatchState = undefined;
+      batchListeners.clear();
+      if (masterUnsubscribe) {
+        masterUnsubscribe();
+        masterUnsubscribe = null;
+      }
+    },
+
+    [DISPOSE_SYMBOL]: () => {
+      manager.dispose();
+    },
   };
+
+  return manager;
 }

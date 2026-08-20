@@ -124,8 +124,8 @@ describe('QuadTree utility', () => {
 
   it('safely ignores null or invalid items and supports dispose', () => {
     const tree = new QuadTree({ x: 0, y: 0, width: 500, height: 500 });
-    tree.insert(null as unknown as QuadItem);
-    tree.insert({ id: 'bad' } as unknown as QuadItem);
+    tree.insert(null);
+    tree.insert({ id: 'bad' });
     expect(tree.retrieve()).toHaveLength(0);
 
     tree.insert({ id: 'good', bounds: { x: 10, y: 10, width: 20, height: 20 } });

@@ -38,6 +38,7 @@ export function formatPopoverErrorMessage(
  * Custom Actionable Error class for PopoverTrail.
  * Includes error codes, remediation guidance hints, and optional underlying cause chaining.
  *
+ * @template TCode - Standardized error code identifier.
  * @remarks
  * Formats diagnostic messages with helpful remediation hints so developers immediately know how to fix issues.
  *
@@ -50,28 +51,30 @@ export function formatPopoverErrorMessage(
  * );
  * ```
  */
-export class PopoverError extends Error {
+export class PopoverError<TCode extends PopoverErrorCode = PopoverErrorCode> extends Error {
   public override readonly name = 'PopoverError';
-  public readonly code: PopoverErrorCode;
+  public readonly code: TCode;
   public override readonly cause?: unknown;
   public readonly remediationHint?: string;
 
-  constructor(code: PopoverErrorCode, message: string, remediationHint?: string, cause?: unknown) {
+  constructor(code: TCode, message: string, remediationHint?: string, cause?: unknown) {
     super(formatPopoverErrorMessage(code, message, remediationHint));
     this.code = code;
     this.remediationHint = remediationHint;
     this.cause = cause;
 
     // Maintain standard stack trace in V8 environments
-    const errorConstructor = Error as unknown as {
-      captureStackTrace?: (targetObject: object, constructorOpt?: Function) => void;
-    };
-    if (typeof errorConstructor.captureStackTrace === 'function') {
-      errorConstructor.captureStackTrace(this, PopoverError);
+    if ('captureStackTrace' in Error && typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, PopoverError);
     }
   }
 
   /** Checks if a given value is an instance of PopoverError, optionally narrowing to a specific error code. */
+  public static isPopoverError<C extends PopoverErrorCode>(
+    error: unknown,
+    code: C,
+  ): error is PopoverError<C>;
+  public static isPopoverError(error: unknown): error is PopoverError;
   public static isPopoverError(error: unknown, code?: PopoverErrorCode): error is PopoverError {
     if (!(error instanceof PopoverError)) {
       return false;
@@ -83,17 +86,18 @@ export class PopoverError extends Error {
 /**
  * Factory helper function to create standardized PopoverError instances with diagnostic hints.
  *
+ * @template TCode - Standardized error code identifier.
  * @param code - Standardized error code identifier.
  * @param message - Descriptive failure message.
  * @param remediationHint - Optional advice on resolving the problem.
  * @param cause - Optional root cause error object.
  * @returns PopoverError instance ready to throw or wrap.
  */
-export function createPopoverError(
-  code: PopoverErrorCode,
+export function createPopoverError<TCode extends PopoverErrorCode = PopoverErrorCode>(
+  code: TCode,
   message: string,
   remediationHint?: string,
   cause?: unknown,
-): PopoverError {
+): PopoverError<TCode> {
   return new PopoverError(code, message, remediationHint, cause);
 }

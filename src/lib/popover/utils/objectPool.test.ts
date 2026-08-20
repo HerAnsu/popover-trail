@@ -56,8 +56,8 @@ describe('ObjectPool utility', () => {
     const pool = new ObjectPool(() => ({ x: 0 }), undefined, 2);
     expect(pool.size).toBe(2);
 
-    pool.release(null as unknown as { x: number });
-    pool.release(undefined as unknown as { x: number });
+    pool.release(null);
+    pool.release(undefined);
     expect(pool.size).toBe(2);
 
     expect(() => pool.dispose()).not.toThrow();

@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      noJavascriptUrl: 'Do not use "javascript:" URLs in href attributes; use onClick handler instead.',
+      noJavascriptUrl:
+        'Do not use "javascript:" URLs in href attributes; use onClick handler instead.',
     },
   },
   create(context) {

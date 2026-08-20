@@ -20,13 +20,14 @@ import type {
   ZIndexBaseMap,
   PopoverSlotComponents,
   PopoverPersistConfig,
+  DeepReadonly,
 } from './configTypes';
 import type { PopoverStoreEvent } from './eventTypes';
-
 import type { StoreApi } from 'zustand/vanilla';
 import type { RegisteredKeys, RegisteredDataMap } from './registerTypes';
-import type { Brand, PopoverKey, ParentKey, StackGroupId, ZIndexDepth } from './branded';
-export type { Brand, PopoverKey, ParentKey, StackGroupId, ZIndexDepth };
+import type { Brand, StackGroupId } from './branded';
+
+export type { Brand, StackGroupId };
 
 export type ViewportX = Brand<number, 'ViewportX'>;
 export type ViewportY = Brand<number, 'ViewportY'>;
@@ -34,17 +35,54 @@ export type OwnerId = Brand<string, 'OwnerId'>;
 export type TabId = Brand<string, 'TabId'>;
 export type DragOffset = { x: number; y: number };
 
+/** Default mapped type associating popover keys with uniform TData payloads. */
+export type DefaultDataMap<TPopoverKey extends string = string, TData = unknown> = Record<
+  TPopoverKey,
+  TData
+>;
+
+/** Resolves data payload type for a specific key from a schema data map. */
+export type ResolveDataFromMap<
+  TDataMap,
+  K extends string,
+  TFallback = unknown,
+> = K extends keyof TDataMap ? TDataMap[K] : TFallback;
+
 /** Discriminated union representation of all state-modifying actions in popover-trail. */
-export type StoreActionPayload<TData = unknown, TContext = unknown> =
-  | { type: 'OPEN_ROOT'; key: string; rect?: DOMRect | null; options?: OpenRootOptions }
-  | { type: 'PUSH_NESTED'; key: string; parentKey: string; options?: OpenNestedOptions }
-  | { type: 'CLOSE_BY_KEY'; key: string }
-  | { type: 'TOGGLE_PIN'; key: string }
-  | { type: 'BRING_TO_FRONT'; key: string }
-  | { type: 'RESOLVE_SUCCESS'; key: string; data: TData }
-  | { type: 'RESOLVE_ERROR'; key: string; error: Error }
+export type StoreActionPayload<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> =
+  | { type: 'OPEN_ROOT'; key: TPopoverKey; rect?: DOMRect | null; options?: OpenRootOptions }
+  | { type: 'PUSH_NESTED'; key: TPopoverKey; parentKey: TPopoverKey; options?: OpenNestedOptions }
+  | { type: 'CLOSE_BY_KEY'; key: TPopoverKey; options?: { transition?: boolean } }
+  | { type: 'CLOSE_FROM'; index: number; options?: { transition?: boolean } }
+  | { type: 'CLOSE_TOPMOST'; options?: { transition?: boolean } }
+  | { type: 'CLOSE_ALL' }
+  | { type: 'CLEAR_TRAIL' }
+  | { type: 'TOGGLE_PIN'; key: TPopoverKey; rect?: DOMRect }
+  | { type: 'BRING_TO_FRONT'; key: TPopoverKey }
+  | { type: 'UPDATE_OFFSET'; key: TPopoverKey; offset: DragOffset }
+  | { type: 'RESOLVE_START'; key: TPopoverKey }
+  | { type: 'RESOLVE_SUCCESS'; key: TPopoverKey; data: TData }
+  | { type: 'RESOLVE_ERROR'; key: TPopoverKey; error: Error }
   | { type: 'SET_CONTEXT'; context: TContext }
+  | { type: 'SET_TRANSITION_STATUS'; key: TPopoverKey; status: PopoverTransitionStatus }
+  | { type: 'SET_DEBUG'; debug: boolean }
+  | { type: 'SET_BASE_Z_INDEX'; baseZIndex: number }
+  | { type: 'SET_CASCADE_OFFSET_STEP'; step: number }
+  | { type: 'SET_STACK_GROUP_FILTER'; stackGroup: StackGroupId | string | null }
+  | { type: 'SET_RESPONSIVE_MODE'; mode: PopoverResponsiveMode }
   | { type: 'RESET' };
+
+/** Helper extracting action payload structure by action type literal. */
+export type ExtractActionPayload<
+  TType extends StoreActionPayload['type'],
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> = Extract<StoreActionPayload<TData, TContext, TPopoverKey>, { type: TType }>;
 
 /** Alias type for PopoverStore state. */
 export type StoreState<
@@ -67,25 +105,43 @@ export type OnlyDataState<TState> = Omit<
 >;
 
 /** Store state setter callback type matching Zustand vanilla store API. */
-export type StoreSetFn<TData = unknown, TContext = unknown> = (
+export type StoreSetFn<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+  TSliceState extends object = object,
+> = (
   partial:
-    | Partial<PopoverStore<TData, TContext>>
-    | ((state: PopoverStore<TData, TContext>) => Partial<PopoverStore<TData, TContext>>),
+    | StatePatch<TData, TContext, TPopoverKey>
+    | Partial<TSliceState>
+    | ((
+        state: PopoverStore<TData, TContext, TPopoverKey> & TSliceState,
+      ) => StatePatch<TData, TContext, TPopoverKey> | Partial<TSliceState>),
   replace?: boolean,
 ) => void;
 
 /** Store state getter callback type matching Zustand vanilla store API. */
-export type StoreGetFn<TData = unknown, TContext = unknown> = () => PopoverStore<TData, TContext>;
+export type StoreGetFn<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+  TSliceState extends object = object,
+> = () => PopoverStore<TData, TContext, TPopoverKey> & TSliceState;
 
 /** Standard contract type for domain slice factory functions. */
-export type StoreSliceCreator<TSlice, TData = unknown, TContext = unknown> = (
-  set: StoreSetFn<TData, TContext>,
-  get: StoreGetFn<TData, TContext>,
+export type StoreSliceCreator<
+  TSlice,
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+  TSliceState extends object = object,
+> = (
+  set: StoreSetFn<TData, TContext, TPopoverKey, TSliceState>,
+  get: StoreGetFn<TData, TContext, TPopoverKey, TSliceState>,
 ) => TSlice;
 
 /**
  * Strongly typed store API wrapper bound to registered schema definitions.
- * Provides IDE autocompletion for registered popover keys and inferred payloads.
  */
 export interface TypedPopoverStoreApi<
   TData = RegisteredDataMap[RegisteredKeys],
@@ -104,61 +160,142 @@ export interface TypedPopoverStoreApi<
 }
 
 /**
- * Formal contract descriptor for modular store domain slices.
+ * Transforms a union type into an intersection type using contravariant argument position deduction.
  *
- * @template TSlice - Shape of domain slice actions and properties.
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
+ * @template U - Source union type.
  */
-export interface StoreSliceDescriptor<TSlice, TData = unknown, TContext = unknown> {
-  /** Name identifier of the slice domain module. */
+export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
+
+/**
+ * Formal contract descriptor for modular, extensible store domain slices (Open/Closed Principle).
+ *
+ * @template TSliceActions - Dictionary type of slice actions.
+ * @template TSliceState - Dictionary type of isolated slice state.
+ * @template TData - Type of data payload resolved by popover cards.
+ * @template TContext - Global application context type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ */
+export interface StoreSliceDescriptor<
+  TSliceActions extends object = object,
+  TSliceState extends object = object,
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
+  /** Unique domain name for the slice (e.g., 'analytics', 'workspaceLayout'). */
   readonly name: string;
-  /** Factory function instantiating slice actions bound to slice context container. */
+  /** Optional initial slice state merged immutably into the store state tree during initialization. */
+  readonly initialState?: Readonly<TSliceState>;
+  /** Action factory function receiving isolated dependency injection context. */
   readonly create: (
-    ctx: import('../store/slices/sliceContext').SliceContext<TData, TContext>,
-  ) => TSlice;
+    ctx: import('../store/slices/sliceContext').SliceContext<
+      TData,
+      TContext,
+      TPopoverKey,
+      TSliceState
+    >,
+  ) => TSliceActions;
+  /** Optional local middleware interceptor attached to the SafeSet pipeline. */
+  readonly middleware?: PopoverMiddleware<TData, TContext, TPopoverKey>;
+  /** Optional cleanup hook executed when the store is disposed or destroyed. */
+  readonly dispose?: (
+    ctx: import('../store/slices/sliceContext').SliceContext<
+      TData,
+      TContext,
+      TPopoverKey,
+      TSliceState
+    >,
+  ) => void;
 }
 
-/** Helper function defining a strongly typed domain store slice descriptor. */
-export function defineStoreSlice<TSlice, TData = unknown, TContext = unknown>(
-  descriptor: StoreSliceDescriptor<TSlice, TData, TContext>,
-): StoreSliceDescriptor<TSlice, TData, TContext> {
-  return descriptor;
+/**
+ * Type-safe declarative factory function creating a frozen StoreSliceDescriptor with full generic inference.
+ *
+ * @param descriptor - Slice descriptor configuration object.
+ * @returns Frozen immutable slice descriptor.
+ */
+export function defineStoreSlice<
+  TSliceActions extends object,
+  TSliceState extends object = object,
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  descriptor: StoreSliceDescriptor<TSliceActions, TSliceState, TData, TContext, TPopoverKey>,
+): StoreSliceDescriptor<TSliceActions, TSliceState, TData, TContext, TPopoverKey> {
+  return Object.freeze(descriptor);
 }
 
-/** Helper type recursively applying readonly modifier to all properties and nested objects. */
+/**
+ * Computes intersection of all action interfaces from a tuple of slice descriptors.
+ *
+ * @template TSlices - Tuple of StoreSliceDescriptor instances.
+ */
+export type InferSliceActionsFromTuple<TSlices> = TSlices extends readonly (infer S)[]
+  ? UnionToIntersection<
+      S extends StoreSliceDescriptor<
+        infer TActions,
+        infer _State,
+        infer _Data,
+        infer _Context,
+        infer _Key
+      >
+        ? TActions
+        : object
+    >
+  : object;
+
+/**
+ * Computes intersection of all state interfaces from a tuple of slice descriptors.
+ *
+ * @template TSlices - Tuple of StoreSliceDescriptor instances.
+ */
+export type InferSliceStateFromTuple<TSlices> = TSlices extends readonly (infer S)[]
+  ? UnionToIntersection<
+      S extends StoreSliceDescriptor<
+        infer _Actions,
+        infer TState,
+        infer _Data,
+        infer _Context,
+        infer _Key
+      >
+        ? TState
+        : object
+    >
+  : object;
+
 export type ReadonlyDeep<T> = T extends (...args: unknown[]) => unknown
   ? T
   : T extends object
     ? { readonly [P in keyof T]: ReadonlyDeep<T[P]> }
     : T;
 
-/** Domain-scoped template literal type for namespaced popover keys (e.g. 'user:profile'). */
 export type DomainPopoverKey<
   TDomain extends string = string,
   TName extends string = string,
 > = `${TDomain}:${TName}`;
 
-/**
- * A minimal event-like or element-like object accepted by `openRootWithResolver`
- * as the anchor source. Supports Floating UI VirtualElement, React synthetic events, or raw DOM elements.
- */
 export type AnchorEventLike =
   | VirtualElement
   | { currentTarget: HTMLElement; stopPropagation?: () => void }
   | { getBoundingClientRect: () => DOMRect; stopPropagation?: () => void };
 
-/**
- * Nominal interface representing a validated positioning anchor ref with guaranteed geometry bounds.
- */
 export interface ValidatedAnchorRef {
   readonly getBoundingClientRect: () => DOMRect;
   readonly currentTarget?: HTMLElement;
 }
 
-/**
- * Resolver callback type for lazy-loading/hydrating data for a popover card.
- */
+export interface ResolverParams<TParentData = unknown, TContext = unknown> {
+  key: string;
+  parentData?: TParentData;
+  context?: TContext;
+  signal: AbortSignal;
+}
+
 export type PopoverResolver<TData = unknown, TContext = unknown> = (
   keyOrName: string,
   parentData?: TData,
@@ -168,28 +305,12 @@ export type PopoverResolver<TData = unknown, TContext = unknown> = (
 
 export type InferResolverData<T> = T extends PopoverResolver<infer D, unknown> ? D : unknown;
 
-/**
- * Parameter object provided to cancellable async resolvers, guaranteeing a non-optional AbortSignal.
- */
-export interface ResolverParams<TParentData = unknown, TContext = unknown> {
-  key: string;
-  parentData?: TParentData;
-  context?: TContext;
-  signal: AbortSignal;
-}
-
-/**
- * Strict cancellable resolver callback accepting a single parameter object with non-optional AbortSignal.
- */
 export type CancellablePopoverResolver<
   TData = unknown,
   TParentData = unknown,
   TContext = unknown,
 > = (params: ResolverParams<TParentData, TContext>) => Promise<TData> | TData;
 
-/**
- * Custom popover cache provider interface.
- */
 export interface PopoverCache<TData = unknown> {
   get: (key: string) => TData | Promise<TData> | undefined;
   set: (key: string, value: TData, ttlMs?: number) => void;
@@ -200,90 +321,90 @@ export interface PopoverCache<TData = unknown> {
 }
 
 /**
- * The inner reactive state managed by the popover Zustand store.
+ * Reactive state snapshot containing active trails, pinned cards, positioning offsets, and store configuration.
  *
- * @remarks
- * Contains immutable state slices for active trailing cards (`trail`), detached floating windows (`floating`),
- * coordinate offsets (`offsets`), pinning map (`pinnedStates`), topological z-index depth order (`zIndexOrder`),
- * request race guards (`rootHydrationRequestCounter`, `nestedHydrationRequestCounters`), and responsive configuration.
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
+ * @template TData - Type of data payload associated with popover entries.
+ * @template TContext - Global external context type passed to resolvers and renderers.
+ * @template TPopoverKey - Union of valid popover string keys.
  */
-export interface PopoverStateData<TData = unknown, TContext = unknown> {
-  /** Incremental state revision number bumped on each committed state patch. */
+export interface PopoverStateData<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
+  /** Monotonically increasing revision counter tracking state updates. */
   readonly stateRevision: number;
-  /** Active cascade trail stack of cards, ordered from root (index 0) to leaf child. */
-  readonly trail: readonly TrailEntry<TData>[];
-  /** Detached floating/pinned popover cards independent of the cascade trail. */
-  readonly floating: readonly TrailEntry<TData>[];
-  /** Owner ID string identifying the trigger that initiated the root popover. */
+  /** Active hierarchical cascading trail stack (root at index 0, newest at end). */
+  readonly trail: readonly TrailEntry<TData, TPopoverKey>[];
+  /** Pinned and detached floating popover entries. */
+  readonly floating: readonly TrailEntry<TData, TPopoverKey>[];
+  /** Owner / trigger ID of the currently active trail root. */
   readonly ownerId: string | null;
-  /** Drag coordinate offsets (x, y) in pixels mapped by popover key. */
-  readonly offsets: Readonly<Record<string, Readonly<DragOffset>>>;
-  /** Record mapping popover keys to boolean pinned status. */
-  readonly pinnedStates: Readonly<Record<string, boolean>>;
-  /** Ordered list of active popover keys sorted from bottom to top z-index depth. */
-  readonly zIndexOrder: readonly string[];
-  /** Incremental counter for root hydration requests preventing async race conditions. */
+  /** Manual drag/position offsets per popover key. */
+  readonly offsets: Readonly<Partial<Record<TPopoverKey, Readonly<DragOffset>>>>;
+  /** Lookup map of pinned status per popover key. */
+  readonly pinnedStates: Readonly<Partial<Record<TPopoverKey, boolean>>>;
+  /** Visual stacking order from bottom to top. */
+  readonly zIndexOrder: readonly TPopoverKey[];
+  /** Counter tracking root hydration lifecycle triggers. */
   readonly rootHydrationRequestCounter: number;
-  /** Incremental counters for nested child hydration requests mapped by parent key. */
-  readonly nestedHydrationRequestCounters: Readonly<Record<string, number>>;
-  /** Currently focused anchor element in the DOM. */
+  /** Counters tracking nested child hydration requests per key. */
+  readonly nestedHydrationRequestCounters: Readonly<Partial<Record<TPopoverKey, number>>>;
+  /** Active DOM trigger element for root popover positioning. */
   readonly anchorElement: HTMLElement | null;
-  /** Bounding rectangle of the primary anchor. */
+  /** Cached bounding client rect of the active anchor element. */
   readonly anchorRect: DOMRect | null;
-  /** Global application context value passed to data resolvers. */
+  /** External global application context. */
   readonly context: TContext | null;
-  /** When true, closing a parent card also closes its detached pinned descendants. */
+  /** Whether to automatically close pinned descendants when parent closes. */
   readonly closePinnedDescendants: boolean;
-  /** Global collision avoidance settings. */
+  /** Collision avoidance configuration settings. */
   readonly collisionConfig: CollisionConfig | null;
-  /** Global cache provider instance. */
+  /** Custom data cache provider. */
   readonly cache: PopoverCache<TData> | null;
-  /** Data resolution callback function. */
+  /** Async data resolver function. */
   readonly resolveData: PopoverResolver<TData, TContext>;
-  /** When true, allows keyboard arrow key navigation across open cards. */
+  /** Whether keyboard arrow key navigation across trail cards is enabled. */
   readonly enableArrowNavigation: boolean;
-  /** Development mode debug flag enabling verbose logging. */
+  /** Whether development debug logging is active. */
   readonly debug: boolean;
-  /** Pixel offset step distance between successive cards in the cascade. */
+  /** Pixel offset step between cascading nested popover cards. */
   readonly cascadeOffsetStep: number;
   /** Exit transition duration in milliseconds. */
   readonly exitTransitionDuration: number;
-  /** Default placement offset distance in pixels from trigger. */
+  /** Default anchor gap offset in pixels. */
   readonly defaultOffset: number;
-  /** Base starting z-index for the portal layer. */
+  /** Base z-index depth for popover layers. */
   readonly baseZIndex: number;
-  /** CSS class name applied during mounting transition. */
+  /** CSS class applied during mount transition. */
   readonly mountingClassName: string;
-  /** CSS class name applied during unmounting exit transition. */
+  /** CSS class applied during unmount transition. */
   readonly unmountingClassName: string;
-  /** CSS class name applied when fully mounted. */
+  /** CSS class applied once fully mounted. */
   readonly mountedClassName: string;
-  /** Active stack group filter identifier if set. */
+  /** Active stack group filter restricting visible popover cards. */
   readonly activeStackGroup: StackGroupId | string | null;
-  /** Responsive mode override ('auto', 'modal', 'bottom-sheet', 'docked-top', 'docked-bottom'). */
+  /** Responsive layout transformation mode. */
   readonly responsiveMode: PopoverResponsiveMode;
-  /** Viewport width in pixels below which mobile responsive mode activates. */
+  /** Mobile viewport width breakpoint in pixels. */
   readonly mobileBreakpoint: number;
-  /** Custom slot replacement components. */
+  /** Custom slot component overrides. */
   readonly components: PopoverSlotComponents | null;
-  /** Custom base z-index overrides mapped by popover key. */
+  /** Base z-index lookup map per stack group ID. */
   readonly zIndexBaseMap: ZIndexBaseMap | null;
-  /** Allows dragging cards when pinned (defaults to true). */
+  /** Whether dragging is permitted on pinned cards. */
   readonly allowDragWhenPinned?: boolean;
-  /** Allows dragging cards when in trailing mode (defaults to true). */
+  /** Whether dragging is permitted on unpinned trail cards. */
   readonly allowDragWhenUnpinned?: boolean;
-  /** Focus trapping configuration options for accessibility. */
+  /** WAI-ARIA Focus trapping and accessibility options. */
   readonly focusLockOptions?: FocusLockOptions | null;
 }
 
-/** Discriminated idle state when no popovers are open in trail or floating. */
-export type IdleStoreState<TData = unknown, TContext = unknown> = PopoverStateData<
-  TData,
-  TContext
-> & {
+export type IdleStoreState<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> = PopoverStateData<TData, TContext, TPopoverKey> & {
   readonly status: 'idle';
   readonly trail: readonly [];
   readonly floating: readonly [];
@@ -292,183 +413,223 @@ export type IdleStoreState<TData = unknown, TContext = unknown> = PopoverStateDa
   readonly ownerId: null;
 };
 
-/** Discriminated active state when at least one popover is active in the trail. */
-export type ActiveTrailStoreState<TData = unknown, TContext = unknown> = PopoverStateData<
-  TData,
-  TContext
-> & {
+export type ActiveTrailStoreState<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> = PopoverStateData<TData, TContext, TPopoverKey> & {
   readonly status: 'active-trail';
-  readonly trail: readonly [TrailEntry<TData>, ...TrailEntry<TData>[]];
+  readonly trail: readonly [TrailEntry<TData, TPopoverKey>, ...TrailEntry<TData, TPopoverKey>[]];
   readonly anchorElement: HTMLElement;
   readonly anchorRect: DOMRect;
   readonly ownerId: string;
 };
 
-/** Discriminated pinned-only state when only pinned/floating popovers are active. */
-export type PinnedOnlyStoreState<TData = unknown, TContext = unknown> = PopoverStateData<
-  TData,
-  TContext
-> & {
+export type PinnedOnlyStoreState<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> = PopoverStateData<TData, TContext, TPopoverKey> & {
   readonly status: 'pinned-only';
   readonly trail: readonly [];
-  readonly floating: readonly [TrailEntry<TData>, ...TrailEntry<TData>[]];
+  readonly floating: readonly [TrailEntry<TData, TPopoverKey>, ...TrailEntry<TData, TPopoverKey>[]];
   readonly anchorElement: null;
   readonly anchorRect: null;
   readonly ownerId: null;
 };
 
-/** Comprehensive Discriminated Union representing all possible runtime states of the popover store. */
-export type PopoverStoreDiscriminatedState<TData = unknown, TContext = unknown> =
-  | IdleStoreState<TData, TContext>
-  | ActiveTrailStoreState<TData, TContext>
-  | PinnedOnlyStoreState<TData, TContext>;
+export type PopoverDataMap<TPopoverKey extends string = string> = Record<TPopoverKey, unknown>;
 
-/** Strongly typed state patch payload passed to store middleware interceptors. */
+export type ResolveDataForKey<
+  TDataMap extends object,
+  K extends string,
+  TFallback = unknown,
+> = K extends keyof TDataMap ? TDataMap[K] : TFallback;
+
+export type { DeepReadonly };
+
+export type StateSelector<TState, TResult> = (state: TState) => TResult;
+export type StateEqualityFn<T> = (a: T, b: T) => boolean;
+
+export type PopoverStoreDiscriminatedState<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> =
+  | IdleStoreState<TData, TContext, TPopoverKey>
+  | ActiveTrailStoreState<TData, TContext, TPopoverKey>
+  | PinnedOnlyStoreState<TData, TContext, TPopoverKey>;
+
+/**
+ * Pure type-predicate verifying if the store currently has zero active trailing or floating cards.
+ */
+export function isStoreIdle<TData, TContext, TPopoverKey extends string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
+): state is IdleStoreState<TData, TContext, TPopoverKey> {
+  return state.trail.length === 0 && state.floating.length === 0;
+}
+
+/**
+ * Pure type-predicate verifying if the store has an active cascade trail path.
+ */
+export function isStoreActive<TData, TContext, TPopoverKey extends string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
+): state is ActiveTrailStoreState<TData, TContext, TPopoverKey> {
+  return state.trail.length > 0;
+}
+
+/**
+ * Pure type-predicate verifying if the store has only pinned cards without an active cascade trail path.
+ */
+export function isStorePinnedOnly<TData, TContext, TPopoverKey extends string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
+): state is PinnedOnlyStoreState<TData, TContext, TPopoverKey> {
+  return state.trail.length === 0 && state.floating.length > 0;
+}
+
 export type TypedMiddlewarePatch<
   TData = unknown,
   TContext = unknown,
-  _TPopoverKey extends string = string,
-> = Partial<PopoverStateData<TData, TContext>> & {
-  targetKey?: string;
+  TPopoverKey extends string = string,
+> = Partial<PopoverStateData<TData, TContext, TPopoverKey>> & {
+  targetKey?: TPopoverKey;
 };
 
-/**
- * Middleware function intercepting state updates before commit.
- */
 export type PopoverMiddleware<
   TData = unknown,
   TContext = unknown,
-  _TPopoverKey extends string = string,
+  TPopoverKey extends string = string,
 > = (
-  patch: TypedMiddlewarePatch<TData, TContext, _TPopoverKey>,
-  state: PopoverStateData<TData, TContext>,
-) => TypedMiddlewarePatch<TData, TContext, _TPopoverKey> | false | void;
+  patch: TypedMiddlewarePatch<TData, TContext, TPopoverKey>,
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
+) => TypedMiddlewarePatch<TData, TContext, TPopoverKey> | false | void;
 
 /**
- * Public action dispatchers and lifecycle management methods exposed by the popover store.
+ * Full action dispatcher interface for mutating popover trail state, managing history,
+ * opening/closing cards, pinning, and configuring runtime options.
  *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Type of data payload resolved by popover cards.
+ * @template TContext - Global external application context.
+ * @template TPopoverKey - Union of valid popover string keys.
  */
 export interface PopoverActions<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
 > {
-  /** Updates the global shared context object. */
+  /** Updates external application context. */
   setContext: (context: TContext) => void;
-  /** Replaces the active data resolver function. */
+  /** Sets or replaces the active async data resolver. */
   setResolveData: (resolver: PopoverResolver<TData, TContext>) => void;
-  /** Sets the current root owner identifier. */
+  /** Sets active trail owner ID. */
   setOwnerId: (ownerId: string | null) => void;
-  /** Synchronously pushes a root popover entry into the trail stack. */
-  openRoot: (ownerId: string, entry: TrailEntry<TData>) => void;
-  /** Synchronously pushes a nested child entry attached at parent index. */
-  pushNested: (index: number, entry: TrailEntry<TData>) => void;
+  /** Spawns a new root popover card. */
+  openRoot: (ownerId: string, entry: TrailEntry<TData, TPopoverKey>) => void;
+  /** Pushes a nested child popover card into the cascade trail. */
+  pushNested: (index: number, entry: TrailEntry<TData, TPopoverKey>) => void;
   /** Toggles the pinned/floating status of a popover card. */
   togglePin: (key: TPopoverKey, rect?: DOMRect) => void;
-  /** Elevates a popover card to the top of the z-index depth order. */
+  /** Brings a popover card to the front of the visual stacking order. */
   bringToFront: (key: TPopoverKey) => void;
-  /** Closes all popovers starting from a specific trail index. */
+  /** Closes all cards starting from index onward. */
   closeFrom: (index: number, options?: { transition?: boolean }) => void;
-  /** Updates the drag coordinate offset for a popover card. */
+  /** Updates drag position offset `(x, y)` for a specific card. */
   updateOffset: (key: TPopoverKey, x: number, y: number) => void;
-  /** Clears all popover cards (both trailing cascade and pinned floating windows). */
+  /** Closes all active trail and floating popovers. */
   clear: () => void;
-  /** Alias for clear(). Closes all active popovers. */
+  /** Closes all popover cards (alias for clear). */
   closeAll: () => void;
-  /** Clears only trailing cascade cards, leaving detached pinned windows open. */
+  /** Clears active trail cards while preserving pinned floating cards. */
   clearTrail: () => void;
-  /** Closes the topmost active popover card. */
+  /** Closes the topmost active trail card. */
   closeTopmost: (options?: { transition?: boolean }) => void;
-  /**
-   * Opens a root popover card and executes the data resolution pipeline.
-   *
-   * @param keyOrName - Target popover key.
-   * @param anchorEvent - Optional trigger event, DOM element, or virtual anchor coordinates.
-   * @param options - Custom configuration options (placement, collision, delays).
-   */
+  /** Opens a root popover and executes async data resolution with caching. */
   openRootWithResolver: (
     keyOrName: TPopoverKey,
     anchorEvent?: AnchorEventLike,
     options?: Readonly<OpenRootOptions>,
   ) => Promise<void>;
-  /**
-   * Opens a nested child popover card and links it to the parent in the DAG.
-   *
-   * @param keyOrName - Target child popover key.
-   * @param sourceKey - Parent popover key spawning this child.
-   * @param options - Custom configuration options (placement, triggerRect).
-   */
+  /** Opens a child nested popover and executes async data resolution. */
   openNestedWithResolver: (
     keyOrName: TPopoverKey,
     sourceKey: TPopoverKey,
     options?: Readonly<OpenNestedOptions>,
   ) => Promise<void>;
-  /** Retries async data resolution for a popover currently in an error state. */
+  /** Retries failed data resolution for a specific card. */
   retryPopover: (key: TPopoverKey) => Promise<void>;
-  /** Eagerly resolves and caches data for a popover before user interaction. */
+  /** Prefetches data for a popover card into the cache without opening it. */
   prefetchPopover: (key: TPopoverKey, parentData?: TData) => Promise<TData | undefined>;
-  /** Cleans up store resources, aborts active requests, and clears timers. */
+  /** Invalidates cache and refetches data for one or more keys. */
+  invalidate: (keyOrKeys: TPopoverKey | readonly TPopoverKey[]) => Promise<void>;
+  /** Subscribes to entry state changes for a specific key. */
+  subscribeKey: (
+    key: TPopoverKey,
+    listener: (
+      entry: TrailEntry<TData, TPopoverKey> | undefined,
+      prevEntry: TrailEntry<TData, TPopoverKey> | undefined,
+    ) => void,
+  ) => () => void;
+  /** Destroys the store instance and disposes listeners. */
   destroy: () => void;
-  /** Configures whether closing a parent also closes pinned descendants. */
+  /** Configures whether pinned child cards close when parent closes. */
   setClosePinnedDescendants: (close: boolean) => void;
-  /** Configures global collision avoidance parameters. */
+  /** Updates boundary collision avoidance configuration. */
   setCollisionConfig: (config: CollisionConfig | null) => void;
-  /** Closes a specific popover card by its unique key. */
+  /** Closes a specific popover card by key. */
   closeByKey: (key: TPopoverKey, options?: { transition?: boolean }) => void;
-  /** Enables or disables keyboard arrow key navigation across open cards. */
+  /** Enables or disables keyboard arrow key navigation. */
   setEnableArrowNavigation: (enable: boolean) => void;
-  /** Enables or disables development mode debug logging. */
+  /** Enables or disables debug console logging. */
   setDebug: (debug: boolean) => void;
-  /** Handles pointer hover enter event on a trigger or card. */
+  /** Handles pointer hover entry buffer for a card. */
   hoverEnter: (key: TPopoverKey) => void;
-  /** Handles pointer hover leave with exit debounce delay. */
+  /** Handles pointer hover leave buffer for a card. */
   hoverLeave: (key: TPopoverKey, delay?: number) => void;
-  /** Configures the pixel offset distance between cascading cards. */
+  /** Sets the pixel offset step for nested cascade cards. */
   setCascadeOffsetStep: (step: number) => void;
-  /** Updates the transition lifecycle status of a card ('mounting' | 'mounted' | 'unmounting'). */
+  /** Updates animation transition status for a card (`mounting` | `mounted` | `unmounting`). */
   setTransitionStatus: (key: TPopoverKey, status: PopoverTransitionStatus) => void;
-  /** Configures exit transition duration in milliseconds. */
+  /** Sets exit transition animation duration in milliseconds. */
   setExitTransitionDuration: (duration: number) => void;
-  /** Configures default placement offset distance in pixels. */
+  /** Sets default anchor offset gap in pixels. */
   setDefaultOffset: (offset: number) => void;
-  /** Configures base starting z-index for the portal layer. */
+  /** Sets base z-index depth offset. */
   setBaseZIndex: (baseZIndex: number) => void;
-  /** Configures global animation CSS class names. */
+  /** Sets global animation CSS class names. */
   setGlobalAnimationClassNames: (mounting: string, unmounting: string, mounted: string) => void;
-  /** Configures whether pinned cards can be dragged. */
+  /** Configures whether dragging is allowed on pinned cards. */
   setAllowDragWhenPinned: (allow: boolean) => void;
-  /** Configures whether unpinned cascading cards can be dragged. */
+  /** Configures whether dragging is allowed on unpinned trail cards. */
   setAllowDragWhenUnpinned: (allow: boolean) => void;
-  /** Configures mobile viewport breakpoint width in pixels. */
+  /** Sets mobile viewport breakpoint width in pixels. */
   setMobileBreakpoint: (breakpoint: number) => void;
-  /** Configures focus lock options for modal accessibility. */
+  /** Configures WAI-ARIA Focus Lock options. */
   setFocusLockOptions: (options: FocusLockOptions | null) => void;
-  /** Subscribes a listener to raw store lifecycle events. */
+  /** Subscribes to lifecycle store events. */
   subscribeEvent: (listener: (event: PopoverStoreEvent<TData>) => void) => () => void;
-  /** Executes multiple actions within an atomic batch update scope. */
+  /** Batches multiple action mutations into a single subscriber notification. */
   batchUpdates: (fn: (actions: PopoverActions<TData, TContext, TPopoverKey>) => void) => void;
-  /** Registers a middleware function to intercept state updates. */
+  /** Runs action mutations wrapped in a React concurrent transition. */
+  runTransition: (fn: (actions: PopoverActions<TData, TContext, TPopoverKey>) => void) => void;
+  /** Registers a middleware interceptor into the store pipeline. */
   useMiddleware: (middleware: PopoverMiddleware<TData, TContext, TPopoverKey>) => () => void;
-  /** Reverts to the previous state snapshot in the undo history stack. */
+  /** Reverts the last state mutation step in navigation history. */
   undo: () => void;
-  /** Re-applies the next state snapshot in the redo history stack. */
+  /** Reapplies the previously undone state mutation step. */
   redo: () => void;
-  /** True if previous snapshots exist for undo. */
+  /** Returns true if undo history is available. */
   canUndo: () => boolean;
-  /** True if forward snapshots exist for redo. */
+  /** Returns true if redo history is available. */
   canRedo: () => boolean;
-  /** Executes an atomic transaction that rolls back on thrown errors. */
+  /** Executes mutations within a transactional boundary with automatic rollback on error. */
   transaction: (
     fn: (actions: PopoverActions<TData, TContext, TPopoverKey>) => Promise<void> | void,
   ) => Promise<boolean>;
-  /** Serializes and saves the active popover state snapshot to localStorage. */
+  /** Persists current active state to external storage. */
   persistState: (config?: PopoverPersistConfig) => Promise<void>;
-  /** Restores saved popover state from localStorage. */
+  /** Rehydrates persisted state from external storage. */
   rehydrateState: (config?: PopoverPersistConfig) => Promise<boolean>;
-  /** Configures visible button controls (pin, close, drag) for a card. */
+  /** Sets button control visibility options for a card. */
   setButtonControls: (key: TPopoverKey, controls: ButtonControlConfig) => void;
   /** Toggles a specific button control on a card. */
   toggleButtonControl: (
@@ -476,48 +637,79 @@ export interface PopoverActions<
     control: 'enablePin' | 'enableClose' | 'enableDrag',
     enabled?: boolean,
   ) => void;
-  /** Filters the active stack by group identifier. */
+  /** Sets active stack group filter. */
   setStackGroupFilter: (group: string | null) => void;
-  /** Configures responsive layout mode overrides. */
+  /** Sets responsive layout adaptation mode. */
   setResponsiveMode: (mode: PopoverResponsiveMode) => void;
-  /** Configures custom base z-index values by key. */
+  /** Sets base z-index depth map per stack group ID. */
   setZIndexBaseMap: (map: ZIndexBaseMap | null) => void;
-  /** Configures custom slot replacement components. */
+  /** Sets global slot component overrides. */
   setSlotComponents: (components: PopoverSlotComponents | null) => void;
 }
 
 /**
- * Result object returned by the unified `usePopover` hook.
+ * Return signature of the `usePopover(key)` selector hook.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TPopoverKey - Popover key identifier union type.
+ *
+ * @example
+ * ```tsx
+ * function UserCard() {
+ *   const { isOpen, data, isLoading, close, pin } = usePopover<UserData>('userProfile');
+ *   if (!isOpen) return null;
+ *   return <div>{data?.name}</div>;
+ * }
+ * ```
  */
-export interface UsePopoverResult<TData = unknown> {
-  entry: TrailEntry<TData> | undefined;
+export interface UsePopoverResult<TData = unknown, TPopoverKey extends string = string> {
+  /** Active entry object if open, or undefined if closed. */
+  entry: TrailEntry<TData, TPopoverKey> | undefined;
+  /** Discriminated resolution state container. */
   state: PopoverEntryDiscriminatedState<TData>;
+  /** Whether the card is currently open (in trail or pinned). */
   isOpen: boolean;
+  /** Whether the card is currently pinned/floating. */
   isPinned: boolean;
+  /** Computed z-index depth for visual stacking. */
   zIndex: number;
+  /** Whether this card is the topmost in the active stack. */
   isTop: boolean;
+  /** Active drag offset coordinates `(x, y)`. */
   offset: DragOffset;
+  /** Whether async data resolution is in progress. */
   isLoading: boolean;
+  /** Resolved data payload. */
   data: TData | null | undefined;
+  /** Error instance if data resolution failed. */
   error: Error | null | undefined;
+  /** Closes this popover card. */
   close: () => void;
+  /** Pins this popover card at the given rect coordinates. */
   pin: (rect: DOMRect) => void;
+  /** Brings this popover card to the front of the stack. */
   bringToFront: () => void;
+  /** Updates drag offset coordinates for this card. */
   updateOffset: (x: number, y: number) => void;
 }
 
 /**
- * The complete Zustand store type combining state data properties and action dispatchers.
+ * Combined Popover Trail Zustand store state and action interface.
  *
  * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover keys.
+ * @template TContext - Global external context type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @template TSliceActions - Custom slice action methods.
  */
 export type PopoverStore<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
-> = PopoverStateData<TData, TContext> &
-  PopoverActions<TData, TContext, TPopoverKey> & {
-    actions: PopoverActions<TData, TContext, TPopoverKey>;
+  TSliceActions = object,
+> = PopoverStateData<TData, TContext, TPopoverKey> &
+  PopoverActions<TData, TContext, TPopoverKey> &
+  TSliceActions & {
+    actions: PopoverActions<TData, TContext, TPopoverKey> & TSliceActions;
   };
+
+export { type PopoverKey, type ParentKey, type ZIndexDepth } from './branded';

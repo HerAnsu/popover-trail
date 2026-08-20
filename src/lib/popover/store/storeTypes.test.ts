@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { InternalPopoverState } from './storeTypes';
+import type { InternalPopoverState } from './storeTypes';
 
 describe('storeTypes module', () => {
   it('validates store type signatures and erased internal state type', () => {
     const mockState: InternalPopoverState = {
+      stateRevision: 0,
       trail: [],
       floating: [],
       offsets: {},

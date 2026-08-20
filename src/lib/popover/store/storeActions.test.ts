@@ -5,7 +5,7 @@ import {
   reduceTogglePinState,
   reduceUpdateOffsetState,
 } from './storeActions';
-import { PopoverStore, TrailEntry } from '../types';
+import { createMockStoreState } from '../testing/createMockStoreState';
 
 describe('storeActions module', () => {
   it('checks if popover key is pinned in pinnedStates', () => {
@@ -20,44 +20,44 @@ describe('storeActions module', () => {
   });
 
   it('reduces offset updates for a popover key', () => {
-    const mockStore = {
+    const mockStore = createMockStoreState({
       offsets: { 'card-1': { x: 0, y: 0 } },
-    } as unknown as PopoverStore;
+    });
 
     const patch = reduceUpdateOffsetState(mockStore, 'card-1', { x: 100, y: 200 });
     expect(patch.offsets?.['card-1']).toEqual({ x: 100, y: 200 });
   });
 
   it('reduces toggle pin state patch for a trail entry', () => {
-    const mockStore = {
+    const mockStore = createMockStoreState({
       floating: [],
-      trail: [{ key: 'card-1' } as TrailEntry<unknown>],
+      trail: [{ key: 'card-1', isLoading: false, error: null }],
       pinnedStates: {},
       offsets: {},
       zIndexOrder: ['card-1'],
-    } as unknown as PopoverStore;
+    });
 
     const patch = reduceTogglePinState(mockStore, 'card-1');
     expect(patch.pinnedStates?.['card-1']).toBe(true);
   });
 
   it('unpins floating card when toggled back', () => {
-    const mockStore = {
-      floating: [{ key: 'card-1' } as TrailEntry<unknown>],
+    const mockStore = createMockStoreState({
+      floating: [{ key: 'card-1', isLoading: false, error: null }],
       trail: [],
       pinnedStates: { 'card-1': true },
       offsets: { 'card-1': { x: 10, y: 10 } },
       zIndexOrder: ['card-1'],
-    } as unknown as PopoverStore;
+    });
 
     const patch = reduceTogglePinState(mockStore, 'card-1');
     expect(patch.pinnedStates?.['card-1']).toBe(false);
   });
 
   it('preserves existing unrelated card offsets when reduceUpdateOffsetState is called', () => {
-    const mockStore = {
+    const mockStore = createMockStoreState<unknown, unknown, 'card-1' | 'card-2'>({
       offsets: { 'card-1': { x: 10, y: 20 } },
-    } as unknown as PopoverStore;
+    });
 
     const patch = reduceUpdateOffsetState(mockStore, 'card-2', { x: 50, y: 60 });
     expect(patch.offsets?.['card-1']).toEqual({ x: 10, y: 20 });

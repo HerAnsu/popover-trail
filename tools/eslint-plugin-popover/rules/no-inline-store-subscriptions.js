@@ -8,13 +8,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow calling store.subscribe() directly in component render body without useEffect',
+      description:
+        'Disallow calling store.subscribe() directly in component render body without useEffect',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      inlineStoreSub: 'Calling `store.subscribe()` inside component render body creates duplicate subscriptions on every render. Use useEffect or usePopoverStore selector.',
+      inlineStoreSub:
+        'Calling `store.subscribe()` inside component render body creates duplicate subscriptions on every render. Use useEffect or usePopoverStore selector.',
     },
   },
   create(context) {

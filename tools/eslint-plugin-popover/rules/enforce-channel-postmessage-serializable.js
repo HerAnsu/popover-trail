@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      unserializablePayload: 'Cannot send non-serializable payload containing function or symbol across BroadcastChannel.',
+      unserializablePayload:
+        'Cannot send non-serializable payload containing function or symbol across BroadcastChannel.',
     },
   },
   create(context) {
@@ -30,7 +31,9 @@ export default {
           node.arguments[0].type === 'ObjectExpression'
         ) {
           const fnProp = node.arguments[0].properties.find(
-            (p) => p.value && (p.value.type === 'FunctionExpression' || p.value.type === 'ArrowFunctionExpression'),
+            (p) =>
+              p.value &&
+              (p.value.type === 'FunctionExpression' || p.value.type === 'ArrowFunctionExpression'),
           );
           if (fnProp) {
             context.report({

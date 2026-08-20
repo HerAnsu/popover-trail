@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow merging __proto__, constructor, or prototype properties to prevent prototype pollution.',
+      description:
+        'Disallow merging __proto__, constructor, or prototype properties to prevent prototype pollution.',
       category: 'Security',
       recommended: true,
     },

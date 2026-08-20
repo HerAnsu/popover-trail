@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow instantiating new Web Workers on every component render; use singleton or worker pool.',
+      description:
+        'Disallow instantiating new Web Workers on every component render; use singleton or worker pool.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      noWorkerInRender: 'Do not instantiate new Worker() directly inside component body. Move to module scope or useWorkerResolver hook.',
+      noWorkerInRender:
+        'Do not instantiate new Worker() directly inside component body. Move to module scope or useWorkerResolver hook.',
     },
   },
   create(context) {

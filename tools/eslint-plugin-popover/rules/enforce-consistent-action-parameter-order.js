@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage consistent (key, payload, options) parameter ordering across all store action methods.',
+      description:
+        'Encourage consistent (key, payload, options) parameter ordering across all store action methods.',
       category: 'Clean Code',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestParamOrder: 'Action parameter order in {{ name }} should follow (key, payload, options) convention.',
+      suggestParamOrder:
+        'Action parameter order in {{ name }} should follow (key, payload, options) convention.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       MethodDefinition(node) {

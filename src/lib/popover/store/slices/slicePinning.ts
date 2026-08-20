@@ -5,19 +5,16 @@
  * @module slicePinning
  */
 
-import { togglePinState, bringToFrontPatch, findEntryInStore } from '../../utils/storeHelpers';
-import { reduceUpdateOffsetState } from '../storeActions';
+import { togglePinState, updateOffsetState } from '../reducers/pinReducers';
+import { bringToFrontPatch } from '../reducers/stackReducers';
+import { findEntryInStore } from '../../utils/storeHelpers';
 import { selectIsPinned } from '../storeSelectors';
+import { dispatchStoreEvent } from '../eventBus';
+import { wrapResult, isErr } from '../../utils/result';
 import type { SliceContext } from './sliceContext';
 
 /**
  * Factory creating modeless pinning and floating layout actions (`togglePin`, `bringToFront`, `updateOffset`).
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover string keys.
- * @param ctx - Slice context providing Zustand set/get methods and dependencies.
- * @returns Pinning slice action methods.
  */
 export function createPinningSlice<
   TData = unknown,
@@ -25,48 +22,44 @@ export function createPinningSlice<
   TPopoverKey extends string = string,
 >(ctx: SliceContext<TData, TContext, TPopoverKey>) {
   const { set, get, deps } = ctx;
-  const { clearHoverTimer, findEntryByKey, pushSnapshot, eventListeners } = deps;
+  const { findEntryByKey, pushSnapshot, eventListeners, transitionScheduler } = deps;
 
   return {
-    togglePin: (key: string, rect?: DOMRect) => {
+    togglePin: (key: TPopoverKey, rect?: DOMRect) => {
       if (!key) return;
       pushSnapshot(get());
-      clearHoverTimer(key);
+      transitionScheduler.cancelHover(key);
       set((state) => togglePinState(state, key, rect));
+
       const entry = findEntryByKey(key);
       const isPinned = selectIsPinned(key)(get());
-      if (eventListeners) {
-        for (const listener of eventListeners) {
-          try {
-            listener({ type: isPinned ? 'pin' : 'unpin', key });
-          } catch (err) {
-            console.error('[popover-trail]: Exception in store event listener:', err);
-          }
+
+      dispatchStoreEvent(eventListeners, { type: isPinned ? 'pin' : 'unpin', key });
+
+      if (entry?.onPin) {
+        const pinResult = wrapResult(() => entry.onPin?.(key, isPinned));
+        if (isErr(pinResult)) {
+          console.error('[popover-trail]: Exception in onPin callback:', pinResult.error);
         }
-      }
-      try {
-        entry?.onPin?.(key, isPinned);
-      } catch (err) {
-        console.error('[popover-trail]: Exception in onPin callback:', err);
       }
     },
 
-    bringToFront: (key: string) => {
+    bringToFront: (key: TPopoverKey) => {
       if (!key) return;
       set((state) => {
         const entry = findEntryInStore(state.floating, state.trail, key);
         if (!entry) return {};
         if (state.zIndexOrder.at(-1) === key) return {};
         if (entry.transitionStatus === 'unmounting') return {};
-        return bringToFrontPatch(state, key);
+        return bringToFrontPatch(state, key, deps.popoverDAG);
       });
     },
 
-    updateOffset: (key: string, x: number, y: number) => {
+    updateOffset: (key: TPopoverKey, x: number, y: number) => {
       if (!key || !Number.isFinite(x) || !Number.isFinite(y)) return;
       const current = get().offsets[key];
-      if (current && current.x === x && current.y === y) return;
-      set((state) => reduceUpdateOffsetState(state, key, { x, y }));
+      if (current?.x === x && current.y === y) return;
+      set((state) => updateOffsetState(state, key, { x, y }));
     },
   };
 }

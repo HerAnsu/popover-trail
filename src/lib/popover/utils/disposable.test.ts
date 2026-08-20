@@ -32,9 +32,9 @@ describe('disposable utility', () => {
     const cleanup = vi.fn();
     const disposable = createDisposable(cleanup);
 
-    const disposeSymbol = (Symbol as unknown as { dispose?: symbol }).dispose;
+    const disposeSymbol = Symbol.dispose;
     if (disposeSymbol) {
-      expect(disposable[disposeSymbol]).toBeDefined();
+      expect((disposable as Record<symbol, unknown>)[disposeSymbol]).toBeDefined();
     }
   });
 

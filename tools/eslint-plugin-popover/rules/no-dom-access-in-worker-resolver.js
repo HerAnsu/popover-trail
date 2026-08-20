@@ -17,7 +17,10 @@ export default {
     if (!filename.includes('worker') || filename.includes('.test.')) return {};
     return {
       Identifier(node) {
-        if (node.name === 'document' || (node.name === 'window' && node.parent && node.parent.type !== 'UnaryExpression')) {
+        if (
+          node.name === 'document' ||
+          (node.name === 'window' && node.parent && node.parent.type !== 'UnaryExpression')
+        ) {
           context.report({ node, messageId: 'workerDomAccess', data: { name: node.name } });
         }
       },

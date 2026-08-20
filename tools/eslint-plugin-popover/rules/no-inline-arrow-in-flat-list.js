@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage extracting subcomponents instead of inline heavy multi-line JSX map loops.',
+      description:
+        'Encourage extracting subcomponents instead of inline heavy multi-line JSX map loops.',
       category: 'Performance',
       recommended: false,
     },
     schema: [],
     messages: {
-      extractListSubcomponent: 'Extract multi-statement inline JSX map callback into a memoized subcomponent.',
+      extractListSubcomponent:
+        'Extract multi-statement inline JSX map callback into a memoized subcomponent.',
     },
   },
   create(context) {

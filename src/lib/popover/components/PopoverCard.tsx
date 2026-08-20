@@ -73,7 +73,7 @@ const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, 
 
     const scope = useMemo<PopoverCardScope>(
       () => ({
-        entry: entry as TrailEntry<unknown>,
+        entry,
         index,
         isPinned,
         card,
@@ -122,15 +122,12 @@ const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, 
 
 PopoverCardBase.displayName = 'PopoverCard';
 
-export const PopoverCard: PopoverCardComponent = Object.assign(
-  PopoverCardBase as unknown as PopoverCardComponent,
-  {
-    Handle: PopoverCardHandle,
-    PinButton: PopoverCardPinButton,
-    CloseButton: PopoverCardCloseButton,
-    Content: PopoverCardContent,
-  },
-);
+export const PopoverCard: PopoverCardComponent = Object.assign(PopoverCardBase, {
+  Handle: PopoverCardHandle,
+  PinButton: PopoverCardPinButton,
+  CloseButton: PopoverCardCloseButton,
+  Content: PopoverCardContent,
+});
 export { type PolymorphicRef, type PolymorphicProps } from '../types';
 export { type PopoverCardHandleProps } from './card/PopoverCardHandle';
 export { type PopoverCardPinButtonProps } from './card/PopoverCardPinButton';

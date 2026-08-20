@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      infiniteAnimation: 'Infinite animation loops in default card styles can drain battery and violate vestibular a11y.',
+      infiniteAnimation:
+        'Infinite animation loops in default card styles can drain battery and violate vestibular a11y.',
     },
   },
   create(context) {

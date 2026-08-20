@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      noOversizedAllocation: 'TypedArray allocation size {{ size }} is excessively large; use chunked buffers or ring buffers.',
+      noOversizedAllocation:
+        'TypedArray allocation size {{ size }} is excessively large; use chunked buffers or ring buffers.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       NewExpression(node) {

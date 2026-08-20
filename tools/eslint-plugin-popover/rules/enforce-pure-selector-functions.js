@@ -12,12 +12,18 @@ export default {
     },
     schema: [],
     messages: {
-      noSideEffectsInSelector: 'Selector function {{ name }} must not invoke state mutating methods.',
+      noSideEffectsInSelector:
+        'Selector function {{ name }} must not invoke state mutating methods.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('Selectors')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('Selectors')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {

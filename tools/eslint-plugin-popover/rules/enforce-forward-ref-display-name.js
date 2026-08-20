@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce explicit displayName on forwardRef components for React DevTools inspection.',
+      description:
+        'Enforce explicit displayName on forwardRef components for React DevTools inspection.',
       category: 'Best Practices',
       recommended: true,
     },

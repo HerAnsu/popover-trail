@@ -4,7 +4,7 @@
  * @module store/reducers/pinReducers
  */
 
-import type { PopoverStateData } from '../../types';
+import type { PopoverStateData, StatePatch, DragOffset, TrailEntry } from '../../types';
 import { getCleanupStatePatch } from './stackReducers';
 
 function resolvePinnedLayoutPos(
@@ -18,30 +18,33 @@ function resolvePinnedLayoutPos(
 }
 
 /**
- * Pure state reducer computing next state when toggling between floating (pinned) and cascade (trail) modes.
- *
- * @remarks
- * When pinning:
- * - Moves the entry from `trail` to `floating`.
- * - Locks the current DOM coordinates into `pinnedLayoutPos`.
- * - Elevates the card to the top of `zIndexOrder`.
- *
- * When unpinning:
- * - Moves the entry from `floating` back to `trail`.
- * - Restores its original parent linkage and relative cascade geometry.
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @param state - Current reactive store state.
- * @param key - Target popover key to pin or unpin.
- * @param rect - Optional current DOM bounding box of the card.
- * @returns Partial state patch to apply.
+ * Pure state reducer computing next state when updating drag coordinates for a popover card.
  */
-export function togglePinState<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-  key: string,
+export function updateOffsetState<TData, TContext, TPopoverKey extends string = string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
+  key: TPopoverKey,
+  offset: DragOffset,
+): StatePatch<TData, TContext, TPopoverKey> {
+  const currentOffset = state.offsets[key];
+  if (currentOffset?.x === offset.x && currentOffset.y === offset.y) {
+    return {};
+  }
+  return {
+    offsets: {
+      ...state.offsets,
+      [key]: offset,
+    },
+  };
+}
+
+/**
+ * Pure state reducer computing next state when toggling between floating (pinned) and cascade (trail) modes.
+ */
+export function togglePinState<TData, TContext, TPopoverKey extends string = string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
+  key: TPopoverKey,
   rect?: DOMRect,
-): Partial<PopoverStateData<TData, TContext>> {
+): StatePatch<TData, TContext, TPopoverKey> {
   const floatingIndex = state.floating.findIndex((e) => e.key === key);
   const wasPinned = floatingIndex !== -1;
   const trailIndex = wasPinned ? -1 : state.trail.findIndex((e) => e.key === key);
@@ -55,14 +58,14 @@ export function togglePinState<TData, TContext>(
 
   const nextFloating = [...state.floating];
   const nextTrail = [...state.trail];
-  const nextPinnedStates = { ...state.pinnedStates };
-  const nextOffsets = { ...state.offsets };
+  const nextPinnedStates: Partial<Record<TPopoverKey, boolean>> = { ...state.pinnedStates };
+  const nextOffsets: Partial<Record<TPopoverKey, DragOffset>> = { ...state.offsets };
   let nextZIndexOrder = [...state.zIndexOrder];
 
   if (!wasPinned) {
     const entry = state.trail[trailIndex];
     if (!entry) return {};
-    const updatedEntry = {
+    const updatedEntry: TrailEntry<TData, TPopoverKey> = {
       ...entry,
       rect: rect ?? entry.rect,
       pinnedLayoutPos: resolvePinnedLayoutPos(rect, entry),
@@ -88,7 +91,7 @@ export function togglePinState<TData, TContext>(
     }
   }
 
-  const cleanupPatch = getCleanupStatePatch<TData, TContext>(
+  const cleanupPatch = getCleanupStatePatch<TData, TContext, TPopoverKey>(
     nextFloating,
     nextTrail,
     nextOffsets,

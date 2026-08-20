@@ -12,12 +12,18 @@ export default {
     },
     schema: [],
     messages: {
-      useNullForJson: 'Property "{{ prop }}" explicitly assigned undefined in snapshot serializer; JSON drops undefined keys.',
+      useNullForJson:
+        'Property "{{ prop }}" explicitly assigned undefined in snapshot serializer; JSON drops undefined keys.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('snapshot') && !filename.includes('Persistence')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      (!filename.includes('snapshot') && !filename.includes('Persistence'))
+    )
+      return {};
 
     return {
       Property(node) {

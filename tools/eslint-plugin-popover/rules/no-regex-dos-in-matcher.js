@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Warn against nested quantifiers in RegExp literals that can lead to catastrophic backtracking (ReDoS).',
+      description:
+        'Warn against nested quantifiers in RegExp literals that can lead to catastrophic backtracking (ReDoS).',
       category: 'Security',
       recommended: true,
     },
     schema: [],
     messages: {
-      potentialReDoS: 'RegExp pattern {{ pattern }} contains nested quantifiers with potential ReDoS vulnerability.',
+      potentialReDoS:
+        'RegExp pattern {{ pattern }} contains nested quantifiers with potential ReDoS vulnerability.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       Literal(node) {

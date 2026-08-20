@@ -29,7 +29,9 @@ export default {
           (node.arguments[0].type === 'ArrowFunctionExpression' ||
             node.arguments[0].type === 'FunctionExpression')
         ) {
-          const fnBody = context.getSourceCode ? context.getSourceCode().getText(node.arguments[0]) : '';
+          const fnBody = context.getSourceCode
+            ? context.getSourceCode().getText(node.arguments[0])
+            : '';
           if (
             fnBody.includes('setState') ||
             fnBody.includes('.dispatch(') ||

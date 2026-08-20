@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      noSideEffectInGetter: 'Getters must be pure and free of side effects; mutation of {{ target }} is forbidden.',
+      noSideEffectInGetter:
+        'Getters must be pure and free of side effects; mutation of {{ target }} is forbidden.',
     },
   },
   create(context) {

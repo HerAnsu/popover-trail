@@ -488,9 +488,5 @@
     "popover/sanitize-snapshot-payload": "warn",
     "popover/strict-layer-boundaries": "deny"
   },
-  "ignorePatterns": [
-    "dist/**",
-    "node_modules/**",
-    "coverage/**"
-  ]
+  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"]
 }

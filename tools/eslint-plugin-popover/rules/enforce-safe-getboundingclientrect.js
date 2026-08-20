@@ -3,7 +3,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure element?.getBoundingClientRect() results are verified before accessing dimensions',
+      description:
+        'Ensure element?.getBoundingClientRect() results are verified before accessing dimensions',
       category: 'Viewport & Geometry',
       recommended: true,
     },

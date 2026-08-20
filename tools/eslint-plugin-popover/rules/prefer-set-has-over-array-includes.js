@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage Set.has() over linear Array.includes() for high-frequency key lookup paths.',
+      description:
+        'Encourage Set.has() over linear Array.includes() for high-frequency key lookup paths.',
       category: 'Performance',
       recommended: false,
     },
     schema: [],
     messages: {
-      preferSetHas: 'Consider using a Set for O(1) membership check instead of repeated Array.includes().',
+      preferSetHas:
+        'Consider using a Set for O(1) membership check instead of repeated Array.includes().',
     },
   },
   create(context) {

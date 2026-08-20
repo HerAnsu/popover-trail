@@ -6,13 +6,14 @@
  */
 
 import type { PopoverCache } from '../types';
+import { DISPOSE_SYMBOL } from './disposable';
 
 function hasUnrefMethod(timer: unknown): timer is { unref: () => void } {
   return (
     typeof timer === 'object' &&
     timer !== null &&
     'unref' in timer &&
-    typeof (timer as Record<string, unknown>).unref === 'function'
+    typeof timer.unref === 'function'
   );
 }
 
@@ -22,8 +23,16 @@ function isSafeKey(key: string): boolean {
   return key.trim().length > 0 && !UNSAFE_KEYS_SET.has(key);
 }
 
-const DISPOSE_SYMBOL: symbol =
-  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
+function isCatchablePromise(
+  value: unknown,
+): value is { catch: (onRejected: () => void) => unknown } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'catch' in value &&
+    typeof value.catch === 'function'
+  );
+}
 
 /**
  * Cache hit/miss performance statistics for auditing.
@@ -184,8 +193,8 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
     });
 
     // Auto-purge rejected promises from cache to prevent permanent error caching
-    if (data && typeof (data as { catch?: unknown }).catch === 'function') {
-      (data as unknown as Promise<unknown>).catch(() => {
+    if (isCatchablePromise(data)) {
+      data.catch(() => {
         if (this.cache.get(key)?.data === data) {
           this.cache.delete(key);
         }

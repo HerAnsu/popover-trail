@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      requirePortalCleanup: 'Dynamically created portal container should be removed from DOM in useEffect return cleanup.',
+      requirePortalCleanup:
+        'Dynamically created portal container should be removed from DOM in useEffect return cleanup.',
     },
   },
   create(context) {

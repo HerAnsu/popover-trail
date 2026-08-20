@@ -50,10 +50,13 @@ if (typeof globalThis.DOMRect === 'undefined') {
       this.left = x;
       this.right = x + width;
     }
+    toJSON() {
+      return {};
+    }
     static fromRect(other?: { x?: number; y?: number; width?: number; height?: number }) {
       return new DOMRect(other?.x, other?.y, other?.width, other?.height);
     }
-  } as unknown as typeof globalThis.DOMRect;
+  };
 }
 
 const createMockAnchor = (x = 10, y = 20, width = 100, height = 200): AnchorEventLike => ({
@@ -790,15 +793,16 @@ describe('createPopoverStore', () => {
       const child: TrailEntry = { key: 'child', parentKey: 'parent', isLoading: false };
       const grandchild: TrailEntry = { key: 'grandchild', parentKey: 'child', isLoading: false };
 
+      // Build the full trail hierarchy BEFORE pinning
       store.getState().openRoot('owner-1', parent);
       store.getState().pushNested(0, child);
       store.getState().pushNested(1, grandchild);
 
-      // Pin child and grandchild
-      store.getState().togglePin('child', new DOMRect(10, 10, 100, 100));
+      // Now pin grandchild then child (so they move to floating with originalParentKey preserved)
       store.getState().togglePin('grandchild', new DOMRect(20, 20, 100, 100));
+      store.getState().togglePin('child', new DOMRect(10, 10, 100, 100));
 
-      // Bring parent to front
+      // Bring parent (trail) to front — should also elevate its pinned floating descendants
       store.getState().bringToFront('parent');
 
       const state = store.getState();
@@ -1383,10 +1387,7 @@ describe('createPopoverStore', () => {
       const controller = createPopoverController(store);
 
       const virtualElem = createVirtualElement(150, 300, 200, 50);
-      expect(
-        (virtualElem as unknown as { getBoundingClientRect: () => DOMRect }).getBoundingClientRect()
-          .top,
-      ).toBe(300);
+      expect(virtualElem.getBoundingClientRect().top).toBe(300);
 
       controller.openRoot('owner-ctrl', { key: 'card-ctrl' });
       expect(controller.getState().trail[0]?.key).toBe('card-ctrl');

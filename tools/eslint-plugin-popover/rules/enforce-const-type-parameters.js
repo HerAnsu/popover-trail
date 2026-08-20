@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      suggestAsConst: 'Constant array {{ name }} with string literals should have "as const" assertion.',
+      suggestAsConst:
+        'Constant array {{ name }} with string literals should have "as const" assertion.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       VariableDeclarator(node) {
@@ -28,7 +35,9 @@ export default {
           node.init &&
           node.init.type === 'ArrayExpression' &&
           node.init.elements.length > 2 &&
-          node.init.elements.every((el) => el && el.type === 'Literal' && typeof el.value === 'string') &&
+          node.init.elements.every(
+            (el) => el && el.type === 'Literal' && typeof el.value === 'string',
+          ) &&
           node.parent &&
           node.parent.kind === 'const'
         ) {

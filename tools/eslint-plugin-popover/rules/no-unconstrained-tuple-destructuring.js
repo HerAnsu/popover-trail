@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend fallback defaults when destructuring elements from variable-length arrays.',
+      description:
+        'Recommend fallback defaults when destructuring elements from variable-length arrays.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestArrayDefault: 'Destructuring index {{ idx }} from dynamic array without default fallback.',
+      suggestArrayDefault:
+        'Destructuring index {{ idx }} from dynamic array without default fallback.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       VariableDeclarator(node) {

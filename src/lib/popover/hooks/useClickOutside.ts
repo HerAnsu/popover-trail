@@ -3,13 +3,19 @@ import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, ClickOutsideConfig } from '../types';
 import { isPortalOrExcludedTarget, getEventPath, getEventTarget } from '../utils/domEvents';
 import { TriggerRegistry } from '../utils/triggerRegistry';
+import { wrapResult, isOk } from '../utils/result';
 
 /**
  * Hook options for click-outside event management.
  */
-export interface UseClickOutsideOptions<TData = unknown, TContext = unknown> {
+export interface UseClickOutsideOptions<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+  TActions extends object = object,
+> {
   /** Target Zustand store instance. */
-  store: StoreApi<PopoverStore<TData, TContext>>;
+  store: StoreApi<PopoverStore<TData, TContext, TPopoverKey, TActions>>;
   /** Configuration flags for click-outside behavior. */
   clickOutside?: ClickOutsideConfig & {
     /** Optional custom predicate to selectively ignore clicks on specific elements. */
@@ -30,18 +36,13 @@ function isElementMatchingPopover(
   escapedIgnoreClass?: string | null,
   ignoreClass?: string | null,
 ): boolean {
-  try {
-    if (el.matches(popoverSelector)) return true;
-  } catch {
-    // Ignore invalid selector syntax
-  }
+  const matchResult = wrapResult(() => el.matches(popoverSelector));
+  if (isOk(matchResult) && matchResult.data) return true;
 
   if (escapedIgnoreClass) {
-    try {
-      if (el.matches(escapedIgnoreClass)) return true;
-    } catch {
-      if (ignoreClass && el.classList?.contains(ignoreClass)) return true;
-    }
+    const ignoreMatchResult = wrapResult(() => el.matches(escapedIgnoreClass));
+    if (isOk(ignoreMatchResult) && ignoreMatchResult.data) return true;
+    if (ignoreClass && el.classList?.contains(ignoreClass)) return true;
   }
 
   return false;
@@ -97,12 +98,19 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
   useEffect(() => {
     if (!enabled) return;
 
-    const handleClickOutside = (e: PointerEvent | MouseEvent) => {
+    const handleClickOutside = (e: Event) => {
       if (isPortalOrExcludedTarget(e)) return;
-      if (shouldIgnoreClickRef.current?.(e)) return;
+      if (
+        shouldIgnoreClickRef.current &&
+        (e instanceof MouseEvent ||
+          (typeof PointerEvent !== 'undefined' && e instanceof PointerEvent)) &&
+        shouldIgnoreClickRef.current(e)
+      ) {
+        return;
+      }
 
       const path = getEventPath(e);
-      const target = getEventTarget<Element>(e) ?? (e.target as Element | null);
+      const target = getEventTarget<Element>(e);
       const state = store.getState();
 
       if (isClickInsidePopover(path, popoverSelector, escapedIgnoreClass, ignoreClass)) {
@@ -120,9 +128,9 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
     const eventType =
       typeof window !== 'undefined' && 'PointerEvent' in window ? 'pointerdown' : 'mousedown';
 
-    document.addEventListener(eventType, handleClickOutside as EventListener, { capture: true });
+    document.addEventListener(eventType, handleClickOutside, { capture: true });
     return () => {
-      document.removeEventListener(eventType, handleClickOutside as EventListener, {
+      document.removeEventListener(eventType, handleClickOutside, {
         capture: true,
       });
     };

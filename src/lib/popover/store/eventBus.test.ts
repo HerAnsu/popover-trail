@@ -25,8 +25,8 @@ describe('eventBus module', () => {
 
     bus.once('popover:close', listener);
 
-    bus.emit('popover:close', { key: 'card-1' });
-    bus.emit('popover:close', { key: 'card-1' });
+    bus.emit('popover:close', { keys: ['card-1'], key: 'card-1' });
+    bus.emit('popover:close', { keys: ['card-1'], key: 'card-1' });
 
     expect(listener).toHaveBeenCalledTimes(1);
   });
@@ -52,7 +52,7 @@ describe('eventBus module', () => {
     unsub2();
 
     bus.emit('popover:open', { key: 'c1' });
-    bus.emit('popover:close', { key: 'c2' });
+    bus.emit('popover:close', { keys: ['c2'], key: 'c2' });
 
     expect(l1).not.toHaveBeenCalled();
     expect(l2).not.toHaveBeenCalled();

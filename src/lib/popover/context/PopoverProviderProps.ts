@@ -7,6 +7,7 @@ import type {
   FocusLockOptions,
   PopoverSlotComponents,
   ZIndexBaseMap,
+  StoreSliceDescriptor,
 } from '../types';
 
 /**
@@ -35,8 +36,25 @@ import type {
  *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
+ * @template TSlices - Tuple of custom StoreSliceDescriptor instances.
  */
-export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
+export interface PopoverProviderProps<
+  TData = unknown,
+  TContext = unknown,
+  TSlices extends readonly StoreSliceDescriptor<
+    Record<string, unknown>,
+    Record<string, unknown>,
+    TData,
+    TContext,
+    string
+  >[] = readonly StoreSliceDescriptor<
+    Record<string, unknown>,
+    Record<string, unknown>,
+    TData,
+    TContext,
+    string
+  >[],
+> {
   /** React child elements rendered inside the provider. */
   children: ReactNode;
 
@@ -54,6 +72,9 @@ export interface PopoverProviderProps<TData = unknown, TContext = unknown> {
 
   /** Optional initial context values passed to the data resolver. */
   initialContext?: TContext;
+
+  /** Optional custom extensible OCP domain slices. */
+  slices?: TSlices;
 
   /** Click outside configuration settings (enabled by default). */
   clickOutside?: ClickOutsideConfig;

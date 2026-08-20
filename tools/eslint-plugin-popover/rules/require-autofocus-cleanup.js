@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      untrackedAutofocus: 'Autofocusing popover card element should record previous activeElement for focus return on close.',
+      untrackedAutofocus:
+        'Autofocusing popover card element should record previous activeElement for focus return on close.',
     },
   },
   create(context) {

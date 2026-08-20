@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      unsafeEventCast: 'Avoid raw type casting `as any` on event object. Use type narrowing or instance checks.',
+      unsafeEventCast:
+        'Avoid raw type casting `as any` on event object. Use type narrowing or instance checks.',
     },
   },
   create(context) {

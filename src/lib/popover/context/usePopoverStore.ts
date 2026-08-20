@@ -6,21 +6,32 @@ import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
 import { PopoverStoreContext } from './PopoverStoreContext';
 import { invariant } from '../utils/invariant';
 
+function assertStoreApi<TData, TContext, TPopoverKey extends string>(
+  store: unknown,
+): asserts store is StoreApi<PopoverStore<TData, TContext, TPopoverKey>> {
+  invariant(
+    typeof store === 'object' && store !== null && 'getState' in store,
+    'usePopoverStoreApi must be used within a PopoverProvider',
+  );
+}
+
 /**
  * Hook to retrieve the raw store API instance directly, without subscribing to state changes.
  *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
- *
+ * @template TPopoverKey - Union of valid popover string keys.
  * @returns The raw Zustand StoreApi instance matching PopoverStore.
  * @throws {Error} If called outside a `<PopoverProvider>`.
  */
-export function usePopoverStoreApi<TData = unknown, TContext = unknown>(): StoreApi<
-  PopoverStore<TData, TContext>
-> {
+export function usePopoverStoreApi<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(): StoreApi<PopoverStore<TData, TContext, TPopoverKey>> {
   const store = useContext(PopoverStoreContext);
-  invariant(store, 'usePopoverStoreApi must be used within a PopoverProvider');
-  return store as StoreApi<PopoverStore<TData, TContext>>;
+  assertStoreApi<TData, TContext, TPopoverKey>(store);
+  return store;
 }
 
 /**
@@ -30,35 +41,43 @@ export function usePopoverStoreApi<TData = unknown, TContext = unknown>(): Store
  * @template TSelected - The extracted state slice type.
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
- *
+ * @template TPopoverKey - Union of valid popover string keys.
  * @param selector - Function to extract a slice of the store state.
  * @param equalityFn - Optional custom equality function to prevent redundant re-renders.
  * @returns The selected state slice.
  * @throws {Error} If called outside a `<PopoverProvider>`.
  */
-export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
-  selector: (state: PopoverStore<TData, TContext>) => TSelected,
+export function usePopoverStore<
+  TSelected,
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  selector: (state: PopoverStore<TData, TContext, TPopoverKey>) => TSelected,
   equalityFn?: (a: TSelected, b: TSelected) => boolean,
 ): TSelected {
-  const store = usePopoverStoreApi<TData, TContext>();
+  const store = usePopoverStoreApi<TData, TContext, TPopoverKey>();
   const prevSelectorRef = useRef(selector);
-  const cacheRef = useRef<{ hasValue: boolean; value?: TSelected }>({ hasValue: false });
+  const cacheRef = useRef<{ hasValue: boolean; value: TSelected | undefined }>({
+    hasValue: false,
+    value: undefined,
+  });
 
-  // Invalidate cache immediately when the selector function instance changes
   if (prevSelectorRef.current !== selector) {
     prevSelectorRef.current = selector;
-    cacheRef.current = { hasValue: false };
+    cacheRef.current = { hasValue: false, value: undefined };
   }
 
   const getSelection = useCallback(
-    (state: PopoverStore<TData, TContext>): TSelected => {
+    (state: PopoverStore<TData, TContext, TPopoverKey>): TSelected => {
       const next = selector(state);
       if (
         equalityFn &&
         cacheRef.current.hasValue &&
-        equalityFn(cacheRef.current.value as TSelected, next)
+        cacheRef.current.value !== undefined &&
+        equalityFn(cacheRef.current.value, next)
       ) {
-        return cacheRef.current.value as TSelected;
+        return cacheRef.current.value;
       }
       cacheRef.current = { hasValue: true, value: next };
       return next;
@@ -70,7 +89,7 @@ export function usePopoverStore<TSelected, TData = unknown, TContext = unknown>(
 }
 
 /**
- * Hook to retrieve public popover store action dispatch methods.
+ * Hook to retrieve public popover store action dispatch methods with full generic autocompletion.
  *
  * @template TData - The type of resolved data payloads.
  * @template TContext - The type of global shared context.
@@ -82,8 +101,6 @@ export function usePopoverActions<
   TContext = unknown,
   TPopoverKey extends string = RegisteredKeys,
 >(): Readonly<PopoverStore<TData, TContext, TPopoverKey>['actions']> {
-  const store = usePopoverStoreApi<TData, TContext>();
-  return store.getState().actions as Readonly<
-    PopoverStore<TData, TContext, TPopoverKey>['actions']
-  >;
+  const store = usePopoverStoreApi<TData, TContext, TPopoverKey>();
+  return store.getState().actions;
 }

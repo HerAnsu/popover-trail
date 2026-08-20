@@ -4,8 +4,12 @@ import type { PopoverStore } from '../types';
 import { useEventListener } from '../hooks/useEventListener';
 
 /**
- * Internal hook encapsulating keyboard event handling for the provider (SRP).
- * Handles global Escape key keydown events to close topmost active popover.
+ * Internal hook managing global keyboard shortcuts (Escape key dismissal) for the popover provider.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @param store - Root Zustand store API instance.
+ * @param enableKeyboardClose - Whether Escape key dismissal is enabled.
  */
 export function usePopoverKeyboardShortcuts<TData, TContext>(
   store: StoreApi<PopoverStore<TData, TContext>>,

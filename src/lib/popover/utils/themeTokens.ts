@@ -27,7 +27,21 @@ const DEFAULT_THEME_TOKENS: Required<PopoverThemeTokens> = {
   borderRadiusPx: 12,
 };
 
-function injectStyleProperty(element: HTMLElement, propertyName: string, value: string): void {
+export interface StyleDeclarationLike {
+  setProperty(propertyName: string, value: string): void;
+  removeProperty(propertyName: string): string | void | boolean;
+  getPropertyValue?(propertyName: string): string;
+}
+
+export interface ElementWithStyleLike {
+  style: StyleDeclarationLike;
+}
+
+function injectStyleProperty(
+  element: HTMLElement | ElementWithStyleLike,
+  propertyName: string,
+  value: string,
+): void {
   element.style.setProperty(propertyName, value);
 }
 
@@ -37,7 +51,9 @@ function injectStyleProperty(element: HTMLElement, propertyName: string, value: 
  * @param element - Target container element (defaults to `document.documentElement`).
  */
 export function removeThemeTokens(
-  element: HTMLElement | null = typeof document !== 'undefined' ? document.documentElement : null,
+  element: HTMLElement | ElementWithStyleLike | null = typeof document !== 'undefined'
+    ? document.documentElement
+    : null,
 ): void {
   if (!element) return;
   element.style.removeProperty('--pt-base-z-index');
@@ -72,7 +88,9 @@ export function removeThemeTokens(
  * @returns ScopeDisposable handle that resets the CSS variables when disposed.
  */
 export function applyThemeTokens(
-  element: HTMLElement | null = typeof document !== 'undefined' ? document.documentElement : null,
+  element: HTMLElement | ElementWithStyleLike | null = typeof document !== 'undefined'
+    ? document.documentElement
+    : null,
   tokens?: PopoverThemeTokens,
 ): ScopeDisposable {
   if (!element) return createDisposable(() => {});

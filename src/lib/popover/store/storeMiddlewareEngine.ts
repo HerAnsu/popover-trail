@@ -5,9 +5,8 @@
  */
 
 import type { PopoverMiddleware, PopoverStore } from '../types';
-
-const DISPOSE_SYMBOL: symbol =
-  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
+import { wrapResult, isErr } from '../utils/result';
+import { DISPOSE_SYMBOL } from '../utils/disposable';
 
 function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
   val: unknown,
@@ -31,10 +30,6 @@ function mergeSanitizedPatch<T extends object>(target: T, source: object): void 
 
 /**
  * Middleware Engine managing store interceptor subscriptions and patch processing pipeline.
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @template TPopoverKey - Valid popover key union.
  */
 export class PopoverMiddlewareEngine<
   TData = unknown,
@@ -43,7 +38,6 @@ export class PopoverMiddlewareEngine<
 > {
   private readonly middlewares = new Set<PopoverMiddleware<TData, TContext, TPopoverKey>>();
 
-  /** Registers a new middleware interceptor and returns an unsubscription callback. */
   public use(middleware: PopoverMiddleware<TData, TContext, TPopoverKey>): () => void {
     if (!middleware || typeof middleware !== 'function') return () => {};
     this.middlewares.add(middleware);
@@ -52,17 +46,14 @@ export class PopoverMiddlewareEngine<
     };
   }
 
-  /** Gets the current count of active registered middlewares. */
   public get size(): number {
     return this.middlewares.size;
   }
 
-  /** Clears all registered middleware interceptors. */
   public clear(): void {
     this.middlewares.clear();
   }
 
-  /** ScopeDisposable compliance handle clearing all registered middlewares. */
   public dispose(): void {
     this.clear();
   }
@@ -72,8 +63,7 @@ export class PopoverMiddlewareEngine<
   }
 
   /**
-   * Pipeline runner executing registered middleware interceptors on state patches.
-   * If any middleware returns false, the update is canceled (returns false).
+   * Pipeline runner executing registered middleware interceptors on state patches using Result monad.
    */
   public apply(
     initialPatch: Partial<PopoverStore<TData, TContext, TPopoverKey>>,
@@ -85,20 +75,23 @@ export class PopoverMiddlewareEngine<
     let isCloned = false;
 
     for (const mw of this.middlewares) {
-      try {
-        const result = mw(patch, currentState);
-        if (result === false) {
-          return false;
+      const execResult = wrapResult(() => mw(patch, currentState));
+
+      if (isErr(execResult)) {
+        console.error('[PopoverStore] Middleware execution error:', execResult.error);
+        continue;
+      }
+
+      const result = execResult.data;
+      if (result === false) {
+        return false;
+      }
+      if (isStorePatchObject(result)) {
+        if (!isCloned) {
+          patch = { ...initialPatch };
+          isCloned = true;
         }
-        if (isStorePatchObject(result)) {
-          if (!isCloned) {
-            patch = { ...initialPatch };
-            isCloned = true;
-          }
-          mergeSanitizedPatch(patch, result);
-        }
-      } catch (err) {
-        console.error('[PopoverStore] Middleware execution error:', err);
+        mergeSanitizedPatch(patch, result);
       }
     }
 

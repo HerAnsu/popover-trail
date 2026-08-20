@@ -21,10 +21,22 @@ import {
   type PopoverSchemaDefinition,
   type PopoverSchemaInstance,
 } from './schema';
-import { validateFactoryPlacement } from './utils/devWarnings';
+import { validateFactoryPlacement } from './validators';
+import { wrapResult, isOk } from './utils/result';
 import type { RegisteredKeys, RegisteredDataMap } from './types/registerTypes';
 
 declare const process: { env: { NODE_ENV?: string } } | undefined;
+
+declare module 'react' {
+  interface ReactSharedInternals {
+    ReactCurrentDispatcher?: { current?: unknown };
+    ReactCurrentOwner?: { current?: unknown };
+    ReactCurrentBatchConfig?: { current?: unknown };
+  }
+
+  export const __CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: ReactSharedInternals | undefined;
+  export const __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: ReactSharedInternals | undefined;
+}
 
 /**
  * Inspects React dispatcher internals in development mode to detect if `createPopoverTrail`
@@ -32,19 +44,17 @@ declare const process: { env: { NODE_ENV?: string } } | undefined;
  * Creating factory instances on every render causes store recreation and loss of state.
  */
 function isCurrentlyRenderingInReact(): boolean {
-  try {
-    const reactObj = React as unknown as Record<string, Record<string, { current?: unknown }>>;
+  const checkResult = wrapResult(() => {
     const secret =
-      reactObj.__CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED ??
-      reactObj.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+      React.__CLIENT_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED ??
+      React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
     return Boolean(
       secret?.ReactCurrentDispatcher?.current ||
       secret?.ReactCurrentOwner?.current ||
       secret?.ReactCurrentBatchConfig?.current,
     );
-  } catch {
-    return false;
-  }
+  });
+  return isOk(checkResult) ? checkResult.data : false;
 }
 
 /**
@@ -82,7 +92,7 @@ function isCurrentlyRenderingInReact(): boolean {
 export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
   schema: PopoverSchemaInstance<TSchema> | TSchema,
 ): PopoverSchemaInstance<TSchema> & {
-  PopoverProvider: React.ComponentType<PopoverProviderProps>;
+  PopoverProvider: React.ComponentType<PopoverProviderProps<unknown, unknown>>;
   PopoverTrigger: typeof CorePopoverTrigger;
   PopoverPortal: typeof CorePopoverPortal;
   usePopover: typeof coreUsePopover;
@@ -132,13 +142,9 @@ export function createPopoverTrail<
  * Core implementation of `createPopoverTrail`.
  * Validates module placement in development mode and returns the bound suite.
  */
-export function createPopoverTrail<
-  TSchema extends PopoverSchemaDefinition = PopoverSchemaDefinition,
-  TData = RegisteredDataMap[RegisteredKeys],
-  TContext = unknown,
->(schema?: PopoverSchemaInstance<TSchema> | TSchema) {
+export function createPopoverTrail(schema?: unknown): object {
   if (
-    typeof process !== 'undefined' &&
+    process !== undefined &&
     process?.env?.NODE_ENV !== 'production' &&
     isCurrentlyRenderingInReact()
   ) {
@@ -146,25 +152,21 @@ export function createPopoverTrail<
   }
 
   const baseSuite = {
-    PopoverProvider: CorePopoverProvider as React.ComponentType<
-      PopoverProviderProps<TData, TContext>
-    >,
+    PopoverProvider: (props: PopoverProviderProps<unknown, unknown>) =>
+      React.createElement<PopoverProviderProps<unknown, unknown>>(CorePopoverProvider, props),
     PopoverTrigger: CorePopoverTrigger,
     PopoverPortal: CorePopoverPortal,
-    usePopover: coreUsePopover as <K extends string = RegisteredKeys>(
-      key: K,
-    ) => UsePopoverResult<TData>,
-    usePopoverActions: coreUsePopoverActions as () => ReturnType<
-      typeof coreUsePopoverActions<TData, TContext>
-    >,
-    usePopoverContext: coreUsePopoverContext as () => TContext,
+    usePopover: <K extends string = RegisteredKeys>(key: K): UsePopoverResult<unknown> =>
+      coreUsePopover<K, unknown>(key),
+    usePopoverActions: () => coreUsePopoverActions(),
+    usePopoverContext: () => coreUsePopoverContext(),
   };
 
-  if (schema) {
-    const resolvedSchema =
-      typeof schema === 'object' && 'createResolver' in schema
-        ? (schema as PopoverSchemaInstance<TSchema>)
-        : createPopoverSchema(schema as TSchema);
+  if (schema && typeof schema === 'object') {
+    const isInstance = 'createResolver' in schema;
+    const resolvedSchema = isInstance
+      ? schema
+      : createPopoverSchema(schema as PopoverSchemaDefinition);
 
     return {
       ...resolvedSchema,

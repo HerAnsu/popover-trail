@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      focusRestoration: 'Ensure popover close handlers restore focus to trigger element or activeElement ref.',
+      focusRestoration:
+        'Ensure popover close handlers restore focus to trigger element or activeElement ref.',
     },
   },
   create(context) {
@@ -19,7 +20,11 @@ export default {
       FunctionDeclaration(node) {
         if (node.id && node.id.name.startsWith('use') && node.id.name.includes('Close')) {
           const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
-          if (!src.includes('focus') && !src.includes('restoreFocus') && !src.includes('triggerRef')) {
+          if (
+            !src.includes('focus') &&
+            !src.includes('restoreFocus') &&
+            !src.includes('triggerRef')
+          ) {
             context.report({ node, messageId: 'focusRestoration' });
           }
         }

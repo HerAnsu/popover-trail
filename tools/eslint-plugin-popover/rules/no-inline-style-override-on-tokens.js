@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      hardcodedColor: 'Avoid hardcoded color `{{value}}` in core components. Prefer CSS custom properties.',
+      hardcodedColor:
+        'Avoid hardcoded color `{{value}}` in core components. Prefer CSS custom properties.',
     },
   },
   create(context) {

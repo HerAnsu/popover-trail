@@ -1,6 +1,5 @@
 /**
  * Display & Configuration Domain Action Slice for popover-trail.
- * Encapsulates store configuration setters, hover events, button controls, and layout preferences.
  *
  * @module sliceConfig
  */
@@ -14,26 +13,37 @@ import type {
   ButtonControlConfig,
   PopoverTransitionStatus,
   PopoverStateData,
+  TrailEntry,
+  StatePatch,
 } from '../../types';
-import { isDeepEqual, findEntryInStore } from '../../utils/storeHelpers';
+import { isDeepEqual, findEntryInStore, shallowEqual } from '../../utils/storeHelpers';
 import { isPinnedEntry } from '../storeActions';
 import { isValidTransitionStatusChange } from '../fsm';
-import { validateBaseZIndex } from '../../utils/devWarnings';
+import { validateBaseZIndex } from '../../validators';
 import type { SliceContext } from './sliceContext';
-import type { TrailEntry } from '../../types/entryTypes';
 
-function patchEntryButtonControls<TData>(
-  state: { floating: readonly TrailEntry<TData>[]; trail: readonly TrailEntry<TData>[] },
-  key: string,
+function patchEntryButtonControls<TData, TContext, TPopoverKey extends string = string>(
+  state: {
+    floating: readonly TrailEntry<TData, TPopoverKey>[];
+    trail: readonly TrailEntry<TData, TPopoverKey>[];
+  },
+  key: TPopoverKey,
   updater: (prev?: ButtonControlConfig) => ButtonControlConfig,
-): { floating?: readonly TrailEntry<TData>[]; trail?: readonly TrailEntry<TData>[] } {
+): StatePatch<TData, TContext, TPopoverKey> {
   if (!key) return {};
-  const entry: TrailEntry<TData> | undefined = findEntryInStore(state.floating, state.trail, key);
+  const entry = findEntryInStore(state.floating, state.trail, key);
   if (!entry) return {};
-  const updatedEntry: TrailEntry<TData> = {
+
+  const nextControls = updater(entry.buttonControls);
+  if (shallowEqual(entry.buttonControls, nextControls)) {
+    return {};
+  }
+
+  const updatedEntry: TrailEntry<TData, TPopoverKey> = {
     ...entry,
-    buttonControls: updater(entry.buttonControls),
+    buttonControls: nextControls,
   };
+
   const inFloating = state.floating.some((e) => e.key === key);
   return {
     floating: inFloating
@@ -43,30 +53,20 @@ function patchEntryButtonControls<TData>(
   };
 }
 
-/**
- * Factory creating configuration setters and responsive layout actions.
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover string keys.
- * @param ctx - Slice context providing Zustand set/get methods and dependencies.
- * @returns Config slice action methods.
- */
 export function createConfigSlice<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
 >(ctx: SliceContext<TData, TContext, TPopoverKey>) {
   const { set, get, deps } = ctx;
-  const { activeControllers, inFlightPromises, hoverCloseTimers, clearHoverTimer, findEntryByKey } =
-    deps;
+  const { activeControllers, inFlightPromises, findEntryByKey, transitionScheduler } = deps;
 
-  const setIfChanged = <K extends keyof PopoverStateData<TData, TContext>>(
+  const setIfChanged = <K extends keyof PopoverStateData<TData, TContext, TPopoverKey>>(
     key: K,
-    value: PopoverStateData<TData, TContext>[K],
+    value: PopoverStateData<TData, TContext, TPopoverKey>[K],
   ) => {
     if (get()[key] !== value) {
-      set({ [key]: value });
+      set((state) => ({ ...state, [key]: value }));
     }
   };
 
@@ -112,40 +112,31 @@ export function createConfigSlice<
 
     setDebug: (debug: boolean) => setIfChanged('debug', debug),
 
-    hoverEnter: (key: string) => {
+    hoverEnter: (key: TPopoverKey) => {
       if (!key) return;
-      let currentKey: string | undefined = key;
-      const visited = new Set<string>();
+      let currentKey: TPopoverKey | undefined = key;
+      const visited = new Set<TPopoverKey>();
       while (currentKey && !visited.has(currentKey)) {
         visited.add(currentKey);
-        clearHoverTimer(currentKey);
+        transitionScheduler.cancelHover(currentKey);
         const entry = findEntryByKey(currentKey);
         currentKey = entry?.parentKey ?? entry?.originalParentKey;
       }
     },
 
-    hoverLeave: (key: string, delay = 300) => {
+    hoverLeave: (key: TPopoverKey, delay = 300) => {
       if (!key) return;
       if (isPinnedEntry(get().pinnedStates, key)) return;
       const performClose = () => {
-        get().actions.closeByKey(key as unknown as TPopoverKey, { transition: true });
+        get().actions.closeByKey(key, { transition: true });
       };
-      if (deps.scheduleHoverLeave) {
-        deps.scheduleHoverLeave(key, delay, performClose);
-      } else {
-        clearHoverTimer(key);
-        const newTimer = setTimeout(() => {
-          performClose();
-          hoverCloseTimers.delete(key);
-        }, delay);
-        hoverCloseTimers.set(key, newTimer);
-      }
+      transitionScheduler.scheduleHoverLeave(key, delay, performClose);
     },
 
     setCascadeOffsetStep: (cascadeOffsetStep: number) =>
       setIfChanged('cascadeOffsetStep', cascadeOffsetStep),
 
-    setTransitionStatus: (key: string, status: PopoverTransitionStatus) => {
+    setTransitionStatus: (key: TPopoverKey, status: PopoverTransitionStatus) => {
       if (!key) return;
       const entry = findEntryByKey(key);
       if (!entry || entry.transitionStatus === status) return;
@@ -209,17 +200,22 @@ export function createConfigSlice<
       }
     },
 
-    setButtonControls: (key: string, config: ButtonControlConfig) => {
-      set((state) => patchEntryButtonControls(state, key, (prev) => ({ ...prev, ...config })));
+    setButtonControls: (key: TPopoverKey, config: ButtonControlConfig) => {
+      set((state) =>
+        patchEntryButtonControls<TData, TContext, TPopoverKey>(state, key, (prev) => ({
+          ...prev,
+          ...config,
+        })),
+      );
     },
 
     toggleButtonControl: (
-      key: string,
+      key: TPopoverKey,
       controlName: 'enablePin' | 'enableClose' | 'enableDrag',
       enabled?: boolean,
     ) => {
       set((state) =>
-        patchEntryButtonControls(state, key, (prev) => ({
+        patchEntryButtonControls<TData, TContext, TPopoverKey>(state, key, (prev) => ({
           ...prev,
           [controlName]: enabled ?? !prev?.[controlName],
         })),

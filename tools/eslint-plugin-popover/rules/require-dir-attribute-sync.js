@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      checkRtlDirection: 'Ensure placement calculations inspect document or container direction (dir="rtl").',
+      checkRtlDirection:
+        'Ensure placement calculations inspect document or container direction (dir="rtl").',
     },
   },
   create(context) {

@@ -12,12 +12,18 @@ export default {
     },
     schema: [],
     messages: {
-      useAnimationConstant: 'Animation name "{{ name }}" should be referenced via ANIMATION_NAMES constants.',
+      useAnimationConstant:
+        'Animation name "{{ name }}" should be referenced via ANIMATION_NAMES constants.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('components/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('components/')
+    )
+      return {};
 
     return {
       Property(node) {

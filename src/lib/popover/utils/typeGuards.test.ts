@@ -24,7 +24,7 @@ import {
   assertIsDOMRect,
   isPopoverPlacement,
 } from './typeGuards';
-import { TrailEntry, PopoverStoreEvent } from '../types';
+import type { TrailEntry, PopoverStoreEvent } from '../types';
 
 describe('typeGuards utility', () => {
   describe('TrailEntry State Guards', () => {
@@ -110,11 +110,11 @@ describe('typeGuards utility', () => {
     it('identifies DOM event anchor', () => {
       const ev = { currentTarget: {} as HTMLElement };
       expect(isEventAnchor(ev)).toBe(true);
-      expect(isEventAnchor(null as unknown as AnchorEventLike)).toBe(false);
+      expect(isEventAnchor(null)).toBe(false);
     });
 
     it('converts anchor event to ValidatedAnchorRef', () => {
-      const refNull = toValidatedAnchorRef(null as unknown as AnchorEventLike);
+      const refNull = toValidatedAnchorRef(null);
       expect(refNull.getBoundingClientRect()).toBeDefined();
 
       const btn = {} as HTMLElement;
@@ -125,7 +125,7 @@ describe('typeGuards utility', () => {
     it('creates virtual element from coordinates', () => {
       const ve = createVirtualElement(150, 250, 100, 50);
       expect(ve.getBoundingClientRect).toBeDefined();
-      const rect = ve.getBoundingClientRect?.() ?? {
+      const rect = ve.getBoundingClientRect() ?? {
         x: 0,
         y: 0,
         width: 0,
@@ -143,8 +143,10 @@ describe('typeGuards utility', () => {
     });
 
     it('handles NaN/Infinity in createVirtualElement safely', () => {
-      const ve = createVirtualElement(Number.NaN, Infinity, -10, -20);
-      const rect = ve.getBoundingClientRect?.() ?? {
+      const ve = createVirtualElement(Number.NaN, Infinity, -10, -20) as {
+        getBoundingClientRect: () => DOMRect;
+      };
+      const rect = ve.getBoundingClientRect() ?? {
         x: 0,
         y: 0,
         width: 0,
@@ -171,7 +173,7 @@ describe('typeGuards utility', () => {
 
   describe('Store Event Discriminator Guards', () => {
     const openEv: PopoverStoreEvent<unknown> = { type: 'open_root', key: 'card-1', ownerId: 'o1' };
-    const closeEv: PopoverStoreEvent<unknown> = { type: 'close', key: 'card-1' };
+    const closeEv: PopoverStoreEvent<unknown> = { type: 'close', keys: ['card-1'], key: 'card-1' };
     const pinEv: PopoverStoreEvent<unknown> = { type: 'pin', key: 'card-1' };
     const unpinEv: PopoverStoreEvent<unknown> = { type: 'unpin', key: 'card-1' };
     const clearEv: PopoverStoreEvent<unknown> = { type: 'clear' };

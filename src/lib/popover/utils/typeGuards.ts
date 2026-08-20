@@ -1,38 +1,32 @@
 import type { VirtualElement } from '@floating-ui/react';
+import type { TrailEntry, PopoverEntryDiscriminatedState } from '../types/entryTypes';
+import type { PopoverPlacement, PopoverDisplayOptions } from '../types/configTypes';
+import type { PopoverStoreEvent } from '../types/eventTypes';
 import type {
   AnchorEventLike,
-  PopoverDisplayOptions,
-  PopoverEntryDiscriminatedState,
-  PopoverKey,
-  PopoverMiddleware,
-  PopoverPlacement,
-  PopoverResolver,
-  PopoverStoreEvent,
-  TrailEntry,
   ValidatedAnchorRef,
   ViewportX,
   ViewportY,
-} from '../types';
+  PopoverResolver,
+  PopoverMiddleware,
+} from '../types/storeTypes';
+import type { PopoverKey } from '../types/branded';
 import { VALID_PLACEMENTS_SET } from '../constants';
 
 /**
- * Type Guard function checking if a TrailEntry has finished resolving data successfully.
- * Narrows entry.data to TData (eliminating undefined) within conditional blocks.
+ * Type guard verifying if a `TrailEntry` has resolved data successfully.
+ * Narrows `entry.data` to `TData` (non-undefined) and `entry.error` to `null`.
  *
- * @template TData - The resolved data payload type.
- * @param entry - The TrailEntry to inspect.
- * @returns True if entry has resolved data without error or loading state.
+ * @template TData - Resolved data payload type.
+ * @param entry - TrailEntry candidate.
+ * @returns `true` if resolved, `false` otherwise.
  *
  * @example
  * ```typescript
  * if (isResolvedEntry(entry)) {
- *   console.log(entry.data.title); // TypeScript knows entry.data is TData
+ *   console.log(entry.data.name); // data is typed as TData
  * }
  * ```
- *
- * @see {@link isLoadingEntry}
- * @see {@link isErrorEntry}
- * @see {@link getEntryState}
  */
 export function isResolvedEntry<TData>(
   entry: TrailEntry<TData> | undefined,
@@ -43,44 +37,25 @@ export function isResolvedEntry<TData>(
 }
 
 /**
- * Type Guard checking if a TrailEntry is currently performing data resolution.
+ * Type guard verifying if a `TrailEntry` is actively fetching data.
  *
- * @template TData - The resolved data payload type.
- * @param entry - The TrailEntry to inspect.
- * @returns True if entry is loading.
- *
- * @example
- * ```typescript
- * if (isLoadingEntry(entry)) {
- *   return <Spinner />;
- * }
- * ```
- *
- * @see {@link isResolvedEntry}
- * @see {@link isErrorEntry}
+ * @template TData - Resolved data payload type.
+ * @param entry - TrailEntry candidate.
+ * @returns `true` if loading.
  */
 export function isLoadingEntry<TData>(
   entry: TrailEntry<TData> | undefined,
 ): entry is TrailEntry<TData> & { isLoading: true } {
-  return entry !== undefined && entry.isLoading === true;
+  return entry?.isLoading === true;
 }
 
 /**
- * Type Guard checking if a TrailEntry encountered a resolution error.
+ * Type guard verifying if a `TrailEntry` encountered an error during data resolution.
+ * Narrows `entry.error` to `Error`.
  *
- * @template TData - The resolved data payload type.
- * @param entry - The TrailEntry to inspect.
- * @returns True if entry has a non-null Error.
- *
- * @example
- * ```typescript
- * if (isErrorEntry(entry)) {
- *   return <ErrorMessage error={entry.error} />;
- * }
- * ```
- *
- * @see {@link isResolvedEntry}
- * @see {@link isLoadingEntry}
+ * @template TData - Resolved data payload type.
+ * @param entry - TrailEntry candidate.
+ * @returns `true` if in error state.
  */
 export function isErrorEntry<TData>(
   entry: TrailEntry<TData> | undefined,
@@ -89,23 +64,21 @@ export function isErrorEntry<TData>(
 }
 
 /**
- * Extracts a discriminated state object from a TrailEntry for pattern matching (`switch (state.status)`).
+ * Extracts a normalized discriminated state object from a `TrailEntry` for switch/case pattern matching.
  *
- * @template TData - The resolved data payload type.
- * @param entry - The TrailEntry to inspect.
- * @returns Discriminated union state object.
+ * @template TData - Resolved data payload type.
+ * @param entry - Target trail entry.
+ * @returns Discriminated state with `{ status: 'loading' | 'error' | 'success', data, error, isLoading }`.
  *
  * @example
  * ```typescript
  * const state = getEntryState(entry);
  * switch (state.status) {
- *   case 'loading': return <Spinner />;
- *   case 'error': return <ErrorView error={state.error} />;
- *   case 'success': return <CardView data={state.data} />;
+ *   case 'success': return renderSuccess(state.data);
+ *   case 'error': return renderError(state.error);
+ *   case 'loading': return renderLoading();
  * }
  * ```
- *
- * @see {@link isResolvedEntry}
  */
 export function getEntryState<TData>(
   entry: TrailEntry<TData> | undefined | null,
@@ -126,23 +99,30 @@ export function getEntryState<TData>(
 }
 
 /**
- * Utility constructor for creating branded PopoverKey string instances.
+ * Constructs a nominal `PopoverKey` branded string identifier.
  *
- * @template T - The string key type.
- * @param key - The string key value.
- * @returns A branded PopoverKey value.
+ * @template T - String key literal type.
+ * @param key - Raw key string.
+ * @returns Branded `PopoverKey<T>`.
  */
 export function createPopoverKey<T extends string>(key: T): PopoverKey<T> {
   return key as PopoverKey<T>;
 }
 
 /**
- * Helper function providing automatic type inference when creating custom PopoverResolver functions.
+ * Identity helper for defining a `PopoverResolver` with full generic type inference.
  *
- * @template TData - The resolved data payload type.
- * @template TContext - The external context type.
- * @param resolver - The resolver callback function.
- * @returns The typed PopoverResolver callback.
+ * @template TData - Resolved data payload type.
+ * @template TContext - External context type.
+ * @param resolver - Resolver implementation function.
+ * @returns The same resolver function with enforced types.
+ *
+ * @example
+ * ```typescript
+ * const userResolver = definePopoverResolver(async (key, parentData, ctx) => {
+ *   return fetchUserData(key);
+ * });
+ * ```
  */
 export function definePopoverResolver<TData = unknown, TContext = unknown>(
   resolver: PopoverResolver<TData, TContext>,
@@ -150,15 +130,15 @@ export function definePopoverResolver<TData = unknown, TContext = unknown>(
   return resolver;
 }
 
-/** Alias for definePopoverResolver for backward compatibility. */
+/** Alias for `definePopoverResolver` for backward compatibility. */
 export function createPopoverResolver<TData = unknown, TContext = unknown>(
   resolver: PopoverResolver<TData, TContext>,
 ): PopoverResolver<TData, TContext> {
   return definePopoverResolver(resolver);
 }
 
-/** Type guard checking if an AnchorEventLike source is a Floating UI VirtualElement. */
-export function isVirtualElementAnchor(source: AnchorEventLike): source is VirtualElement {
+/** Type guard checking if an `AnchorEventLike` source is a Floating UI `VirtualElement`. */
+export function isVirtualElementAnchor(source?: AnchorEventLike | null): source is VirtualElement {
   return Boolean(
     source &&
     'getBoundingClientRect' in source &&
@@ -169,7 +149,7 @@ export function isVirtualElementAnchor(source: AnchorEventLike): source is Virtu
 
 /** Type guard checking if an AnchorEventLike source is a DOM event with a currentTarget HTMLElement. */
 export function isEventAnchor(
-  source: AnchorEventLike,
+  source?: AnchorEventLike | null,
 ): source is { currentTarget: HTMLElement; stopPropagation?: () => void } {
   return Boolean(source && 'currentTarget' in source && source.currentTarget);
 }
@@ -197,11 +177,8 @@ const NULL_ANCHOR_REF: ValidatedAnchorRef = Object.freeze({
 
 /**
  * Validates and converts an AnchorEventLike source into a ValidatedAnchorRef with geometry bounds.
- *
- * @param source - The event, element, or virtual anchor to normalize.
- * @returns Validated anchor reference object containing a safe `getBoundingClientRect` method.
  */
-export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRef {
+export function toValidatedAnchorRef(source?: AnchorEventLike | null): ValidatedAnchorRef {
   if (!source) {
     return NULL_ANCHOR_REF;
   }
@@ -224,8 +201,6 @@ export function toValidatedAnchorRef(source: AnchorEventLike): ValidatedAnchorRe
 
 /**
  * Converter creating a branded ViewportX coordinate value with NaN safety.
- *
- * @param x - Horizontal viewport coordinate number.
  */
 export function toViewportX(x: number): ViewportX {
   return (Number.isFinite(x) ? x : 0) as ViewportX;
@@ -233,8 +208,6 @@ export function toViewportX(x: number): ViewportX {
 
 /**
  * Converter creating a branded ViewportY coordinate value with NaN safety.
- *
- * @param y - Vertical viewport coordinate number.
  */
 export function toViewportY(y: number): ViewportY {
   return (Number.isFinite(y) ? y : 0) as ViewportY;
@@ -242,24 +215,13 @@ export function toViewportY(y: number): ViewportY {
 
 /**
  * Factory helper creating a VirtualElement / AnchorEventLike object from coordinates.
- * Useful for opening popovers at mouse click points, context menu locations, or canvas coordinates.
- *
- * @example
- * ```typescript
- * window.addEventListener('contextmenu', (e) => {
- *   e.preventDefault();
- *   const virtualAnchor = createVirtualElement(e.clientX, e.clientY);
- *   actions.openRootWithResolver('contextMenu', virtualAnchor);
- * });
- * ```
- *
- * @param x - Horizontal client X coordinate in pixels.
- * @param y - Vertical client Y coordinate in pixels.
- * @param width - Optional target bounding box width (defaults to 0).
- * @param height - Optional target bounding box height (defaults to 0).
- * @returns Virtual anchor object with a standard getBoundingClientRect method.
  */
-export function createVirtualElement(x: number, y: number, width = 0, height = 0): AnchorEventLike {
+export function createVirtualElement(
+  x: number,
+  y: number,
+  width = 0,
+  height = 0,
+): AnchorEventLike & { getBoundingClientRect: () => DOMRect } {
   const safeX = Number.isFinite(x) ? x : 0;
   const safeY = Number.isFinite(y) ? y : 0;
   const safeWidth = Number.isFinite(width) ? Math.max(0, width) : 0;
@@ -293,81 +255,77 @@ export function createVirtualElement(x: number, y: number, width = 0, height = 0
 /** Type guard for 'open_root' event. */
 export function isOpenRootEvent<TData>(
   event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'open_root' }> {
-  return isStoreEvent(event, 'open_root');
+): event is Extract<PopoverStoreEvent<TData>, { type: 'open_root' | 'popover:open_root' }> {
+  return event.type === 'open_root' || event.type === 'popover:open_root';
 }
 
 /** Type guard for 'push_nested' event. */
 export function isPushNestedEvent<TData>(
   event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'push_nested' }> {
-  return isStoreEvent(event, 'push_nested');
+): event is Extract<PopoverStoreEvent<TData>, { type: 'push_nested' | 'popover:push_nested' }> {
+  return event.type === 'push_nested' || event.type === 'popover:push_nested';
 }
 
 /** Type guard for 'close' event. */
 export function isCloseEvent<TData>(
   event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'close' }> {
-  return isStoreEvent(event, 'close');
+): event is Extract<PopoverStoreEvent<TData>, { type: 'close' | 'popover:close' }> {
+  return event.type === 'close' || event.type === 'popover:close';
 }
 
 /** Type guard for 'pin' event. */
 export function isPinEvent<TData>(
   event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'pin' }> {
-  return isStoreEvent(event, 'pin');
+): event is Extract<PopoverStoreEvent<TData>, { type: 'pin' | 'popover:pin' }> {
+  return event.type === 'pin' || event.type === 'popover:pin';
 }
 
 /** Type guard for 'unpin' event. */
 export function isUnpinEvent<TData>(
   event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'unpin' }> {
-  return isStoreEvent(event, 'unpin');
+): event is Extract<PopoverStoreEvent<TData>, { type: 'unpin' | 'popover:unpin' }> {
+  return event.type === 'unpin' || event.type === 'popover:unpin';
 }
 
 /** Type guard for 'resolve_start' event. */
 export function isResolveStartEvent<TData>(
   event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_start' }> {
-  return isStoreEvent(event, 'resolve_start');
+): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_start' | 'popover:resolve_start' }> {
+  return event.type === 'resolve_start' || event.type === 'popover:resolve_start';
 }
 
 /** Type guard for 'resolve_success' event. */
 export function isResolveSuccessEvent<TData>(
   event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_success' }> {
-  return isStoreEvent(event, 'resolve_success');
+): event is Extract<
+  PopoverStoreEvent<TData>,
+  { type: 'resolve_success' | 'popover:resolve_success' }
+> {
+  return event.type === 'resolve_success' || event.type === 'popover:resolve_success';
 }
 
 /** Type guard for 'resolve_error' event. */
 export function isResolveErrorEvent<TData>(
   event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_error' }> {
-  return isStoreEvent(event, 'resolve_error');
+): event is Extract<PopoverStoreEvent<TData>, { type: 'resolve_error' | 'popover:resolve_error' }> {
+  return event.type === 'resolve_error' || event.type === 'popover:resolve_error';
 }
 
 /** Type guard for 'clear' event. */
 export function isClearEvent<TData>(
   event: PopoverStoreEvent<TData>,
-): event is Extract<PopoverStoreEvent<TData>, { type: 'clear' }> {
-  return isStoreEvent(event, 'clear');
+): event is Extract<PopoverStoreEvent<TData>, { type: 'clear' | 'popover:clear' }> {
+  return event.type === 'clear' || event.type === 'popover:clear';
 }
 
 /**
- * Generic type guard filtering a PopoverStoreEvent by its discriminator type string.
+ * Generic type guard narrowing a `PopoverStoreEvent` to a specific event type.
  *
- * @template TData - The resolved data payload type.
- * @template TType - Targeted event discriminator string literal.
- * @param event - Event object to inspect.
- * @param type - Target event type string.
- * @returns True if event.type === type with narrowed payload properties.
- *
- * @example
- * ```typescript
- * if (isStoreEvent(event, 'resolve_success')) {
- *   console.log(event.data); // TS knows event is resolve_success with data payload
- * }
- * ```
+ * @template TData - Resolved data payload type.
+ * @template TType - Target event type discriminator.
+ * @param event - PopoverStoreEvent candidate.
+ * @param type - Target event type name.
+ * @returns `true` if event matches the given type.
  */
 export function isStoreEvent<
   TData = unknown,
@@ -376,18 +334,38 @@ export function isStoreEvent<
   event: PopoverStoreEvent<TData>,
   type: TType,
 ): event is Extract<PopoverStoreEvent<TData>, { type: TType }> {
-  return event.type === type;
+  return (
+    event.type === type || event.type === `popover:${type}` || `popover:${event.type}` === type
+  );
 }
 
 /**
- * Type-safe configuration builder helper preserving literal types for display options.
+ * Identity helper for defining a `PopoverDisplayOptions` configuration object with full autocompletion.
+ *
+ * @template T - Display options type.
+ * @param config - Configuration options object.
+ * @returns The same configuration object with strict typing.
  */
 export function definePopoverConfig<T extends PopoverDisplayOptions>(config: T): T {
   return config;
 }
 
 /**
- * Type-safe middleware definition helper ensuring state patch structural validity.
+ * Identity helper for defining a `PopoverMiddleware` interceptor function with full typing.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global external context type.
+ * @template TPopoverKey - Popover key identifier union type.
+ * @param middleware - Middleware function implementation.
+ * @returns The same middleware function with enforced types.
+ *
+ * @example
+ * ```typescript
+ * const loggingMiddleware = definePopoverMiddleware((patch, state) => {
+ *   console.log('State patch applied:', patch);
+ *   return patch;
+ * });
+ * ```
  */
 export function definePopoverMiddleware<
   TData = unknown,
@@ -400,8 +378,11 @@ export function definePopoverMiddleware<
 }
 
 /**
- * Safely extracts a numeric value from a style property (number, CSS pixel string like '120px', or undefined),
- * avoiding unsafe 'as number' type assertions.
+ * Safely extracts a numeric pixel value from a CSS style property (number or string with 'px').
+ * Returns 0 if value is not a valid number.
+ *
+ * @param val - Numeric or string CSS value.
+ * @returns Parsed finite number.
  */
 export function extractNumericStyle(val: unknown): number {
   if (typeof val === 'number') return Number.isNaN(val) ? 0 : val;
@@ -413,7 +394,11 @@ export function extractNumericStyle(val: unknown): number {
 }
 
 /**
- * Assertion guard verifying a value is a valid TrailEntry object.
+ * Assertion function verifying that `value` matches the `TrailEntry` interface.
+ * Throws a `TypeError` if invalid.
+ *
+ * @param value - Candidate object to validate.
+ * @throws {TypeError} If `value` is not a valid TrailEntry.
  */
 export function assertIsTrailEntry<TData = unknown>(
   value: unknown,
@@ -429,7 +414,11 @@ export function assertIsTrailEntry<TData = unknown>(
 }
 
 /**
- * Assertion guard verifying a value is a valid DOMRect object.
+ * Assertion function verifying that `value` matches the `DOMRect` interface.
+ * Throws a `TypeError` if invalid.
+ *
+ * @param value - Candidate object to validate.
+ * @throws {TypeError} If `value` is not a valid DOMRect.
  */
 export function assertIsDOMRect(value: unknown): asserts value is DOMRect {
   if (
@@ -445,7 +434,10 @@ export function assertIsDOMRect(value: unknown): asserts value is DOMRect {
 }
 
 /**
- * Type guard checking if a string value is a valid Floating UI PopoverPlacement direction.
+ * Type guard verifying if `val` is a valid Floating UI `PopoverPlacement` direction string.
+ *
+ * @param val - Value to check.
+ * @returns `true` if `val` is a valid placement (`'top'`, `'bottom-start'`, etc.).
  */
 export function isPopoverPlacement(val: unknown): val is PopoverPlacement {
   return typeof val === 'string' && VALID_PLACEMENTS_SET.has(val);

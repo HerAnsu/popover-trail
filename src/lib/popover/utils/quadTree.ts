@@ -5,6 +5,8 @@
  * @module quadTree
  */
 
+import { DISPOSE_SYMBOL } from './disposable';
+
 /** Bounding box rectangle dimensions. */
 export interface BoundingBox {
   x: number;
@@ -13,9 +15,13 @@ export interface BoundingBox {
   height: number;
 }
 
-/** Item node stored within a QuadTree spatial region. */
-export interface QuadItem {
-  id: string;
+/**
+ * Item node stored within a QuadTree spatial region.
+ *
+ * @template TId - Unique identifier type.
+ */
+export interface QuadItem<TId extends string = string> {
+  id: TId;
   bounds: BoundingBox;
 }
 
@@ -38,15 +44,26 @@ export function boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
-const DISPOSE_SYMBOL: symbol =
-  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
+function isValidQuadItem<TId extends string = string>(item: unknown): item is QuadItem<TId> {
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    'id' in item &&
+    Boolean(item.id) &&
+    'bounds' in item &&
+    typeof item.bounds === 'object' &&
+    item.bounds !== null
+  );
+}
 
 /**
  * 2D QuadTree Spatial Partitioning Index.
+ *
+ * @template TId - Unique item identifier type.
  */
-export class QuadTree {
-  private items: QuadItem[] = [];
-  private nodes: QuadTree[] = [];
+export class QuadTree<TId extends string = string> {
+  private items: QuadItem<TId>[] = [];
+  private nodes: QuadTree<TId>[] = [];
   private readonly maxItems: number;
   private readonly maxLevels: number;
 
@@ -105,28 +122,28 @@ export class QuadTree {
     const nextLevel = this.level + 1;
 
     // Node 0: Top-Right (NE)
-    this.nodes[0] = new QuadTree(
+    this.nodes[0] = new QuadTree<TId>(
       { x: x + subWidth, y, width: subWidth, height: subHeight },
       this.maxItems,
       this.maxLevels,
       nextLevel,
     );
     // Node 1: Top-Left (NW)
-    this.nodes[1] = new QuadTree(
+    this.nodes[1] = new QuadTree<TId>(
       { x, y, width: subWidth, height: subHeight },
       this.maxItems,
       this.maxLevels,
       nextLevel,
     );
     // Node 2: Bottom-Left (SW)
-    this.nodes[2] = new QuadTree(
+    this.nodes[2] = new QuadTree<TId>(
       { x, y: y + subHeight, width: subWidth, height: subHeight },
       this.maxItems,
       this.maxLevels,
       nextLevel,
     );
     // Node 3: Bottom-Right (SE)
-    this.nodes[3] = new QuadTree(
+    this.nodes[3] = new QuadTree<TId>(
       { x: x + subWidth, y: y + subHeight, width: subWidth, height: subHeight },
       this.maxItems,
       this.maxLevels,
@@ -169,7 +186,7 @@ export class QuadTree {
       this.split();
     }
 
-    const remaining: QuadItem[] = [];
+    const remaining: QuadItem<TId>[] = [];
     for (const currentItem of this.items) {
       if (!currentItem || !currentItem.bounds) continue;
       const index = this.getIndex(currentItem.bounds);
@@ -185,8 +202,8 @@ export class QuadTree {
   /**
    * Inserts a QuadItem into the tree index.
    */
-  insert(item: QuadItem): void {
-    if (!item || !item.id || !item.bounds) return;
+  insert(item?: QuadItem<TId> | Partial<QuadItem<TId>> | null): void {
+    if (!isValidQuadItem<TId>(item)) return;
 
     if (this.nodes.length > 0) {
       const index = this.getIndex(item.bounds);
@@ -209,7 +226,7 @@ export class QuadTree {
    * @param id - Item unique identifier.
    * @returns True if item was found and removed.
    */
-  remove(id: string): boolean {
+  remove(id: TId): boolean {
     if (!id) return false;
 
     const itemIdx = this.items.findIndex((item) => item.id === id);
@@ -232,8 +249,8 @@ export class QuadTree {
    */
   private retrieveFromChildren(
     targetBounds: BoundingBox,
-    returnItems: QuadItem[],
-    seenIds: Set<string>,
+    returnItems: QuadItem<TId>[],
+    seenIds: Set<TId>,
   ): void {
     const index = this.getIndex(targetBounds);
     if (index !== -1 && this.nodes[index]) {
@@ -258,12 +275,12 @@ export class QuadTree {
    * @returns Populated accumulator array with matching items.
    */
   retrieve(
-    returnItems: QuadItem[] = [],
+    returnItems: QuadItem<TId>[] = [],
     itemBounds?: BoundingBox,
-    seenIds?: Set<string>,
-  ): QuadItem[] {
+    seenIds?: Set<TId>,
+  ): QuadItem<TId>[] {
     const targetBounds = itemBounds ?? this.bounds;
-    const seen = seenIds ?? new Set<string>();
+    const seen = seenIds ?? new Set<TId>();
 
     if (this.nodes.length > 0) {
       this.retrieveFromChildren(targetBounds, returnItems, seen);

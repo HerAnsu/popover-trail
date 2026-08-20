@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow floating unhandled promises in useEffect; handle rejection or prefix with void.',
+      description:
+        'Disallow floating unhandled promises in useEffect; handle rejection or prefix with void.',
       category: 'Correctness',
       recommended: true,
     },
     schema: [],
     messages: {
-      floatingPromiseInEffect: 'Unhandled Promise in useEffect. Use "void fn().catch(...)" or an async IIFE.',
+      floatingPromiseInEffect:
+        'Unhandled Promise in useEffect. Use "void fn().catch(...)" or an async IIFE.',
     },
   },
   create(context) {

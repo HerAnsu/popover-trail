@@ -6,7 +6,7 @@ import { validateDragOffset } from '../utils/devWarnings';
 /**
  * Options parameters for the `usePopoverDragAndDrop` hook.
  */
-interface UsePopoverDragAndDropOptions {
+export interface UsePopoverDragAndDropOptions {
   /** True if the popover card is currently being dragged. */
   isDragging: boolean;
   /** Current dnd-kit transform offset coordinates. */
@@ -43,6 +43,15 @@ export interface UsePopoverDragAndDropResult {
   dragY: number;
 }
 
+interface LegacyMediaQueryList extends MediaQueryList {
+  addListener(listener: (e: MediaQueryListEvent) => void): void;
+  removeListener(listener: (e: MediaQueryListEvent) => void): void;
+}
+
+function hasLegacyMediaQueryListener(mq: MediaQueryList): mq is LegacyMediaQueryList {
+  return 'addListener' in mq && typeof mq.addListener === 'function';
+}
+
 class ReducedMotionObserverImpl {
   private matches = false;
   private listeners = new Set<() => void>();
@@ -57,11 +66,8 @@ class ReducedMotionObserverImpl {
       };
       if (typeof mediaQuery.addEventListener === 'function') {
         mediaQuery.addEventListener('change', listener);
-      } else if (
-        typeof (mediaQuery as unknown as { addListener?: (l: unknown) => void }).addListener ===
-        'function'
-      ) {
-        (mediaQuery as unknown as { addListener: (l: unknown) => void }).addListener(listener);
+      } else if (hasLegacyMediaQueryListener(mediaQuery)) {
+        mediaQuery.addListener(listener);
       }
     }
   }

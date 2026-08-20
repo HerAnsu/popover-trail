@@ -1,3 +1,5 @@
+import { wrapResult } from './result';
+
 /**
  * Explicit Resource Management Utilities (TS 5.2+ Symbol.dispose / using pattern).
  * Provides scope-bound disposable cleanup handles for store listeners, timers, and DOM subscriptions.
@@ -21,64 +23,54 @@ export interface ScopeDisposable {
 }
 
 /**
- * Creates a ScopeDisposable wrapper supporting TS 5.2+ `using` statements and standard `dispose()`.
+ * Global Symbol for explicit resource management (`Symbol.dispose`).
+ */
+export const DISPOSE_SYMBOL: symbol = Symbol.dispose ?? Symbol.for('Symbol.dispose');
+
+/**
+ * Creates a disposable handle object from a cleanup callback.
+ * Implements both `.dispose()` and `[Symbol.dispose]()` for TypeScript `using` declarations.
  *
- * @param cleanupFn - Cleanup callback invoked upon disposal.
- * @returns ScopeDisposable object handle.
+ * @param cleanupFn - Cleanup callback executed exactly once upon disposal.
+ * @returns Disposable handle object.
  *
  * @example
  * ```typescript
- * {
- *   using sub = createDisposable(() => store.unsubscribe());
- * } // Automatically disposes when exiting block scope!
+ * const handle = createDisposable(() => clearInterval(timer));
+ * handle.dispose();
  * ```
  */
-const DISPOSE_SYMBOL =
-  typeof Symbol !== 'undefined' ? (Symbol.dispose ?? Symbol.for('Symbol.dispose')) : undefined;
-
-export function createDisposable(cleanupFn: () => void): ScopeDisposable {
+export function createDisposable(
+  cleanupFn: () => void,
+): ScopeDisposable & { [key: symbol]: () => void } {
   let disposed = false;
   const doCleanup = () => {
     if (!disposed) {
       disposed = true;
-      try {
-        cleanupFn();
-      } catch {
-        // Safe disposal
-      }
+      wrapResult(() => cleanupFn());
     }
   };
 
-  const handle: ScopeDisposable = {
+  return {
     dispose: doCleanup,
+    [DISPOSE_SYMBOL]: doCleanup,
   };
-
-  if (DISPOSE_SYMBOL) {
-    (handle as unknown as Record<symbol, unknown>)[DISPOSE_SYMBOL] = doCleanup;
-  }
-
-  return handle;
 }
 
 function safelyDisposeItem(d: ScopeDisposable | (() => void) | null | undefined): void {
   if (!d) return;
-  try {
+  wrapResult(() => {
     if (typeof d === 'function') {
       d();
     } else if (typeof d.dispose === 'function') {
       d.dispose();
     }
-  } catch {
-    // Safe disposal
-  }
+  });
 }
 
 /**
- * Composite container managing multiple disposable handles and cleanup callbacks atomically.
- *
- * @remarks
- * Collects event listeners, intervals, and store subscriptions. When disposed (via `.dispose()` or `using`),
- * all contained disposables are executed safely in isolation.
+ * Composite container that holds and manages multiple disposable handles.
+ * Disposing the CompositeDisposable disposes all handles registered within it in one call.
  *
  * @example
  * ```typescript
@@ -133,8 +125,7 @@ export class CompositeDisposable implements ScopeDisposable {
     this.disposables.clear();
   }
 
-  /** Explicit resource management symbol handler for TS 5.2+ `using` statements. */
-  [DISPOSE_SYMBOL as symbol](): void {
+  [DISPOSE_SYMBOL](): void {
     this.dispose();
   }
 }

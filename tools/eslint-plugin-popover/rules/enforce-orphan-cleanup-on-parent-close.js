@@ -19,7 +19,11 @@ export default {
       FunctionDeclaration(node) {
         if (node.id && node.id.name === 'closePopoverReducer') {
           const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
-          if (!src.includes('getChildren') && !src.includes('dag') && !src.includes('descendants')) {
+          if (
+            !src.includes('getChildren') &&
+            !src.includes('dag') &&
+            !src.includes('descendants')
+          ) {
             context.report({ node, messageId: 'orphanCards' });
           }
         }

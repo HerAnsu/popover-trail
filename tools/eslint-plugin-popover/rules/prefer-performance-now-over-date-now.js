@@ -8,13 +8,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Prefer performance.now() for monotonic high-precision physics and gesture timing',
+      description:
+        'Prefer performance.now() for monotonic high-precision physics and gesture timing',
       category: 'Profiling & Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      usePerformanceNow: 'Use `performance.now()` instead of `Date.now()` for monotonic sub-millisecond precision.',
+      usePerformanceNow:
+        'Use `performance.now()` instead of `Date.now()` for monotonic sub-millisecond precision.',
     },
   },
   create(context) {
@@ -29,7 +31,9 @@ export default {
           node.callee.object.name === 'Date' &&
           node.callee.property &&
           node.callee.property.name === 'now' &&
-          (filename.includes('gesture') || filename.includes('physics') || filename.includes('animation'))
+          (filename.includes('gesture') ||
+            filename.includes('physics') ||
+            filename.includes('animation'))
         ) {
           context.report({ node, messageId: 'usePerformanceNow' });
         }

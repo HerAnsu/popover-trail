@@ -68,8 +68,8 @@ describe('Geometry Value Objects', () => {
       const r3 = RectBounds.of(200, 200, 100, 100);
       expect(r1.intersects(r3)).toBe(false);
 
-      expect(r1.contains(null as unknown as { x: number; y: number })).toBe(false);
-      expect(r1.intersects(null as unknown as RectBounds)).toBe(false);
+      expect(r1.contains(null)).toBe(false);
+      expect(r1.intersects(null)).toBe(false);
     });
 
     it('computes distance between two points', () => {
@@ -92,7 +92,7 @@ describe('Geometry Value Objects', () => {
         right: 110,
         bottom: 70,
         toJSON: () => ({}),
-      } as unknown as DOMRect;
+      };
       const bounds = RectBounds.fromDOMRect(domRectLike);
       expect(bounds.left).toBe(10);
       expect(bounds.top).toBe(20);

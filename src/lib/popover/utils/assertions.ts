@@ -69,12 +69,15 @@ export function assertValidRect(rect: unknown): asserts rect is DOMRect {
       'Pass a valid DOMRect or virtual element with getBoundingClientRect().',
     );
   }
-  const r = rect as Partial<DOMRect>;
   if (
-    !Number.isFinite(r.top) ||
-    !Number.isFinite(r.left) ||
-    !Number.isFinite(r.width) ||
-    !Number.isFinite(r.height)
+    !('top' in rect) ||
+    !Number.isFinite(rect.top) ||
+    !('left' in rect) ||
+    !Number.isFinite(rect.left) ||
+    !('width' in rect) ||
+    !Number.isFinite(rect.width) ||
+    !('height' in rect) ||
+    !Number.isFinite(rect.height)
   ) {
     throw new PopoverError(
       PopoverErrorCode.INVALID_TRANSITION,

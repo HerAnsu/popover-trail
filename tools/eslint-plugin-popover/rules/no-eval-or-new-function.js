@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow eval() and new Function() calls to prevent code injection vulnerabilities.',
+      description:
+        'Disallow eval() and new Function() calls to prevent code injection vulnerabilities.',
       category: 'Security',
       recommended: true,
     },

@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce Object.freeze() on static default configuration constants to prevent accidental mutations.',
+      description:
+        'Enforce Object.freeze() on static default configuration constants to prevent accidental mutations.',
       category: 'Clean Code',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireObjectFreeze: 'Default config object {{ name }} should be frozen with Object.freeze() or defined as const.',
+      requireObjectFreeze:
+        'Default config object {{ name }} should be frozen with Object.freeze() or defined as const.',
     },
   },
   create(context) {

@@ -1,5 +1,7 @@
+import { wrapResult, isOk } from './result';
+
 function cloneBuiltinInstance(obj: object): object | null {
-  if (obj instanceof Date) return new Date(obj.getTime());
+  if (obj instanceof Date) return new Date(obj);
   if (obj instanceof RegExp) return new RegExp(obj.source, obj.flags);
   if (obj instanceof Map) {
     const mapCopy = new Map();
@@ -35,25 +37,20 @@ export function fastClone<T>(obj: T): T {
   }
 
   if (typeof structuredClone === 'function') {
-    try {
-      return structuredClone(obj);
-    } catch {
-      // Fallback for DOM nodes, functions, or symbol keys inside payload
+    const cloneResult = wrapResult(() => structuredClone(obj));
+    if (isOk(cloneResult)) {
+      return cloneResult.data;
     }
   }
 
   const builtinClone = cloneBuiltinInstance(obj);
   if (builtinClone) {
-    return builtinClone as unknown as T;
+    return builtinClone as T;
   }
 
   if (Array.isArray(obj)) {
-    const len = obj.length;
-    const copy = Array.from({ length: len });
-    for (let i = 0; i < len; i++) {
-      copy[i] = fastClone(obj[i]);
-    }
-    return copy as unknown as T;
+    const copy = obj.map((item) => fastClone(item));
+    return copy as T;
   }
 
   return { ...obj };

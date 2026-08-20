@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      unvalidatedPortal: 'Validate portal target DOM container existence before creating React portal.',
+      unvalidatedPortal:
+        'Validate portal target DOM container existence before creating React portal.',
     },
   },
   create(context) {

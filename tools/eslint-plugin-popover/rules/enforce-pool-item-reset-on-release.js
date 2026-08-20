@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce resetting pooled object properties to blank initial state upon release.',
+      description:
+        'Enforce resetting pooled object properties to blank initial state upon release.',
       category: 'Object Pool',
       recommended: true,
     },
     schema: [],
     messages: {
-      requirePoolReset: 'Pooled object should be reset or cleared before pushing to free list in release().',
+      requirePoolReset:
+        'Pooled object should be reset or cleared before pushing to free list in release().',
     },
   },
   create(context) {
@@ -23,7 +25,12 @@ export default {
       MethodDefinition(node) {
         if (node.key && node.key.name === 'release') {
           const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
-          if (body && !body.includes('reset') && !body.includes('clear') && !body.includes('length = 0')) {
+          if (
+            body &&
+            !body.includes('reset') &&
+            !body.includes('clear') &&
+            !body.includes('length = 0')
+          ) {
             context.report({
               node,
               messageId: 'requirePoolReset',

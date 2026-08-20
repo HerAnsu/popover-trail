@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      validateEarly: 'Function {{ name }} accesses deeply nested properties before validating required arguments.',
+      validateEarly:
+        'Function {{ name }} accesses deeply nested properties before validating required arguments.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {
@@ -27,7 +34,12 @@ export default {
           node.params.length > 0
         ) {
           const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
-          if (body.includes('.push(') && !body.includes('if (!') && !body.includes('assert') && !body.includes('invariant')) {
+          if (
+            body.includes('.push(') &&
+            !body.includes('if (!') &&
+            !body.includes('assert') &&
+            !body.includes('invariant')
+          ) {
             context.report({
               node,
               messageId: 'validateEarly',

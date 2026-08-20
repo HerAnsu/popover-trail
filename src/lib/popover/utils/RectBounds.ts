@@ -43,10 +43,14 @@ export class RectBounds {
     return new Point2D(this.left + this.width / 2, this.top + this.height / 2);
   }
 
-  /** Constructs a RectBounds from a standard DOMRect object. */
-  static fromDOMRect(rect?: DOMRect | null): RectBounds {
+  /** Constructs a RectBounds from a standard DOMRect object or rect-like dictionary. */
+  static fromDOMRect(rect?: DOMRect | Partial<DOMRect> | null): RectBounds {
     if (!rect) return new RectBounds(0, 0, 0, 0);
-    return new RectBounds(rect.top, rect.left, rect.width, rect.height);
+    const top = rect.top ?? rect.y ?? 0;
+    const left = rect.left ?? rect.x ?? 0;
+    const width = rect.width ?? 0;
+    const height = rect.height ?? 0;
+    return new RectBounds(top, left, width, height);
   }
 
   /** Factory creating a RectBounds instance. */
@@ -55,7 +59,7 @@ export class RectBounds {
   }
 
   /** Checks if a 2D point coordinate lies inside this bounding box (inclusive). */
-  contains(point: Point2D | { x: number; y: number }): boolean {
+  contains(point?: Point2D | { x: number; y: number } | null): boolean {
     if (!point) return false;
     const px = point.x;
     const py = point.y;
@@ -63,6 +67,12 @@ export class RectBounds {
     return px >= this.left && px <= this.right && py >= this.top && py <= this.bottom;
   }
 
+  /**
+   * Checks whether this bounding box overlaps with another bounding box.
+   *
+   * @param other - Other bounding box.
+   * @returns `true` if boxes intersect.
+   */
   intersects(other?: RectBounds | null): boolean {
     if (!other) return false;
     return (
@@ -73,6 +83,11 @@ export class RectBounds {
     );
   }
 
+  /**
+   * Converts this RectBounds into a standard browser `DOMRect` instance.
+   *
+   * @returns `DOMRect` representation.
+   */
   toDOMRect(): DOMRect {
     if (typeof DOMRect !== 'undefined') {
       return new DOMRect(this.left, this.top, this.width, this.height);

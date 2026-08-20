@@ -3,7 +3,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure snapshot deserializers provide safe fallback handling for malformed payloads',
+      description:
+        'Ensure snapshot deserializers provide safe fallback handling for malformed payloads',
       category: 'History & Snapshots',
       recommended: true,
     },

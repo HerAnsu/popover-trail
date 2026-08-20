@@ -3,7 +3,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure scale transform parameters stay within realistic optical boundaries (0.2 to 3.0)',
+      description:
+        'Ensure scale transform parameters stay within realistic optical boundaries (0.2 to 3.0)',
       category: 'Transitions',
       recommended: true,
     },

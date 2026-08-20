@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce URL.revokeObjectURL() cleanup to release memory after creating blob URLs.',
+      description:
+        'Enforce URL.revokeObjectURL() cleanup to release memory after creating blob URLs.',
       category: 'Memory',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireRevokeObjectURL: 'Ensure URL.revokeObjectURL(url) is called to release blob URL memory.',
+      requireRevokeObjectURL:
+        'Ensure URL.revokeObjectURL(url) is called to release blob URL memory.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       CallExpression(node) {

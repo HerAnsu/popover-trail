@@ -2,7 +2,7 @@
  * Trail Stack Domain Action Slice for popover-trail.
  * Encapsulates trail stack navigation actions (openRoot, pushNested, closeFrom, closeByKey, closeAll, clearTrail, closeTopmost).
  *
- * @module sliceTrail
+ * @module store/slices/sliceTrail
  */
 
 import type { TrailEntry, PopoverStoreEvent, PopoverStore } from '../../types';
@@ -17,6 +17,7 @@ import {
 import { selectTopmostEntry } from '../storeSelectors';
 import { EMPTY_ARRAY } from '../storeDefaults';
 import { dispatchStoreEvent } from '../eventBus';
+import { wrapResult, isErr } from '../../utils/result';
 import type { SliceContext } from './sliceContext';
 import type { PopoverDAG } from '../../utils/dag';
 
@@ -24,11 +25,11 @@ import type { PopoverDAG } from '../../utils/dag';
  * Safely removes nodes from the DAG kernel if they are no longer active
  * in either trailing or floating lists, preventing unbounded graph growth.
  */
-function pruneDAGNodes<TData>(
+function pruneDAGNodes<TData, TPopoverKey extends string = string>(
   dag: PopoverDAG | undefined,
-  keysToPrune: Iterable<string>,
-  remainingFloating: readonly TrailEntry<TData>[],
-  remainingTrail: readonly TrailEntry<TData>[] = [],
+  keysToPrune: Iterable<TPopoverKey>,
+  remainingFloating: readonly TrailEntry<TData, TPopoverKey>[],
+  remainingTrail: readonly TrailEntry<TData, TPopoverKey>[] = [],
 ): void {
   if (!dag) return;
 
@@ -45,12 +46,12 @@ function pruneDAGNodes<TData>(
 /**
  * Safely executes user onClose lifecycle callbacks and clears DAG node memory for pruned entries.
  */
-function notifyAndPruneClosedEntries<TData>(
-  removedKeys: ReadonlySet<string>,
-  nextFloating: readonly TrailEntry<TData>[],
-  nextTrail: readonly TrailEntry<TData>[],
-  nextPinnedStates: Record<string, boolean>,
-  findEntryByKey: (key: string) => TrailEntry<TData> | undefined,
+function notifyAndPruneClosedEntries<TData, TPopoverKey extends string = string>(
+  removedKeys: ReadonlySet<TPopoverKey>,
+  nextFloating: readonly TrailEntry<TData, TPopoverKey>[],
+  nextTrail: readonly TrailEntry<TData, TPopoverKey>[],
+  nextPinnedStates: Partial<Record<TPopoverKey, boolean>>,
+  findEntryByKey: (key: string) => TrailEntry<TData, TPopoverKey> | undefined,
   dag?: PopoverDAG,
 ): void {
   const floatingSet = new Set(nextFloating.map((e) => e.key));
@@ -64,10 +65,9 @@ function notifyAndPruneClosedEntries<TData>(
 
       const removedEntry = findEntryByKey(key);
       if (removedEntry?.onClose) {
-        try {
-          removedEntry.onClose(key);
-        } catch (err) {
-          console.error('[popover-trail]: Exception in onClose callback:', err);
+        const closeResult = wrapResult(() => removedEntry.onClose?.(key));
+        if (isErr(closeResult)) {
+          console.error('[popover-trail]: Exception in onClose callback:', closeResult.error);
         }
       }
     }
@@ -78,10 +78,10 @@ function notifyAndPruneClosedEntries<TData>(
  * Calculates the maximum exit transition duration across all removed keys,
  * taking per-entry duration overrides into account over the global default.
  */
-function resolveMaxExitDuration<TData>(
-  removedKeys: ReadonlySet<string>,
+function resolveMaxExitDuration<TData, TPopoverKey extends string = string>(
+  removedKeys: ReadonlySet<TPopoverKey>,
   globalDuration: number,
-  findEntryByKey: (key: string) => TrailEntry<TData> | undefined,
+  findEntryByKey: (key: string) => TrailEntry<TData, TPopoverKey> | undefined,
 ): number {
   let maxDuration = globalDuration;
   for (const key of removedKeys) {
@@ -98,9 +98,9 @@ function resolveMaxExitDuration<TData>(
  *
  * @template TData - Resolved data payload type.
  * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover string keys.
- * @param ctx - Slice context providing Zustand set/get methods and dependencies.
- * @returns Trail slice action methods.
+ * @template TPopoverKey - Popover key string union.
+ * @param ctx - Store dependency injection slice context.
+ * @returns Trail action dispatch methods.
  */
 export function createTrailSlice<
   TData = unknown,
@@ -110,23 +110,22 @@ export function createTrailSlice<
   const { set, get, deps } = ctx;
   const {
     activeControllers,
-    transitionTimers,
     eventListeners,
-    clearTransitionTimer,
     abortControllersForKeys,
     resetStoreState,
     findEntryByKey,
     pushSnapshot,
     popoverDAG,
+    transitionScheduler,
   } = deps;
 
   const emitEvent = (event: PopoverStoreEvent<TData>) => dispatchStoreEvent(eventListeners, event);
   const getCurrentState = () => get();
 
   /** Marks all removed entries as 'unmounting' to trigger CSS exit animations. */
-  const applyUnmountingState = (removedKeys: ReadonlySet<string>): void => {
+  const applyUnmountingState = (removedKeys: ReadonlySet<TPopoverKey>): void => {
     set((state) => {
-      const update = (e: TrailEntry<TData>) =>
+      const update = (e: TrailEntry<TData, TPopoverKey>) =>
         removedKeys.has(e.key) ? { ...e, transitionStatus: 'unmounting' as const } : e;
       return {
         trail: state.trail.map(update),
@@ -140,17 +139,19 @@ export function createTrailSlice<
    * resets their pinned state, cleans up DAG nodes, and recomputes derived collections.
    */
   const buildCleanupPatch =
-    (removedKeys: ReadonlySet<string>, filterUnmountingOnly = false) =>
+    (removedKeys: ReadonlySet<TPopoverKey>, filterUnmountingOnly = false) =>
     (state: PopoverStore<TData, TContext, TPopoverKey>) => {
       const keep = filterUnmountingOnly
-        ? (e: TrailEntry<TData>) => !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting'
-        : (e: TrailEntry<TData>) => !removedKeys.has(e.key);
+        ? (e: TrailEntry<TData, TPopoverKey>) =>
+            !removedKeys.has(e.key) || e.transitionStatus !== 'unmounting'
+        : (e: TrailEntry<TData, TPopoverKey>) => !removedKeys.has(e.key);
 
       const nextFloating = state.floating.filter(keep);
-      const nextTrail = state.trail.filter(keep);
-      const nextPinnedStates = { ...state.pinnedStates };
+      const rawNextTrail = state.trail.filter(keep);
+      const nextTrail = rawNextTrail.length === 0 ? EMPTY_ARRAY : rawNextTrail;
+      const nextPinnedStates: Partial<Record<TPopoverKey, boolean>> = { ...state.pinnedStates };
 
-      notifyAndPruneClosedEntries(
+      notifyAndPruneClosedEntries<TData, TPopoverKey>(
         removedKeys,
         nextFloating,
         nextTrail,
@@ -162,7 +163,7 @@ export function createTrailSlice<
       return {
         floating: nextFloating,
         trail: nextTrail,
-        ...getCleanupStatePatch<TData, TContext>(
+        ...getCleanupStatePatch<TData, TContext, TPopoverKey>(
           nextFloating,
           nextTrail,
           state.offsets,
@@ -174,52 +175,28 @@ export function createTrailSlice<
     };
 
   /** Removes entries immediately without exit animation delay. */
-  const applyImmediateClose = (removedKeys: ReadonlySet<string>): void => {
+  const applyImmediateClose = (removedKeys: ReadonlySet<TPopoverKey>): void => {
     set(buildCleanupPatch(removedKeys));
   };
 
-  const scheduleCustomTransitionExit = (
-    removedKeys: ReadonlySet<string>,
-    duration: number,
-    scheduleFn: (key: string, duration: number, callback: () => void) => void,
-    onExitComplete: () => void,
-  ) => {
-    let completedCount = 0;
-    const totalCount = removedKeys.size;
-    for (const key of removedKeys) {
-      scheduleFn(key, duration, () => {
-        completedCount += 1;
-        if (completedCount >= totalCount) {
-          onExitComplete();
-        }
-      });
-    }
-  };
-
-  const scheduleStandardTransitionExit = (removedKeys: ReadonlySet<string>, duration: number) => {
-    for (const key of removedKeys) {
-      clearTransitionTimer(key);
-      const timer = setTimeout(() => {
-        transitionTimers.delete(key);
-        set(buildCleanupPatch(new Set([key]), true));
-      }, duration);
-      transitionTimers.set(key, timer);
-    }
-  };
-
   /** Schedules the final state cleanup after all exit transitions have completed. */
-  const scheduleExitCleanup = (removedKeys: ReadonlySet<string>, duration: number): void => {
-    if (deps.scheduleTransitionExit) {
-      scheduleCustomTransitionExit(removedKeys, duration, deps.scheduleTransitionExit, () => {
-        set(buildCleanupPatch(removedKeys, true));
+  const scheduleExitCleanup = (removedKeys: ReadonlySet<TPopoverKey>, duration: number): void => {
+    for (const key of removedKeys) {
+      transitionScheduler.scheduleExitTransition(key, duration, () => {
+        set(buildCleanupPatch(new Set([key]), true));
       });
-    } else {
-      scheduleStandardTransitionExit(removedKeys, duration);
     }
+  };
+
+  /** Shared reset handler resetting state, DAG hierarchy, and emitting clear event. */
+  const handleResetAll = (): void => {
+    emitEvent({ type: 'clear' });
+    popoverDAG?.clear();
+    resetStoreState();
   };
 
   const slice = {
-    openRoot: (ownerId: string, entry: TrailEntry<TData>) => {
+    openRoot: (ownerId: string, entry: TrailEntry<TData, TPopoverKey>) => {
       const current = getCurrentState();
       pushSnapshot(current);
 
@@ -227,9 +204,8 @@ export function createTrailSlice<
         const oldTrailKeys = current.trail.map((e) => e.key);
         abortControllersForKeys(oldTrailKeys);
 
-        // If replacing trail for a different owner, prune old unpinned trail nodes from DAG
         if (current.ownerId !== ownerId) {
-          pruneDAGNodes(popoverDAG, oldTrailKeys, current.floating);
+          pruneDAGNodes<TData, TPopoverKey>(popoverDAG, oldTrailKeys, current.floating);
         }
       }
 
@@ -237,7 +213,7 @@ export function createTrailSlice<
       set((state) => openRootState(state, ownerId, entry));
     },
 
-    pushNested: (index: number, entry: TrailEntry<TData>) => {
+    pushNested: (index: number, entry: TrailEntry<TData, TPopoverKey>) => {
       const current = getCurrentState();
       pushSnapshot(current);
       const { trail, floating } = current;
@@ -248,7 +224,7 @@ export function createTrailSlice<
         if (trailIndex + 1 < trail.length) {
           const truncatedKeys = trail.slice(trailIndex + 1).map((e) => e.key);
           abortControllersForKeys(truncatedKeys);
-          pruneDAGNodes(popoverDAG, truncatedKeys, floating);
+          pruneDAGNodes<TData, TPopoverKey>(popoverDAG, truncatedKeys, floating);
         }
       }
 
@@ -259,7 +235,7 @@ export function createTrailSlice<
     closeFrom: (index: number, options?: { transition?: boolean }) => {
       const { floating, trail, closePinnedDescendants, pinnedStates, exitTransitionDuration } =
         get();
-      const res = getRemovedKeysForClose(
+      const res = getRemovedKeysForClose<TData, TPopoverKey>(
         floating,
         trail,
         index,
@@ -273,7 +249,7 @@ export function createTrailSlice<
       abortControllersForKeys(removedKeys);
       emitEvent({ type: 'close', keys: [...removedKeys] });
 
-      const maxDuration = resolveMaxExitDuration(
+      const maxDuration = resolveMaxExitDuration<TData, TPopoverKey>(
         removedKeys,
         exitTransitionDuration,
         findEntryByKey,
@@ -287,17 +263,9 @@ export function createTrailSlice<
       }
     },
 
-    clear: () => {
-      emitEvent({ type: 'clear' });
-      popoverDAG?.clear();
-      resetStoreState();
-    },
+    clear: handleResetAll,
 
-    closeAll: () => {
-      emitEvent({ type: 'clear' });
-      popoverDAG?.clear();
-      resetStoreState();
-    },
+    closeAll: handleResetAll,
 
     clearTrail: () => {
       const { trail } = get();
@@ -309,54 +277,27 @@ export function createTrailSlice<
         activeControllers.delete('__root__');
       }
 
-      const {
-        floating,
-        pinnedStates,
-        offsets,
-        zIndexOrder,
-        nestedHydrationRequestCounters,
-        closePinnedDescendants,
-      } = get();
+      const { floating, pinnedStates, closePinnedDescendants } = get();
 
       const trailKeys = trail.map((e) => e.key);
       const descendants =
-        getRemovedKeysForClose(floating, trail, 0, closePinnedDescendants, pinnedStates)
-          ?.removedKeys ?? [];
-      const removedKeys = new Set<string>([...trailKeys, ...descendants]);
+        getRemovedKeysForClose<TData, TPopoverKey>(
+          floating,
+          trail,
+          0,
+          closePinnedDescendants,
+          pinnedStates,
+        )?.removedKeys ?? [];
+      const removedKeys = new Set<TPopoverKey>([...trailKeys, ...descendants]);
 
       abortControllersForKeys(removedKeys);
       emitEvent({ type: 'close', keys: [...removedKeys] });
 
-      const nextFloating = floating.filter((e) => !removedKeys.has(e.key));
-      const nextPinnedStates = { ...pinnedStates };
-
-      notifyAndPruneClosedEntries(
-        removedKeys,
-        nextFloating,
-        [],
-        nextPinnedStates,
-        findEntryByKey,
-        popoverDAG,
-      );
-
-      const cleanupPatch = getCleanupStatePatch<TData, TContext>(
-        nextFloating,
-        [],
-        offsets,
-        zIndexOrder,
-        nextPinnedStates,
-        nestedHydrationRequestCounters,
-      );
-
-      set({
-        trail: EMPTY_ARRAY,
-        floating: nextFloating,
-        ...cleanupPatch,
-      });
+      applyImmediateClose(removedKeys);
     },
 
     closeTopmost: (options?: { transition?: boolean }) => {
-      const entry = selectTopmostEntry(get());
+      const entry = selectTopmostEntry<TData, TPopoverKey>(get());
       if (!entry || entry.transitionStatus === 'unmounting') return;
       const idx = findEntryIndex(get().floating, get().trail, entry.key);
       if (idx !== -1) {
@@ -364,7 +305,7 @@ export function createTrailSlice<
       }
     },
 
-    closeByKey: (key: string, options?: { transition?: boolean }) => {
+    closeByKey: (key: TPopoverKey, options?: { transition?: boolean }) => {
       const { floating, trail } = get();
       const entry = findEntryInStore(floating, trail, key);
       if (!entry) return;

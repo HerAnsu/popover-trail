@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Prefer document.querySelector<HTMLElement>() generic syntax over manual "as HTMLElement" cast.',
+      description:
+        'Prefer document.querySelector<HTMLElement>() generic syntax over manual "as HTMLElement" cast.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      preferGenericQuerySelector: 'Use document.querySelector<{{ type }}>(...) instead of casting with "as {{ type }}".',
+      preferGenericQuerySelector:
+        'Use document.querySelector<{{ type }}>(...) instead of casting with "as {{ type }}".',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       TSAsExpression(node) {

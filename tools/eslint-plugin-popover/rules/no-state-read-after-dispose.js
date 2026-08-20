@@ -12,18 +12,28 @@ export default {
     },
     schema: [],
     messages: {
-      checkDisposedAfterAwait: 'Async method {{ name }} reads state after await without checking this.isDisposed.',
+      checkDisposedAfterAwait:
+        'Async method {{ name }} reads state after await without checking this.isDisposed.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('Controller')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('Controller')
+    )
+      return {};
 
     return {
       MethodDefinition(node) {
         if (node.value && node.value.async) {
           const body = context.getSourceCode ? context.getSourceCode().getText(node.value) : '';
-          if (body.includes('await ') && body.includes('this.store.getState()') && !body.includes('isDisposed')) {
+          if (
+            body.includes('await ') &&
+            body.includes('this.store.getState()') &&
+            !body.includes('isDisposed')
+          ) {
             context.report({
               node,
               messageId: 'checkDisposedAfterAwait',

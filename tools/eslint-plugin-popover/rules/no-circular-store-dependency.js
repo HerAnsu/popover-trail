@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow store slices from importing concrete store factories to prevent circular module dependencies.',
+      description:
+        'Disallow store slices from importing concrete store factories to prevent circular module dependencies.',
       category: 'Architecture',
       recommended: true,
     },
     schema: [],
     messages: {
-      noCircularStoreImport: 'Store slice files should not import createPopoverStore directly; receive deps via slice builder.',
+      noCircularStoreImport:
+        'Store slice files should not import createPopoverStore directly; receive deps via slice builder.',
     },
   },
   create(context) {

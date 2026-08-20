@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      mutableHookReturn: 'Custom popover hooks should return structured objects or as const tuples.',
+      mutableHookReturn:
+        'Custom popover hooks should return structured objects or as const tuples.',
     },
   },
   create(context) {
@@ -30,7 +31,11 @@ export default {
         ) {
           const returnStatements = node.body.body.filter((stmt) => stmt.type === 'ReturnStatement');
           for (const ret of returnStatements) {
-            if (ret.argument && ret.argument.type === 'ArrayExpression' && !ret.argument.typeAnnotation) {
+            if (
+              ret.argument &&
+              ret.argument.type === 'ArrayExpression' &&
+              !ret.argument.typeAnnotation
+            ) {
               context.report({
                 node: ret,
                 messageId: 'mutableHookReturn',

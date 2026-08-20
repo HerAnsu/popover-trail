@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      useStandardAlgorithm: 'Algorithm name "{{ alg }}" in crypto.subtle.digest should be "SHA-256" or "SHA-512".',
+      useStandardAlgorithm:
+        'Algorithm name "{{ alg }}" in crypto.subtle.digest should be "SHA-256" or "SHA-512".',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       CallExpression(node) {

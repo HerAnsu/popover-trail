@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow document.write() and document.writeln() which block HTML parsing and introduce XSS vectors.',
+      description:
+        'Disallow document.write() and document.writeln() which block HTML parsing and introduce XSS vectors.',
       category: 'Security',
       recommended: true,
     },

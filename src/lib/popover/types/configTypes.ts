@@ -1,41 +1,43 @@
-/**
- * Configuration Options, Positioning Tokens, and Theme Types for popover-trail.
- *
- * @module types/configTypes
- */
-
 import type { Placement, Boundary } from '@floating-ui/react';
-import type { TrailEntry } from './entryTypes';
-import type { ReadonlyDeep } from './storeTypes';
 import type { StackGroupId, PopoverKey } from './branded';
-import type { PopoverThemeTokens } from '../utils/themeTokens';
-
-export type { PopoverThemeTokens };
+import type { TrailEntry } from './entryTypes';
 
 /** Branded popover key identifier type. */
 export type PopoverKeyId = PopoverKey;
 
-/** Deep readonly type helper for immutable state guarantees. */
-export type DeepReadonly<T> = ReadonlyDeep<T>;
-
 /**
- * Valid shift directions for cascade stacking offsets.
+ * Recursively enforces `readonly` on all properties, arrays, Sets, and Maps of type `T`.
+ * Ensures store state cannot be mutated in place.
+ *
+ * @template T - Type to make deeply immutable.
+ *
+ * @example
+ * ```typescript
+ * type ImmutableState = DeepReadonly<PopoverStateData>;
+ * ```
  */
+export type DeepReadonly<T> = T extends (...args: never[]) => unknown
+  ? T
+  : T extends ReadonlyMap<infer K, infer V>
+    ? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>>
+    : T extends ReadonlySet<infer U>
+      ? ReadonlySet<DeepReadonly<U>>
+      : T extends readonly (infer U)[]
+        ? readonly DeepReadonly<U>[]
+        : T extends object
+          ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+          : T;
+
+/** Shift direction applied when nesting cascading popover cards. */
 export type CascadeOffsetDirection = 'left' | 'right' | 'top' | 'bottom' | 'none';
 
-/**
- * Axis locks for drag-and-drop movement constraints.
- */
+/** Axis constraint for dragging pinned or trailing popovers. */
 export type DragAxis = 'x' | 'y' | 'both';
 
-/**
- * Responsive layout transformation mode.
- */
+/** Responsive display adaptation mode on smaller screens. */
 export type PopoverResponsiveMode = 'auto' | 'popover' | 'bottom-sheet' | 'modal';
 
-/**
- * Positioning layout strategy.
- */
+/** Positioning engine and anchoring strategy. */
 export type PopoverLayoutStrategy =
   | 'floating-ui'
   | 'fixed-center'
@@ -59,20 +61,25 @@ export type KnownKeyboardKey =
   | 'PageDown'
   | (string & {});
 
-/** Custom keyboard shortcut map with key autocompletion. */
+/** Map associating keyboard keys with action callbacks. */
 export type KeyboardShortcutMap = Partial<Record<KnownKeyboardKey, (key: string) => void>>;
 
 /** Map of base z-index layering depth offsets per stack group ID. */
 export type ZIndexBaseMap = Record<StackGroupId | string, number>;
 
 /**
- * Click-outside detection configuration options.
+ * Configuration options for detecting and handling clicks outside active popovers.
  */
 export interface ClickOutsideConfig {
+  /** If false, disables click-outside detection. */
   enabled?: boolean;
+  /** CSS selector for elements that should not trigger a close when clicked. */
   ignoreSelector?: string;
+  /** CSS class name for elements that should not trigger a close when clicked. */
   ignoreClass?: string;
+  /** CSS selector to identify popover container elements. */
   popoverSelector?: string;
+  /** Callback fired when an outside click occurs. */
   onClickOutside?: (event: MouseEvent | TouchEvent) => void;
 }
 
@@ -114,13 +121,13 @@ export interface ButtonControlConfig {
  * Configuration options for WAI-ARIA Focus Lock (Focus Trapping) and accessibility controls.
  */
 export interface FocusLockOptions {
-  /** If true, enables Focus Lock (focus trapping) inside this popover card (default: false for popovers, true for modals). */
+  /** If true, traps keyboard focus inside the active popover card. */
   enabled?: boolean;
-  /** Custom CSS selector or callback returning element to auto-focus when opened. */
+  /** Custom CSS selector or function returning the element to focus on open. */
   autoFocusElement?: string | (() => HTMLElement | null);
-  /** If true, restores focus to the previously focused element when closed (default: true). */
+  /** If true, restores focus to the trigger element when closed (default: true). */
   returnFocus?: boolean;
-  /** If true, locks body scrolling while active (default: false). */
+  /** If true, prevents page scrolling while the popover is active. */
   lockScroll?: boolean;
 }
 
@@ -234,6 +241,16 @@ export interface OpenNestedOptions extends PopoverDisplayOptions {
 }
 
 /**
+ * Custom asynchronous or synchronous key-value storage engine interface.
+ */
+export interface StateStorageEngine {
+  getItem: (key: string) => Promise<string | null> | string | null;
+  setItem: (key: string, value: string) => Promise<void> | void;
+  removeItem: (key: string) => Promise<void> | void;
+  clear?: () => Promise<void> | void;
+}
+
+/**
  * Configuration options for persisting active popover states.
  */
 export interface PopoverPersistConfig {
@@ -241,7 +258,7 @@ export interface PopoverPersistConfig {
   key?: string;
   storageKey?: string;
   /** Storage implementation provider (defaults to window.localStorage). */
-  storage?: Storage;
+  storage?: Storage | StateStorageEngine;
   /** If true, automatically rehydrates persisted state on initialization (default: true). */
   autoRehydrate?: boolean;
   /** Custom filter predicate for persisting entries. */
@@ -299,5 +316,8 @@ export interface PopoverCSSProperties extends React.CSSProperties {
   '--popover-transition-duration'?: string;
   '--popover-max-height'?: string;
   '--popover-max-width'?: string;
+
   [key: `--${string}`]: string | number | undefined;
 }
+
+export { type PopoverThemeTokens } from '../utils/themeTokens';

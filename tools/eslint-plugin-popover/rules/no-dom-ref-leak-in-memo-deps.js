@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow passing mutable DOM nodes directly in React hook dependency arrays; pass ref objects or boolean state.',
+      description:
+        'Disallow passing mutable DOM nodes directly in React hook dependency arrays; pass ref objects or boolean state.',
       category: 'Correctness',
       recommended: true,
     },
     schema: [],
     messages: {
-      noDomInHookDeps: 'Do not pass raw DOM Element {{ name }} in dependency array; pass ref object or primitive property.',
+      noDomInHookDeps:
+        'Do not pass raw DOM Element {{ name }} in dependency array; pass ref object or primitive property.',
     },
   },
   create(context) {
@@ -35,7 +37,10 @@ export default {
               dep &&
               dep.type === 'Identifier' &&
               dep.name !== 'virtualElement' &&
-              (dep.name.endsWith('Element') || dep.name.endsWith('Node') || dep.name === 'anchorEl' || dep.name === 'cardEl')
+              (dep.name.endsWith('Element') ||
+                dep.name.endsWith('Node') ||
+                dep.name === 'anchorEl' ||
+                dep.name === 'cardEl')
             ) {
               context.report({
                 node: dep,

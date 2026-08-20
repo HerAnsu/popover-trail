@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow large Array(N).fill() allocations in render functions; precompute or use generators.',
+      description:
+        'Disallow large Array(N).fill() allocations in render functions; precompute or use generators.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      noLargeArrayInRender: 'Avoid large array allocation (size {{ size }}) in render body; preallocate or memoize.',
+      noLargeArrayInRender:
+        'Avoid large array allocation (size {{ size }}) in render body; preallocate or memoize.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       NewExpression(node) {

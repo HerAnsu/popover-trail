@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce that useRef for popover cards is properly connected to ref or store registration.',
+      description:
+        'Enforce that useRef for popover cards is properly connected to ref or store registration.',
       category: 'Correctness',
       recommended: true,
     },
@@ -32,7 +33,9 @@ export default {
           node.parent.parent &&
           node.parent.parent.parent
         ) {
-          const scopeBody = context.getSourceCode ? context.getSourceCode().getText(node.parent.parent.parent) : '';
+          const scopeBody = context.getSourceCode
+            ? context.getSourceCode().getText(node.parent.parent.parent)
+            : '';
           if (scopeBody && !scopeBody.includes('.current') && !scopeBody.includes('ref=')) {
             context.report({
               node,

@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      wildcardReexport: 'Avoid wildcard `export *` from internal module `{{source}}`. Prefer explicit named exports.',
+      wildcardReexport:
+        'Avoid wildcard `export *` from internal module `{{source}}`. Prefer explicit named exports.',
     },
   },
   create(context) {
@@ -18,7 +19,11 @@ export default {
     return {
       ExportAllDeclaration(node) {
         if (node.source && node.source.value && node.source.value.includes('internal')) {
-          context.report({ node, messageId: 'wildcardReexport', data: { source: node.source.value } });
+          context.report({
+            node,
+            messageId: 'wildcardReexport',
+            data: { source: node.source.value },
+          });
         }
       },
     };

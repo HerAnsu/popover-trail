@@ -3,13 +3,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage CSS logical properties over physical left/right properties for RTL support',
+      description:
+        'Encourage CSS logical properties over physical left/right properties for RTL support',
       category: 'Internationalization & RTL',
       recommended: true,
     },
     schema: [],
     messages: {
-      useLogicalProperty: 'Consider using logical property (marginInlineStart) instead of physical (marginLeft) for RTL compatibility.',
+      useLogicalProperty:
+        'Consider using logical property (marginInlineStart) instead of physical (marginLeft) for RTL compatibility.',
     },
   },
   create(context) {

@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend timeout guards or AbortSignal.timeout() for long-running card hydration resolvers.',
+      description:
+        'Recommend timeout guards or AbortSignal.timeout() for long-running card hydration resolvers.',
       category: 'Resilience',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestResolverTimeout: 'Resolver function {{ name }} performs async fetch without a timeout race or signal.',
+      suggestResolverTimeout:
+        'Resolver function {{ name }} performs async fetch without a timeout race or signal.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {

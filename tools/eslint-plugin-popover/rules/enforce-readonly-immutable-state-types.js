@@ -6,7 +6,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce readonly modifiers on public state interfaces to preserve immutability.',
+      description:
+        'Enforce readonly modifiers on public state interfaces to preserve immutability.',
       category: 'Type Safety',
       recommended: true,
     },

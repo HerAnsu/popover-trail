@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      requireChannelPrefix: 'BroadcastChannel name "{{ name }}" should start with "popover-trail:".',
+      requireChannelPrefix:
+        'BroadcastChannel name "{{ name }}" should start with "popover-trail:".',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       NewExpression(node) {

@@ -4,7 +4,7 @@
  * @module store/reducers/openReducers
  */
 
-import type { TrailEntry, PopoverStateData } from '../../types';
+import type { TrailEntry, PopoverStateData, StatePatch } from '../../types';
 import {
   bringToFrontPatch,
   filterRecord,
@@ -12,7 +12,9 @@ import {
   getNextZIndexOrder,
 } from './stackReducers';
 
-function normalizeOriginalEntry<TData>(entry: TrailEntry<TData>): TrailEntry<TData> {
+function normalizeOriginalEntry<TData, TPopoverKey extends string = string>(
+  entry: TrailEntry<TData, TPopoverKey>,
+): TrailEntry<TData, TPopoverKey> {
   return {
     ...entry,
     originalParentKey: entry.originalParentKey ?? entry.parentKey,
@@ -20,12 +22,12 @@ function normalizeOriginalEntry<TData>(entry: TrailEntry<TData>): TrailEntry<TDa
   };
 }
 
-function buildActiveTrailPatch<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-  nextTrail: TrailEntry<TData>[],
-  activeKey: string,
-  extraPatch?: Partial<PopoverStateData<TData, TContext>>,
-): Partial<PopoverStateData<TData, TContext>> {
+function buildActiveTrailPatch<TData, TContext, TPopoverKey extends string = string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
+  nextTrail: TrailEntry<TData, TPopoverKey>[],
+  activeKey: TPopoverKey,
+  extraPatch?: StatePatch<TData, TContext, TPopoverKey>,
+): StatePatch<TData, TContext, TPopoverKey> {
   const activeKeys = getActiveKeys(state.floating, nextTrail);
   return {
     ...extraPatch,
@@ -42,23 +44,12 @@ function buildActiveTrailPatch<TData, TContext>(
 
 /**
  * Pure state reducer computing next state when opening a root popover card.
- *
- * @remarks
- * If the card is already pinned in `floating`, elevates its z-index instead of duplicating it.
- * If owned by the same trigger, appends to trail; otherwise resets trail with the new root.
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @param state - Current reactive store state.
- * @param ownerId - Identifier of the triggering element.
- * @param entry - New root trail entry to mount.
- * @returns Partial state patch to apply.
  */
-export function openRootState<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
+export function openRootState<TData, TContext, TPopoverKey extends string = string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
   ownerId: string,
-  entry: TrailEntry<TData>,
-): Partial<PopoverStateData<TData, TContext>> {
+  entry: TrailEntry<TData, TPopoverKey>,
+): StatePatch<TData, TContext, TPopoverKey> {
   if (state.floating.some((e) => e.key === entry.key)) {
     return bringToFrontPatch(state, entry.key);
   }
@@ -69,11 +60,11 @@ export function openRootState<TData, TContext>(
   return buildActiveTrailPatch(state, nextTrail, entry.key, { ownerId });
 }
 
-function computeNextTrailForNestedPush<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
+function computeNextTrailForNestedPush<TData, TContext, TPopoverKey extends string = string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
   index: number,
-  finalEntry: TrailEntry<TData>,
-): TrailEntry<TData>[] | null {
+  finalEntry: TrailEntry<TData, TPopoverKey>,
+): TrailEntry<TData, TPopoverKey>[] | null {
   const isFloating = index < state.floating.length;
   if (isFloating) {
     const floatingEntry = state.floating[index];
@@ -93,23 +84,12 @@ function computeNextTrailForNestedPush<TData, TContext>(
 
 /**
  * Pure state reducer computing next state when pushing a nested child card.
- *
- * @remarks
- * Truncates existing trail descendants past the parent index and appends the child entry.
- * If the card is already pinned in `floating`, brings it to the front without modifying the trail.
- *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @param state - Current reactive store state.
- * @param index - Index of parent card (in combined floating + trail list).
- * @param entry - Child trail entry to attach.
- * @returns Partial state patch to apply.
  */
-export function pushNestedState<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
+export function pushNestedState<TData, TContext, TPopoverKey extends string = string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
   index: number,
-  entry: TrailEntry<TData>,
-): Partial<PopoverStateData<TData, TContext>> {
+  entry: TrailEntry<TData, TPopoverKey>,
+): StatePatch<TData, TContext, TPopoverKey> {
   if (state.floating.some((e) => e.key === entry.key)) {
     return bringToFrontPatch(state, entry.key);
   }

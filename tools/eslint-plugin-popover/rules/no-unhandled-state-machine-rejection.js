@@ -17,7 +17,12 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('fsm')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('fsm')
+    )
+      return {};
 
     return {
       Property(node) {
@@ -28,7 +33,9 @@ export default {
           node.value.type === 'ObjectExpression'
         ) {
           const hasErrorBranch = node.value.properties.some(
-            (p) => p.key && (p.key.name === 'onError' || p.key.name === 'ERROR' || p.key.name === 'REJECT'),
+            (p) =>
+              p.key &&
+              (p.key.name === 'onError' || p.key.name === 'ERROR' || p.key.name === 'REJECT'),
           );
           if (!hasErrorBranch) {
             context.report({

@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce cycle validation when linking arbitrary dynamic popover parent relationships.',
+      description:
+        'Enforce cycle validation when linking arbitrary dynamic popover parent relationships.',
       category: 'DAG Graph',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireDagCycleCheck: 'Dynamic DAG node parent assignment should check for circular dependencies with hasCycle().',
+      requireDagCycleCheck:
+        'Dynamic DAG node parent assignment should check for circular dependencies with hasCycle().',
     },
   },
   create(context) {

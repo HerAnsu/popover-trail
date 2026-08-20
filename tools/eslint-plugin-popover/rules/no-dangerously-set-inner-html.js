@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      noDangerouslySetInnerHTML: '`dangerouslySetInnerHTML` is prohibited in popover components to eliminate XSS risks.',
+      noDangerouslySetInnerHTML:
+        '`dangerouslySetInnerHTML` is prohibited in popover components to eliminate XSS risks.',
     },
   },
   create(context) {

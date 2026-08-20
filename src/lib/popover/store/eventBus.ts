@@ -1,46 +1,90 @@
 /**
- * Strongly typed EventBus for PopoverTrail lifecycle and state events.
- * Built on native EventTarget for maximum performance and zero memory leaks.
+ * Extensible, Zero-Any, Future-Proof EventBus Engine for PopoverTrail.
+ * Built on the native EventTarget standard with Declaration Merging support.
+ *
+ * @module eventBus
  */
 
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
 import type { PopoverStoreEvent } from '../types/eventTypes';
+import { wrapResult, isErr } from '../utils/result';
+import { DISPOSE_SYMBOL } from '../utils/disposable';
 
-export type PopoverEventType =
-  | 'popover:open'
-  | 'popover:close'
-  | 'popover:pin'
-  | 'popover:unpin'
-  | 'popover:drag_start'
-  | 'popover:drag_end'
-  | 'popover:resolved';
+declare const process: { env?: Record<string, string | undefined> } | undefined;
 
-export interface PopoverEventPayloadMap<
+/**
+ * Open interface for TypeScript declaration merging.
+ * Augment this interface to register custom application events on the popover event bus.
+ *
+ * @example
+ * ```typescript
+ * declare module 'popover-trail' {
+ *   interface PopoverEventRegistry {
+ *     'analytics:track': { eventName: string; key: string };
+ *   }
+ * }
+ * ```
+ */
+export interface PopoverEventRegistry {}
+
+/**
+ * Built-in event types and their associated payload structures emitted by the popover trail store.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ */
+export interface BuiltinPopoverEventPayloadMap<
   TData = RegisteredDataMap[RegisteredKeys],
   TPopoverKey extends string = RegisteredKeys,
 > {
-  'popover:open': { key: TPopoverKey; parentKey?: TPopoverKey | null };
-  'popover:close': { key: TPopoverKey };
+  /** Fired when a new root popover card is opened. */
+  'popover:open_root': { key: TPopoverKey; ownerId: string };
+  /** Fired when a child popover card is appended to the cascade. */
+  'popover:push_nested': { key: TPopoverKey; parentKey?: TPopoverKey };
+  /** Fired when one or more popovers close. */
+  'popover:close': { keys: TPopoverKey[]; key?: TPopoverKey };
+  /** Fired when a popover card is pinned/detached. */
   'popover:pin': { key: TPopoverKey };
+  /** Fired when a pinned popover card is unpinned. */
   'popover:unpin': { key: TPopoverKey };
+  /** Fired when a card drag gesture begins. */
   'popover:drag_start': { key: TPopoverKey; x: number; y: number };
+  /** Fired when a card drag gesture ends. */
   'popover:drag_end': { key: TPopoverKey; x: number; y: number };
+  /** Fired when async data resolution starts. */
+  'popover:resolve_start': { key: TPopoverKey };
+  /** Fired when async data resolution finishes successfully. */
+  'popover:resolve_success': { key: TPopoverKey; data: TData };
+  /** Fired when async data resolution encounters an error. */
+  'popover:resolve_error': { key: TPopoverKey; error: Error };
+  /** Fired when the entire trail and floating stack is cleared. */
+  'popover:clear': undefined | Record<string, never>;
+
+  // Convenience Aliases
+  /** Alias for popover open event. */
+  'popover:open': { key: TPopoverKey; parentKey?: TPopoverKey | null; ownerId?: string };
+  /** Alias for popover data resolution success. */
   'popover:resolved': { key: TPopoverKey; data: TData };
 }
 
 /**
- * Strongly typed CustomEvent wrapper carrying typed event detail payloads.
- *
- * @template K - Popover event name literal.
- * @template TData - Resolved data payload type.
- * @template TPopoverKey - Union of valid popover keys.
+ * Combined map of all available event types and their payloads (built-in + custom registered).
  */
+export type PopoverEventPayloadMap<
+  TData = RegisteredDataMap[RegisteredKeys],
+  TPopoverKey extends string = RegisteredKeys,
+> = BuiltinPopoverEventPayloadMap<TData, TPopoverKey> & PopoverEventRegistry;
+
+/**
+ * Union of all valid event type names supported by the event bus.
+ */
+export type PopoverEventType = Extract<keyof PopoverEventPayloadMap, string>;
+
 export class PopoverCustomEvent<
-  K extends PopoverEventType,
+  K extends PopoverEventType = PopoverEventType,
   TData = RegisteredDataMap[RegisteredKeys],
   TPopoverKey extends string = RegisteredKeys,
 > extends Event {
-  /** Event payload details. */
   public readonly detail: PopoverEventPayloadMap<TData, TPopoverKey>[K];
 
   constructor(type: K, detail: PopoverEventPayloadMap<TData, TPopoverKey>[K]) {
@@ -49,9 +93,6 @@ export class PopoverCustomEvent<
   }
 }
 
-/**
- * Type predicate narrowing generic DOM Events to typed PopoverCustomEvent instances.
- */
 export function isPopoverCustomEvent<
   K extends PopoverEventType,
   TData = RegisteredDataMap[RegisteredKeys],
@@ -60,9 +101,6 @@ export function isPopoverCustomEvent<
   return e instanceof PopoverCustomEvent && (type === undefined || e.type === type);
 }
 
-/**
- * Factory helper creating a typed PopoverCustomEvent instance.
- */
 export function createPopoverEvent<
   K extends PopoverEventType,
   TData = RegisteredDataMap[RegisteredKeys],
@@ -74,161 +112,226 @@ export function createPopoverEvent<
   return new PopoverCustomEvent(type, detail);
 }
 
-/**
- * High-performance, strongly typed EventBus built on the native EventTarget standard.
- * Provides decoupled pub/sub event broadcasting for analytics, logging, and external integrations.
- *
- * @remarks
- * Uses native browser `EventTarget` primitives under the hood to ensure zero memory leaks
- * and automatic cleanup.
- *
- * @example
- * ```typescript
- * const bus = new PopoverEventBus();
- *
- * // Subscribe to open events
- * const unsubscribe = bus.on('popover:open', (e) => {
- *   console.log('Opened popover:', e.detail.key);
- * });
- *
- * // Emit event
- * bus.emit('popover:open', { key: 'user-card' });
- * ```
- *
- * @template TData - Resolved data payload type.
- * @template TPopoverKey - Union of valid popover keys.
- */
+export type PopoverEventListener<
+  K extends PopoverEventType,
+  TData = RegisteredDataMap[RegisteredKeys],
+  TPopoverKey extends string = RegisteredKeys,
+> = (event: PopoverCustomEvent<K, TData, TPopoverKey>) => void;
+
+export type PopoverWildcardListener<
+  TData = RegisteredDataMap[RegisteredKeys],
+  TPopoverKey extends string = RegisteredKeys,
+> = (event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>) => void;
+
+interface EventDetailWithKey<TPopoverKey> {
+  key?: TPopoverKey;
+  keys?: readonly TPopoverKey[];
+}
+
+function isDetailWithKey<TPopoverKey>(val: unknown): val is EventDetailWithKey<TPopoverKey> {
+  return typeof val === 'object' && val !== null && ('key' in val || 'keys' in val);
+}
+
 export class PopoverEventBus<
   TData = RegisteredDataMap[RegisteredKeys],
   TPopoverKey extends string = RegisteredKeys,
 > {
   public readonly maxListeners = 100;
-  private target = new EventTarget();
-  private listenerMap = new Map<
-    (event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>) => void,
-    EventListener
-  >();
 
-  /**
-   * Emits a typed lifecycle event to all subscribed listeners.
-   *
-   * @param type - Event type name.
-   * @param payload - Strongly typed event detail payload.
-   * @returns True if event was dispatched without preventDefault cancellation.
-   */
+  private target = new EventTarget();
+  private readonly listenersByEvent = new Map<string, Map<unknown, EventListener>>();
+  private readonly wildcardListeners = new Set<PopoverWildcardListener<TData, TPopoverKey>>();
+
+  private warnIfOverCapacity(): void {
+    if (
+      this.size >= this.maxListeners &&
+      process !== undefined &&
+      process?.env?.NODE_ENV !== 'production'
+    ) {
+      console.warn(
+        `[popover-trail]: PopoverEventBus listener count (${this.size}) reached limit (${this.maxListeners}). Ensure listeners are unsubscribed on unmount.`,
+      );
+    }
+  }
+
   public emit<K extends PopoverEventType>(
     type: K,
     payload: PopoverEventPayloadMap<TData, TPopoverKey>[K],
   ): boolean {
     const event = createPopoverEvent<K, TData, TPopoverKey>(type, payload);
+
+    if (this.wildcardListeners.size > 0) {
+      const genericEvent: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey> = event;
+      for (const listener of this.wildcardListeners) {
+        const result = wrapResult(() => listener(genericEvent));
+        if (isErr(result)) {
+          console.error('[popover-trail]: Exception in wildcard EventBus listener:', result.error);
+        }
+      }
+    }
+
     return this.target.dispatchEvent(event);
   }
 
-  /**
-   * Subscribes a listener callback to a specific event type.
-   *
-   * @param type - Event type name to listen for.
-   * @param listener - Callback function receiving typed event object.
-   * @param options - Standard DOM AddEventListenerOptions.
-   * @returns Unsubscribe function.
-   */
   public on<K extends PopoverEventType>(
     type: K,
-    listener: (event: PopoverCustomEvent<K, TData, TPopoverKey>) => void,
+    listener: PopoverEventListener<K, TData, TPopoverKey>,
     options?: AddEventListenerOptions,
   ): () => void {
-    const handler = ((e: Event) => {
+    let subscribersForType = this.listenersByEvent.get(type);
+    if (!subscribersForType) {
+      subscribersForType = new Map();
+      this.listenersByEvent.set(type, subscribersForType);
+    }
+
+    this.warnIfOverCapacity();
+
+    const handler: EventListener = (e: Event) => {
       if (isPopoverCustomEvent<K, TData, TPopoverKey>(e, type)) {
-        try {
-          listener(e);
-        } catch (err) {
-          console.error(`[PopoverEventBus] Listener error for "${type}":`, err);
+        const result = wrapResult(() => listener(e));
+        if (isErr(result)) {
+          console.error(
+            `[popover-trail]: Exception in EventBus listener for "${type}":`,
+            result.error,
+          );
         }
       }
-    }) as EventListener;
+    };
 
-    this.listenerMap.set(
-      listener as unknown as (
-        event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>,
-      ) => void,
-      handler,
-    );
+    subscribersForType.set(listener, handler);
     this.target.addEventListener(type, handler, options);
 
     return () => {
-      this.off(type, listener);
+      this.off(type, listener, options);
     };
   }
 
-  /**
-   * Unsubscribes a previously registered listener callback.
-   *
-   * @param type - Event type name.
-   * @param listener - Target listener callback to remove.
-   * @param options - Standard DOM EventListenerOptions.
-   */
+  public onAny(listener: PopoverWildcardListener<TData, TPopoverKey>): () => void {
+    this.wildcardListeners.add(listener);
+    this.warnIfOverCapacity();
+    return () => {
+      this.wildcardListeners.delete(listener);
+    };
+  }
+
+  public onKey(
+    targetKey: TPopoverKey,
+    listener: PopoverWildcardListener<TData, TPopoverKey>,
+  ): () => void {
+    return this.onAny((event) => {
+      const detail = event.detail;
+      const isTarget =
+        isDetailWithKey<TPopoverKey>(detail) &&
+        (detail.key === targetKey ||
+          (Array.isArray(detail.keys) && detail.keys.includes(targetKey)));
+
+      if (isTarget) {
+        listener(event);
+      }
+    });
+  }
+
   public off<K extends PopoverEventType>(
     type: K,
-    listener: (event: PopoverCustomEvent<K, TData, TPopoverKey>) => void,
+    listener: PopoverEventListener<K, TData, TPopoverKey>,
     options?: EventListenerOptions,
   ): void {
-    const handlerKey = listener as unknown as (
-      event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>,
-    ) => void;
-    const handler = this.listenerMap.get(handlerKey);
+    const subscribersForType = this.listenersByEvent.get(type);
+    if (!subscribersForType) return;
+
+    const handler = subscribersForType.get(listener);
     if (handler) {
       this.target.removeEventListener(type, handler, options);
-      this.listenerMap.delete(handlerKey);
+      subscribersForType.delete(listener);
+      if (subscribersForType.size === 0) {
+        this.listenersByEvent.delete(type);
+      }
     }
   }
 
-  /**
-   * Subscribes a one-time listener callback that automatically unregisters after first trigger.
-   *
-   * @param type - Event type name.
-   * @param listener - One-shot callback function.
-   * @returns Unsubscribe function.
-   */
   public once<K extends PopoverEventType>(
     type: K,
-    listener: (event: PopoverCustomEvent<K, TData, TPopoverKey>) => void,
+    listener: PopoverEventListener<K, TData, TPopoverKey>,
   ): () => void {
     return this.on(type, listener, { once: true });
   }
 
-  /** Total count of active listener subscriptions. */
   public get size(): number {
-    return this.listenerMap.size;
+    let total = this.wildcardListeners.size;
+    for (const subscribers of this.listenersByEvent.values()) {
+      total += subscribers.size;
+    }
+    return total;
   }
 
-  /** Clears all registered event listeners and resets target. */
   public clear(): void {
-    this.listenerMap.clear();
+    for (const [type, subscribers] of this.listenersByEvent.entries()) {
+      for (const handler of subscribers.values()) {
+        this.target.removeEventListener(type, handler);
+      }
+    }
+    this.listenersByEvent.clear();
+    this.wildcardListeners.clear();
     this.target = new EventTarget();
   }
 
-  /** Disposable cleanup handle. */
   public dispose(): void {
     this.clear();
   }
+
+  public [DISPOSE_SYMBOL](): void {
+    this.dispose();
+  }
 }
 
-/** Global default event bus singleton instance. */
-export const globalPopoverEventBus = new PopoverEventBus();
+export const globalPopoverEventBus: PopoverEventBus = new PopoverEventBus();
 
-/**
- * Safely dispatches a store event to all registered listener callbacks with error boundary isolation.
- */
+const ALIAS_PROJECTIONS: Readonly<Record<string, readonly PopoverEventType[]>> = Object.freeze({
+  open_root: ['popover:open_root', 'popover:open'],
+  'popover:open_root': ['popover:open_root', 'popover:open'],
+  push_nested: ['popover:push_nested', 'popover:open'],
+  'popover:push_nested': ['popover:push_nested', 'popover:open'],
+  resolve_success: ['popover:resolve_success', 'popover:resolved'],
+  'popover:resolve_success': ['popover:resolve_success', 'popover:resolved'],
+});
+
+function extractEventPayload<TData, TPopoverKey extends string>(
+  event: PopoverStoreEvent<TData>,
+): PopoverEventPayloadMap<TData, TPopoverKey>[PopoverEventType] {
+  const { type: _type, ...payload } = event;
+  return payload as PopoverEventPayloadMap<TData, TPopoverKey>[PopoverEventType];
+}
+
 export function dispatchStoreEvent<TData>(
   listeners: ReadonlySet<(event: PopoverStoreEvent<TData>) => void> | undefined,
   event: PopoverStoreEvent<TData>,
 ): void {
-  if (!listeners) return;
-  for (const listener of listeners) {
-    try {
-      listener(event);
-    } catch (err) {
-      console.error('[popover-trail]: Exception in store event listener:', err);
+  if (listeners) {
+    for (const listener of listeners) {
+      const listenerResult = wrapResult(() => listener(event));
+      if (isErr(listenerResult)) {
+        console.error('[popover-trail]: Exception in store event listener:', listenerResult.error);
+      }
     }
   }
+
+  wrapResult(() => {
+    const rawType = event.type;
+    const canonicalType = (
+      rawType.startsWith('popover:') ? rawType : `popover:${rawType}`
+    ) as PopoverEventType;
+
+    const payload = extractEventPayload<unknown, string>(event);
+
+    globalPopoverEventBus.emit(canonicalType, payload);
+
+    const aliases = ALIAS_PROJECTIONS[rawType];
+    if (aliases) {
+      for (const alias of aliases) {
+        if (alias !== canonicalType) {
+          globalPopoverEventBus.emit(alias, payload);
+        }
+      }
+    }
+  });
 }

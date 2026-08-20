@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend checking item.status === "rejected" when processing Promise.allSettled results.',
+      description:
+        'Recommend checking item.status === "rejected" when processing Promise.allSettled results.',
       category: 'Concurrency',
       recommended: true,
     },
     schema: [],
     messages: {
-      checkSettledRejection: 'Results of Promise.allSettled in {{ name }} should filter or log rejected items.',
+      checkSettledRejection:
+        'Results of Promise.allSettled in {{ name }} should filter or log rejected items.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       CallExpression(node) {
@@ -29,7 +37,11 @@ export default {
           node.callee.object.name === 'Promise'
         ) {
           let parent = node.parent;
-          while (parent && parent.type !== 'FunctionDeclaration' && parent.type !== 'ArrowFunctionExpression') {
+          while (
+            parent &&
+            parent.type !== 'FunctionDeclaration' &&
+            parent.type !== 'ArrowFunctionExpression'
+          ) {
             parent = parent.parent;
           }
           if (parent) {

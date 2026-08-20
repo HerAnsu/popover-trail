@@ -6,16 +6,15 @@
  * @module resizeObserverRegistry
  */
 
+import { wrapResult, isErr } from './result';
+
 type ResizeCallback = (entry: ResizeObserverEntry) => void;
 
 function notifyElementResize(callbacks: Set<ResizeCallback>, entry: ResizeObserverEntry): void {
   for (const callback of callbacks) {
-    try {
-      callback(entry);
-    } catch (err) {
-      if (typeof console !== 'undefined') {
-        console.error('[popover-trail]: Exception in ResizeObserver callback:', err);
-      }
+    const callbackResult = wrapResult(() => callback(entry));
+    if (isErr(callbackResult) && typeof console !== 'undefined') {
+      console.error('[popover-trail]: Exception in ResizeObserver callback:', callbackResult.error);
     }
   }
 }

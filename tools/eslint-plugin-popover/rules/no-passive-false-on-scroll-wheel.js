@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      nonPassiveScroll: 'Scroll/wheel listener should not specify `passive: false` unless preventDefault is strictly required.',
+      nonPassiveScroll:
+        'Scroll/wheel listener should not specify `passive: false` unless preventDefault is strictly required.',
     },
   },
   create(context) {

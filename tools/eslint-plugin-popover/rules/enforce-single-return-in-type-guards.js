@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage clean single return expressions in type guard functions without redundant mutation.',
+      description:
+        'Encourage clean single return expressions in type guard functions without redundant mutation.',
       category: 'Clean Code',
       recommended: true,
     },
     schema: [],
     messages: {
-      simplifyTypeGuard: 'Type guard {{ name }} has multiple return branches; consider combining with boolean operators.',
+      simplifyTypeGuard:
+        'Type guard {{ name }} has multiple return branches; consider combining with boolean operators.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {

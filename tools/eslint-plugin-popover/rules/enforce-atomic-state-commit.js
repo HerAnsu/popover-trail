@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage combining consecutive synchronous set() state updates into a single batch commit.',
+      description:
+        'Encourage combining consecutive synchronous set() state updates into a single batch commit.',
       category: 'Performance',
       recommended: false,
     },
     schema: [],
     messages: {
-      combineSetCalls: 'Combine multiple consecutive set() state updates into a single atomic patch object.',
+      combineSetCalls:
+        'Combine multiple consecutive set() state updates into a single atomic patch object.',
     },
   },
   create(context) {

@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      requireClearIntervalInWorker: 'Worker script sets interval without clearing it before self.close().',
+      requireClearIntervalInWorker:
+        'Worker script sets interval without clearing it before self.close().',
     },
   },
   create(context) {

@@ -11,7 +11,6 @@ describe('memorySentinel utility', () => {
   it('handles invalid targets gracefully', () => {
     // @ts-expect-error - testing invalid primitive target
     expect(() => trackMemoryCleanup('not-an-object', 'key')).not.toThrow();
-    // @ts-expect-error - testing invalid target untrack
     expect(() => untrackMemoryCleanup(null)).not.toThrow();
   });
 });

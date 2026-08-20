@@ -44,7 +44,7 @@ export interface UsePopoverCardOptions {
  */
 export interface UsePopoverCardResult {
   /** Callback ref attached to the card DOM element to calculate positioning. */
-  readonly ref: (node: HTMLDivElement | null) => void;
+  readonly ref: (node: HTMLElement | null) => void;
   /** Compiled inline styles including top, left, z-index, and CSS custom variables. */
   readonly style: Readonly<CSSProperties>;
   /** Whether this card currently has the highest z-index in the active stack. */
@@ -101,7 +101,7 @@ export function usePopoverCard({
   isPinned,
   placement = 'bottom',
 }: UsePopoverCardOptions): UsePopoverCardResult {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLElement | null>(null);
 
   useCardFocusManagement(entry, ref);
 
@@ -159,7 +159,7 @@ export function usePopoverCard({
   });
 
   const setCombinedRef = useCallback(
-    (node: HTMLDivElement | null) => {
+    (node: HTMLElement | null) => {
       setFloating(node);
       ref.current = node;
     },

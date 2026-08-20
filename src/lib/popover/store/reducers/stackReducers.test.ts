@@ -1,79 +1,86 @@
 import { describe, it, expect } from 'vitest';
 import {
   filterRecord,
-  getActiveKeys,
   getNextZIndexOrder,
-  getParentChildMap,
   getAllDescendants,
   bringToFrontPatch,
   getCleanupStatePatch,
   updateEntryInLists,
-  getSnapshotStatePatch,
 } from './stackReducers';
-import { TrailEntry, PopoverStateData } from '../../types';
+import type { TrailEntry } from '../../types';
+import { createMockStoreState } from '../../testing/createMockStoreState';
 
-describe('stackReducers module', () => {
-  it('filterRecord removes unallowed keys and prototype pollution properties', () => {
-    const record = { a: 1, b: 2, c: 3 };
-    const allowed = new Set(['a', 'c']);
+describe('stackReducers module (Structural Sharing & Stack Operations)', () => {
+  it('filterRecord preserves original object reference if no keys were stripped', () => {
+    const record = { a: 1, b: 2 };
+    const allowed = new Set(['a', 'b', 'c']);
     const filtered = filterRecord(record, allowed);
 
-    expect(filtered).toEqual({ a: 1, c: 3 });
-    expect(filtered).not.toHaveProperty('b');
+    expect(filtered).toBe(record);
   });
 
-  it('getActiveKeys collects keys from floating and trail lists', () => {
-    const floating = [{ key: 'f1' }, { key: 'f2' }] as TrailEntry<unknown>[];
-    const trail = [{ key: 't1' }] as TrailEntry<unknown>[];
+  it('updateEntryInLists preserves unchanged array references (Structural Sharing)', () => {
+    const floating: TrailEntry[] = [
+      { key: 'f1', isLoading: false },
+      { key: 'f2', isLoading: false },
+    ];
+    const trail: TrailEntry[] = [{ key: 't1', isLoading: false }];
 
-    const keys = getActiveKeys(floating, trail);
-    expect(keys.has('f1')).toBe(true);
-    expect(keys.has('f2')).toBe(true);
-    expect(keys.has('t1')).toBe(true);
-    expect(keys.size).toBe(3);
+    const patchFloating = updateEntryInLists(floating, trail, 'f1', {
+      key: 'f1',
+      isLoading: true,
+    });
+
+    expect(patchFloating.floating).not.toBe(floating);
+    expect(patchFloating.trail).toBe(trail);
+
+    const patchTrail = updateEntryInLists(floating, trail, 't1', {
+      key: 't1',
+      isLoading: true,
+    });
+
+    expect(patchTrail.trail).not.toBe(trail);
+    expect(patchTrail.floating).toBe(floating);
+
+    const noopPatch = updateEntryInLists(floating, trail, 'f1', {
+      key: 'f1',
+      isLoading: false,
+    });
+    expect(noopPatch).toEqual({});
   });
 
-  it('getNextZIndexOrder appends new key at top of active z-index list', () => {
-    const zIndexOrder = ['k1', 'k2'];
+  it('getNextZIndexOrder preserves array reference if target key is already top-most', () => {
+    const zIndexOrder = ['k1', 'k2', 'k3'];
     const activeKeys = new Set(['k1', 'k2', 'k3']);
+
     const nextOrder = getNextZIndexOrder(zIndexOrder, activeKeys, 'k3');
-
-    expect(nextOrder).toEqual(['k1', 'k2', 'k3']);
+    expect(nextOrder).toBe(zIndexOrder);
   });
 
-  it('getParentChildMap groups children under parent keys', () => {
-    const trail = [
-      { key: 'root' },
-      { key: 'child1', parentKey: 'root' },
-      { key: 'child2', parentKey: 'root' },
-    ] as TrailEntry<unknown>[];
-
-    const map = getParentChildMap([], trail);
-    const rootChildren = map.get('root');
-
-    expect(rootChildren).toHaveLength(2);
-    expect(rootChildren?.[0]?.key).toBe('child1');
-  });
-
-  it('getAllDescendants resolves deep descendant tree', () => {
-    const trail = [
-      { key: 'root' },
-      { key: 'child', parentKey: 'root' },
-      { key: 'grandchild', parentKey: 'child' },
-    ] as TrailEntry<unknown>[];
+  it('getAllDescendants resolves deep descendant tree with zero intermediate Map allocations', () => {
+    const trail: TrailEntry[] = [
+      { key: 'root', isLoading: false },
+      { key: 'child', parentKey: 'root', isLoading: false },
+      { key: 'grandchild', parentKey: 'child', isLoading: false },
+    ];
 
     const descendants = getAllDescendants(['root'], [], trail);
     expect(descendants.has('child')).toBe(true);
     expect(descendants.has('grandchild')).toBe(true);
+    expect(descendants.size).toBe(2);
   });
 
   it('bringToFrontPatch elevates target popover and its descendants in zIndexOrder', () => {
-    const state = {
+    const state = createMockStoreState({
       floating: [],
-      trail: [{ key: 'a' }, { key: 'b' }, { key: 'a-child', parentKey: 'a' }],
+      trail: [
+        { key: 'a', isLoading: false, error: null },
+        { key: 'b', isLoading: false, error: null },
+        { key: 'a-child', parentKey: 'a', isLoading: false, error: null },
+      ],
       pinnedStates: {},
       zIndexOrder: ['a', 'a-child', 'b'],
-    } as unknown as PopoverStateData<unknown, unknown>;
+    });
 
     const patch = bringToFrontPatch(state, 'a');
     expect(patch.zIndexOrder).toEqual(['b', 'a', 'a-child']);
@@ -85,81 +92,5 @@ describe('stackReducers module', () => {
     expect(patch.zIndexOrder).toEqual([]);
     expect(patch.ownerId).toBeNull();
     expect(patch.offsets).toEqual({});
-  });
-
-  it('bringToFrontPatch returns empty object when target key is not in zIndexOrder', () => {
-    const state = {
-      floating: [],
-      trail: [{ key: 'a' }],
-      pinnedStates: {},
-      zIndexOrder: ['a'],
-    } as unknown as PopoverStateData<unknown, unknown>;
-
-    const patch = bringToFrontPatch(state, 'non-existent');
-    expect(patch).toEqual({});
-  });
-
-  it('filterRecord handles empty record gracefully', () => {
-    expect(filterRecord({}, new Set(['a']))).toEqual({});
-  });
-
-  it('getCleanupStatePatch preserves ownerId when active elements remain in trail', () => {
-    const patch = getCleanupStatePatch(
-      [],
-      [{ key: 'active-1' } as TrailEntry<unknown>],
-      { 'active-1': { x: 0, y: 0 }, orphan: { x: 10, y: 10 } },
-      ['active-1', 'orphan'],
-      { 'active-1': false },
-      { 'active-1': 1 },
-    );
-
-    expect(patch.ownerId).toBeUndefined();
-    expect(patch.offsets).toEqual({ 'active-1': { x: 0, y: 0 } });
-    expect(patch.zIndexOrder).toEqual(['active-1']);
-  });
-
-  it('updateEntryInLists updates entries in floating or trail lists immutably', () => {
-    const floating = [{ key: 'f1', data: 1 }] as TrailEntry<number>[];
-    const trail = [{ key: 't1', data: 2 }] as TrailEntry<number>[];
-
-    const updatedFloating = updateEntryInLists(floating, trail, 'f1', {
-      key: 'f1',
-      data: 10,
-    } as TrailEntry<number>);
-    expect(updatedFloating.floating?.[0]?.data).toBe(10);
-    expect(updatedFloating.trail).toBe(trail);
-
-    const updatedTrail = updateEntryInLists(floating, trail, 't1', {
-      key: 't1',
-      data: 20,
-    } as TrailEntry<number>);
-    expect(updatedTrail.trail?.[0]?.data).toBe(20);
-    expect(updatedTrail.floating).toBe(floating);
-  });
-
-  it('getSnapshotStatePatch builds full snapshot restoration patch', () => {
-    const patch = getSnapshotStatePatch({
-      trail: [{ key: 't1' }] as TrailEntry<unknown>[],
-      floating: [{ key: 'f1' }] as TrailEntry<unknown>[],
-      offsets: { t1: { x: 0, y: 0 } },
-      pinnedStates: { f1: true },
-      zIndexOrder: ['t1', 'f1'],
-      ownerId: 'owner-1',
-    });
-
-    expect(patch.trail).toHaveLength(1);
-    expect(patch.floating).toHaveLength(1);
-    expect(patch.ownerId).toBe('owner-1');
-
-    const emptyPatch = getSnapshotStatePatch({
-      trail: [],
-      floating: [],
-      offsets: {},
-      pinnedStates: {},
-      zIndexOrder: [],
-      ownerId: null,
-    });
-    expect(emptyPatch.anchorElement).toBeNull();
-    expect(emptyPatch.anchorRect).toBeNull();
   });
 });

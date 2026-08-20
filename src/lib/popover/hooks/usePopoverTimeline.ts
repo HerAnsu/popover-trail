@@ -79,7 +79,7 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
         trailKeys: trail.slice(0, idx + 1).map((e) => e.key),
         pinnedKeys,
         primaryKey: entry.key,
-        payload: (entry.data ?? undefined) as TData | undefined,
+        payload: entry.data ?? undefined,
       }));
     }
 
@@ -89,7 +89,7 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
       trailKeys: [],
       pinnedKeys,
       primaryKey: entry.key,
-      payload: (entry.data ?? undefined) as TData | undefined,
+      payload: entry.data ?? undefined,
     }));
   }, [trail, floating]);
 

@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow direct window.innerWidth/innerHeight access at module root without typeof window check.',
+      description:
+        'Disallow direct window.innerWidth/innerHeight access at module root without typeof window check.',
       category: 'SSR',
       recommended: true,
     },
     schema: [],
     messages: {
-      unsafeWindowAccess: 'Accessing window.{{ prop }} at module scope causes SSR hydration failures. Wrap in typeof window check.',
+      unsafeWindowAccess:
+        'Accessing window.{{ prop }} at module scope causes SSR hydration failures. Wrap in typeof window check.',
     },
   },
   create(context) {

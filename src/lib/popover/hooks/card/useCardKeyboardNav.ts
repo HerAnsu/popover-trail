@@ -1,8 +1,12 @@
 import type { TrailEntry } from '../../types';
 import { FOCUSABLE_ELEMENTS_SELECTOR } from '../../constants';
 
+export type KeyboardNavEvent =
+  | React.KeyboardEvent<HTMLElement>
+  | Pick<React.KeyboardEvent<HTMLElement>, 'key' | 'preventDefault'>;
+
 export interface CardKeyboardNavigationOptions {
-  event: React.KeyboardEvent<HTMLElement>;
+  event: KeyboardNavEvent;
   cardElement: HTMLElement | null;
   entry: TrailEntry;
   enableArrowNavigation: boolean;
@@ -12,13 +16,11 @@ export interface CardKeyboardNavigationOptions {
   actions: { closeFrom: (index: number) => void };
 }
 
-function handleCustomShortcuts(
-  e: React.KeyboardEvent<HTMLElement>,
-  cardEntry: TrailEntry,
-): boolean {
+function handleCustomShortcuts(e: KeyboardNavEvent, cardEntry: TrailEntry): boolean {
   if (!cardEntry.keyboardShortcuts) return false;
   const keyName = e.key;
-  const modKey = (e.metaKey || e.ctrlKey ? 'Mod+' : '') + keyName;
+  const modKey =
+    (('metaKey' in e && e.metaKey) || ('ctrlKey' in e && e.ctrlKey) ? 'Mod+' : '') + keyName;
   const handler = cardEntry.keyboardShortcuts[modKey] ?? cardEntry.keyboardShortcuts[keyName];
   if (handler) {
     e.preventDefault();
@@ -41,13 +43,15 @@ function isUserEditingText(el: HTMLElement | null): boolean {
   return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
 }
 
-function handleVerticalArrowNavigation(
-  e: React.KeyboardEvent<HTMLElement>,
-  cardEl: HTMLElement | null,
-): void {
+function getActiveHtmlElement(): HTMLElement | null {
+  return typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : null;
+}
+
+function handleVerticalArrowNavigation(e: KeyboardNavEvent, cardEl: HTMLElement | null): void {
   if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-  const activeEl =
-    typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+  const activeEl = getActiveHtmlElement();
 
   if (isUserEditingText(activeEl) || !cardEl) return;
   const elements = getFocusableCardElements(cardEl);
@@ -62,10 +66,9 @@ function handleVerticalArrowNavigation(
   elements[nextIndex]?.focus();
 }
 
-function handleArrowRightNavigation(e: React.KeyboardEvent<HTMLElement>): void {
+function handleArrowRightNavigation(e: KeyboardNavEvent): void {
   if (e.key !== 'ArrowRight') return;
-  const activeEl =
-    typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+  const activeEl = getActiveHtmlElement();
   if (activeEl && (activeEl.tagName === 'BUTTON' || activeEl.tagName === 'A')) {
     e.preventDefault();
     activeEl.click();
@@ -73,7 +76,7 @@ function handleArrowRightNavigation(e: React.KeyboardEvent<HTMLElement>): void {
 }
 
 function handleArrowLeftNavigation(
-  e: React.KeyboardEvent<HTMLElement>,
+  e: KeyboardNavEvent,
   cardEntry: TrailEntry,
   pinned: boolean,
   trailList: readonly TrailEntry[],
@@ -92,7 +95,7 @@ function handleArrowLeftNavigation(
 }
 
 function handleEscapeNavigation(
-  e: React.KeyboardEvent<HTMLElement>,
+  e: KeyboardNavEvent,
   cardEntry: TrailEntry,
   pinned: boolean,
   trailList: readonly TrailEntry[],
@@ -112,7 +115,7 @@ function handleEscapeNavigation(
 }
 
 function handleHorizontalArrowNavigation(
-  e: React.KeyboardEvent<HTMLElement>,
+  e: KeyboardNavEvent,
   cardEntry: TrailEntry,
   pinned: boolean,
   trailList: readonly TrailEntry[],
@@ -164,13 +167,13 @@ export function focusParentCard(parentKey: string): boolean {
 }
 
 function isNavOptionsObject(
-  arg: React.KeyboardEvent<HTMLElement> | CardKeyboardNavigationOptions,
+  arg: KeyboardNavEvent | CardKeyboardNavigationOptions,
 ): arg is CardKeyboardNavigationOptions {
   return 'event' in arg && typeof arg.event === 'object';
 }
 
 function resolveNavParams(
-  eventOrOptions: React.KeyboardEvent<HTMLElement> | CardKeyboardNavigationOptions,
+  eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions,
   cardElement?: HTMLElement | null,
   entry?: TrailEntry,
   enableArrowNavigation?: boolean,
@@ -208,7 +211,7 @@ function resolveNavParams(
  * Handles Arrow navigation and custom keyboard shortcuts on popover cards.
  */
 export function handleCardKeyboardNavigation(
-  eventOrOptions: React.KeyboardEvent<HTMLElement> | CardKeyboardNavigationOptions,
+  eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions,
   cardElement?: HTMLElement | null,
   entry?: TrailEntry,
   enableArrowNavigation?: boolean,

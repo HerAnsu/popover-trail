@@ -6,18 +6,25 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage explicit return type annotations on store selector utility functions.',
+      description:
+        'Encourage explicit return type annotations on store selector utility functions.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      annotateSelectorReturn: 'Public selector function {{ name }} should include an explicit return type annotation.',
+      annotateSelectorReturn:
+        'Public selector function {{ name }} should include an explicit return type annotation.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('Selectors')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('Selectors')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {

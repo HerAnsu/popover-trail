@@ -3,7 +3,8 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure state snapshots are sanitized of non-serializable objects (Functions, DOM)',
+      description:
+        'Ensure state snapshots are sanitized of non-serializable objects (Functions, DOM)',
       category: 'Cross-Tab Bus',
       recommended: true,
     },

@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      requireEscHandling: 'Keyboard navigation handler should handle "Escape" key to dismiss open popovers.',
+      requireEscHandling:
+        'Keyboard navigation handler should handle "Escape" key to dismiss open popovers.',
     },
   },
   create(context) {
@@ -21,11 +22,7 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (
-          node.id &&
-          node.id.name &&
-          node.id.name.includes('handleCardKeyboard')
-        ) {
+        if (node.id && node.id.name && node.id.name.includes('handleCardKeyboard')) {
           const bodyText = context.getSourceCode ? context.getSourceCode().getText(node) : '';
           if (
             bodyText &&

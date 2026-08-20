@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend batching state changes into a single setState((prev) => ...) updater.',
+      description:
+        'Recommend batching state changes into a single setState((prev) => ...) updater.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestAtomicSetState: 'Method {{ name }} invokes setState multiple times in sequence; combine into a single updater.',
+      suggestAtomicSetState:
+        'Method {{ name }} invokes setState multiple times in sequence; combine into a single updater.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {
@@ -30,7 +38,8 @@ export default {
               stmt.expression.type === 'CallExpression' &&
               stmt.expression.callee &&
               (stmt.expression.callee.name === 'setState' ||
-                (stmt.expression.callee.property && stmt.expression.callee.property.name === 'setState'))
+                (stmt.expression.callee.property &&
+                  stmt.expression.callee.property.name === 'setState'))
             ) {
               count++;
             }

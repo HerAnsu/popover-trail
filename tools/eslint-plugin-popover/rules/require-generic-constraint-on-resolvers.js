@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce default generic parameter <TData = unknown> on popover resolver interfaces.',
+      description:
+        'Enforce default generic parameter <TData = unknown> on popover resolver interfaces.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireDefaultGeneric: 'Resolver interface {{ name }} should provide default generic parameter <TData = unknown>.',
+      requireDefaultGeneric:
+        'Resolver interface {{ name }} should provide default generic parameter <TData = unknown>.',
     },
   },
   create(context) {

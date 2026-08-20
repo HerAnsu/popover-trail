@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      shortcutCasing: 'Keyboard key matching for `{{key}}` should use canonical TitleCase `{{canonical}}`.',
+      shortcutCasing:
+        'Keyboard key matching for `{{key}}` should use canonical TitleCase `{{canonical}}`.',
     },
   },
   create(context) {
@@ -24,9 +25,17 @@ export default {
           node.right.type === 'Literal'
         ) {
           if (node.right.value === 'escape') {
-            context.report({ node, messageId: 'shortcutCasing', data: { key: 'escape', canonical: 'Escape' } });
+            context.report({
+              node,
+              messageId: 'shortcutCasing',
+              data: { key: 'escape', canonical: 'Escape' },
+            });
           } else if (node.right.value === 'enter') {
-            context.report({ node, messageId: 'shortcutCasing', data: { key: 'enter', canonical: 'Enter' } });
+            context.report({
+              node,
+              messageId: 'shortcutCasing',
+              data: { key: 'enter', canonical: 'Enter' },
+            });
           }
         }
       },

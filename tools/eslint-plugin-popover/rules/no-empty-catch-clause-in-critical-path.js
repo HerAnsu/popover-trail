@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Disallow empty catch blocks in store actions without at least a diagnostic comment or handler.',
+      description:
+        'Disallow empty catch blocks in store actions without at least a diagnostic comment or handler.',
       category: 'Invariants',
       recommended: true,
     },
     schema: [],
     messages: {
-      noEmptyCatch: 'Empty catch clause in store action; log error or add a comment explaining why rejection is ignored.',
+      noEmptyCatch:
+        'Empty catch clause in store action; log error or add a comment explaining why rejection is ignored.',
     },
   },
   create(context) {

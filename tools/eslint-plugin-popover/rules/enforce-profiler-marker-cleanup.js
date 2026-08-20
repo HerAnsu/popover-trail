@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      missingClearMarks: 'Calls to performance.mark() should clear marks with performance.clearMarks() when measurement ends.',
+      missingClearMarks:
+        'Calls to performance.mark() should clear marks with performance.clearMarks() when measurement ends.',
     },
   },
   create(context) {

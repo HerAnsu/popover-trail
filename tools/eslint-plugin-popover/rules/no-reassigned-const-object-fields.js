@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      noAssignToConstObject: 'Cannot reassign property {{ prop }} on constant config object {{ obj }}.',
+      noAssignToConstObject:
+        'Cannot reassign property {{ prop }} on constant config object {{ obj }}.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       AssignmentExpression(node) {

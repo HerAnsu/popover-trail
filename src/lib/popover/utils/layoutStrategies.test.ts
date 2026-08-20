@@ -5,7 +5,7 @@ import {
   DockedTopLayoutStrategy,
   RelativeFloatingLayoutStrategy,
   LayoutStrategyRegistry,
-  PopoverLayoutStrategyEngine,
+  type PopoverLayoutStrategyEngine,
 } from './layoutStrategies';
 import { RectBounds } from './valueObjects';
 
@@ -45,7 +45,7 @@ describe('layoutStrategies utility', () => {
   describe('DockedTopLayoutStrategy', () => {
     it('docked top position returns zero coordinates', () => {
       const strategy = new DockedTopLayoutStrategy();
-      const pos = strategy.computePosition();
+      const pos = strategy.computePosition({ triggerRect: mockTrigger });
       expect(pos.x).toBe(0);
       expect(pos.y).toBe(0);
     });
@@ -117,7 +117,7 @@ describe('layoutStrategies utility', () => {
       });
       expect(dockedBottomPos.y).toBe(300);
 
-      const dockedTopPos = registry.get('docked-top').computePosition();
+      const dockedTopPos = registry.get('docked-top').computePosition({ triggerRect: mockTrigger });
       expect(dockedTopPos.x).toBe(0);
 
       const custom: PopoverLayoutStrategyEngine = {

@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      wildcardPostMessage: 'Avoid `postMessage(data, "*")`. Specify explicit target origin or use window.location.origin.',
+      wildcardPostMessage:
+        'Avoid `postMessage(data, "*")`. Specify explicit target origin or use window.location.origin.',
     },
   },
   create(context) {

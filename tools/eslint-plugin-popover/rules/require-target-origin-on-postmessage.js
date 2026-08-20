@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce specific targetOrigin on window.postMessage to prevent data leakage across origins.',
+      description:
+        'Enforce specific targetOrigin on window.postMessage to prevent data leakage across origins.',
       category: 'Security',
       recommended: true,
     },
     schema: [],
     messages: {
-      noWildcardOrigin: 'Do not use wildcard "*" as targetOrigin in window.postMessage; specify a trusted origin or window.location.origin.',
+      noWildcardOrigin:
+        'Do not use wildcard "*" as targetOrigin in window.postMessage; specify a trusted origin or window.location.origin.',
     },
   },
   create(context) {

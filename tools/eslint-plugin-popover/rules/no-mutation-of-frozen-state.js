@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      noMutationOfFrozenState: 'Do not assign property {{ prop }} directly to frozen state; return a new state object.',
+      noMutationOfFrozenState:
+        'Do not assign property {{ prop }} directly to frozen state; return a new state object.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       AssignmentExpression(node) {

@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend avoiding storing objects in WeakMap values that hold hard references back to their keys.',
+      description:
+        'Recommend avoiding storing objects in WeakMap values that hold hard references back to their keys.',
       category: 'Memory',
       recommended: true,
     },
     schema: [],
     messages: {
-      avoidWeakMapCycle: 'WeakMap.set() assigns same object {{ key }} as both key and value, creating a retain cycle.',
+      avoidWeakMapCycle:
+        'WeakMap.set() assigns same object {{ key }} as both key and value, creating a retain cycle.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       CallExpression(node) {

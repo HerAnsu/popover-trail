@@ -6,18 +6,25 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow duplicate event handlers leading to identical target states in FSM config.',
+      description:
+        'Disallow duplicate event handlers leading to identical target states in FSM config.',
       category: 'FSM',
       recommended: true,
     },
     schema: [],
     messages: {
-      noDuplicateTransition: 'Duplicate event transition "{{ event }}" defined in state "{{ state }}".',
+      noDuplicateTransition:
+        'Duplicate event transition "{{ event }}" defined in state "{{ state }}".',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('fsm')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('fsm')
+    )
+      return {};
 
     return {
       Property(node) {
@@ -29,7 +36,7 @@ export default {
         ) {
           const seen = new Set();
           for (const prop of node.value.properties) {
-            const name = prop.key ? (prop.key.name || prop.key.value) : null;
+            const name = prop.key ? prop.key.name || prop.key.value : null;
             if (name) {
               if (seen.has(name)) {
                 context.report({

@@ -6,18 +6,25 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend using validated PopoverKey branded identifiers when creating DAG nodes.',
+      description:
+        'Recommend using validated PopoverKey branded identifiers when creating DAG nodes.',
       category: 'DAG Graph',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestBrandedDagKey: 'DAG node for "{{ key }}" should be created using createPopoverKey() factory.',
+      suggestBrandedDagKey:
+        'DAG node for "{{ key }}" should be created using createPopoverKey() factory.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('dag')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('dag')
+    )
+      return {};
 
     return {
       CallExpression(node) {

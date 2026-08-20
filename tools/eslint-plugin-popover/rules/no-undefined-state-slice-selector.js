@@ -12,12 +12,18 @@ export default {
     },
     schema: [],
     messages: {
-      suggestSelectorFallback: 'Selector {{ name }} accesses optional state slice without default fallback.',
+      suggestSelectorFallback:
+        'Selector {{ name }} accesses optional state slice without default fallback.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('Selectors')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('Selectors')
+    )
+      return {};
 
     return {
       ArrowFunctionExpression(node) {

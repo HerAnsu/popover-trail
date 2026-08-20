@@ -8,13 +8,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Require useCallback or memoized handlers for onDrag/onDragStart/onDragEnd to prevent 60/120 FPS jitter',
+      description:
+        'Require useCallback or memoized handlers for onDrag/onDragStart/onDragEnd to prevent 60/120 FPS jitter',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      unmemoizedDragHandler: 'Inline arrow function in `{{prop}}` can cause frame drops during high-frequency gestures. Wrap in useCallback.',
+      unmemoizedDragHandler:
+        'Inline arrow function in `{{prop}}` can cause frame drops during high-frequency gestures. Wrap in useCallback.',
     },
   },
   create(context) {
@@ -24,7 +26,10 @@ export default {
       JSXAttribute(node) {
         const name = node.name && node.name.name;
         if (
-          (name === 'onDrag' || name === 'onDragStart' || name === 'onDragEnd' || name === 'onPointerMove') &&
+          (name === 'onDrag' ||
+            name === 'onDragStart' ||
+            name === 'onDragEnd' ||
+            name === 'onPointerMove') &&
           node.value &&
           node.value.type === 'JSXExpressionContainer' &&
           node.value.expression &&

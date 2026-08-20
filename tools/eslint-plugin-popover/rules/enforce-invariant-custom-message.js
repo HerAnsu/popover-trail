@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      requireInvariantMessage: 'invariant() assertion must include a descriptive error message string as second argument.',
+      requireInvariantMessage:
+        'invariant() assertion must include a descriptive error message string as second argument.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       CallExpression(node) {

@@ -3,13 +3,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure localStorage operations handle QuotaExceededError in private browsing modes',
+      description:
+        'Ensure localStorage operations handle QuotaExceededError in private browsing modes',
       category: 'Storage & Sync',
       recommended: true,
     },
     schema: [],
     messages: {
-      unhandledStorageQuota: 'Wrap `localStorage.setItem()` in try/catch to handle private-mode quota limits.',
+      unhandledStorageQuota:
+        'Wrap `localStorage.setItem()` in try/catch to handle private-mode quota limits.',
     },
   },
   create(context) {

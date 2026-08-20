@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce non-empty string validation when creating branded PopoverKey identifiers.',
+      description:
+        'Enforce non-empty string validation when creating branded PopoverKey identifiers.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      validateBrandedKey: 'Validate that popover key is non-empty before creating branded identifier.',
+      validateBrandedKey:
+        'Validate that popover key is non-empty before creating branded identifier.',
     },
   },
   create(context) {

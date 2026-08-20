@@ -26,10 +26,10 @@
  * @template T - Object structure type managed by the pool.
  */
 export class ObjectPool<T> {
-  private pool: T[] = [];
-  private factory: () => T;
-  private reset?: (item: T) => void;
-  private maxCapacity: number;
+  private readonly pool: T[] = [];
+  private readonly factory: () => T;
+  private readonly reset?: (item: T) => void;
+  private readonly maxCapacity: number;
 
   /**
    * Initializes the pool with pre-allocated instances.
@@ -68,7 +68,7 @@ export class ObjectPool<T> {
    *
    * @param item - The object instance to recycle.
    */
-  release(item: T): void {
+  release(item?: T | null): void {
     if (item === null || item === undefined) return;
     if (this.reset) {
       this.reset(item);

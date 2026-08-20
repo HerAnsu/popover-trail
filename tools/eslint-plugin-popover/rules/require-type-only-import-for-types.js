@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      requireTypeOnlyImport: 'Use "import type" for type-only imports to support isolatedDeclarations.',
+      requireTypeOnlyImport:
+        'Use "import type" for type-only imports to support isolatedDeclarations.',
     },
   },
   create(context) {

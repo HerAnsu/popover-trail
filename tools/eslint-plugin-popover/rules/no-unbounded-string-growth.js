@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      boundStringGrowth: 'Unbounded string accumulation in loop on variable {{ name }}; consider array buffer or length limit.',
+      boundStringGrowth:
+        'Unbounded string accumulation in loop on variable {{ name }}; consider array buffer or length limit.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       AssignmentExpression(node) {
@@ -25,7 +32,9 @@ export default {
           node.operator === '+=' &&
           node.left &&
           node.left.type === 'Identifier' &&
-          (node.left.name.includes('Log') || node.left.name.includes('Trace') || node.left.name.includes('Buffer'))
+          (node.left.name.includes('Log') ||
+            node.left.name.includes('Trace') ||
+            node.left.name.includes('Buffer'))
         ) {
           let parent = node.parent;
           while (parent) {

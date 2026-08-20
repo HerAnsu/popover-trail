@@ -20,6 +20,7 @@ export function definePopoverContext<TContext = unknown>() {
     useContext: () => usePopoverContext<TContext>(),
     useActions: <TData = unknown>() => usePopoverActions<TData, TContext>(),
     useStoreApi: <TData = unknown>() => usePopoverStoreApi<TData, TContext>(),
-    Provider: PopoverProvider as React.ComponentType<PopoverProviderProps<unknown, TContext>>,
+    Provider: (props: PopoverProviderProps<unknown, TContext>) =>
+      React.createElement<PopoverProviderProps<unknown, TContext>>(PopoverProvider, props),
   };
 }

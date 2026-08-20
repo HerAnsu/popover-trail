@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend calling registry.unregister(token) when a tracked resource is manually disposed.',
+      description:
+        'Recommend calling registry.unregister(token) when a tracked resource is manually disposed.',
       category: 'Memory',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestUnregisterToken: 'FinalizationRegistry instance in class {{ name }} should have a corresponding unregister call on dispose.',
+      suggestUnregisterToken:
+        'FinalizationRegistry instance in class {{ name }} should have a corresponding unregister call on dispose.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       ClassDeclaration(node) {

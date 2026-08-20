@@ -12,18 +12,29 @@ export default {
     },
     schema: [],
     messages: {
-      requirePortClose: 'MessageChannel created in {{ name }} should call port1.close() / port2.close() during teardown.',
+      requirePortClose:
+        'MessageChannel created in {{ name }} should call port1.close() / port2.close() during teardown.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       NewExpression(node) {
         if (node.callee && node.callee.name === 'MessageChannel') {
           let parent = node.parent;
-          while (parent && parent.type !== 'FunctionDeclaration' && parent.type !== 'MethodDefinition') {
+          while (
+            parent &&
+            parent.type !== 'FunctionDeclaration' &&
+            parent.type !== 'MethodDefinition'
+          ) {
             parent = parent.parent;
           }
           if (parent) {

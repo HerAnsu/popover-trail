@@ -45,8 +45,6 @@ describe('storeControllers module', () => {
     expect(manager.hasInFlight('k1')).toBe(false);
 
     // Null safety check
-    expect(() =>
-      manager.abortControllersForKeys(null as unknown as Iterable<string>),
-    ).not.toThrow();
+    expect(() => manager.abortControllersForKeys(null as never)).not.toThrow();
   });
 });

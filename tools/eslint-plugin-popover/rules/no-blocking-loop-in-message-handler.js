@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow blocking while (true) loops in worker onmessage handlers to maintain responsive event handling.',
+      description:
+        'Disallow blocking while (true) loops in worker onmessage handlers to maintain responsive event handling.',
       category: 'Concurrency',
       recommended: true,
     },
     schema: [],
     messages: {
-      noBlockingWorkerLoop: 'Avoid synchronous while(true) in worker onmessage handler; use iterative chunking or queue.',
+      noBlockingWorkerLoop:
+        'Avoid synchronous while(true) in worker onmessage handler; use iterative chunking or queue.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       WhileStatement(node) {

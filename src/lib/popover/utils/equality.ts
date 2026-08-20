@@ -1,3 +1,7 @@
+function isRecord(val: unknown): val is Record<string, unknown> {
+  return typeof val === 'object' && val !== null && !Array.isArray(val);
+}
+
 /**
  * Shallow equality comparison utility for plain objects, arrays, and primitive values.
  *
@@ -10,15 +14,13 @@
  */
 export function shallowEqual<T>(objA: T, objB: T): boolean {
   if (Object.is(objA, objB)) return true;
-  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+  if (!isRecord(objA) || !isRecord(objB)) {
     return false;
   }
   const keysA = Object.keys(objA);
   if (keysA.length !== Object.keys(objB).length) return false;
-  const recA = objA as Record<string, unknown>;
-  const recB = objB as Record<string, unknown>;
   for (const key of keysA) {
-    if (!Object.hasOwn(objB, key) || !Object.is(recA[key], recB[key])) {
+    if (!Object.hasOwn(objB, key) || !Object.is(objA[key], objB[key])) {
       return false;
     }
   }
@@ -66,5 +68,8 @@ export function isDeepEqual<T>(a: T, b: T): boolean {
   if (Array.isArray(a) || Array.isArray(b)) {
     return Array.isArray(a) && Array.isArray(b) && areArraysDeepEqual(a, b);
   }
-  return areObjectsDeepEqual(a as Record<string, unknown>, b as Record<string, unknown>);
+  if (isRecord(a) && isRecord(b)) {
+    return areObjectsDeepEqual(a, b);
+  }
+  return false;
 }

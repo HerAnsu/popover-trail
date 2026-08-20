@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      noEmptyStyleObj: 'Avoid style=\\{\\{\\}\\} as it allocates a new object reference on every render; omit style prop instead.',
+      noEmptyStyleObj:
+        'Avoid style=\\{\\{\\}\\} as it allocates a new object reference on every render; omit style prop instead.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       JSXAttribute(node) {

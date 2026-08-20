@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      noNestedTernaryInJsx: 'Avoid nested ternary inside JSX; extract to a local variable or render helper.',
+      noNestedTernaryInJsx:
+        'Avoid nested ternary inside JSX; extract to a local variable or render helper.',
     },
   },
   create(context) {

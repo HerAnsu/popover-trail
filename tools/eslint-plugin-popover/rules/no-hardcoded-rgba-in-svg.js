@@ -14,7 +14,8 @@ export default {
     },
     schema: [],
     messages: {
-      useCurrentColor: 'Use `currentColor` or CSS variables for SVG fill/stroke instead of hardcoded color literal `{{val}}`.',
+      useCurrentColor:
+        'Use `currentColor` or CSS variables for SVG fill/stroke instead of hardcoded color literal `{{val}}`.',
     },
   },
   create(context) {

@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      unthrottledResize: 'Window resize listener should be throttled or debounced to avoid layout thrashing.',
+      unthrottledResize:
+        'Window resize listener should be throttled or debounced to avoid layout thrashing.',
     },
   },
   create(context) {
@@ -25,9 +26,17 @@ export default {
           node.arguments[0].value === 'resize'
         ) {
           const handler = node.arguments[1];
-          if (handler && (handler.type === 'ArrowFunctionExpression' || handler.type === 'FunctionExpression')) {
+          if (
+            handler &&
+            (handler.type === 'ArrowFunctionExpression' || handler.type === 'FunctionExpression')
+          ) {
             const src = context.getSourceCode ? context.getSourceCode().getText(handler) : '';
-            if (src.includes('getBoundingClientRect') && !src.includes('throttle') && !src.includes('debounce') && !src.includes('requestAnimationFrame')) {
+            if (
+              src.includes('getBoundingClientRect') &&
+              !src.includes('throttle') &&
+              !src.includes('debounce') &&
+              !src.includes('requestAnimationFrame')
+            ) {
               context.report({ node, messageId: 'unthrottledResize' });
             }
           }

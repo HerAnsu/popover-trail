@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      catchUnknownOnly: 'Catch clause variable "{{ name }}" should be typed as unknown instead of any.',
+      catchUnknownOnly:
+        'Catch clause variable "{{ name }}" should be typed as unknown instead of any.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       CatchClause(node) {

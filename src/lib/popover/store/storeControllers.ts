@@ -5,20 +5,44 @@
  * @module storeControllers
  */
 
-const DISPOSE_SYMBOL: symbol =
-  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
+import { DISPOSE_SYMBOL } from '../utils/disposable';
+
+/**
+ * Controller manager interface contract for in-flight requests and cancellations.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TPopoverKey - Union of valid popover string keys.
+ */
+export interface ControllerManager<TData = unknown, TPopoverKey extends string = string> {
+  activeControllers: Map<TPopoverKey, AbortController>;
+  inFlightPromises: Map<TPopoverKey, Promise<TData>>;
+  registerController: (key: TPopoverKey) => AbortController;
+  removeController: (key: TPopoverKey) => void;
+  abortControllersForKeys: (keys: Iterable<TPopoverKey>) => void;
+  abortAllControllers: () => void;
+  hasInFlight: (key: TPopoverKey) => boolean;
+  getInFlight: (key: TPopoverKey) => Promise<TData> | undefined;
+  setInFlight: (key: TPopoverKey, promise: Promise<TData>) => void;
+  removeInFlight: (key: TPopoverKey) => void;
+  dispose: () => void;
+  [DISPOSE_SYMBOL]: () => void;
+}
 
 /**
  * Creates an isolated AbortController and in-flight Promise manager for the store.
  *
  * @template TData - Resolved data payload type.
+ * @template TPopoverKey - Union of valid popover string keys.
  * @returns Controller manager instance with registration, cancellation, and deduplication methods.
  */
-export function createControllerManager<TData = unknown>() {
-  const activeControllers = new Map<string, AbortController>();
-  const inFlightPromises = new Map<string, Promise<TData>>();
+export function createControllerManager<
+  TData = unknown,
+  TPopoverKey extends string = string,
+>(): ControllerManager<TData, TPopoverKey> {
+  const activeControllers = new Map<TPopoverKey, AbortController>();
+  const inFlightPromises = new Map<TPopoverKey, Promise<TData>>();
 
-  const registerController = (key: string): AbortController => {
+  const registerController = (key: TPopoverKey): AbortController => {
     const existing = activeControllers.get(key);
     if (existing) {
       existing.abort();
@@ -28,11 +52,11 @@ export function createControllerManager<TData = unknown>() {
     return controller;
   };
 
-  const removeController = (key: string): void => {
+  const removeController = (key: TPopoverKey): void => {
     activeControllers.delete(key);
   };
 
-  const abortControllersForKeys = (keys: Iterable<string>): void => {
+  const abortControllersForKeys = (keys: Iterable<TPopoverKey>): void => {
     if (!keys) return;
     for (const key of keys) {
       const controller = activeControllers.get(key);
@@ -59,12 +83,12 @@ export function createControllerManager<TData = unknown>() {
     removeController,
     abortControllersForKeys,
     abortAllControllers,
-    hasInFlight: (key: string) => inFlightPromises.has(key),
-    getInFlight: (key: string) => inFlightPromises.get(key),
-    setInFlight: (key: string, promise: Promise<TData>) => {
+    hasInFlight: (key: TPopoverKey) => inFlightPromises.has(key),
+    getInFlight: (key: TPopoverKey) => inFlightPromises.get(key),
+    setInFlight: (key: TPopoverKey, promise: Promise<TData>) => {
       inFlightPromises.set(key, promise);
     },
-    removeInFlight: (key: string) => {
+    removeInFlight: (key: TPopoverKey) => {
       inFlightPromises.delete(key);
     },
     dispose: abortAllControllers,

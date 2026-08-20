@@ -12,12 +12,18 @@ export default {
     },
     schema: [],
     messages: {
-      suggestFontSmoothing: 'Typography token style {{ prop }} should specify WebkitFontSmoothing: "antialiased".',
+      suggestFontSmoothing:
+        'Typography token style {{ prop }} should specify WebkitFontSmoothing: "antialiased".',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('themeTokens')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('themeTokens')
+    )
+      return {};
 
     return {
       Property(node) {
@@ -28,7 +34,8 @@ export default {
           node.value.type === 'ObjectExpression'
         ) {
           const hasSmoothing = node.value.properties.some(
-            (p) => p.key && (p.key.name === 'WebkitFontSmoothing' || p.key.name === 'fontSmoothing'),
+            (p) =>
+              p.key && (p.key.name === 'WebkitFontSmoothing' || p.key.name === 'fontSmoothing'),
           );
           if (!hasSmoothing) {
             context.report({

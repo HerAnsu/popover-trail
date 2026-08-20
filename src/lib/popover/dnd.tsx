@@ -362,7 +362,7 @@ export function PopoverCanvas<TData = unknown>({
   modifiers: customModifiers,
   restrictToWindow = false,
   restrictToContainer = false,
-}: PopoverCanvasProps<TData>) {
+}: Readonly<PopoverCanvasProps<TData>>) {
   const trail = usePopoverTrail<TData>();
   const floating = usePopoverFloating<TData>();
   const store = usePopoverStoreApi<TData>();
@@ -542,7 +542,7 @@ function resolveCardFeatures<TData>(props: PopoverCardProps<TData>) {
  *
  * @template TData - The resolved data payload type.
  */
-function PopoverCardInner<TData = unknown>(props: PopoverCardProps<TData>) {
+function PopoverCardInner<TData = unknown>(props: Readonly<PopoverCardProps<TData>>) {
   const {
     entry,
     index,
@@ -613,7 +613,7 @@ function PopoverCardInner<TData = unknown>(props: PopoverCardProps<TData>) {
       open
       tabIndex={-1}
       id={`popover-card-${entry.key}`}
-      ref={ref as React.Ref<HTMLDialogElement>}
+      ref={ref}
       style={combinedStyle}
       aria-labelledby={`title-${entry.key}`}
       aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
@@ -652,4 +652,5 @@ function PopoverCardInner<TData = unknown>(props: PopoverCardProps<TData>) {
   );
 }
 
-export const PopoverCard = memo(PopoverCardInner) as typeof PopoverCardInner;
+export const PopoverCard = memo(PopoverCardInner);
+PopoverCard.displayName = 'PopoverCard';

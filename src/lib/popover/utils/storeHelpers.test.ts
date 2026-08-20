@@ -8,6 +8,7 @@ import {
   shallowEqual,
   clsx,
   isDeepEqual,
+  createInitialTrailEntry,
 } from './storeHelpers';
 import type { TrailEntry } from '../types';
 
@@ -46,12 +47,14 @@ describe('storeHelpers utility functions', () => {
 
   it('updates target entry in floating or trail lists while preserving reference for un-modified array', () => {
     const updated = updateEntryInLists(floating, trail, 'trail-1', {
+      key: 'trail-1',
       isLoading: true,
+      error: null,
     });
 
     expect(updated.floating).toBe(floating); // Reference preserved!
     expect(updated.trail).not.toBe(trail);
-    expect(updated.trail[0]?.isLoading).toBe(true);
+    expect(updated.trail?.[0]?.isLoading).toBe(true);
   });
 
   it('accurately identifies promises and prototype-based thenables', () => {
@@ -84,5 +87,20 @@ describe('storeHelpers utility functions', () => {
         disabled: false,
       }),
     ).toBe('btn active primary');
+  });
+
+  it('constructs normalized TrailEntry with createInitialTrailEntry', () => {
+    const entry = createInitialTrailEntry(
+      'card-init',
+      { offset: 20, placement: 'top' },
+      'owner-1',
+      'parent-1',
+    );
+    expect(entry.key).toBe('card-init');
+    expect(entry.parentKey).toBe('parent-1');
+    expect(entry.offset).toBe(20);
+    expect(entry.placement).toBe('top');
+    expect(entry.transitionStatus).toBe('mounted');
+    expect(entry.error).toBeNull();
   });
 });

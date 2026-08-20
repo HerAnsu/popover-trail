@@ -12,5 +12,15 @@ export * from './types/storeTypes';
 export * from './utils/typeGuards';
 export * from './types/registerTypes';
 export * from './types/polymorphicTypes';
-export type { Brand, PopoverKey, ParentKey, StackGroupId, ZIndexDepth } from './types/branded';
+export * from './types/react19Types';
+export type {
+  Brand,
+  PopoverKey,
+  ParentKey,
+  OwnerId,
+  StackGroupId,
+  ZIndexDepth,
+  DurationMs,
+  TimestampMs,
+} from './types/branded';
 export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT } from './types/branded';

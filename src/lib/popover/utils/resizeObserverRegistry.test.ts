@@ -1,6 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ResizeObserverRegistry } from './resizeObserverRegistry';
 
+function createMockElement(): Element {
+  return {} as Element;
+}
+
+function createMockResizeEntry(target: Element): ResizeObserverEntry {
+  return {
+    target,
+    contentRect: {
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      top: 0,
+      left: 0,
+      right: 100,
+      bottom: 100,
+      toJSON: () => ({}),
+    } satisfies DOMRectReadOnly,
+    borderBoxSize: [],
+    contentBoxSize: [],
+    devicePixelContentBoxSize: [],
+  };
+}
+
 describe('resizeObserverRegistry utility', () => {
   let mockObserve: ReturnType<typeof vi.fn>;
   let mockUnobserve: ReturnType<typeof vi.fn>;
@@ -42,14 +66,14 @@ describe('resizeObserverRegistry utility', () => {
   });
 
   it('registers observation on DOM element and invokes callback on resize', () => {
-    const el = {} as Element;
+    const el = createMockElement();
     const callback = vi.fn();
 
     const unobserve = ResizeObserverRegistry.observe(el, callback);
     expect(mockObserve).toHaveBeenCalledWith(el);
 
     // Simulate resize event
-    const mockEntry = { target: el } as unknown as ResizeObserverEntry;
+    const mockEntry = createMockResizeEntry(el);
     observerCallback([mockEntry]);
 
     expect(callback).toHaveBeenCalledWith(mockEntry);
@@ -59,26 +83,26 @@ describe('resizeObserverRegistry utility', () => {
   });
 
   it('handles callback exception without crashing observer loop', () => {
-    const el = {} as Element;
+    const el = createMockElement();
     const failingCallback = vi.fn(() => {
       throw new Error('Resize handler error');
     });
 
     ResizeObserverRegistry.observe(el, failingCallback);
-    const mockEntry = { target: el } as unknown as ResizeObserverEntry;
+    const mockEntry = createMockResizeEntry(el);
 
     expect(() => observerCallback([mockEntry])).not.toThrow();
   });
 
   it('notifies multiple listeners attached to the same element', () => {
-    const el = {} as Element;
+    const el = createMockElement();
     const cb1 = vi.fn();
     const cb2 = vi.fn();
 
     const cleanup1 = ResizeObserverRegistry.observe(el, cb1);
     const cleanup2 = ResizeObserverRegistry.observe(el, cb2);
 
-    const mockEntry = { target: el } as unknown as ResizeObserverEntry;
+    const mockEntry = createMockResizeEntry(el);
     observerCallback([mockEntry]);
 
     expect(cb1).toHaveBeenCalledWith(mockEntry);
@@ -91,7 +115,7 @@ describe('resizeObserverRegistry utility', () => {
   it('gracefully handles missing ResizeObserver in SSR environments', () => {
     Reflect.deleteProperty(globalThis, 'ResizeObserver');
 
-    const el = {} as Element;
+    const el = createMockElement();
     const cleanup = ResizeObserverRegistry.observe(el, () => {});
 
     expect(typeof cleanup).toBe('function');

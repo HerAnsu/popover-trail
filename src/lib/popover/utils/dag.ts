@@ -1,13 +1,22 @@
 /**
- * Represents a single node inside the popover hierarchy graph.
+ * Directed Acyclic Graph (DAG) Kernel for popover-trail.
+ * Manages parent-child relationship hierarchies, cycle prevention, cascade pruning, and topological z-index sorting.
+ *
+ * @module utils/dag
  */
-export interface DAGNode {
+
+/**
+ * Represents a single node inside the popover hierarchy graph.
+ *
+ * @template TPopoverKey - Union of valid popover string keys.
+ */
+export interface DAGNode<TPopoverKey extends string = string> {
   /** Unique identifier of this popover node. */
-  key: string;
+  key: TPopoverKey;
   /** Parent popover identifier, or undefined if this is a root popover. */
-  parentKey?: string;
+  parentKey?: TPopoverKey;
   /** Direct children keys spawned from this node. */
-  childrenKeys: Set<string>;
+  childrenKeys: Set<TPopoverKey>;
   /** Topological depth level in the cascade tree (0 for root). */
   depth: number;
 }
@@ -16,9 +25,10 @@ export interface DAGNode {
  * Directed Acyclic Graph (DAG) Kernel for popover-trail.
  * Manages parent-child relationship hierarchies, cycle prevention, cascade pruning, and topological z-index sorting.
  *
+ * @template TPopoverKey - Union of valid popover string keys.
  * @example
  * ```typescript
- * const dag = new PopoverDAG();
+ * const dag = new PopoverDAG<string>();
  * dag.addNode('root');
  * dag.addNode('child-1', 'root');
  * dag.addNode('grandchild', 'child-1');
@@ -27,8 +37,8 @@ export interface DAGNode {
  * console.log(descendants.has('grandchild')); // true
  * ```
  */
-export class PopoverDAG {
-  private nodes = new Map<string, DAGNode>();
+export class PopoverDAG<TPopoverKey extends string = string> {
+  private readonly nodes = new Map<TPopoverKey, DAGNode<TPopoverKey>>();
 
   /**
    * Clears all nodes and relationships from the graph.
@@ -45,13 +55,13 @@ export class PopoverDAG {
    * @param key - Unique popover key.
    * @param parentKey - Optional parent popover key.
    */
-  addNode(key: string, parentKey?: string): void {
+  addNode(key: TPopoverKey, parentKey?: TPopoverKey): void {
     let node = this.nodes.get(key);
     if (!node) {
       node = {
         key,
         parentKey,
-        childrenKeys: new Set(),
+        childrenKeys: new Set<TPopoverKey>(),
         depth: 0,
       };
       this.nodes.set(key, node);
@@ -79,8 +89,10 @@ export class PopoverDAG {
 
   /**
    * Removes a node from the DAG graph and cleans up parent/child references.
+   *
+   * @param key - Unique popover key to remove.
    */
-  removeNode(key: string): void {
+  removeNode(key: TPopoverKey): void {
     const node = this.nodes.get(key);
     if (!node) return;
 
@@ -93,7 +105,7 @@ export class PopoverDAG {
 
     for (const childKey of node.childrenKeys) {
       const childNode = this.nodes.get(childKey);
-      if (childNode && childNode.parentKey === key) {
+      if (childNode?.parentKey === key) {
         childNode.parentKey = undefined;
       }
     }
@@ -103,15 +115,19 @@ export class PopoverDAG {
 
   /**
    * Checks whether a node exists in the graph.
+   *
+   * @param key - Unique popover key.
    */
-  hasNode(key: string): boolean {
+  hasNode(key: TPopoverKey): boolean {
     return this.nodes.has(key);
   }
 
   /**
    * Retrieves a node from the graph.
+   *
+   * @param key - Unique popover key.
    */
-  getNode(key: string): DAGNode | undefined {
+  getNode(key: TPopoverKey): DAGNode<TPopoverKey> | undefined {
     return this.nodes.get(key);
   }
 
@@ -130,8 +146,8 @@ export class PopoverDAG {
    * @param outSet - Output Set to collect all discovered child keys.
    * @returns Populated outSet with all descendant keys.
    */
-  getDescendantKeysInto(parentKey: string, outSet: Set<string>): Set<string> {
-    const stack: string[] = [parentKey];
+  getDescendantKeysInto(parentKey: TPopoverKey, outSet: Set<TPopoverKey>): Set<TPopoverKey> {
+    const stack: TPopoverKey[] = [parentKey];
 
     while (stack.length > 0) {
       const currentKey = stack.pop();
@@ -157,8 +173,8 @@ export class PopoverDAG {
    * @param parentKey - Starting parent key.
    * @returns Set containing all transitive children keys.
    */
-  getDescendantKeys(parentKey: string): Set<string> {
-    return this.getDescendantKeysInto(parentKey, new Set<string>());
+  getDescendantKeys(parentKey: TPopoverKey): Set<TPopoverKey> {
+    return this.getDescendantKeysInto(parentKey, new Set<TPopoverKey>());
   }
 
   /**
@@ -169,12 +185,12 @@ export class PopoverDAG {
    * @param baseZIndex - Starting base z-index depth (default: 1000).
    * @returns Map of popover keys to calculated z-index integer values.
    */
-  getTopologicalZIndexOrder(baseZIndex = 1000): Map<string, number> {
-    const result = new Map<string, number>();
-    const visited = new Set<string>();
+  getTopologicalZIndexOrder(baseZIndex = 1000): Map<TPopoverKey, number> {
+    const result = new Map<TPopoverKey, number>();
+    const visited = new Set<TPopoverKey>();
     let currentZIndex = baseZIndex;
 
-    const visit = (key: string) => {
+    const visit = (key: TPopoverKey) => {
       if (visited.has(key)) return;
       visited.add(key);
 

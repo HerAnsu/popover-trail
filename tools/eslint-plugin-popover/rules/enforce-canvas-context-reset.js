@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      suggestCanvasRestore: 'Canvas transformation function {{ name }} calls translate/rotate without a matching restore() call.',
+      suggestCanvasRestore:
+        'Canvas transformation function {{ name }} calls translate/rotate without a matching restore() call.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {

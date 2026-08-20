@@ -1,8 +1,8 @@
 /**
  * State Persistence & Transaction Domain Action Slice for popover-trail.
- * Encapsulates event subscriptions, batching, undo/redo time travel, transactions, and state persistence.
+ * Encapsulates event subscriptions, key watchers, batching, undo/redo, transactions, and state persistence.
  *
- * @module slicePersistence
+ * @module store/slices/slicePersistence
  */
 
 import type {
@@ -10,122 +10,30 @@ import type {
   PopoverPersistConfig,
   TrailEntry,
   PopoverStoreEvent,
-  PopoverStateData,
 } from '../../types';
-import { getSnapshotStatePatch } from '../../utils/storeHelpers';
+import { findEntryInStore, getSnapshotStatePatch } from '../../utils/storeHelpers';
+import { isOk, isErr, wrapResult, wrapAsyncResult } from '../../utils/result';
+import { generateTabId } from '../../utils/uuid';
 import type { SliceContext } from './sliceContext';
-
-function resolveStorageEngine(config?: PopoverPersistConfig) {
-  const storageKey = config?.storageKey ?? config?.key ?? 'popover_store_state';
-  const engine =
-    config?.storage ??
-    (typeof window !== 'undefined' && window.localStorage ? window.localStorage : null);
-  return { storageKey, engine };
-}
-
-function rollbackActiveControllers(
-  activeControllers: Map<string, AbortController>,
-  snapshotControllers: Set<string> | null,
-): void {
-  if (activeControllers.size === 0) return;
-  for (const key of activeControllers.keys()) {
-    if (!snapshotControllers || !snapshotControllers.has(key)) {
-      const controller = activeControllers.get(key);
-      if (controller) controller.abort();
-      activeControllers.delete(key);
-    }
-  }
-}
-
-function restoreDAGFromState<TData>(
-  dag: { clear: () => void; addNode: (key: string, parentKey?: string) => void } | undefined,
-  trail: readonly TrailEntry<TData>[],
-  floating: readonly TrailEntry<TData>[],
-): void {
-  if (!dag) return;
-  dag.clear();
-  for (const entry of trail) {
-    dag.addNode(entry.key, entry.parentKey);
-  }
-  for (const entry of floating) {
-    dag.addNode(entry.key, entry.parentKey);
-  }
-}
-
-function parseRehydratedFloatingEntries<TData>(rawFloating: unknown): TrailEntry<TData>[] {
-  if (!Array.isArray(rawFloating)) return [];
-  const isRawEntry = (item: unknown): item is TrailEntry<TData> =>
-    typeof item === 'object' &&
-    item !== null &&
-    typeof (item as Record<string, unknown>).key === 'string' &&
-    !['__proto__', 'constructor', 'prototype'].includes(
-      (item as Record<string, unknown>).key as string,
-    );
-
-  return rawFloating.flatMap((item) =>
-    isRawEntry(item)
-      ? [
-          {
-            ...item,
-            status: 'success' as const,
-            isLoading: false,
-            error: null,
-            isPinned: true,
-            transitionStatus: 'mounted' as const,
-          },
-        ]
-      : [],
-  );
-}
-
-function rollbackTransactionState<TData, TContext>(
-  snapshotState: PopoverStateData<TData, TContext>,
-  snapshotControllers: Set<string> | null,
-  activeControllers: Map<string, AbortController>,
-  popoverDAG: { clear: () => void; addNode: (key: string, parentKey?: string) => void } | undefined,
-  set: (patch: Partial<PopoverStateData<TData, TContext>>) => void,
-): void {
-  rollbackActiveControllers(activeControllers, snapshotControllers);
-  restoreDAGFromState(popoverDAG, snapshotState.trail, snapshotState.floating);
-  set({
-    trail: snapshotState.trail,
-    floating: snapshotState.floating,
-    offsets: snapshotState.offsets,
-    pinnedStates: snapshotState.pinnedStates,
-    zIndexOrder: snapshotState.zIndexOrder,
-    ownerId: snapshotState.ownerId,
-    anchorElement: snapshotState.anchorElement,
-    anchorRect: snapshotState.anchorRect,
-    nestedHydrationRequestCounters: snapshotState.nestedHydrationRequestCounters,
-  });
-}
-
-function applyRehydratedState<TData, TContext>(
-  parsed: unknown,
-  set: (patch: Partial<PopoverStateData<TData, TContext>>) => void,
-): boolean {
-  if (!parsed || typeof parsed !== 'object') return false;
-  const record = parsed as Record<string, unknown>;
-  if (!Array.isArray(record.floating)) return false;
-
-  const nextFloating = parseRehydratedFloatingEntries<TData>(record.floating);
-  set({
-    floating: nextFloating,
-    offsets: (record.offsets as Record<string, { x: number; y: number }>) ?? {},
-    pinnedStates: (record.pinnedStates as Record<string, boolean>) ?? {},
-    zIndexOrder: (record.zIndexOrder as string[]) ?? [],
-  });
-  return true;
-}
+import {
+  PERSIST_SCHEMA_VERSION,
+  resolveStorageEngine,
+  sanitizePersistedOffsets,
+  sanitizePersistedEntries,
+  safeJsonParse,
+  applyRehydratedState,
+  executeWithTransition,
+  rollbackTransactionState,
+} from './persistenceHelpers';
 
 /**
- * Factory creating state persistence, batching, transaction rollback, and undo/redo time-travel actions.
+ * Factory creating persistence, batching, transaction, and event bus actions.
  *
  * @template TData - Resolved data payload type.
  * @template TContext - Global shared context type.
- * @template TPopoverKey - Union of valid popover string keys.
- * @param ctx - Slice context providing Zustand set/get methods and dependencies.
- * @returns Persistence slice action methods.
+ * @template TPopoverKey - Popover key string union.
+ * @param ctx - Store dependency injection slice context.
+ * @returns Persistence action dispatch methods.
  */
 export function createPersistenceSlice<
   TData = unknown,
@@ -154,6 +62,48 @@ export function createPersistenceSlice<
       };
     },
 
+    subscribeKey: (
+      key: TPopoverKey,
+      listener: (
+        entry: TrailEntry<TData, TPopoverKey> | undefined,
+        prevEntry: TrailEntry<TData, TPopoverKey> | undefined,
+      ) => void,
+    ): (() => void) => {
+      if (!key || typeof listener !== 'function') return () => {};
+
+      let prevEntry = findEntryInStore<TData, TPopoverKey>(get().floating, get().trail, key);
+
+      if (deps.subscribeState) {
+        return deps.subscribeState((state, prevState) => {
+          const currentEntry = findEntryInStore<TData, TPopoverKey>(
+            state.floating,
+            state.trail,
+            key,
+          );
+          const oldEntry = findEntryInStore<TData, TPopoverKey>(
+            prevState.floating,
+            prevState.trail,
+            key,
+          );
+
+          if (currentEntry !== prevEntry) {
+            const lastPrev = prevEntry ?? oldEntry;
+            prevEntry = currentEntry;
+
+            const notifyResult = wrapResult(() => listener(currentEntry, lastPrev));
+            if (isErr(notifyResult)) {
+              console.error(
+                `[popover-trail]: Exception in subscribeKey listener for "${key}":`,
+                notifyResult.error,
+              );
+            }
+          }
+        });
+      }
+
+      return () => {};
+    },
+
     batchUpdates: (fn: (actions: PopoverActions<TData, TContext, TPopoverKey>) => void) => {
       startBatch();
       try {
@@ -161,6 +111,12 @@ export function createPersistenceSlice<
       } finally {
         endBatch();
       }
+    },
+
+    runTransition: (fn: (actions: PopoverActions<TData, TContext, TPopoverKey>) => void) => {
+      executeWithTransition(() => {
+        fn(get().actions);
+      });
     },
 
     useMiddleware: (middleware: Parameters<typeof middlewareEngine.use>[0]) =>
@@ -175,6 +131,7 @@ export function createPersistenceSlice<
         if (prev) set(getSnapshotStatePatch(prev));
       }
     },
+
     redo: () => {
       if (deps.historyManager) {
         const next = deps.historyManager.redo(get());
@@ -188,14 +145,14 @@ export function createPersistenceSlice<
       const snapshotState = getCurrentState();
       const snapshotControllers =
         activeControllers.size > 0 ? new Set(activeControllers.keys()) : null;
-      try {
-        await fn(get().actions);
-        return true;
-      } catch (err) {
+
+      const txResult = await wrapAsyncResult(Promise.resolve().then(() => fn(get().actions)));
+
+      if (isErr(txResult)) {
         if (getCurrentState().debug) {
-          console.error('Popover Transaction Rollback:', err);
+          console.error('[popover-trail]: Transaction Rollback:', txResult.error);
         }
-        rollbackTransactionState(
+        rollbackTransactionState<TData, TContext, TPopoverKey>(
           snapshotState,
           snapshotControllers,
           activeControllers,
@@ -204,6 +161,8 @@ export function createPersistenceSlice<
         );
         return false;
       }
+
+      return true;
     },
 
     persistState: async (config?: PopoverPersistConfig) => {
@@ -214,60 +173,52 @@ export function createPersistenceSlice<
       const filterFn = config?.filter;
 
       const filteredFloating = filterFn ? floating.filter((e) => filterFn(e.key)) : floating;
-      if (filteredFloating.length === 0) {
-        await engine.setItem(
-          storageKey,
-          JSON.stringify({ floating: [], offsets: {}, pinnedStates: {}, zIndexOrder: [] }),
-        );
-        return;
-      }
-      const keysToSave = new Set(filteredFloating.map((e) => e.key));
+      const keysToSave = new Set<TPopoverKey>(filteredFloating.map((e) => e.key));
 
-      const savedOffsets: Record<string, { x: number; y: number }> = {};
-      const savedPinnedStates: Record<string, boolean> = {};
+      const cleanOffsets = sanitizePersistedOffsets(offsets, keysToSave);
+      const cleanPinnedStates: Partial<Record<TPopoverKey, boolean>> = {};
 
       for (const k of keysToSave) {
-        const offsetVal = offsets[k];
-        if (offsetVal) savedOffsets[k] = offsetVal;
-        const pinnedVal = pinnedStates[k];
-        if (pinnedVal !== undefined) savedPinnedStates[k] = pinnedVal;
+        if (pinnedStates[k] !== undefined) {
+          cleanPinnedStates[k] = pinnedStates[k];
+        }
       }
 
-      const sanitizedFloating = filteredFloating.map((entry) => {
-        const clean: Record<string, unknown> = {};
-        for (const key of Object.keys(entry)) {
-          const val = (entry as unknown as Record<string, unknown>)[key];
-          if (typeof val !== 'function' && key !== 'dataPromise') {
-            clean[key] = val;
-          }
-        }
-        return clean;
-      });
+      const sanitizedFloating = sanitizePersistedEntries(filteredFloating);
 
-      const payload = JSON.stringify({
+      const snapshotPayload = {
+        version: PERSIST_SCHEMA_VERSION,
+        timestamp: Date.now(),
+        tabId: generateTabId(),
         floating: sanitizedFloating,
-        offsets: savedOffsets,
-        pinnedStates: savedPinnedStates,
+        offsets: cleanOffsets,
+        pinnedStates: cleanPinnedStates,
         zIndexOrder: zIndexOrder.filter((k) => keysToSave.has(k)),
-      });
-      await engine.setItem(storageKey, payload);
+      };
+
+      const serializeResult = wrapResult(() => JSON.stringify(snapshotPayload));
+      if (isOk(serializeResult)) {
+        wrapResult(() => engine.setItem(storageKey, serializeResult.data));
+      }
     },
 
-    rehydrateState: async (config?: PopoverPersistConfig) => {
+    rehydrateState: async (config?: PopoverPersistConfig): Promise<boolean> => {
       const { storageKey, engine } = resolveStorageEngine(config);
       if (!engine) return false;
 
-      try {
-        const raw = await engine.getItem(storageKey);
-        if (!raw) return false;
-        const parsed = JSON.parse(raw);
-        return applyRehydratedState<TData, TContext>(parsed, set);
-      } catch (err) {
+      const readResult = await wrapAsyncResult(Promise.resolve(engine.getItem(storageKey)));
+      if (!isOk(readResult) || typeof readResult.data !== 'string' || !readResult.data)
+        return false;
+
+      const parsed = safeJsonParse(readResult.data);
+      if (!parsed) {
         if (getCurrentState().debug) {
-          console.error('Popover Rehydration Error:', err);
+          console.error('[popover-trail]: Failed to parse rehydration payload.');
         }
         return false;
       }
+
+      return applyRehydratedState<TData, TContext, TPopoverKey>(parsed, set);
     },
 
     destroy: () => {
@@ -278,3 +229,5 @@ export function createPersistenceSlice<
     },
   };
 }
+
+export { type StateStorageEngine } from '../../types';

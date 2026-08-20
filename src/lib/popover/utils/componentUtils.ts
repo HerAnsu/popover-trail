@@ -15,7 +15,7 @@ export function getPolymorphicProps<E extends ElementType>(
   as?: E,
   defaultElement: ElementType = 'button',
 ) {
-  const Component = (as || defaultElement) as ElementType;
+  const Component = as ?? defaultElement;
   const isNativeButton = Component === 'button';
   return {
     Component,

@@ -1,4 +1,4 @@
-import React, { useMemo, type ReactNode, type ElementType } from 'react';
+import { useMemo, type ReactNode, type ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverCardScope } from './PopoverCardScopeContext';
 
@@ -31,7 +31,7 @@ export function PopoverCardHandle<E extends ElementType = 'header'>({
   const Component = as || 'header';
   const { card } = usePopoverCardScope();
 
-  const handleStyle = card.dragHandleProps?.style as React.CSSProperties | undefined;
+  const handleStyle = card.dragHandleProps?.style;
   const combinedStyle = useMemo(
     () => (userStyle ? { ...handleStyle, ...userStyle } : handleStyle),
     [handleStyle, userStyle],

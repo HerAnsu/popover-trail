@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      mutateDOMRect: 'DOMRect properties are read-only in browsers. Create a new plain object or Rect value object.',
+      mutateDOMRect:
+        'DOMRect properties are read-only in browsers. Create a new plain object or Rect value object.',
     },
   },
   create(context) {
@@ -21,7 +22,9 @@ export default {
           node.left.object &&
           node.left.object.name === 'rect' &&
           node.left.property &&
-          ['x', 'y', 'width', 'height', 'top', 'bottom', 'left', 'right'].includes(node.left.property.name)
+          ['x', 'y', 'width', 'height', 'top', 'bottom', 'left', 'right'].includes(
+            node.left.property.name,
+          )
         ) {
           context.report({ node, messageId: 'mutateDOMRect' });
         }

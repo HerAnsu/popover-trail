@@ -29,9 +29,7 @@ export default {
           node.arguments[1] &&
           node.arguments[1].type === 'ObjectExpression'
         ) {
-          const typeProp = node.arguments[1].properties.find(
-            (p) => p.key && p.key.name === 'type',
-          );
+          const typeProp = node.arguments[1].properties.find((p) => p.key && p.key.name === 'type');
           if (!typeProp || (typeProp.value && typeProp.value.value === '')) {
             context.report({
               node: node.arguments[1],

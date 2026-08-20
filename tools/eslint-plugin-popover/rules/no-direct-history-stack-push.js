@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      directHistoryMutation: 'Direct mutation of `history.{{stack}}` is prohibited. Use push(), undo(), or redo() methods.',
+      directHistoryMutation:
+        'Direct mutation of `history.{{stack}}` is prohibited. Use push(), undo(), or redo() methods.',
     },
   },
   create(context) {

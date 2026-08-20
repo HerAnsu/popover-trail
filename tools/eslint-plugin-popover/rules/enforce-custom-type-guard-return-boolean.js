@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce explicit "val is Target" return type on custom type guards prefixed with is*.',
+      description:
+        'Enforce explicit "val is Target" return type on custom type guards prefixed with is*.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireTypePredicate: 'Type guard function {{ name }} should explicitly return a type predicate (value is Target).',
+      requireTypePredicate:
+        'Type guard function {{ name }} should explicitly return a type predicate (value is Target).',
     },
   },
   create(context) {

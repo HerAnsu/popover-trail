@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce { passive: true } for scroll and touch listeners to avoid blocking main thread compositor.',
+      description:
+        'Enforce { passive: true } for scroll and touch listeners to avoid blocking main thread compositor.',
       category: 'Performance',
       recommended: true,
     },
     schema: [],
     messages: {
-      requirePassiveListener: 'Add { passive: true } option to "{{ event }}" event listener for 60fps scrolling.',
+      requirePassiveListener:
+        'Add { passive: true } option to "{{ event }}" event listener for 60fps scrolling.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       CallExpression(node) {

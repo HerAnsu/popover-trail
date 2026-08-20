@@ -5,35 +5,35 @@
  * @module history
  */
 
-import type { TrailEntry, PopoverStateData } from '../types';
+import type { TrailEntry, PopoverStateData, DragOffset } from '../types';
 import { DEFAULT_MAX_HISTORY_DEPTH } from '../constants';
 import { EMPTY_ARRAY, EMPTY_OBJECT } from './storeDefaults';
-import { shallowEqual } from '../utils/storeHelpers';
+import { shallowEqual } from '../utils/equality';
+import { DISPOSE_SYMBOL } from '../utils/disposable';
 
-/**
- * Snapshot of popover store state used for undo/redo history operations.
- *
- * @template TData - Resolved data payload type.
- */
-export type HistorySnapshot<TData = unknown> = {
-  trail: readonly TrailEntry<TData>[];
-  floating: readonly TrailEntry<TData>[];
-  offsets: Readonly<Record<string, Readonly<{ x: number; y: number }>>>;
-  pinnedStates: Readonly<Record<string, boolean>>;
-  zIndexOrder: readonly string[];
+export type HistorySnapshot<TData = unknown, TPopoverKey extends string = string> = {
+  trail: readonly TrailEntry<TData, TPopoverKey>[];
+  floating: readonly TrailEntry<TData, TPopoverKey>[];
+  offsets: Readonly<Partial<Record<TPopoverKey, Readonly<DragOffset>>>>;
+  pinnedStates: Readonly<Partial<Record<TPopoverKey, boolean>>>;
+  zIndexOrder: readonly TPopoverKey[];
   ownerId: string | null;
 };
 
-/**
- * Internal Ring Buffer (Circular Buffer) for O(1) history state management.
- * Maintains a fixed maximum capacity and overwrites oldest entries when full without memory reallocations.
- */
+export interface HistoryTimelineProjection<TData = unknown, TPopoverKey extends string = string> {
+  past: readonly HistorySnapshot<TData, TPopoverKey>[];
+  present: HistorySnapshot<TData, TPopoverKey>;
+  future: readonly HistorySnapshot<TData, TPopoverKey>[];
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
 class RingBuffer<T> {
-  private buffer: (T | undefined)[];
+  private readonly buffer: (T | undefined)[];
   private head: number;
   private tail: number;
   private _length: number;
-  private capacity: number;
+  private readonly capacity: number;
 
   constructor(capacity: number) {
     this.capacity = capacity;
@@ -91,8 +91,8 @@ class RingBuffer<T> {
   }
 }
 
-function cloneNonEmptyRecord<T extends Record<string, unknown>>(record?: T): T {
-  if (!record || record === EMPTY_OBJECT || Object.keys(record).length === 0) {
+function cloneNonEmptyRecord<T extends object>(record?: T): T {
+  if (!record || Object.keys(record).length === 0) {
     return EMPTY_OBJECT as T;
   }
   return { ...record };
@@ -103,9 +103,18 @@ function cloneNonEmptyArray<T>(arr?: readonly T[]): readonly T[] {
   return [...arr];
 }
 
-function createHistorySnapshot<TData, TContext>(
-  state: PopoverStateData<TData, TContext>,
-): HistorySnapshot<TData> {
+/**
+ * Creates an immutable snapshot from the current popover store state for history tracking.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Global shared context type.
+ * @template TPopoverKey - Popover string key type.
+ * @param state - Current popover store state.
+ * @returns Snapshot representation of the trail, pinned cards, and offsets.
+ */
+export function createHistorySnapshot<TData, TContext, TPopoverKey extends string = string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
+): HistorySnapshot<TData, TPopoverKey> {
   return {
     trail: state.trail ?? EMPTY_ARRAY,
     floating: state.floating ?? EMPTY_ARRAY,
@@ -117,41 +126,35 @@ function createHistorySnapshot<TData, TContext>(
 }
 
 /**
- * Creates an isolated history state manager for undo/redo snapshots.
+ * Creates a bounded RingBuffer history manager supporting Undo/Redo time travel.
  *
- * @remarks
- * Uses fixed-size circular ring buffers to guarantee O(1) push and pop operations
- * without unbounded array growth. Ignores redundant snapshots when state has not changed.
+ * @template TData - Resolved data payload type.
+ * @template TPopoverKey - Popover string key type.
+ * @param maxHistory - Maximum history depth capacity (defaults to `DEFAULT_MAX_HISTORY_DEPTH`).
+ * @returns History manager instance with `pushSnapshot`, `undo`, `redo`, `canUndo`, and `getTimeline`.
  *
  * @example
  * ```typescript
- * const history = createHistoryManager(20);
- *
- * // Record current state
+ * const history = createHistoryManager();
  * history.pushSnapshot(store.getState());
- *
- * // Undo previous user action
  * if (history.canUndo()) {
- *   const previousState = history.undo(store.getState());
- *   if (previousState) store.setState(previousState);
+ *   const prev = history.undo(store.getState());
  * }
  * ```
- *
- * @template TData - Resolved data payload type.
- * @param maxHistory - Maximum number of history snapshots to retain (defaults to 30).
- * @returns History manager instance containing undo/redo stacks, queries, and push/undo/redo methods.
  */
-export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_HISTORY_DEPTH) {
-  const undoBuffer = new RingBuffer<HistorySnapshot<TData>>(maxHistory);
-  const redoBuffer = new RingBuffer<HistorySnapshot<TData>>(maxHistory);
+export function createHistoryManager<TData = unknown, TPopoverKey extends string = string>(
+  maxHistory = DEFAULT_MAX_HISTORY_DEPTH,
+) {
+  const undoBuffer = new RingBuffer<HistorySnapshot<TData, TPopoverKey>>(maxHistory);
+  const redoBuffer = new RingBuffer<HistorySnapshot<TData, TPopoverKey>>(maxHistory);
 
-  const pushSnapshot = <TContext>(state: PopoverStateData<TData, TContext>) => {
+  const pushSnapshot = <TContext>(state: PopoverStateData<TData, TContext, TPopoverKey>) => {
     const lastSnapshot = undoBuffer.peekLast();
     const offsets = state.offsets ?? EMPTY_OBJECT;
     const pinnedStates = state.pinnedStates ?? EMPTY_OBJECT;
+
     if (
-      lastSnapshot &&
-      lastSnapshot.trail === state.trail &&
+      lastSnapshot?.trail === state.trail &&
       lastSnapshot.floating === state.floating &&
       lastSnapshot.ownerId === state.ownerId &&
       shallowEqual(lastSnapshot.offsets, offsets) &&
@@ -168,8 +171,8 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
   const canRedo = () => redoBuffer.length > 0;
 
   const undo = <TContext>(
-    current: PopoverStateData<TData, TContext>,
-  ): HistorySnapshot<TData> | null => {
+    current: PopoverStateData<TData, TContext, TPopoverKey>,
+  ): HistorySnapshot<TData, TPopoverKey> | null => {
     if (undoBuffer.length === 0) return null;
     const prev = undoBuffer.pop();
     if (!prev) return null;
@@ -179,8 +182,8 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
   };
 
   const redo = <TContext>(
-    current: PopoverStateData<TData, TContext>,
-  ): HistorySnapshot<TData> | null => {
+    current: PopoverStateData<TData, TContext, TPopoverKey>,
+  ): HistorySnapshot<TData, TPopoverKey> | null => {
     if (redoBuffer.length === 0) return null;
     const next = redoBuffer.pop();
     if (!next) return null;
@@ -193,6 +196,16 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
     undoBuffer.clear();
     redoBuffer.clear();
   };
+
+  const getTimeline = <TContext>(
+    current: PopoverStateData<TData, TContext, TPopoverKey>,
+  ): HistoryTimelineProjection<TData, TPopoverKey> => ({
+    past: undoBuffer.toArray(),
+    present: createHistorySnapshot(current),
+    future: redoBuffer.toArray().toReversed(),
+    canUndo: canUndo(),
+    canRedo: canRedo(),
+  });
 
   return {
     get undoStack() {
@@ -207,7 +220,12 @@ export function createHistoryManager<TData = unknown>(maxHistory = DEFAULT_MAX_H
     undo,
     redo,
     clearHistory,
+    getTimeline,
+    dispose: clearHistory,
+    [DISPOSE_SYMBOL]: clearHistory,
   };
 }
 
-export type HistoryManager<TData = unknown> = ReturnType<typeof createHistoryManager<TData>>;
+export type HistoryManager<TData = unknown, TPopoverKey extends string = string> = ReturnType<
+  typeof createHistoryManager<TData, TPopoverKey>
+>;

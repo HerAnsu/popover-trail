@@ -1,11 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createConfigSlice } from './sliceConfig';
-import { SliceContext } from './sliceContext';
-import { PopoverStateData, TrailEntry } from '../../types';
+import { createMockSliceContext } from '../../testing/createMockSliceContext';
 
 describe('sliceConfig module', () => {
-  const createMockSliceContext = (): SliceContext<unknown, unknown, string> => {
-    let mockState: Partial<PopoverStateData<unknown, unknown>> = {
+  const createMockContext = () =>
+    createMockSliceContext<unknown, Record<string, unknown> | null>({
       context: null,
       ownerId: null,
       floating: [],
@@ -15,38 +14,15 @@ describe('sliceConfig module', () => {
           transitionStatus: 'mounting',
           isLoading: false,
           error: null,
-        } as TrailEntry<unknown>,
+        },
       ],
       pinnedStates: {},
       baseZIndex: 1000,
       debug: false,
-    };
-
-    const get = () => mockState as PopoverStateData<unknown, unknown>;
-    const set = (
-      updater:
-        | Partial<PopoverStateData<unknown, unknown>>
-        | ((s: PopoverStateData<unknown, unknown>) => Partial<PopoverStateData<unknown, unknown>>),
-    ) => {
-      const patch = typeof updater === 'function' ? updater(get()) : updater;
-      mockState = { ...mockState, ...patch };
-    };
-
-    return {
-      get,
-      set,
-      deps: {
-        activeControllers: new Map(),
-        inFlightPromises: new Map(),
-        hoverCloseTimers: new Map(),
-        clearHoverTimer: vi.fn(),
-        findEntryByKey: (key: string) => mockState.trail?.find((e) => e.key === key),
-      },
-    } as unknown as SliceContext<unknown, unknown, string>;
-  };
+    });
 
   it('updates debug mode and baseZIndex configuration', () => {
-    const ctx = createMockSliceContext();
+    const ctx = createMockContext();
     const slice = createConfigSlice(ctx);
 
     slice.setDebug(true);
@@ -57,7 +33,7 @@ describe('sliceConfig module', () => {
   });
 
   it('ignores invalid baseZIndex values', () => {
-    const ctx = createMockSliceContext();
+    const ctx = createMockContext();
     const slice = createConfigSlice(ctx);
 
     slice.setBaseZIndex(-500);
@@ -65,7 +41,7 @@ describe('sliceConfig module', () => {
   });
 
   it('updates transitionStatus for valid FSM transitions', () => {
-    const ctx = createMockSliceContext();
+    const ctx = createMockContext();
     const slice = createConfigSlice(ctx);
 
     slice.setTransitionStatus('card-1', 'mounted');
@@ -73,7 +49,7 @@ describe('sliceConfig module', () => {
   });
 
   it('sets context object with deep equality check', () => {
-    const ctx = createMockSliceContext();
+    const ctx = createMockContext();
     const slice = createConfigSlice(ctx);
 
     slice.setContext({ user: 'Alice' });
@@ -81,7 +57,7 @@ describe('sliceConfig module', () => {
   });
 
   it('sets responsiveMode and mobileBreakpoint configuration values', () => {
-    const ctx = createMockSliceContext();
+    const ctx = createMockContext();
     const slice = createConfigSlice(ctx);
 
     slice.setResponsiveMode('bottom-sheet');
@@ -92,7 +68,7 @@ describe('sliceConfig module', () => {
   });
 
   it('updates global animation class names via setGlobalAnimationClassNames', () => {
-    const ctx = createMockSliceContext();
+    const ctx = createMockContext();
     const slice = createConfigSlice(ctx);
 
     slice.setGlobalAnimationClassNames('fade-in', 'fade-out', 'active');

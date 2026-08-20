@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      suggestErrorBoundary: 'Dynamic asynchronous card renderer should be wrapped in an ErrorBoundary.',
+      suggestErrorBoundary:
+        'Dynamic asynchronous card renderer should be wrapped in an ErrorBoundary.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       JSXElement(node) {

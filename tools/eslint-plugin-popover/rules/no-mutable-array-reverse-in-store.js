@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow mutable Array.reverse() and Array.sort() without defensive cloning in reducers.',
+      description:
+        'Disallow mutable Array.reverse() and Array.sort() without defensive cloning in reducers.',
       category: 'Correctness',
       recommended: true,
     },
     schema: [],
     messages: {
-      noMutableSort: 'Do not mutate arrays directly with sort() or reverse(); clone first with [...arr] or arr.slice().',
+      noMutableSort:
+        'Do not mutate arrays directly with sort() or reverse(); clone first with [...arr] or arr.slice().',
     },
   },
   create(context) {

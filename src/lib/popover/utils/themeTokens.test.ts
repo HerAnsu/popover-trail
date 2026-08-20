@@ -9,7 +9,7 @@ function createMockElement() {
       getPropertyValue: (key: string) => styles.get(key) ?? '',
       removeProperty: (key: string) => styles.delete(key),
     },
-  } as unknown as HTMLElement;
+  };
 }
 
 describe('themeTokens utility', () => {

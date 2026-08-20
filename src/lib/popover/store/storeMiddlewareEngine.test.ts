@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { PopoverMiddlewareEngine } from './storeMiddlewareEngine';
-import { PopoverStore } from '../types';
+import type { PopoverStore } from '../types';
 
 describe('storeMiddlewareEngine module', () => {
   it('registers and unsubscribes middleware handlers', () => {
@@ -20,6 +20,7 @@ describe('storeMiddlewareEngine module', () => {
       if (patch.debug !== undefined) {
         return { debug: true };
       }
+      return undefined;
     });
 
     const initialPatch = { debug: false };

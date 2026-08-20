@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      unsafeWeakRefDeref: 'WeakRef.deref() may return undefined if the target was GCed; guard access with optional chaining or if-check.',
+      unsafeWeakRefDeref:
+        'WeakRef.deref() may return undefined if the target was GCed; guard access with optional chaining or if-check.',
     },
   },
   create(context) {

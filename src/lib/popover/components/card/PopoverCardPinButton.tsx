@@ -45,8 +45,8 @@ export function PopoverCardPinButton<E extends ElementType = 'button'>({
       // 3. Fallback to anchor trigger entry.rect
       const targetEl =
         cardRef?.current ??
-        (e.currentTarget as HTMLElement).closest('[role="dialog"]') ??
-        (e.currentTarget as HTMLElement).closest('.popover-card');
+        e.currentTarget.closest('[role="dialog"]') ??
+        e.currentTarget.closest('.popover-card');
 
       const rect = targetEl ? targetEl.getBoundingClientRect() : entry.rect;
       actions.togglePin(entry.key, rect ?? undefined);

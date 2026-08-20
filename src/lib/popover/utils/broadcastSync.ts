@@ -5,6 +5,8 @@
 
 import type { TabId } from '../types/storeTypes';
 import { generateTabId } from './uuid';
+import { type ScopeDisposable, DISPOSE_SYMBOL } from './disposable';
+import { wrapResult, isOk, isErr } from './result';
 
 export interface PopoverSyncMessage {
   type: 'OPEN' | 'CLOSE' | 'PIN' | 'UNPIN' | 'RESET';
@@ -15,8 +17,12 @@ export interface PopoverSyncMessage {
 
 export type PopoverSyncListener = (message: PopoverSyncMessage) => void;
 
-const DISPOSE_SYMBOL: symbol =
-  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
+export interface BroadcastSyncManager extends ScopeDisposable {
+  readonly tabId: string | TabId;
+  broadcast: (type: PopoverSyncMessage['type'], key?: string) => void;
+  subscribe: (listener: PopoverSyncListener) => () => void;
+  destroy: () => void;
+}
 
 /**
  * Creates a real-time multi-tab state synchronizer using the browser BroadcastChannel API.
@@ -41,7 +47,7 @@ const DISPOSE_SYMBOL: symbol =
  * @param channelName - Custom BroadcastChannel name identifier (defaults to 'popover-trail-sync').
  * @returns Sync manager instance with `broadcast`, `subscribe`, and `dispose` methods.
  */
-export function createBroadcastSync(channelName = 'popover-trail-sync') {
+export function createBroadcastSync(channelName = 'popover-trail-sync'): BroadcastSyncManager {
   const safeChannelName = channelName || 'popover-trail-sync';
   const tabId = generateTabId();
   const listeners = new Set<PopoverSyncListener>();
@@ -50,37 +56,33 @@ export function createBroadcastSync(channelName = 'popover-trail-sync') {
   let messageHandler: ((event: MessageEvent<PopoverSyncMessage>) => void) | null = null;
 
   if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
-    try {
-      channel = new BroadcastChannel(safeChannelName);
+    const channelResult = wrapResult(() => new BroadcastChannel(safeChannelName));
+    if (isOk(channelResult)) {
+      channel = channelResult.data;
       messageHandler = (event: MessageEvent<PopoverSyncMessage>) => {
         if (event.data && event.data.tabId !== tabId) {
           for (const listener of listeners) {
-            try {
-              listener(event.data);
-            } catch (err) {
-              console.error('[BroadcastSync] Error executing listener:', err);
+            const listenerResult = wrapResult(() => listener(event.data));
+            if (isErr(listenerResult)) {
+              console.error('[BroadcastSync] Error executing listener:', listenerResult.error);
             }
           }
         }
       };
       channel.addEventListener('message', messageHandler);
-    } catch {
-      // Ignore if BroadcastChannel restricted by browser policy
     }
   }
 
   const broadcast = (type: PopoverSyncMessage['type'], key?: string) => {
     if (!channel) return;
-    try {
-      channel.postMessage({
+    wrapResult(() => {
+      channel?.postMessage({
         type,
         key,
         timestamp: Date.now(),
         tabId,
       });
-    } catch {
-      // Ignore postMessage failure
-    }
+    });
   };
 
   const subscribe = (listener: PopoverSyncListener): (() => void) => {

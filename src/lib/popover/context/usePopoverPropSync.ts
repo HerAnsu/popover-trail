@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
-import type { PopoverStore, PopoverResolver, FocusLockOptions } from '../types';
+import type { PopoverStore, PopoverResolver } from '../types';
 import { isDeepEqual } from '../utils/equality';
 import type { PopoverProviderProps } from './PopoverProviderProps';
 
@@ -15,25 +15,24 @@ function syncPropIfChanged<T>(
   }
 }
 
-/**
- * Internal hook managing efficient prop synchronization into store state (SRP & Performance).
- */
-function syncBehaviorConfigProps<TData, TContext>(
-  state: PopoverStore<TData, TContext>,
+function syncBehaviorProps<TData, TContext, TPopoverKey extends string>(
+  state: PopoverStore<TData, TContext, TPopoverKey>,
   props: PopoverProviderProps<TData, TContext>,
 ): void {
   syncPropIfChanged(
     state.enableArrowNavigation,
     Boolean(props.enableArrowNavigation ?? true),
-    (val) => state.setEnableArrowNavigation(Boolean(val)),
-  );
-  syncPropIfChanged(state.allowDragWhenPinned, Boolean(props.allowDragWhenPinned ?? true), (val) =>
-    state.setAllowDragWhenPinned(Boolean(val)),
+    (val: boolean) => state.setEnableArrowNavigation(val),
   );
   syncPropIfChanged(
-    state.allowDragWhenUnpinned,
+    state.allowDragWhenPinned ?? true,
+    Boolean(props.allowDragWhenPinned ?? true),
+    (val: boolean) => state.setAllowDragWhenPinned(val),
+  );
+  syncPropIfChanged(
+    state.allowDragWhenUnpinned ?? true,
     Boolean(props.allowDragWhenUnpinned ?? true),
-    (val) => state.setAllowDragWhenUnpinned(Boolean(val)),
+    (val: boolean) => state.setAllowDragWhenUnpinned(val),
   );
   syncPropIfChanged(state.debug, Boolean(props.debug ?? false), (val: boolean) =>
     state.setDebug(val),
@@ -48,36 +47,37 @@ function syncBehaviorConfigProps<TData, TContext>(
   );
 }
 
-function syncNumericConfigProps<TData, TContext>(
-  state: PopoverStore<TData, TContext>,
+function syncNumericProps<TData, TContext, TPopoverKey extends string>(
+  state: PopoverStore<TData, TContext, TPopoverKey>,
   props: PopoverProviderProps<TData, TContext>,
 ): void {
-  syncPropIfChanged(state.cascadeOffsetStep, Number(props.cascadeOffsetStep ?? 8), (val) =>
+  syncPropIfChanged(state.cascadeOffsetStep, Number(props.cascadeOffsetStep ?? 8), (val: number) =>
     state.setCascadeOffsetStep(val),
   );
   syncPropIfChanged(
     state.exitTransitionDuration,
     Number(props.exitTransitionDuration ?? 0),
-    (val) => state.setExitTransitionDuration(val),
+    (val: number) => state.setExitTransitionDuration(val),
   );
-  syncPropIfChanged(state.defaultOffset, Number(props.defaultOffset ?? 8), (val) =>
+  syncPropIfChanged(state.defaultOffset, Number(props.defaultOffset ?? 8), (val: number) =>
     state.setDefaultOffset(val),
   );
-  syncPropIfChanged(state.baseZIndex, Number(props.baseZIndex ?? 1000), (val) =>
+  syncPropIfChanged(state.baseZIndex, Number(props.baseZIndex ?? 1000), (val: number) =>
     state.setBaseZIndex(val),
   );
-  syncPropIfChanged(state.mobileBreakpoint, Number(props.mobileBreakpoint ?? 640), (val) =>
+  syncPropIfChanged(state.mobileBreakpoint, Number(props.mobileBreakpoint ?? 640), (val: number) =>
     state.setMobileBreakpoint(val),
   );
 }
 
-function syncAnimationClassNames<TData, TContext>(
-  state: PopoverStore<TData, TContext>,
+function syncAnimationProps<TData, TContext, TPopoverKey extends string>(
+  state: PopoverStore<TData, TContext, TPopoverKey>,
   props: PopoverProviderProps<TData, TContext>,
 ): void {
   const mountingName = String(props.mountingClassName ?? 'mounting');
   const unmountingName = String(props.unmountingClassName ?? 'unmounting');
   const mountedName = String(props.mountedClassName ?? 'mounted');
+
   if (
     state.mountingClassName !== mountingName ||
     state.unmountingClassName !== unmountingName ||
@@ -87,17 +87,15 @@ function syncAnimationClassNames<TData, TContext>(
   }
 }
 
-function syncObjectAndComplexProps<TData, TContext>(
-  state: PopoverStore<TData, TContext>,
+function syncComplexProps<TData, TContext, TPopoverKey extends string>(
+  state: PopoverStore<TData, TContext, TPopoverKey>,
   props: PopoverProviderProps<TData, TContext>,
   activeResolver: PopoverResolver<TData, TContext>,
 ): void {
-  syncAnimationClassNames(state, props);
-
   if (props.initialContext !== undefined) {
-    syncPropIfChanged(state.context, props.initialContext as TContext, (val) =>
-      state.setContext(val as TContext),
-    );
+    syncPropIfChanged(state.context, props.initialContext, (val) => {
+      if (val !== null) state.setContext(val);
+    });
   }
   syncPropIfChanged(state.resolveData, activeResolver, (val) => state.setResolveData(val));
   syncPropIfChanged(state.activeStackGroup, props.stackGroup ?? null, (val) =>
@@ -105,7 +103,7 @@ function syncObjectAndComplexProps<TData, TContext>(
   );
   syncPropIfChanged(
     state.focusLockOptions,
-    (props.focusLockOptions ?? null) as FocusLockOptions | null | undefined,
+    props.focusLockOptions ?? null,
     (val) => state.setFocusLockOptions(val ?? null),
     isDeepEqual,
   );
@@ -115,8 +113,11 @@ function syncObjectAndComplexProps<TData, TContext>(
     (val) => state.setCollisionConfig(val),
     isDeepEqual,
   );
-  syncPropIfChanged(state.components, props.components ?? null, (val) =>
-    state.setSlotComponents(val),
+  syncPropIfChanged(
+    state.components,
+    props.components ?? null,
+    (val) => state.setSlotComponents(val),
+    isDeepEqual,
   );
   syncPropIfChanged(
     state.zIndexBaseMap,
@@ -127,10 +128,14 @@ function syncObjectAndComplexProps<TData, TContext>(
 }
 
 /**
- * Internal hook managing efficient prop synchronization into store state (SRP & Performance).
+ * Internal hook managing clean, decoupled prop synchronization into the store state.
  */
-export function usePopoverPropSync<TData, TContext>(
-  store: StoreApi<PopoverStore<TData, TContext>>,
+export function usePopoverPropSync<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>(
+  store: StoreApi<PopoverStore<TData, TContext, TPopoverKey>>,
   props: PopoverProviderProps<TData, TContext>,
   activeResolver: PopoverResolver<TData, TContext>,
 ): void {
@@ -143,9 +148,10 @@ export function usePopoverPropSync<TData, TContext>(
     store.getState().batchUpdates(() => {
       const state = store.getState();
       const currentProps = propsRef.current;
-      syncBehaviorConfigProps(state, currentProps);
-      syncNumericConfigProps(state, currentProps);
-      syncObjectAndComplexProps(state, currentProps, activeResolver);
+      syncBehaviorProps(state, currentProps);
+      syncNumericProps(state, currentProps);
+      syncAnimationProps(state, currentProps);
+      syncComplexProps(state, currentProps, activeResolver);
     });
   }, [
     store,

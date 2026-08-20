@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow non-null assertion operator (!) in vector and geometry math; provide fallback defaults (?? 0).',
+      description:
+        'Disallow non-null assertion operator (!) in vector and geometry math; provide fallback defaults (?? 0).',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      noNonNullInMath: 'Avoid non-null assertion in coordinate math; use fallback "?? 0" to prevent NaN calculations.',
+      noNonNullInMath:
+        'Avoid non-null assertion in coordinate math; use fallback "?? 0" to prevent NaN calculations.',
     },
   },
   create(context) {

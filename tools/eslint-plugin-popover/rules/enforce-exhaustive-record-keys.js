@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage Record<UnionKey, Type> instead of unconstrained string index signature.',
+      description:
+        'Encourage Record<UnionKey, Type> instead of unconstrained string index signature.',
       category: 'Type Safety',
       recommended: true,
     },
     schema: [],
     messages: {
-      useRecordUnion: 'Type definition {{ name }} uses generic [key: string] index; use Record<{{ keyType }}, ...> for exhaustiveness.',
+      useRecordUnion:
+        'Type definition {{ name }} uses generic [key: string] index; use Record<{{ keyType }}, ...> for exhaustiveness.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       TSInterfaceDeclaration(node) {

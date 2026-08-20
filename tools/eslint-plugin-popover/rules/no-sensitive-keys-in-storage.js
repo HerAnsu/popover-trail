@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow saving auth tokens, secrets, or passwords in persistent localStorage keys.',
+      description:
+        'Disallow saving auth tokens, secrets, or passwords in persistent localStorage keys.',
       category: 'Security',
       recommended: true,
     },
     schema: [],
     messages: {
-      noSensitiveStorage: 'Do not store sensitive key "{{ key }}" in localStorage; use secure HTTP-only cookies or memory.',
+      noSensitiveStorage:
+        'Do not store sensitive key "{{ key }}" in localStorage; use secure HTTP-only cookies or memory.',
     },
   },
   create(context) {
@@ -32,7 +34,12 @@ export default {
           node.arguments[0].type === 'Literal'
         ) {
           const key = String(node.arguments[0].value).toLowerCase();
-          if (key.includes('token') || key.includes('password') || key.includes('secret') || key.includes('auth')) {
+          if (
+            key.includes('token') ||
+            key.includes('password') ||
+            key.includes('secret') ||
+            key.includes('auth')
+          ) {
             context.report({
               node: node.arguments[0],
               messageId: 'noSensitiveStorage',

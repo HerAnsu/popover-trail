@@ -31,6 +31,10 @@ import { useRef, useCallback, useInsertionEffect, type Ref, type RefCallback } f
  * return <div ref={mergedRef} />;
  * ```
  */
+function isRefObject<T>(ref: unknown): ref is React.MutableRefObject<T | null> {
+  return typeof ref === 'object' && ref !== null && 'current' in ref;
+}
+
 export function useMergedRef<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T> {
   const refsRef = useRef(refs);
 
@@ -42,8 +46,8 @@ export function useMergedRef<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T>
     for (const ref of refsRef.current) {
       if (typeof ref === 'function') {
         ref(node);
-      } else if (ref && typeof ref === 'object') {
-        (ref as { current: T | null }).current = node;
+      } else if (isRefObject<T>(ref)) {
+        ref.current = node;
       }
     }
   }, []);

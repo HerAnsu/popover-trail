@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      duplicateMiddleware: 'Middleware `{{name}}` is duplicated in the floating middleware pipeline.',
+      duplicateMiddleware:
+        'Middleware `{{name}}` is duplicated in the floating middleware pipeline.',
     },
   },
   create(context) {
@@ -25,7 +26,11 @@ export default {
           for (const el of node.value.elements) {
             if (el && el.type === 'CallExpression' && el.callee && el.callee.name) {
               if (names.has(el.callee.name)) {
-                context.report({ node: el, messageId: 'duplicateMiddleware', data: { name: el.callee.name } });
+                context.report({
+                  node: el,
+                  messageId: 'duplicateMiddleware',
+                  data: { name: el.callee.name },
+                });
               }
               names.add(el.callee.name);
             }

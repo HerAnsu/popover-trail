@@ -12,12 +12,19 @@ export default {
     },
     schema: [],
     messages: {
-      suggestTouchManipulation: 'Interactive card button <{{ name }}> should include touchAction: "manipulation" in style.',
+      suggestTouchManipulation:
+        'Interactive card button <{{ name }}> should include touchAction: "manipulation" in style.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       JSXElement(node) {
@@ -28,8 +35,14 @@ export default {
             node.openingElement.name.name === 'PopoverCardCloseButton' ||
             node.openingElement.name.name === 'PopoverCardPinButton')
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node.openingElement) : '';
-          if (src.includes('style=') && !src.includes('touchAction') && !src.includes('touch-action')) {
+          const src = context.getSourceCode
+            ? context.getSourceCode().getText(node.openingElement)
+            : '';
+          if (
+            src.includes('style=') &&
+            !src.includes('touchAction') &&
+            !src.includes('touch-action')
+          ) {
             context.report({
               node,
               messageId: 'suggestTouchManipulation',

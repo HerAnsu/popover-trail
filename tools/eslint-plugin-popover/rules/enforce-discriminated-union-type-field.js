@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      requireTypeDiscriminator: 'Event interface {{ name }} should include a "type" string literal discriminator property.',
+      requireTypeDiscriminator:
+        'Event interface {{ name }} should include a "type" string literal discriminator property.',
     },
   },
   create(context) {

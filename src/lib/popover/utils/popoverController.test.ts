@@ -33,6 +33,45 @@ describe('popoverController', () => {
     expect(controller.getState().trail).toEqual([]);
   });
 
+  describe('Fluent Builder API (controller.focus)', () => {
+    it('opens, configures offsets, pins, and updates data via fluent chaining', () => {
+      const store = createPopoverStore(mockResolver);
+      const controller = createPopoverController(store);
+
+      const card = controller.focus('user-profile');
+      expect(card.isOpen()).toBe(false);
+
+      card.open({ offset: 12 }).pin().withOffset(15, 25).withData({ title: 'Custom User' });
+
+      expect(card.isOpen()).toBe(true);
+      expect(card.isPinned()).toBe(true);
+      expect(card.offset()).toEqual({ x: 15, y: 25 });
+      expect(card.data()).toEqual({ title: 'Custom User' });
+      expect(card.depth()).toBe(0);
+
+      card.unpin();
+      expect(card.isPinned()).toBe(false);
+
+      card.close();
+      expect(card.isOpen()).toBe(false);
+    });
+
+    it('supports conditional mutations via .when()', () => {
+      const store = createPopoverStore(mockResolver);
+      const controller = createPopoverController(store);
+
+      const card = controller.focus('dialog-card');
+      card.open();
+
+      const shouldPin = true;
+      const shouldUnpin = false;
+
+      card.when(shouldPin, (b) => b.pin()).when(shouldUnpin, (b) => b.unpin());
+
+      expect(card.isPinned()).toBe(true);
+    });
+  });
+
   it('retries async data resolution via retryPopover controller method', async () => {
     const store = createPopoverStore(mockResolver);
     const controller = createPopoverController(store);

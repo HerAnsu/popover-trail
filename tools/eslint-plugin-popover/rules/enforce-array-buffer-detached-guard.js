@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Recommend checking buffer.detached when reading from buffers that might have been transferred.',
+      description:
+        'Recommend checking buffer.detached when reading from buffers that might have been transferred.',
       category: 'Memory',
       recommended: true,
     },
     schema: [],
     messages: {
-      checkDetachedBuffer: 'ArrayBuffer in {{ name }} might be detached after postMessage; check byteLength > 0.',
+      checkDetachedBuffer:
+        'ArrayBuffer in {{ name }} might be detached after postMessage; check byteLength > 0.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {

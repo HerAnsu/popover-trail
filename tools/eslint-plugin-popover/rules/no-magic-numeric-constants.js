@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage named constants for magic timeout and interval millisecond durations.',
+      description:
+        'Encourage named constants for magic timeout and interval millisecond durations.',
       category: 'Clean Code',
       recommended: false,
     },
     schema: [],
     messages: {
-      suggestNamedConstant: 'Consider extracting magic duration {{ val }}ms into a named constant in constants.ts.',
+      suggestNamedConstant:
+        'Consider extracting magic duration {{ val }}ms into a named constant in constants.ts.',
     },
   },
   create(context) {

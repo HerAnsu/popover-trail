@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce clearInterval call when creating interval timer in local component or hook.',
+      description:
+        'Enforce clearInterval call when creating interval timer in local component or hook.',
       category: 'Memory',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireClearInterval: 'Ensure clearInterval({{ name }}) is called during cleanup to prevent memory leaks.',
+      requireClearInterval:
+        'Ensure clearInterval({{ name }}) is called during cleanup to prevent memory leaks.',
     },
   },
   create(context) {
@@ -21,7 +23,12 @@ export default {
 
     return {
       CallExpression(node) {
-        if (node.callee && node.callee.name === 'setInterval' && node.parent && node.parent.type === 'VariableDeclarator') {
+        if (
+          node.callee &&
+          node.callee.name === 'setInterval' &&
+          node.parent &&
+          node.parent.type === 'VariableDeclarator'
+        ) {
           const varName = node.parent.id?.name;
           if (varName) {
             const scope = context.getSourceCode ? context.getSourceCode().getText() : '';

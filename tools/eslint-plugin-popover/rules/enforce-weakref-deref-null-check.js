@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce checking deref() result against undefined before accessing target fields.',
+      description:
+        'Enforce checking deref() result against undefined before accessing target fields.',
       category: 'Memory',
       recommended: true,
     },
     schema: [],
     messages: {
-      checkDerefResult: 'Result of {{ name }}.deref() can be undefined after garbage collection; check before accessing properties.',
+      checkDerefResult:
+        'Result of {{ name }}.deref() can be undefined after garbage collection; check before accessing properties.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       MemberExpression(node) {

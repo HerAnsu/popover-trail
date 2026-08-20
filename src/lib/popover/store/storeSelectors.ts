@@ -1,55 +1,67 @@
 /**
  * Pure Store Selectors for popover-trail.
- * Pure, memoizable state tree query functions operating on minimal sub-state slices.
+ * Pure, memoizable state tree query functions operating on minimal substate slices.
  *
  * @module storeSelectors
  */
 
-import type { TrailEntry } from '../types';
+import type { TrailEntry, DragOffset, PopoverStore } from '../types';
 import { findEntryInStore, hasEntryWithKey } from '../utils/storeHelpers';
+import { EMPTY_ARRAY } from './storeDefaults';
 
-/**
- * Selects the active trailing popovers stack array.
- */
-export function selectActiveTrail<TData = unknown>(state: {
-  trail: readonly TrailEntry<TData>[];
-}): readonly TrailEntry<TData>[] {
+const ZERO_OFFSET: Readonly<DragOffset> = Object.freeze({ x: 0, y: 0 });
+
+export interface HasTrailState<TData = unknown, TPopoverKey extends string = string> {
+  readonly trail: readonly TrailEntry<TData, TPopoverKey>[];
+}
+
+export interface HasFloatingState<TData = unknown, TPopoverKey extends string = string> {
+  readonly floating: readonly TrailEntry<TData, TPopoverKey>[];
+}
+
+export interface HasActiveEntriesState<TData = unknown, TPopoverKey extends string = string>
+  extends HasTrailState<TData, TPopoverKey>, HasFloatingState<TData, TPopoverKey> {}
+
+export interface HasPinnedStates<TPopoverKey extends string = string> {
+  readonly pinnedStates: Readonly<Partial<Record<TPopoverKey, boolean>>>;
+}
+
+export interface HasOffsetsState<TPopoverKey extends string = string> {
+  readonly offsets: Readonly<Partial<Record<TPopoverKey, Readonly<DragOffset>>>>;
+}
+
+export interface HasZIndexState<TPopoverKey extends string = string> {
+  readonly zIndexOrder: readonly TPopoverKey[];
+}
+
+export function selectActiveTrail<TData = unknown, TPopoverKey extends string = string>(
+  state: HasTrailState<TData, TPopoverKey>,
+): readonly TrailEntry<TData, TPopoverKey>[] {
   return state.trail;
 }
 
-/**
- * Selects the active modeless pinned/floating popovers array.
- */
-export function selectFloatingEntries<TData = unknown>(state: {
-  floating: readonly TrailEntry<TData>[];
-}): readonly TrailEntry<TData>[] {
+export function selectFloatingEntries<TData = unknown, TPopoverKey extends string = string>(
+  state: HasFloatingState<TData, TPopoverKey>,
+): readonly TrailEntry<TData, TPopoverKey>[] {
   return state.floating;
 }
 
-/**
- * Selects a popover entry by its unique key ID across floating and trailing arrays.
- */
-export function selectEntryByKey<TData = unknown>(key: string) {
-  return (state: {
-    floating: readonly TrailEntry<TData>[];
-    trail: readonly TrailEntry<TData>[];
-  }): TrailEntry<TData> | undefined => findEntryInStore(state.floating, state.trail, key);
+export function selectEntryByKey<TData = unknown, TPopoverKey extends string = string>(
+  key: string,
+) {
+  return (
+    state: HasActiveEntriesState<TData, TPopoverKey>,
+  ): TrailEntry<TData, TPopoverKey> | undefined =>
+    findEntryInStore<TData, TPopoverKey>(state.floating, state.trail, key);
 }
 
-const ZERO_OFFSET = Object.freeze({ x: 0, y: 0 });
-
-/**
- * Selects the topmost active popover entry in z-index depth order.
- */
-export function selectTopmostEntry<TData = unknown>(state: {
-  zIndexOrder: readonly string[];
-  floating: readonly TrailEntry<TData>[];
-  trail: readonly TrailEntry<TData>[];
-}): TrailEntry<TData> | undefined {
+export function selectTopmostEntry<TData = unknown, TPopoverKey extends string = string>(
+  state: HasActiveEntriesState<TData, TPopoverKey> & HasZIndexState<TPopoverKey>,
+): TrailEntry<TData, TPopoverKey> | undefined {
   for (let i = state.zIndexOrder.length - 1; i >= 0; i--) {
     const key = state.zIndexOrder[i];
     if (key) {
-      const entry = findEntryInStore(state.floating, state.trail, key);
+      const entry = findEntryInStore<TData, TPopoverKey>(state.floating, state.trail, key);
       if (entry && entry.transitionStatus !== 'unmounting') return entry;
     }
   }
@@ -64,33 +76,22 @@ export function selectTopmostEntry<TData = unknown>(state: {
   return undefined;
 }
 
-/**
- * Selects whether a popover entry with the target key is pinned.
- */
-export function selectIsPinned(key: string) {
-  return (state: { pinnedStates: Readonly<Record<string, boolean>> }): boolean =>
-    Boolean(state.pinnedStates[key]);
+export function selectIsPinned<TPopoverKey extends string = string>(key: string) {
+  return (state: HasPinnedStates<TPopoverKey>): boolean =>
+    Boolean(state.pinnedStates[key as TPopoverKey]);
 }
 
-/**
- * Selects drag coordinates offset for the specified popover key.
- */
-export function selectOffset(key: string) {
-  return (state: {
-    offsets: Readonly<Record<string, Readonly<{ x: number; y: number }>>>;
-  }): { x: number; y: number } => state.offsets[key] ?? ZERO_OFFSET;
+export function selectOffset<TPopoverKey extends string = string>(key: string) {
+  return (state: HasOffsetsState<TPopoverKey>): DragOffset =>
+    state.offsets[key as TPopoverKey] ?? ZERO_OFFSET;
 }
 
-/**
- * Selects the current z-index depth ordering array of keys.
- */
-export function selectZIndexOrder(state: { zIndexOrder: readonly string[] }): readonly string[] {
+export function selectZIndexOrder<TPopoverKey extends string = string>(
+  state: HasZIndexState<TPopoverKey>,
+): readonly TPopoverKey[] {
   return state.zIndexOrder;
 }
 
-/**
- * Selects total count of open popovers across floating and trailing arrays.
- */
 export function selectTotalActiveCount(state: {
   floating: readonly unknown[];
   trail: readonly unknown[];
@@ -98,9 +99,6 @@ export function selectTotalActiveCount(state: {
   return state.floating.length + state.trail.length;
 }
 
-/**
- * Selects whether the store is completely idle (0 popovers open).
- */
 export function selectIsIdle(state: {
   floating: readonly unknown[];
   trail: readonly unknown[];
@@ -108,77 +106,148 @@ export function selectIsIdle(state: {
   return state.floating.length === 0 && state.trail.length === 0;
 }
 
-/**
- * Selects whether a popover key is currently active in the store.
- */
-export function selectHasEntry<TData = unknown>(key: string) {
-  return (state: {
-    floating: readonly TrailEntry<TData>[];
-    trail: readonly TrailEntry<TData>[];
-  }): boolean => hasEntryWithKey(state.floating, state.trail, key);
+export function selectHasEntry<TData = unknown, TPopoverKey extends string = string>(key: string) {
+  return (state: HasActiveEntriesState<TData, TPopoverKey>): boolean =>
+    hasEntryWithKey(state.floating, state.trail, key);
 }
 
-/**
- * Selects the root popover entry from the trail stack.
- */
-export function selectRootEntry<TData = unknown>(state: {
-  trail: readonly TrailEntry<TData>[];
-}): TrailEntry<TData> | undefined {
+export function selectRootEntry<TData = unknown, TPopoverKey extends string = string>(
+  state: HasTrailState<TData, TPopoverKey>,
+): TrailEntry<TData, TPopoverKey> | undefined {
   return state.trail[0];
 }
 
-/**
- * Selects whether a popover entry is currently loading.
- */
-export function selectIsLoading<TData = unknown>(key: string) {
-  return (state: {
-    floating: readonly TrailEntry<TData>[];
-    trail: readonly TrailEntry<TData>[];
-  }): boolean => findEntryInStore(state.floating, state.trail, key)?.isLoading ?? false;
+export function selectIsLoading<TData = unknown, TPopoverKey extends string = string>(key: string) {
+  return (state: HasActiveEntriesState<TData, TPopoverKey>): boolean =>
+    findEntryInStore(state.floating, state.trail, key)?.isLoading ?? false;
 }
 
-/**
- * Selects the error object for a popover entry if present.
- */
-export function selectError<TData = unknown>(key: string) {
-  return (state: {
-    floating: readonly TrailEntry<TData>[];
-    trail: readonly TrailEntry<TData>[];
-  }): Error | null => findEntryInStore(state.floating, state.trail, key)?.error ?? null;
+export function selectError<TData = unknown, TPopoverKey extends string = string>(key: string) {
+  return (state: HasActiveEntriesState<TData, TPopoverKey>): Error | null =>
+    findEntryInStore(state.floating, state.trail, key)?.error ?? null;
 }
 
-/**
- * Selects the resolved data payload for a popover entry if present.
- */
-export function selectData<TData = unknown>(key: string) {
-  return (state: {
-    floating: readonly TrailEntry<TData>[];
-    trail: readonly TrailEntry<TData>[];
-  }): TData | null => findEntryInStore(state.floating, state.trail, key)?.data ?? null;
+export function selectData<TData = unknown, TPopoverKey extends string = string>(key: string) {
+  return (state: HasActiveEntriesState<TData, TPopoverKey>): TData | null =>
+    findEntryInStore(state.floating, state.trail, key)?.data ?? null;
 }
 
-/**
- * Functional mapper type for pure store selectors operating on PopoverStore state tree.
- *
- * @template TData - Resolved payload type.
- * @template TContext - Global shared context type.
- * @template TResult - Return type computed by selector.
- */
-export type StoreSelectorMapper<TData = unknown, TContext = unknown, TResult = unknown> = (
-  state: import('../types').PopoverStore<TData, TContext>,
-) => TResult;
-
-/**
- * Factory creating a strongly typed selector helper bound to specific TData and TContext types.
- * Eliminates redundant generic signatures when defining custom selectors.
- */
-export function createTypedStoreSelector<TData = unknown, TContext = unknown>() {
-  return <TSelected>(selector: StoreSelectorMapper<TData, TContext, TSelected>) => selector;
+export function selectParentKey<TPopoverKey extends string = string>(key: string) {
+  return (state: HasActiveEntriesState<unknown, TPopoverKey>): TPopoverKey | undefined => {
+    const entry: TrailEntry<unknown, TPopoverKey> | undefined = findEntryInStore(
+      state.floating,
+      state.trail,
+      key,
+    );
+    return entry?.parentKey ?? entry?.originalParentKey;
+  };
 }
 
-/**
- * Selects the high-level discriminated status of the popover system ('idle', 'active-trail', 'pinned-only').
- */
+function collectChildrenKeys<TPopoverKey extends string>(
+  floating: readonly TrailEntry<unknown, TPopoverKey>[],
+  trail: readonly TrailEntry<unknown, TPopoverKey>[],
+  key: string,
+): readonly TPopoverKey[] {
+  const children: TPopoverKey[] = [];
+  for (const e of floating) {
+    if (e.parentKey === key || e.originalParentKey === key) children.push(e.key);
+  }
+  for (const e of trail) {
+    if (e.parentKey === key || e.originalParentKey === key) children.push(e.key);
+  }
+  return children.length > 0 ? children : (EMPTY_ARRAY as readonly TPopoverKey[]);
+}
+
+export function selectChildrenKeys<TPopoverKey extends string = string>(key: string) {
+  return (state: HasActiveEntriesState<unknown, TPopoverKey>): readonly TPopoverKey[] =>
+    collectChildrenKeys(state.floating, state.trail, key);
+}
+
+function buildBreadcrumbPath<TPopoverKey extends string>(
+  floating: readonly TrailEntry<unknown, TPopoverKey>[],
+  trail: readonly TrailEntry<unknown, TPopoverKey>[],
+  key: string,
+): readonly TPopoverKey[] {
+  const path: TPopoverKey[] = [];
+  let currentKey: string | undefined = key;
+  const visited = new Set<string>();
+
+  while (currentKey && !visited.has(currentKey)) {
+    visited.add(currentKey);
+    const entry: TrailEntry<unknown, TPopoverKey> | undefined = findEntryInStore(
+      floating,
+      trail,
+      currentKey,
+    );
+    if (!entry) break;
+
+    path.push(entry.key);
+    currentKey = entry.parentKey ?? entry.originalParentKey;
+  }
+
+  if (path.length === 0) return EMPTY_ARRAY as readonly TPopoverKey[];
+  return path.toReversed();
+}
+
+export function selectBreadcrumbs<TPopoverKey extends string = string>(key: string) {
+  return (state: HasActiveEntriesState<unknown, TPopoverKey>): readonly TPopoverKey[] =>
+    buildBreadcrumbPath(state.floating, state.trail, key);
+}
+
+export function selectPopoverDepth<TPopoverKey extends string = string>(key: string) {
+  return (state: HasActiveEntriesState<unknown, TPopoverKey>): number => {
+    let depth = 0;
+    let currentKey: string | undefined = key;
+    const visited = new Set<string>();
+
+    while (currentKey && !visited.has(currentKey)) {
+      visited.add(currentKey);
+      const entry: TrailEntry<unknown, TPopoverKey> | undefined = findEntryInStore(
+        state.floating,
+        state.trail,
+        currentKey,
+      );
+      const parentKey: TPopoverKey | undefined = entry?.parentKey ?? entry?.originalParentKey;
+      if (!parentKey) break;
+      depth++;
+      currentKey = parentKey;
+    }
+
+    return depth;
+  };
+}
+
+export function selectTrailBranch<TData = unknown, TPopoverKey extends string = string>(
+  key: string,
+) {
+  return (
+    state: HasActiveEntriesState<TData, TPopoverKey>,
+  ): readonly TrailEntry<TData, TPopoverKey>[] => {
+    const breadcrumbKeys = new Set(selectBreadcrumbs(key)(state));
+    const childrenKeys = new Set(selectChildrenKeys(key)(state));
+
+    return [...state.floating, ...state.trail].filter(
+      (entry) => breadcrumbKeys.has(entry.key) || childrenKeys.has(entry.key),
+    );
+  };
+}
+
+export type StoreSelectorMapper<
+  TData = unknown,
+  TContext = unknown,
+  TResult = unknown,
+  TPopoverKey extends string = string,
+> = (state: PopoverStore<TData, TContext, TPopoverKey>) => TResult;
+
+export function createTypedStoreSelector<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+>() {
+  return <TSelected>(selector: StoreSelectorMapper<TData, TContext, TSelected, TPopoverKey>) =>
+    selector;
+}
+
 export function selectDiscriminatedStatus<TData = unknown>(state: {
   trail: readonly TrailEntry<TData>[];
   floating: readonly TrailEntry<TData>[];

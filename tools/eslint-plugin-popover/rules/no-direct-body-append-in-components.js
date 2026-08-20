@@ -3,13 +3,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow direct document.body.appendChild in React components; use PopoverPortal',
+      description:
+        'Disallow direct document.body.appendChild in React components; use PopoverPortal',
       category: 'Shadow DOM & Portals',
       recommended: true,
     },
     schema: [],
     messages: {
-      directBodyAppend: 'Direct `document.body.appendChild()` in components bypasses React reconciler. Use `PopoverPortal`.',
+      directBodyAppend:
+        'Direct `document.body.appendChild()` in components bypasses React reconciler. Use `PopoverPortal`.',
     },
   },
   create(context) {

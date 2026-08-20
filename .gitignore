@@ -31,3 +31,7 @@ dist-ssr
 .gemini/scripts/
 .gemini/reports/
 
+# Architecture & store analysis docs
+docs/STORE_ARCHITECTURE_AND_IMPROVEMENTS.md
+repomix-output.xml
+

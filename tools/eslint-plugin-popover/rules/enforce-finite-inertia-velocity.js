@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      unclampedVelocity: 'Inertia velocity parameter should be clamped to avoid extreme floating offsets.',
+      unclampedVelocity:
+        'Inertia velocity parameter should be clamped to avoid extreme floating offsets.',
     },
   },
   create(context) {

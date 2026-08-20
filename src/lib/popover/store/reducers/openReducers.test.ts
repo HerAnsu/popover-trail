@@ -1,21 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { openRootState, pushNestedState } from './openReducers';
-import { PopoverStateData, TrailEntry } from '../../types';
+import type { PopoverStateData, TrailEntry } from '../../types';
+import { createMockStoreState } from '../../testing/createMockStoreState';
 
 describe('openReducers module', () => {
-  const createMockState = (): PopoverStateData<unknown, unknown> =>
-    ({
+  const createMockState = (
+    overrides?: Partial<PopoverStateData<unknown, unknown>>,
+  ): PopoverStateData<unknown, unknown> =>
+    createMockStoreState<unknown, unknown>({
       ownerId: 'owner-1',
       floating: [],
-      trail: [{ key: 'root-1', isLoading: false, error: null } as TrailEntry<unknown>],
+      trail: [{ key: 'root-1', isLoading: false, error: null }],
       pinnedStates: {},
       offsets: {},
       zIndexOrder: ['root-1'],
-    }) as unknown as PopoverStateData<unknown, unknown>;
+      ...overrides,
+    });
 
   it('opens a new root popover for the same owner', () => {
     const state = createMockState();
-    const newEntry = { key: 'root-2', isLoading: false, error: null } as TrailEntry<unknown>;
+    const newEntry: TrailEntry<unknown> = { key: 'root-2', isLoading: false, error: null };
 
     const result = openRootState(state, 'owner-1', newEntry);
 
@@ -26,7 +30,7 @@ describe('openReducers module', () => {
 
   it('replaces trail when opening root popover for a different owner', () => {
     const state = createMockState();
-    const newEntry = { key: 'new-root', isLoading: false, error: null } as TrailEntry<unknown>;
+    const newEntry: TrailEntry<unknown> = { key: 'new-root', isLoading: false, error: null };
 
     const result = openRootState(state, 'owner-2', newEntry);
 
@@ -36,23 +40,28 @@ describe('openReducers module', () => {
   });
 
   it('brings floating card to front if key already exists in floating', () => {
-    const state = createMockState();
-    state.floating = [{ key: 'pinned-1', isLoading: false, error: null } as TrailEntry<unknown>];
-    state.pinnedStates = { 'pinned-1': true };
-    state.zIndexOrder = ['pinned-1', 'root-1'];
+    const state = createMockState({
+      floating: [{ key: 'pinned-1', isLoading: false, error: null }],
+      pinnedStates: { 'pinned-1': true },
+      zIndexOrder: ['pinned-1', 'root-1'],
+    });
 
-    const result = openRootState(state, 'owner-1', { key: 'pinned-1' } as TrailEntry<unknown>);
+    const result = openRootState(state, 'owner-1', {
+      key: 'pinned-1',
+      isLoading: false,
+      error: null,
+    });
     expect(result.zIndexOrder).toEqual(['root-1', 'pinned-1']);
   });
 
   it('pushes nested popover into trail path', () => {
     const state = createMockState();
-    const nestedEntry = {
+    const nestedEntry: TrailEntry<unknown> = {
       key: 'nested-1',
       parentKey: 'root-1',
       isLoading: false,
       error: null,
-    } as TrailEntry<unknown>;
+    };
 
     const result = pushNestedState(state, 0, nestedEntry);
 
@@ -61,20 +70,21 @@ describe('openReducers module', () => {
   });
 
   it('moves existing trail key to top of trail when re-opened', () => {
-    const state = createMockState();
-    state.trail = [
-      { key: 'root-1', isLoading: false, error: null } as TrailEntry<unknown>,
-      { key: 'child-1', isLoading: false, error: null } as TrailEntry<unknown>,
-      { key: 'child-2', isLoading: false, error: null } as TrailEntry<unknown>,
-    ];
-    state.zIndexOrder = ['root-1', 'child-1', 'child-2'];
+    const state = createMockState({
+      trail: [
+        { key: 'root-1', isLoading: false, error: null },
+        { key: 'child-1', isLoading: false, error: null },
+        { key: 'child-2', isLoading: false, error: null },
+      ],
+      zIndexOrder: ['root-1', 'child-1', 'child-2'],
+    });
 
     // Re-open child-1
     const result = openRootState(state, 'owner-1', {
       key: 'child-1',
       isLoading: false,
       error: null,
-    } as TrailEntry<unknown>);
+    });
 
     expect(result.trail).toHaveLength(3);
     expect(result.trail?.map((e) => e.key)).toEqual(['root-1', 'child-2', 'child-1']);
@@ -82,24 +92,30 @@ describe('openReducers module', () => {
 
   it('returns empty object when pushNestedState is called with negative parent index', () => {
     const state = createMockState();
-    const nestedEntry = { key: 'nested-1', parentKey: 'root-1' } as TrailEntry<unknown>;
+    const nestedEntry: TrailEntry<unknown> = {
+      key: 'nested-1',
+      parentKey: 'root-1',
+      isLoading: false,
+      error: null,
+    };
 
     const result = pushNestedState(state, -1, nestedEntry);
     expect(result).toEqual({});
   });
 
   it('brings pinned floating card to top of zIndexOrder when pushNestedState is called with pinned key', () => {
-    const state = createMockState();
-    state.floating = [
-      { key: 'pinned-child', isLoading: false, error: null } as TrailEntry<unknown>,
-    ];
-    state.pinnedStates = { 'pinned-child': true };
-    state.zIndexOrder = ['pinned-child', 'root-1'];
+    const state = createMockState({
+      floating: [{ key: 'pinned-child', isLoading: false, error: null }],
+      pinnedStates: { 'pinned-child': true },
+      zIndexOrder: ['pinned-child', 'root-1'],
+    });
 
     const result = pushNestedState(state, 0, {
       key: 'pinned-child',
       parentKey: 'root-1',
-    } as TrailEntry<unknown>);
+      isLoading: false,
+      error: null,
+    });
     expect(result.zIndexOrder).toEqual(['root-1', 'pinned-child']);
   });
 });

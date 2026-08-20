@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Require bidirectional ArrowUp and ArrowDown handling in menu keyboard navigators.',
+      description:
+        'Require bidirectional ArrowUp and ArrowDown handling in menu keyboard navigators.',
       category: 'Accessibility',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireBidirectionalArrows: 'Vertical arrow navigation should handle both ArrowUp and ArrowDown keys.',
+      requireBidirectionalArrows:
+        'Vertical arrow navigation should handle both ArrowUp and ArrowDown keys.',
     },
   },
   create(context) {

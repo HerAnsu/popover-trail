@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Disallow raw Math.random() in key generation to avoid duplicate ID collisions in fast cascades.',
+      description:
+        'Disallow raw Math.random() in key generation to avoid duplicate ID collisions in fast cascades.',
       category: 'Clean Code',
       recommended: true,
     },
     schema: [],
     messages: {
-      noMathRandomInKeys: 'Do not use Math.random() for popover IDs; use atomic counter or crypto.randomUUID().',
+      noMathRandomInKeys:
+        'Do not use Math.random() for popover IDs; use atomic counter or crypto.randomUUID().',
     },
   },
   create(context) {

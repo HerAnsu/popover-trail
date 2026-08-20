@@ -9,7 +9,8 @@ export default {
     },
     schema: [],
     messages: {
-      visibleFocusOutline: 'Ensure focus-visible outline is defined and not set to `none` without ring styling.',
+      visibleFocusOutline:
+        'Ensure focus-visible outline is defined and not set to `none` without ring styling.',
     },
   },
   create(context) {

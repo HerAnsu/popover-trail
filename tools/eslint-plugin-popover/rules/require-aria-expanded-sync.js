@@ -17,10 +17,16 @@ export default {
     if (filename.includes('schema.tsx') || filename.includes('.test.')) return {};
     return {
       JSXElement(node) {
-        if (node.openingElement && node.openingElement.name && node.openingElement.name.name === 'PopoverTrigger') {
-          const hasSpread = node.openingElement.attributes.some((attr) => attr.type === 'JSXSpreadAttribute');
+        if (
+          node.openingElement &&
+          node.openingElement.name &&
+          node.openingElement.name.name === 'PopoverTrigger'
+        ) {
+          const hasSpread = node.openingElement.attributes.some(
+            (attr) => attr.type === 'JSXSpreadAttribute',
+          );
           const hasAttr = node.openingElement.attributes.some(
-            (attr) => attr.name && attr.name.name === 'aria-expanded'
+            (attr) => attr.name && attr.name.name === 'aria-expanded',
           );
           if (!hasAttr && !hasSpread && node.openingElement.attributes.length > 3) {
             context.report({ node, messageId: 'missingAriaExpanded' });

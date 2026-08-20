@@ -12,18 +12,27 @@ export default {
     },
     schema: [],
     messages: {
-      noStaticSeed: 'PRNG instance initialized with static numeric seed {{ seed }}; use unpredictable entropy.',
+      noStaticSeed:
+        'PRNG instance initialized with static numeric seed {{ seed }}; use unpredictable entropy.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       NewExpression(node) {
         if (
           node.callee &&
-          (node.callee.name === 'Mulberry32' || node.callee.name === 'SplitMix32' || node.callee.name === 'PRNG') &&
+          (node.callee.name === 'Mulberry32' ||
+            node.callee.name === 'SplitMix32' ||
+            node.callee.name === 'PRNG') &&
           node.arguments[0] &&
           node.arguments[0].type === 'Literal' &&
           typeof node.arguments[0].value === 'number'

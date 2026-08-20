@@ -12,12 +12,18 @@ export default {
     },
     schema: [],
     messages: {
-      requireInitialState: 'FSM configuration object must define an "initial" state string property.',
+      requireInitialState:
+        'FSM configuration object must define an "initial" state string property.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || !filename.includes('fsm')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      !filename.includes('fsm')
+    )
+      return {};
 
     return {
       CallExpression(node) {

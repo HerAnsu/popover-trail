@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce Number.isFinite() guards on raw coordinate inputs before computing CSS transforms.',
+      description:
+        'Enforce Number.isFinite() guards on raw coordinate inputs before computing CSS transforms.',
       category: 'Geometry',
       recommended: true,
     },
     schema: [],
     messages: {
-      requireFiniteCoordCheck: 'Validate that coordinate {{ coord }} is finite before updating viewport geometry.',
+      requireFiniteCoordCheck:
+        'Validate that coordinate {{ coord }} is finite before updating viewport geometry.',
     },
   },
   create(context) {

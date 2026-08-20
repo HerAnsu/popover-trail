@@ -3,18 +3,25 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Enforce clean architecture layer boundaries: store/ and utils/ must not import components/ or hooks/',
+      description:
+        'Enforce clean architecture layer boundaries: store/ and utils/ must not import components/ or hooks/',
       category: 'Clean Architecture',
       recommended: true,
     },
     schema: [],
     messages: {
-      forbiddenLayerImport: 'Layer boundary violation: `{{layer}}` must not import from higher-level `{{target}}`.',
+      forbiddenLayerImport:
+        'Layer boundary violation: `{{layer}}` must not import from higher-level `{{target}}`.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename();
-    const isStoreOrUtils = (filename.includes('store/') || filename.includes('store\\') || filename.includes('utils/') || filename.includes('utils\\')) && !filename.includes('.test.');
+    const isStoreOrUtils =
+      (filename.includes('store/') ||
+        filename.includes('store\\') ||
+        filename.includes('utils/') ||
+        filename.includes('utils\\')) &&
+      !filename.includes('.test.');
     if (!isStoreOrUtils) return {};
     const currentLayer = filename.includes('store') ? 'store' : 'utils';
 

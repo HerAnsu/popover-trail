@@ -6,18 +6,26 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Encourage constant-time string comparison for cryptographic token verification to prevent timing attacks.',
+      description:
+        'Encourage constant-time string comparison for cryptographic token verification to prevent timing attacks.',
       category: 'Security',
       recommended: true,
     },
     schema: [],
     messages: {
-      suggestTimingSafeEqual: 'Function {{ name }} performs standard === equality check on hash tokens; consider timingSafeEqual.',
+      suggestTimingSafeEqual:
+        'Function {{ name }} performs standard === equality check on hash tokens; consider timingSafeEqual.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (filename.includes('eslint-plugin') || filename.includes('rules/') || filename.includes('.test.') || filename.includes('tests/')) return {};
+    if (
+      filename.includes('eslint-plugin') ||
+      filename.includes('rules/') ||
+      filename.includes('.test.') ||
+      filename.includes('tests/')
+    )
+      return {};
 
     return {
       FunctionDeclaration(node) {
@@ -27,7 +35,11 @@ export default {
             node.id.name.toLowerCase().includes('verifytoken'))
         ) {
           const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
-          if (body.includes('===') && !body.includes('timingSafeEqual') && !body.includes('timingSafe')) {
+          if (
+            body.includes('===') &&
+            !body.includes('timingSafeEqual') &&
+            !body.includes('timingSafe')
+          ) {
             context.report({
               node,
               messageId: 'suggestTimingSafeEqual',

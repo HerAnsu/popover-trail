@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow assigning raw unsanitized variables to innerHTML or outerHTML properties.',
+      description:
+        'Disallow assigning raw unsanitized variables to innerHTML or outerHTML properties.',
       category: 'Security',
       recommended: true,
     },
     schema: [],
     messages: {
-      noUnsanitizedHtml: 'Do not assign variable directly to {{ prop }}; use textContent or a sanitized React node.',
+      noUnsanitizedHtml:
+        'Do not assign variable directly to {{ prop }}; use textContent or a sanitized React node.',
     },
   },
   create(context) {

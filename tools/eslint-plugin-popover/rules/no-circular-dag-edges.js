@@ -3,13 +3,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Ensure cyclic dependencies are validated when creating parent-child trail relationships',
+      description:
+        'Ensure cyclic dependencies are validated when creating parent-child trail relationships',
       category: 'DAG & Lineage',
       recommended: true,
     },
     schema: [],
     messages: {
-      cyclicEdge: 'Self-referencing DAG edge (`{{id}}` -> `{{id}}`) is invalid and causes infinite recursion.',
+      cyclicEdge:
+        'Self-referencing DAG edge (`{{id}}` -> `{{id}}`) is invalid and causes infinite recursion.',
     },
   },
   create(context) {

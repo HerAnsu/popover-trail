@@ -9,17 +9,29 @@ export default {
     },
     schema: [],
     messages: {
-      missingTimerCleanup: 'useEffect with timer (setTimeout/setInterval) should return a cleanup function to prevent memory leaks.',
+      missingTimerCleanup:
+        'useEffect with timer (setTimeout/setInterval) should return a cleanup function to prevent memory leaks.',
     },
   },
   create(context) {
     return {
       CallExpression(node) {
-        if (node.callee && (node.callee.name === 'useEffect' || node.callee.name === 'useLayoutEffect')) {
+        if (
+          node.callee &&
+          (node.callee.name === 'useEffect' || node.callee.name === 'useLayoutEffect')
+        ) {
           const callback = node.arguments[0];
-          if (callback && (callback.type === 'ArrowFunctionExpression' || callback.type === 'FunctionExpression')) {
+          if (
+            callback &&
+            (callback.type === 'ArrowFunctionExpression' || callback.type === 'FunctionExpression')
+          ) {
             const src = context.getSourceCode ? context.getSourceCode().getText(callback) : '';
-            if ((src.includes('setTimeout') || src.includes('setInterval')) && !src.includes('clearTimeout') && !src.includes('clearInterval') && !src.includes('return')) {
+            if (
+              (src.includes('setTimeout') || src.includes('setInterval')) &&
+              !src.includes('clearTimeout') &&
+              !src.includes('clearInterval') &&
+              !src.includes('return')
+            ) {
               context.report({ node, messageId: 'missingTimerCleanup' });
             }
           }

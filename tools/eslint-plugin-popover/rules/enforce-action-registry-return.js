@@ -12,7 +12,8 @@ export default {
     },
     schema: [],
     messages: {
-      invalidActionReturn: 'Action handler must return void, a Promise<void>, or a partial state patch.',
+      invalidActionReturn:
+        'Action handler must return void, a Promise<void>, or a partial state patch.',
     },
   },
   create(context) {
@@ -22,9 +23,14 @@ export default {
     return {
       FunctionDeclaration(node) {
         if (node.id && node.id.name && node.id.name.startsWith('handle') && node.body) {
-          const returnStatements = node.body.body?.filter((s) => s.type === 'ReturnStatement') || [];
+          const returnStatements =
+            node.body.body?.filter((s) => s.type === 'ReturnStatement') || [];
           for (const ret of returnStatements) {
-            if (ret.argument && (ret.argument.type === 'Literal' && typeof ret.argument.value === 'number')) {
+            if (
+              ret.argument &&
+              ret.argument.type === 'Literal' &&
+              typeof ret.argument.value === 'number'
+            ) {
               context.report({
                 node: ret,
                 messageId: 'invalidActionReturn',

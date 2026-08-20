@@ -2,16 +2,11 @@
  * Finite State Machine (FSM / Statechart) Engine for popover-trail.
  * Provides deterministic, zero-invalid-state transitions for popover card lifecycles.
  *
- * Lifecycle flow:
- * - A popover starts in the Idle state.
- * - Opening a root card or pushing a nested card transitions it to Hydrating while data loads.
- * - Once resolved, the card enters Resolved.Trailing (stacked in cascade) or Resolved.Pinned (floating window).
- * - Toggling pin switches the card between Resolved.Trailing and Resolved.Pinned.
- * - If data loading fails, the card enters Error state with retry support.
- * - Closing transitions the card to Unmounting to run exit animations before returning to Idle.
- *
  * @module fsm
  */
+
+import { wrapResult, isErr } from '../utils/result';
+import { DISPOSE_SYMBOL } from '../utils/disposable';
 
 /** Possible discrete state values for a popover card state machine. */
 export type PopoverStateValue =
@@ -65,10 +60,11 @@ export const STATE_VALUE_TO_BIT_MAP: Readonly<Record<PopoverStateValue, number>>
  * Contains the active data, error, and pinning coordinates associated with the state.
  *
  * @template TData - The resolved data payload type.
+ * @template TPopoverKey - Union of valid popover string keys.
  */
-export interface PopoverFSMContext<TData = unknown> {
+export interface PopoverFSMContext<TData = unknown, TPopoverKey extends string = string> {
   /** Unique popover key identifier. */
-  key: string;
+  key: TPopoverKey;
   /** Resolved data payload when in Resolved state. */
   data?: TData;
   /** Error object if resolution failed. */
@@ -81,10 +77,11 @@ export interface PopoverFSMContext<TData = unknown> {
  * Events dispatched to trigger state machine transitions.
  *
  * @template TData - The resolved data payload type.
+ * @template TPopoverKey - Union of valid popover string keys.
  */
-export type PopoverFSMEvent<TData = unknown> =
-  | { type: 'OPEN_ROOT'; key: string }
-  | { type: 'PUSH_NESTED'; key: string }
+export type PopoverFSMEvent<TData = unknown, TPopoverKey extends string = string> =
+  | { type: 'OPEN_ROOT'; key: TPopoverKey }
+  | { type: 'PUSH_NESTED'; key: TPopoverKey }
   | { type: 'RESOLVE_SUCCESS'; data: TData }
   | { type: 'RESOLVE_FAILURE'; error: Error }
   | { type: 'TOGGLE_PIN'; rect?: { top: number; left: number } }
@@ -93,62 +90,60 @@ export type PopoverFSMEvent<TData = unknown> =
   | { type: 'TRANSITION_END' };
 
 /** FSM State in Idle initial state. */
-export interface IdleFSMState<TData = unknown> {
+export interface IdleFSMState<TData = unknown, TPopoverKey extends string = string> {
   readonly value: 'Idle';
-  readonly context: Readonly<PopoverFSMContext<TData>>;
+  readonly context: Readonly<PopoverFSMContext<TData, TPopoverKey>>;
 }
 
 /** FSM State in Hydrating data resolution state. */
-export interface HydratingFSMState<TData = unknown> {
+export interface HydratingFSMState<TData = unknown, TPopoverKey extends string = string> {
   readonly value: 'Hydrating';
-  readonly context: Readonly<PopoverFSMContext<TData>>;
+  readonly context: Readonly<PopoverFSMContext<TData, TPopoverKey>>;
 }
 
 /** FSM State in Resolved.Trailing state holding data payload. */
-export interface ResolvedTrailingFSMState<TData = unknown> {
+export interface ResolvedTrailingFSMState<TData = unknown, TPopoverKey extends string = string> {
   readonly value: 'Resolved.Trailing';
-  readonly context: Readonly<PopoverFSMContext<TData>> & { readonly data: TData };
+  readonly context: Readonly<PopoverFSMContext<TData, TPopoverKey>> & { readonly data: TData };
 }
 
 /** FSM State in Resolved.Pinned state holding data payload and pinned position coordinates. */
-export interface ResolvedPinnedFSMState<TData = unknown> {
+export interface ResolvedPinnedFSMState<TData = unknown, TPopoverKey extends string = string> {
   readonly value: 'Resolved.Pinned';
-  readonly context: Readonly<PopoverFSMContext<TData>> & {
+  readonly context: Readonly<PopoverFSMContext<TData, TPopoverKey>> & {
     readonly data: TData;
     readonly pinnedPos?: { readonly top: number; readonly left: number };
   };
 }
 
 /** FSM State in Error state holding resolution failure error. */
-export interface ErrorFSMState<TData = unknown> {
+export interface ErrorFSMState<TData = unknown, TPopoverKey extends string = string> {
   readonly value: 'Error';
-  readonly context: Readonly<PopoverFSMContext<TData>> & { readonly error: Error };
+  readonly context: Readonly<PopoverFSMContext<TData, TPopoverKey>> & { readonly error: Error };
 }
 
 /** FSM State in Unmounting teardown state. */
-export interface UnmountingFSMState<TData = unknown> {
+export interface UnmountingFSMState<TData = unknown, TPopoverKey extends string = string> {
   readonly value: 'Unmounting';
-  readonly context: Readonly<PopoverFSMContext<TData>>;
+  readonly context: Readonly<PopoverFSMContext<TData, TPopoverKey>>;
 }
 
 /**
  * Immutable snapshot of the state machine status and context.
  * Represented as a discriminated union over state value.
- *
- * @template TData - The resolved data payload type.
  */
-export type PopoverFSMState<TData = unknown> =
-  | IdleFSMState<TData>
-  | HydratingFSMState<TData>
-  | ResolvedTrailingFSMState<TData>
-  | ResolvedPinnedFSMState<TData>
-  | ErrorFSMState<TData>
-  | UnmountingFSMState<TData>;
+export type PopoverFSMState<TData = unknown, TPopoverKey extends string = string> =
+  | IdleFSMState<TData, TPopoverKey>
+  | HydratingFSMState<TData, TPopoverKey>
+  | ResolvedTrailingFSMState<TData, TPopoverKey>
+  | ResolvedPinnedFSMState<TData, TPopoverKey>
+  | ErrorFSMState<TData, TPopoverKey>
+  | UnmountingFSMState<TData, TPopoverKey>;
 
 /** Configuration options for initializing a Popover FSM instance. */
-export interface PopoverFSMOptions<TData = unknown> {
+export interface PopoverFSMOptions<TData = unknown, TPopoverKey extends string = string> {
   /** Unique popover key identifier. */
-  key: string;
+  key: TPopoverKey;
   /** Optional initial state override (defaults to 'Idle'). */
   initialState?: PopoverStateValue;
   /** Initial resolved data payload if pre-hydrated. */
@@ -160,15 +155,14 @@ export interface PopoverFSMOptions<TData = unknown> {
 }
 
 /** Accepted parameter types for createPopoverFSM (string key or full options object). */
-export type PopoverFSMInitialParam<TData = unknown> = string | PopoverFSMOptions<TData>;
+export type PopoverFSMInitialParam<TData = unknown, TPopoverKey extends string = string> =
+  | TPopoverKey
+  | PopoverFSMOptions<TData, TPopoverKey>;
 
-const DISPOSE_SYMBOL: symbol =
-  (Symbol as { dispose?: symbol }).dispose ?? Symbol.for('Symbol.dispose');
-
-function handleIdleTransition<TData>(
-  state: IdleFSMState<TData>,
-  event: PopoverFSMEvent<TData>,
-): PopoverFSMState<TData> {
+function handleIdleTransition<TData, TPopoverKey extends string>(
+  state: IdleFSMState<TData, TPopoverKey>,
+  event: PopoverFSMEvent<TData, TPopoverKey>,
+): PopoverFSMState<TData, TPopoverKey> {
   if (event.type === 'OPEN_ROOT' || event.type === 'PUSH_NESTED') {
     return {
       value: 'Hydrating',
@@ -183,10 +177,10 @@ function handleIdleTransition<TData>(
   return state;
 }
 
-function handleHydratingTransition<TData>(
-  state: HydratingFSMState<TData>,
-  event: PopoverFSMEvent<TData>,
-): PopoverFSMState<TData> {
+function handleHydratingTransition<TData, TPopoverKey extends string>(
+  state: HydratingFSMState<TData, TPopoverKey>,
+  event: PopoverFSMEvent<TData, TPopoverKey>,
+): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'RESOLVE_SUCCESS':
       return {
@@ -227,10 +221,10 @@ function handleHydratingTransition<TData>(
   }
 }
 
-function handleTrailingTransition<TData>(
-  state: ResolvedTrailingFSMState<TData>,
-  event: PopoverFSMEvent<TData>,
-): PopoverFSMState<TData> {
+function handleTrailingTransition<TData, TPopoverKey extends string>(
+  state: ResolvedTrailingFSMState<TData, TPopoverKey>,
+  event: PopoverFSMEvent<TData, TPopoverKey>,
+): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'TOGGLE_PIN':
       return {
@@ -263,10 +257,10 @@ function handleTrailingTransition<TData>(
   }
 }
 
-function handlePinnedTransition<TData>(
-  state: ResolvedPinnedFSMState<TData>,
-  event: PopoverFSMEvent<TData>,
-): PopoverFSMState<TData> {
+function handlePinnedTransition<TData, TPopoverKey extends string>(
+  state: ResolvedPinnedFSMState<TData, TPopoverKey>,
+  event: PopoverFSMEvent<TData, TPopoverKey>,
+): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'TOGGLE_PIN':
       return {
@@ -288,10 +282,10 @@ function handlePinnedTransition<TData>(
   }
 }
 
-function handleErrorTransition<TData>(
-  state: ErrorFSMState<TData>,
-  event: PopoverFSMEvent<TData>,
-): PopoverFSMState<TData> {
+function handleErrorTransition<TData, TPopoverKey extends string>(
+  state: ErrorFSMState<TData, TPopoverKey>,
+  event: PopoverFSMEvent<TData, TPopoverKey>,
+): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'RETRY':
       return {
@@ -324,10 +318,10 @@ function handleErrorTransition<TData>(
   }
 }
 
-function handleUnmountingTransition<TData>(
-  state: UnmountingFSMState<TData>,
-  event: PopoverFSMEvent<TData>,
-): PopoverFSMState<TData> {
+function handleUnmountingTransition<TData, TPopoverKey extends string>(
+  state: UnmountingFSMState<TData, TPopoverKey>,
+  event: PopoverFSMEvent<TData, TPopoverKey>,
+): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'TRANSITION_END':
       return {
@@ -357,16 +351,11 @@ function handleUnmountingTransition<TData>(
 
 /**
  * Pure state machine reducer computing the next immutable FSM state given the current state and event.
- *
- * @template TData - Resolved data payload type.
- * @param state - Active immutable state snapshot.
- * @param event - State transition event object.
- * @returns Next state node (or current reference if transition is invalid).
  */
-export function popoverFSMReducer<TData = unknown>(
-  state: PopoverFSMState<TData>,
-  event: PopoverFSMEvent<TData>,
-): PopoverFSMState<TData> {
+export function popoverFSMReducer<TData = unknown, TPopoverKey extends string = string>(
+  state: PopoverFSMState<TData, TPopoverKey>,
+  event: PopoverFSMEvent<TData, TPopoverKey>,
+): PopoverFSMState<TData, TPopoverKey> {
   if (!event?.type) {
     return state;
   }
@@ -385,19 +374,18 @@ export function popoverFSMReducer<TData = unknown>(
     case 'Unmounting':
       return handleUnmountingTransition(state, event);
     default: {
-      const _exhaustiveCheck: never = state;
-      return _exhaustiveCheck;
+      return state;
     }
   }
 }
 
-function buildInitialFSMState<TData>(
-  initialParam: PopoverFSMInitialParam<TData>,
-): PopoverFSMState<TData> {
-  const options: PopoverFSMOptions<TData> =
+function buildInitialFSMState<TData, TPopoverKey extends string>(
+  initialParam: PopoverFSMInitialParam<TData, TPopoverKey>,
+): PopoverFSMState<TData, TPopoverKey> {
+  const options: PopoverFSMOptions<TData, TPopoverKey> =
     typeof initialParam === 'string' ? { key: initialParam } : initialParam;
 
-  const key = options.key || 'default';
+  const key = options.key;
   const initialState = options.initialState || 'Idle';
 
   switch (initialState) {
@@ -424,7 +412,6 @@ function buildInitialFSMState<TData>(
       };
     case 'Unmounting':
       return { value: 'Unmounting', context: { key } };
-    case 'Idle':
     default:
       return { value: 'Idle', context: { key } };
   }
@@ -432,28 +419,31 @@ function buildInitialFSMState<TData>(
 
 /**
  * Creates an instance of a Popover State Machine interpreter.
+ * Guarantees zero invalid intermediate states during data resolution and unmounting.
  *
- * @template TData - The resolved data payload type.
- * @param initialParam - String popover key or full initialization options object.
- * @returns State machine interpreter instance with getState, send, matches, and subscribe methods.
+ * @template TData - Resolved data payload type.
+ * @template TPopoverKey - Popover key string type.
+ * @param initialParam - Popover key or configuration options object.
+ * @returns FSM interpreter with `getState`, `send`, `matches`, `isActive`, and `subscribe`.
  *
  * @example
  * ```typescript
- * // String form
- * const fsm1 = createPopoverFSM('user-1');
- *
- * // Object form (matches docs/API.md)
- * const fsm2 = createPopoverFSM({ key: 'userProfile' });
- *
- * fsm2.send({ type: 'OPEN_ROOT', key: 'userProfile' });
- * fsm2.send({ type: 'RESOLVE_SUCCESS', data: { id: '1', name: 'Alice' } });
+ * const fsm = createPopoverFSM({ key: 'user' });
+ * fsm.send({ type: 'OPEN_ROOT', key: 'user' });
+ * console.log(fsm.matches('Hydrating')); // true
+ * fsm.send({ type: 'RESOLVE_SUCCESS', data: { name: 'Alice' } });
+ * console.log(fsm.matches('Resolved.Trailing')); // true
  * ```
  */
-export function createPopoverFSM<TData = unknown>(initialParam: PopoverFSMInitialParam<TData>) {
-  let currentState: PopoverFSMState<TData> = buildInitialFSMState(initialParam);
-  const listeners = new Set<(state: PopoverFSMState<TData>) => void>();
+export function createPopoverFSM<TData = unknown, TPopoverKey extends string = string>(
+  initialParam: PopoverFSMInitialParam<TData, TPopoverKey>,
+) {
+  let currentState: PopoverFSMState<TData, TPopoverKey> = buildInitialFSMState<TData, TPopoverKey>(
+    initialParam,
+  );
+  const listeners = new Set<(state: PopoverFSMState<TData, TPopoverKey>) => void>();
 
-  const getState = (): PopoverFSMState<TData> => currentState;
+  const getState = (): PopoverFSMState<TData, TPopoverKey> => currentState;
 
   const matches = (value: PopoverStateValue): boolean => currentState.value === value;
 
@@ -465,22 +455,23 @@ export function createPopoverFSM<TData = unknown>(initialParam: PopoverFSMInitia
 
   const getStatusBit = (): number => STATE_VALUE_TO_BIT_MAP[currentState.value];
 
-  const send = (event: PopoverFSMEvent<TData>): PopoverFSMState<TData> => {
-    const nextState = popoverFSMReducer(currentState, event);
+  const send = (
+    event: PopoverFSMEvent<TData, TPopoverKey>,
+  ): PopoverFSMState<TData, TPopoverKey> => {
+    const nextState = popoverFSMReducer<TData, TPopoverKey>(currentState, event);
     if (nextState !== currentState) {
       currentState = nextState;
       listeners.forEach((fn) => {
-        try {
-          fn(currentState);
-        } catch (err) {
-          console.error('[popover-trail FSM]: Error in subscriber callback:', err);
+        const notifyResult = wrapResult(() => fn(currentState));
+        if (isErr(notifyResult)) {
+          console.error('[popover-trail FSM]: Error in subscriber callback:', notifyResult.error);
         }
       });
     }
     return currentState;
   };
 
-  const subscribe = (fn: (state: PopoverFSMState<TData>) => void): (() => void) => {
+  const subscribe = (fn: (state: PopoverFSMState<TData, TPopoverKey>) => void): (() => void) => {
     listeners.add(fn);
     return () => {
       listeners.delete(fn);
@@ -504,25 +495,35 @@ export function createPopoverFSM<TData = unknown>(initialParam: PopoverFSMInitia
   };
 }
 
-export type PopoverFSMInterpreter<TData = unknown> = ReturnType<typeof createPopoverFSM<TData>>;
+export type PopoverFSMInterpreter<
+  TData = unknown,
+  TPopoverKey extends string = string,
+> = ReturnType<typeof createPopoverFSM<TData, TPopoverKey>>;
+
+export type ExtractFSMState<
+  S extends PopoverStateValue,
+  TData = unknown,
+  TPopoverKey extends string = string,
+> = Extract<PopoverFSMState<TData, TPopoverKey>, { readonly value: S }>;
 
 /**
- * TypeScript assertion function verifying the active FSM state value.
- * Throws an Error if FSM state does not match expected state.
+ * TypeScript assertion function verifying the active FSM state value with exact context narrowing.
  *
- * @template TData - The resolved data payload type.
- * @template S - Expected state value string literal.
- * @param state - State object to check.
- * @param expectedState - Target expected state value.
- * @throws {Error} If state.value !== expectedState.
+ * @template TData - Resolved data payload type.
+ * @template S - Expected FSM state value.
+ * @template TPopoverKey - Popover string key type.
+ * @param state - FSM state candidate.
+ * @param expectedState - Required state discriminator string.
+ * @throws {Error} If current state value does not match `expectedState`.
  */
 export function assertPopoverFSMState<
   TData = unknown,
   S extends PopoverStateValue = PopoverStateValue,
+  TPopoverKey extends string = string,
 >(
-  state: PopoverFSMState<TData>,
+  state: PopoverFSMState<TData, TPopoverKey>,
   expectedState: S,
-): asserts state is PopoverFSMState<TData> & { readonly value: S } {
+): asserts state is ExtractFSMState<S, TData, TPopoverKey> {
   if (state.value !== expectedState) {
     throw new Error(
       `[popover-trail FSM assertion error]: Expected FSM state "${expectedState}", but received state "${state.value}".`,
@@ -532,6 +533,10 @@ export function assertPopoverFSMState<
 
 /**
  * Validates whether a transitionStatus transition is valid according to FSM transition rules.
+ *
+ * @param current - Current transition status.
+ * @param next - Proposed next transition status.
+ * @returns `true` if transition is allowed.
  */
 export function isValidTransitionStatusChange(
   current: import('../types').PopoverTransitionStatus | undefined,

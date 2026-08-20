@@ -1,70 +1,60 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createTrailSlice } from './sliceTrail';
-import type { SliceContext } from './sliceContext';
-import type { PopoverStateData, TrailEntry } from '../../types';
 import { PopoverDAG } from '../../utils/dag';
+import { createMockSliceContext } from '../../testing/createMockSliceContext';
 
 describe('sliceTrail module', () => {
   const createMockContext = () => {
-    let state = {
-      floating: [],
-      trail: [
-        { key: 'root-1', isLoading: false, error: null } as TrailEntry<unknown>,
-        {
-          key: 'child-1',
-          parentKey: 'root-1',
-          isLoading: false,
-          error: null,
-        } as TrailEntry<unknown>,
-      ],
-      ownerId: 'owner-1',
-      closePinnedDescendants: true,
-      exitTransitionDuration: 0,
-      offsets: {},
-      pinnedStates: {},
-      zIndexOrder: ['root-1', 'child-1'],
-      nestedHydrationRequestCounters: {},
-    } as unknown as PopoverStateData<unknown, unknown>;
-
     const pushSnapshot = vi.fn();
     const abortControllersForKeys = vi.fn();
     const popoverDAG = new PopoverDAG();
     popoverDAG.addNode('root-1');
     popoverDAG.addNode('child-1', 'root-1');
 
-    const resetStoreState = vi.fn(() => {
-      state.trail = [];
-      state.floating = [];
+    let resetStoreState: () => void = () => {};
+
+    const ctx = createMockSliceContext<unknown, unknown, string>(
+      {
+        floating: [],
+        trail: [
+          { key: 'root-1', isLoading: false, error: null },
+          {
+            key: 'child-1',
+            parentKey: 'root-1',
+            isLoading: false,
+            error: null,
+          },
+        ],
+        ownerId: 'owner-1',
+        closePinnedDescendants: true,
+        exitTransitionDuration: 0,
+        offsets: {},
+        pinnedStates: {},
+        zIndexOrder: ['root-1', 'child-1'],
+        nestedHydrationRequestCounters: {},
+      },
+      {
+        abortControllersForKeys,
+        pushSnapshot,
+        popoverDAG,
+      },
+    );
+
+    resetStoreState = vi.fn(() => {
+      ctx.state = { ...ctx.state, trail: [], floating: [] };
       popoverDAG.clear();
     });
 
-    const ctx: SliceContext<unknown, unknown, string> = {
-      get: () => state,
-      set: (patch) => {
-        const next = typeof patch === 'function' ? patch(state) : patch;
-        state = { ...state, ...next };
-      },
-      deps: {
-        activeControllers: new Map(),
-        transitionTimers: new Map(),
-        eventListeners: new Set(),
-        clearTransitionTimer: vi.fn(),
-        abortControllersForKeys,
-        resetStoreState,
-        findEntryByKey: (key: string) => state.trail.find((e) => e.key === key),
-        pushSnapshot,
-        popoverDAG,
-      } as unknown,
-    };
+    ctx.deps.resetStoreState = resetStoreState;
 
-    return { ctx, pushSnapshot, resetStoreState, popoverDAG, getState: () => state };
+    return { ctx, pushSnapshot, resetStoreState, popoverDAG, getState: () => ctx.state };
   };
 
   it('opens root popover and emits event', () => {
     const { ctx, pushSnapshot, getState } = createMockContext();
     const trailSlice = createTrailSlice(ctx);
 
-    const newRoot = { key: 'new-root', isLoading: false, error: null } as TrailEntry<unknown>;
+    const newRoot = { key: 'new-root', isLoading: false, error: null };
     trailSlice.openRoot('owner-2', newRoot);
 
     expect(pushSnapshot).toHaveBeenCalled();
@@ -110,7 +100,12 @@ describe('sliceTrail module', () => {
     expect(popoverDAG.hasNode('child-1')).toBe(true);
 
     // Push new child directly from root-1 (index 0 in trail), truncating child-1
-    trailSlice.pushNested(0, { key: 'child-2', parentKey: 'root-1' });
+    trailSlice.pushNested(0, {
+      key: 'child-2',
+      parentKey: 'root-1',
+      isLoading: false,
+      error: null,
+    });
 
     expect(popoverDAG.hasNode('child-1')).toBe(false);
   });

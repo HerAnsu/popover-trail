@@ -65,7 +65,7 @@ describe('Comprehensive Guardrail Error Warnings Utility', () => {
   it('validates PT-102 invalid layout placement strings', () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    validatePlacement('top-center' as unknown as import('../types').PopoverPlacement);
+    validatePlacement('top-center' as never);
     expect(consoleWarnSpy).toHaveBeenCalledWith(
       expect.stringContaining('[popover-trail warning PT-102]'),
     );

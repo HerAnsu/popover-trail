@@ -1,27 +1,31 @@
 import { describe, it, expect } from 'vitest';
 import { closeFromState, getRemovedKeysForClose } from './closeReducers';
-import { PopoverStateData, TrailEntry } from '../../types';
+import type { PopoverStateData } from '../../types';
+import { createMockStoreState } from '../../testing/createMockStoreState';
 
 describe('closeReducers module', () => {
-  const createMockState = (): PopoverStateData<unknown, unknown> =>
-    ({
+  const createMockState = (
+    overrides?: Partial<PopoverStateData<unknown, unknown>>,
+  ): PopoverStateData<unknown, unknown> =>
+    createMockStoreState<unknown, unknown>({
       ownerId: 'owner-1',
-      floating: [{ key: 'pinned-1', isLoading: false, error: null } as TrailEntry<unknown>],
+      floating: [{ key: 'pinned-1', isLoading: false, error: null }],
       trail: [
-        { key: 'root-1', isLoading: false, error: null } as TrailEntry<unknown>,
+        { key: 'root-1', isLoading: false, error: null },
         {
           key: 'child-1',
           parentKey: 'root-1',
           isLoading: false,
           error: null,
-        } as TrailEntry<unknown>,
+        },
       ],
       pinnedStates: { 'pinned-1': true },
       offsets: { 'pinned-1': { x: 0, y: 0 } },
       zIndexOrder: ['pinned-1', 'root-1', 'child-1'],
       closePinnedDescendants: true,
       nestedHydrationRequestCounters: {},
-    }) as unknown as PopoverStateData<unknown, unknown>;
+      ...overrides,
+    });
 
   it('returns empty object if index is out of bounds', () => {
     const state = createMockState();
@@ -54,10 +58,10 @@ describe('closeReducers module', () => {
   });
 
   it('preserves pinned descendants when closePinnedDescendants is false', () => {
-    const state = createMockState();
-    state.closePinnedDescendants = false;
-    // Make pinned-1 a child of root-1
-    (state.floating[0] as unknown as { parentKey?: string }).parentKey = 'root-1';
+    const state = createMockState({
+      closePinnedDescendants: false,
+      floating: [{ key: 'pinned-1', parentKey: 'root-1', isLoading: false, error: null }],
+    });
 
     const result = closeFromState(state, 1); // Close root-1
     // floating should still contain pinned-1 because closePinnedDescendants is false
@@ -66,9 +70,10 @@ describe('closeReducers module', () => {
   });
 
   it('removes pinned descendants when closePinnedDescendants is true', () => {
-    const state = createMockState();
-    state.closePinnedDescendants = true;
-    (state.floating[0] as unknown as { parentKey?: string }).parentKey = 'root-1';
+    const state = createMockState({
+      closePinnedDescendants: true,
+      floating: [{ key: 'pinned-1', parentKey: 'root-1', isLoading: false, error: null }],
+    });
 
     const result = closeFromState(state, 1); // Close root-1
     expect(result.floating).toHaveLength(0);

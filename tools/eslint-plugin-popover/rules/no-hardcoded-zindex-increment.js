@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Disallow magic numbers added to zIndex; use relative layer ordering or stackGroup base maps.',
+      description:
+        'Disallow magic numbers added to zIndex; use relative layer ordering or stackGroup base maps.',
       category: 'Architecture',
       recommended: true,
     },
     schema: [],
     messages: {
-      noMagicZIndexIncrement: 'Do not add arbitrary magic numbers (+{{ val }}) to zIndex. Use zIndexBaseMap or relative stacking.',
+      noMagicZIndexIncrement:
+        'Do not add arbitrary magic numbers (+{{ val }}) to zIndex. Use zIndexBaseMap or relative stacking.',
     },
   },
   create(context) {

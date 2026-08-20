@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "description": "Custom strict AST rules for popover-trail",
-  "main": "index.js",
-  "type": "module"
+  "type": "module",
+  "main": "index.js"
 }

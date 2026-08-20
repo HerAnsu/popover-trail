@@ -6,13 +6,15 @@ export default {
   meta: {
     type: 'problem',
     docs: {
-      description: 'Disallow raw document.querySelector in render bodies; use refs, custom hooks, or props.',
+      description:
+        'Disallow raw document.querySelector in render bodies; use refs, custom hooks, or props.',
       category: 'Architecture',
       recommended: true,
     },
     schema: [],
     messages: {
-      noRawPortalQuery: 'Do not query DOM portal elements directly inside render bodies; use useResolvedBoundary or PortalTarget props.',
+      noRawPortalQuery:
+        'Do not query DOM portal elements directly inside render bodies; use useResolvedBoundary or PortalTarget props.',
     },
   },
   create(context) {
