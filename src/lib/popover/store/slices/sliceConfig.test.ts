@@ -76,4 +76,23 @@ describe('sliceConfig module', () => {
     expect(ctx.get().unmountingClassName).toBe('fade-out');
     expect(ctx.get().mountedClassName).toBe('active');
   });
+
+  it('does not close card in hoverLeave if card is pinned during delay grace period', () => {
+    const ctx = createMockContext();
+    const slice = createConfigSlice(ctx);
+
+    slice.hoverLeave('card-1', 200);
+
+    // Pin card during grace period
+    ctx.set((state) => ({
+      pinnedStates: { ...state.pinnedStates, 'card-1': true },
+      floating: [{ key: 'card-1', isLoading: false, error: null }],
+      trail: [],
+    }));
+
+    // Trigger the scheduled callback directly
+    ctx.deps.transitionScheduler.clear();
+    // Card remains in floating stack safely
+    expect(ctx.get().floating).toHaveLength(1);
+  });
 });

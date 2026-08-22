@@ -73,7 +73,13 @@ export function useCrossVersionOptimistic<TData, TUpdate>(
   currentData: TData,
   updateFn: (currentState: TData, update: TUpdate) => TData,
 ): readonly [TData, (update: TUpdate) => void] {
+  const [prevData, setPrevData] = useState<TData>(currentData);
   const [optimisticState, setOptimisticState] = useState<TData>(currentData);
+
+  if (prevData !== currentData) {
+    setPrevData(currentData);
+    setOptimisticState(currentData);
+  }
 
   const setOptimistic = useCallback(
     (update: TUpdate) => {

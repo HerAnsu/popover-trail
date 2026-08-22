@@ -32,7 +32,10 @@ export function isResolvedEntry<TData>(
   entry: TrailEntry<TData> | undefined,
 ): entry is TrailEntry<TData> & { data: TData; isLoading: false; error: null } {
   return (
-    entry !== undefined && !entry.isLoading && entry.error === null && entry.data !== undefined
+    entry !== undefined &&
+    !entry.isLoading &&
+    entry.error === null &&
+    (entry.status === 'success' || entry.data !== undefined)
   );
 }
 
@@ -92,8 +95,12 @@ export function getEntryState<TData>(
   if (entry.error) {
     return { status: 'error', isLoading: false, data: undefined, error: entry.error };
   }
-  if (isResolvedEntry(entry)) {
-    return { status: 'success', isLoading: false, data: entry.data, error: null };
+  if (
+    entry.status === 'success' ||
+    entry.data !== undefined ||
+    (!entry.isLoading && !entry.error)
+  ) {
+    return { status: 'success', isLoading: false, data: entry.data as TData, error: null };
   }
   return { status: 'loading', isLoading: true, data: undefined, error: null };
 }

@@ -47,8 +47,9 @@ export class ObjectPool<T> {
   ) {
     this.factory = factory;
     this.reset = reset;
-    this.maxCapacity = maxCapacity;
-    for (let i = 0; i < initialCapacity; i++) {
+    this.maxCapacity = Math.max(1, maxCapacity);
+    const safeInitial = Math.min(Math.max(0, initialCapacity), this.maxCapacity);
+    for (let i = 0; i < safeInitial; i++) {
       this.pool.push(factory());
     }
   }
@@ -70,6 +71,7 @@ export class ObjectPool<T> {
    */
   release(item?: T | null): void {
     if (item === null || item === undefined) return;
+    if (this.pool.includes(item)) return;
     if (this.reset) {
       this.reset(item);
     }

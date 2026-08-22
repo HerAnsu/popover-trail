@@ -50,10 +50,7 @@ export function togglePinState<TData, TContext, TPopoverKey extends string = str
   const trailIndex = wasPinned ? -1 : state.trail.findIndex((e) => e.key === key);
 
   if (!wasPinned && trailIndex === -1) {
-    return {
-      floating: state.floating,
-      trail: state.trail,
-    };
+    return {};
   }
 
   const nextFloating = [...state.floating];

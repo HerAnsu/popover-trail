@@ -5,7 +5,7 @@
  */
 
 import type { PopoverMiddleware, PopoverStore } from '../types';
-import { wrapResult, isErr } from '../utils/result';
+import { toError } from '../utils/storeHelpers';
 import { DISPOSE_SYMBOL } from '../utils/disposable';
 
 function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
@@ -75,14 +75,16 @@ export class PopoverMiddlewareEngine<
     let isCloned = false;
 
     for (const mw of this.middlewares) {
-      const execResult = wrapResult(() => mw(patch, currentState));
-
-      if (isErr(execResult)) {
-        console.error('[PopoverStore] Middleware execution error:', execResult.error);
+      // Inline try/catch instead of a Result wrapper: no closure or frozen
+      // OkResult allocation per middleware on the per-dispatch hot path.
+      let result: ReturnType<typeof mw>;
+      try {
+        result = mw(patch, currentState);
+      } catch (error) {
+        console.error('[PopoverStore] Middleware execution error:', toError(error));
         continue;
       }
 
-      const result = execResult.data;
       if (result === false) {
         return false;
       }

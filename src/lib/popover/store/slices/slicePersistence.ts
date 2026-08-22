@@ -24,6 +24,7 @@ import {
   applyRehydratedState,
   executeWithTransition,
   rollbackTransactionState,
+  restoreDAGFromState,
 } from './persistenceHelpers';
 
 /**
@@ -75,6 +76,11 @@ export function createPersistenceSlice<
 
       if (deps.subscribeState) {
         return deps.subscribeState((state, prevState) => {
+          // Reference fast-path: updates replace list identities only when
+          // their contents change, so equal references imply our entry is
+          // unchanged — skip both O(n) lookups entirely.
+          if (state.floating === prevState.floating && state.trail === prevState.trail) return;
+
           const currentEntry = findEntryInStore<TData, TPopoverKey>(
             state.floating,
             state.trail,
@@ -128,14 +134,20 @@ export function createPersistenceSlice<
     undo: () => {
       if (deps.historyManager) {
         const prev = deps.historyManager.undo(get());
-        if (prev) set(getSnapshotStatePatch(prev));
+        if (prev) {
+          restoreDAGFromState(deps.popoverDAG, prev.trail, prev.floating);
+          set(getSnapshotStatePatch(prev));
+        }
       }
     },
 
     redo: () => {
       if (deps.historyManager) {
         const next = deps.historyManager.redo(get());
-        if (next) set(getSnapshotStatePatch(next));
+        if (next) {
+          restoreDAGFromState(deps.popoverDAG, next.trail, next.floating);
+          set(getSnapshotStatePatch(next));
+        }
       }
     },
 
@@ -218,7 +230,7 @@ export function createPersistenceSlice<
         return false;
       }
 
-      return applyRehydratedState<TData, TContext, TPopoverKey>(parsed, set);
+      return applyRehydratedState<TData, TContext, TPopoverKey>(parsed, set, deps.popoverDAG);
     },
 
     destroy: () => {
@@ -226,6 +238,28 @@ export function createPersistenceSlice<
       clearHistory();
       eventListeners.clear();
       cache?.destroy?.();
+      const storeCache = get().cache;
+      if (storeCache && storeCache !== cache) {
+        if (typeof storeCache.destroy === 'function') {
+          storeCache.destroy();
+        } else if (typeof storeCache.clear === 'function') {
+          storeCache.clear();
+        }
+      }
+
+      if (activeControllers.size > 0) {
+        for (const controller of activeControllers.values()) {
+          controller.abort();
+        }
+        activeControllers.clear();
+      }
+
+      if (deps.inFlightPromises.size > 0) {
+        deps.inFlightPromises.clear();
+      }
+
+      deps.transitionScheduler.clear();
+      deps.popoverDAG?.clear();
     },
   };
 }

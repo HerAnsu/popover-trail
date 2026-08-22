@@ -22,4 +22,43 @@ describe('storeActionRegistry module', () => {
     expect(actions.setDebug).toBeDefined();
     expect(actions.subscribeEvent).toBeDefined();
   });
+
+  it('merges custom slice actions without overriding core actions', () => {
+    const customMethod = () => 'custom';
+    const fakeOpenRoot = () => 'overridden';
+
+    const ctx = createMockSliceContext<unknown, unknown, string>(
+      {
+        floating: [],
+        trail: [],
+        offsets: {},
+        pinnedStates: {},
+        zIndexOrder: [],
+        ownerId: null,
+        debug: false,
+      },
+      {
+        customSlices: [
+          {
+            name: 'myCustomSlice',
+            create: () => ({
+              myCustomAction: customMethod,
+              openRoot: fakeOpenRoot,
+            }),
+          },
+        ],
+      },
+    );
+
+    const actions = createStoreActions<unknown, unknown, string, { myCustomAction: () => string }>(
+      ctx.set,
+      ctx.get,
+      ctx.deps,
+    );
+
+    expect(actions.myCustomAction).toBe(customMethod);
+    // Core action openRoot must be preserved, not overwritten by custom slice
+    expect(actions.openRoot).not.toBe(fakeOpenRoot);
+    expect(typeof actions.openRoot).toBe('function');
+  });
 });

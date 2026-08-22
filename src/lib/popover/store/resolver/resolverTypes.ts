@@ -29,7 +29,7 @@ export interface ResolverPipelineDependencies<
   initialContext?: TContext;
   inFlightPromises: Map<string, Promise<TData>>;
   registerController: (key: string) => AbortController;
-  removeController: (key: string) => void;
+  removeController: (key: string, controller?: AbortController) => void;
   safeSet: (
     partial:
       | StatePatch<TData, TContext, TPopoverKey>

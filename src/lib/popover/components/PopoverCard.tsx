@@ -88,7 +88,7 @@ const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<ElementType, 
       [card.style, userStyle],
     );
 
-    const mergedClassName = clsx(className, card.transitionClassName);
+    const mergedClassName = clsx('popover-card', className, card.transitionClassName);
     const userAriaLabel = restProps['aria-label'];
     const ariaLabel = useMemo(
       () => resolveCardAriaLabel(userAriaLabel, entry.key),

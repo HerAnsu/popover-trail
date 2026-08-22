@@ -59,14 +59,22 @@ export function createConfigSlice<
   TPopoverKey extends string = string,
 >(ctx: SliceContext<TData, TContext, TPopoverKey>) {
   const { set, get, deps } = ctx;
-  const { activeControllers, inFlightPromises, findEntryByKey, transitionScheduler } = deps;
+  const {
+    activeControllers,
+    inFlightPromises,
+    findEntryByKey,
+    transitionScheduler,
+    markAllCountersStale,
+  } = deps;
 
   const setIfChanged = <K extends keyof PopoverStateData<TData, TContext, TPopoverKey>>(
     key: K,
     value: PopoverStateData<TData, TContext, TPopoverKey>[K],
   ) => {
     if (get()[key] !== value) {
-      set((state) => ({ ...state, [key]: value }));
+      // Pass a minimal patch: zustand shallow-merges it, and middleware sees
+      // only the key that actually changed instead of the entire state.
+      set({ [key]: value } satisfies StatePatch<TData, TContext, TPopoverKey>);
     }
   };
 
@@ -90,6 +98,10 @@ export function createConfigSlice<
         if (inFlightPromises.size > 0) {
           inFlightPromises.clear();
         }
+        // Resolvers that ignore their AbortSignal must not commit data produced
+        // by the swapped-out resolver: bump every hydration counter so all
+        // in-flight resolutions become stale.
+        markAllCountersStale();
         set({ resolveData: newResolver });
       }
     },
@@ -128,6 +140,7 @@ export function createConfigSlice<
       if (!key) return;
       if (isPinnedEntry(get().pinnedStates, key)) return;
       const performClose = () => {
+        if (isPinnedEntry(get().pinnedStates, key)) return;
         get().actions.closeByKey(key, { transition: true });
       };
       transitionScheduler.scheduleHoverLeave(key, delay, performClose);

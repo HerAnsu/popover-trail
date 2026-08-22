@@ -3,6 +3,7 @@ import { clsx } from '../../utils/clsx';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
 import type { PopoverTimelineItem, UsePopoverTimelineResult } from '../../hooks/usePopoverTimeline';
+import { getPolymorphicProps } from '../../utils/componentUtils';
 
 /**
  * Context object passed to StepList render-prop callbacks.
@@ -132,7 +133,7 @@ export function PopoverTimelineStep<E extends ElementType = 'button'>({
   onKeyDown,
   ...restProps
 }: PopoverTimelineStepProps<E>) {
-  const Component = as ?? 'button';
+  const { Component, buttonProps } = getPolymorphicProps(as);
   const { timeline } = usePopoverTimelineScope();
 
   const effectiveIndex = index ?? stepIndex ?? 0;
@@ -165,6 +166,7 @@ export function PopoverTimelineStep<E extends ElementType = 'button'>({
 
   return (
     <Component
+      {...buttonProps}
       className={mergedClassName}
       data-index={effectiveIndex}
       data-key={effectiveKey}

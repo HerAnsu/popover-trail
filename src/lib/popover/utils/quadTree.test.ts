@@ -126,6 +126,9 @@ describe('QuadTree utility', () => {
     const tree = new QuadTree({ x: 0, y: 0, width: 500, height: 500 });
     tree.insert(null);
     tree.insert({ id: 'bad' });
+    tree.insert({ id: 'nan-coords', bounds: { x: Number.NaN, y: 10, width: 20, height: 20 } });
+    tree.insert({ id: 'inf-coords', bounds: { x: 10, y: Infinity, width: 20, height: 20 } });
+    tree.insert({ id: 'neg-dim', bounds: { x: 10, y: 10, width: -20, height: 20 } });
     expect(tree.retrieve()).toHaveLength(0);
 
     tree.insert({ id: 'good', bounds: { x: 10, y: 10, width: 20, height: 20 } });

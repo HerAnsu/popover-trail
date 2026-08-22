@@ -47,7 +47,7 @@ function resolveAllRemovedKeys<TData, TPopoverKey extends string = string>(
     directClosedKeys,
     floating,
     trail,
-    false,
+    closePinnedDescendants,
     dag,
   );
   const floatingSet =

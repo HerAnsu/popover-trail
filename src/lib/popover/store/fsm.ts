@@ -7,6 +7,7 @@
 
 import { wrapResult, isErr } from '../utils/result';
 import { DISPOSE_SYMBOL } from '../utils/disposable';
+import { PopoverErrorCode, createPopoverError } from '../utils/errors';
 
 /** Possible discrete state values for a popover card state machine. */
 export type PopoverStateValue =
@@ -202,6 +203,16 @@ function handleHydratingTransition<TData, TPopoverKey extends string>(
           pinnedPos: undefined,
         },
       };
+    case 'RETRY':
+      return {
+        value: 'Hydrating',
+        context: {
+          key: state.context.key,
+          data: undefined,
+          error: undefined,
+          pinnedPos: undefined,
+        },
+      };
     case 'CLOSE':
       return {
         value: 'Unmounting',
@@ -234,6 +245,16 @@ function handleTrailingTransition<TData, TPopoverKey extends string>(
           data: state.context.data,
           error: undefined,
           pinnedPos: event.rect,
+        },
+      };
+    case 'RETRY':
+      return {
+        value: 'Hydrating',
+        context: {
+          key: state.context.key,
+          data: undefined,
+          error: undefined,
+          pinnedPos: undefined,
         },
       };
     case 'CLOSE':
@@ -272,10 +293,31 @@ function handlePinnedTransition<TData, TPopoverKey extends string>(
           pinnedPos: undefined,
         },
       };
+    case 'RETRY':
+      return {
+        value: 'Hydrating',
+        context: {
+          key: state.context.key,
+          data: undefined,
+          error: undefined,
+          pinnedPos: state.context.pinnedPos,
+        },
+      };
     case 'CLOSE':
       return {
         value: 'Unmounting',
         context: state.context,
+      };
+    case 'OPEN_ROOT':
+    case 'PUSH_NESTED':
+      return {
+        value: 'Hydrating',
+        context: {
+          key: event.key,
+          data: undefined,
+          error: undefined,
+          pinnedPos: undefined,
+        },
       };
     default:
       return state;
@@ -525,8 +567,10 @@ export function assertPopoverFSMState<
   expectedState: S,
 ): asserts state is ExtractFSMState<S, TData, TPopoverKey> {
   if (state.value !== expectedState) {
-    throw new Error(
-      `[popover-trail FSM assertion error]: Expected FSM state "${expectedState}", but received state "${state.value}".`,
+    throw createPopoverError(
+      PopoverErrorCode.INVALID_TRANSITION,
+      `Expected FSM state "${expectedState}", but received state "${state.value}".`,
+      `Verify FSM transition logic before asserting state "${expectedState}".`,
     );
   }
 }
@@ -545,6 +589,6 @@ export function isValidTransitionStatusChange(
   if (!current || current === next) return true;
   if (current === 'unmounting') return next === 'mounting';
   if (current === 'mounting') return next === 'mounted' || next === 'unmounting';
-  if (current === 'mounted') return next === 'unmounting';
+  if (current === 'mounted') return next === 'unmounting' || next === 'mounting';
   return false;
 }

@@ -148,7 +148,7 @@ export function createPopoverTrail(schema?: unknown): object {
     process?.env?.NODE_ENV !== 'production' &&
     isCurrentlyRenderingInReact()
   ) {
-    validateFactoryPlacement(false);
+    validateFactoryPlacement(true);
   }
 
   const baseSuite = {
@@ -171,6 +171,11 @@ export function createPopoverTrail(schema?: unknown): object {
     return {
       ...resolvedSchema,
       ...baseSuite,
+      PopoverProvider: (props: PopoverProviderProps<unknown, unknown>) =>
+        React.createElement<PopoverProviderProps<unknown, unknown>>(CorePopoverProvider, {
+          schema: resolvedSchema,
+          ...props,
+        }),
     };
   }
 

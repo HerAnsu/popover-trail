@@ -151,6 +151,7 @@ export function createResolverSlice<
   const { set, get, deps } = ctx;
   const {
     activeControllers,
+    inFlightPromises,
     incrementRootCounter,
     isRootStale,
     incrementNestedCounter,
@@ -163,7 +164,10 @@ export function createResolverSlice<
   const bringToFront = (key: TPopoverKey) => {
     set((state) => {
       const entry = selectEntryByKey<TData, TPopoverKey>(key)(state);
-      if (entry?.transitionStatus === 'unmounting') return {};
+      if (!entry || entry.transitionStatus === 'unmounting') return {};
+      // Already topmost: returning a fresh array here would notify every
+      // subscriber on each re-open of an already-open popover.
+      if (state.zIndexOrder.at(-1) === key) return {};
       return { zIndexOrder: [...state.zIndexOrder.filter((k) => k !== key), key] };
     });
   };
@@ -175,12 +179,26 @@ export function createResolverSlice<
       options?: Readonly<OpenRootOptions>,
     ) => {
       stopEventPropagation(anchorEvent);
-      const { ownerId, trail } = get();
+      const { ownerId, trail, floating } = get();
       const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
 
       if (isRootAlreadyActive(trail, ownerId, finalOwnerId, keyOrName, options?.forceRefresh)) {
         bringToFront(keyOrName);
         return;
+      }
+
+      if (
+        !options?.forceRefresh &&
+        floating.some((e) => e.key === keyOrName && e.transitionStatus !== 'unmounting')
+      ) {
+        bringToFront(keyOrName);
+        return;
+      }
+
+      if (trail.length > 0 && finalOwnerId !== ownerId) {
+        const oldTrailKeys = trail.map((e) => e.key);
+        deps.abortControllersForKeys(oldTrailKeys);
+        deps.transitionScheduler.cancelAllForKeys(oldTrailKeys);
       }
 
       const triggerRect = resolveTriggerBoundingRect(anchorEvent, options?.triggerRect);
@@ -237,10 +255,11 @@ export function createResolverSlice<
       notifyEntryOpen<TData, TPopoverKey>(findEntryByKey, keyOrName);
     },
 
-    retryPopover: async (key: TPopoverKey) => {
+    retryPopover: async (key: TPopoverKey, retryOptions?: Readonly<{ forceRefresh?: boolean }>) => {
       const { floating, trail } = get();
       const entry = findEntryInStore(floating, trail, key);
-      if (!entry || entry.isLoading) return;
+      const forceRefresh = Boolean(retryOptions?.forceRefresh);
+      if (!entry || (entry.isLoading && !forceRefresh)) return;
 
       const index = findEntryIndex(floating, trail, key);
       if (index === -1) return;
@@ -257,34 +276,69 @@ export function createResolverSlice<
         parentData,
         deps,
       );
+      if (forceRefresh) {
+        params.options = { ...params.options, forceRefresh: true };
+      }
       await resolvePopoverEntry(params);
     },
 
     prefetchPopover: async (key: TPopoverKey, parentData?: TData) => {
-      const cached = cache?.get(key);
+      const activeCache = get().cache ?? cache;
+      const cached = activeCache?.get(key);
       if (cached !== undefined) return cached;
 
+      const inFlight = inFlightPromises.get(key);
+      if (inFlight) {
+        try {
+          return await inFlight;
+        } catch (err: unknown) {
+          const error = err instanceof Error ? err : new Error(String(err));
+          if (error.name === 'AbortError') {
+            return undefined;
+          }
+          throw err;
+        }
+      }
+
       let controller = activeControllers.get(key);
+      const ownsController = !controller;
       if (!controller) {
         controller = new AbortController();
         activeControllers.set(key, controller);
       }
 
-      try {
-        const resolveData = get().resolveData;
-        const activeCtx = get().context ?? undefined;
-        const res = await invokeResolverSafely(
-          resolveData,
-          key,
-          parentData,
-          activeCtx,
-          controller.signal,
-        );
-        cache?.set(key, res);
-        return res;
-      } finally {
-        activeControllers.delete(key);
-      }
+      const tracked: { promise?: Promise<TData | undefined> } = {};
+      tracked.promise = (async () => {
+        try {
+          const resolveData = get().resolveData;
+          const activeCtx = get().context ?? undefined;
+          const res = await invokeResolverSafely(
+            resolveData,
+            key,
+            parentData,
+            activeCtx,
+            controller.signal,
+          );
+          activeCache?.set(key, res);
+          return res;
+        } catch (err: unknown) {
+          const error = err instanceof Error ? err : new Error(String(err));
+          if (error.name === 'AbortError') {
+            return undefined;
+          }
+          throw err;
+        } finally {
+          if (inFlightPromises.get(key) === tracked.promise) {
+            inFlightPromises.delete(key);
+          }
+          if (ownsController && activeControllers.get(key) === controller) {
+            activeControllers.delete(key);
+          }
+        }
+      })();
+
+      inFlightPromises.set(key, tracked.promise as Promise<TData>);
+      return tracked.promise;
     },
 
     /**
@@ -297,27 +351,47 @@ export function createResolverSlice<
       const fetchPromises: Promise<void>[] = [];
 
       get().actions.batchUpdates(() => {
+        const activeCache = get().cache ?? cache;
         for (const key of keys) {
           if (!key) continue;
 
-          cache?.delete(key);
+          activeCache?.delete(key);
+          if (cache && activeCache !== cache) {
+            cache.delete(key);
+          }
 
           const { floating, trail } = get();
           const activeEntry = findEntryInStore(floating, trail, key);
 
           if (activeEntry) {
+            const wasLoading = activeEntry.isLoading;
             const inFlightCtrl = activeControllers.get(key);
-            if (inFlightCtrl && activeEntry.isLoading) {
+            if (inFlightCtrl && wasLoading) {
               inFlightCtrl.abort();
               activeControllers.delete(key);
+              // Drop the dedup entry so the forced retry launches a fresh
+              // resolution instead of awaiting the just-aborted promise.
+              inFlightPromises.delete(key);
             }
 
-            fetchPromises.push(slice.retryPopover(key));
+            fetchPromises.push(
+              wasLoading
+                ? slice.retryPopover(key, { forceRefresh: true })
+                : slice.retryPopover(key),
+            );
           }
         }
       });
 
-      await Promise.all(fetchPromises);
+      const settledResults = await Promise.allSettled(fetchPromises);
+      for (const result of settledResults) {
+        if (result.status === 'rejected') {
+          console.error(
+            '[popover-trail]: Exception during popover retry in invalidate:',
+            result.reason,
+          );
+        }
+      }
     },
   };
 

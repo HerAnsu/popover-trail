@@ -98,9 +98,6 @@ export function createBatchingManager(autoBatchMicrotasks = true): BatchingManag
 
   const manager: BatchingManager = {
     startBatch: () => {
-      if (batchDepth === 0) {
-        isBatchDirty = false;
-      }
       batchDepth++;
     },
 
@@ -173,9 +170,7 @@ export function createBatchingManager(autoBatchMicrotasks = true): BatchingManag
 
         const typedListener = listener as TypedListener;
         const handler: BatchListener = (s, p) => {
-          if (s !== undefined && p !== undefined) {
-            typedListener(s as TState, p as TState);
-          }
+          typedListener(s as TState, p as TState);
         };
 
         batchListeners.add(handler);

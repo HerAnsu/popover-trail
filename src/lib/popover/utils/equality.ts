@@ -14,6 +14,17 @@ function isRecord(val: unknown): val is Record<string, unknown> {
  */
 export function shallowEqual<T>(objA: T, objB: T): boolean {
   if (Object.is(objA, objB)) return true;
+  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+    return false;
+  }
+  if (Array.isArray(objA) || Array.isArray(objB)) {
+    if (!Array.isArray(objA) || !Array.isArray(objB)) return false;
+    if (objA.length !== objB.length) return false;
+    for (let i = 0; i < objA.length; i++) {
+      if (!Object.is(objA[i], objB[i])) return false;
+    }
+    return true;
+  }
   if (!isRecord(objA) || !isRecord(objB)) {
     return false;
   }

@@ -37,6 +37,17 @@ import type { SliceContext } from './store/slices/sliceContext';
 import { DISPOSE_SYMBOL } from './utils/disposable';
 
 /**
+ * Own-enumerable emptiness check without allocating a keys array.
+ * Semantically identical to `Object.keys(value).length === 0`.
+ */
+function isEmptyOwnObject(value: object): boolean {
+  for (const key in value) {
+    if (Object.hasOwn(value, key)) return false;
+  }
+  return true;
+}
+
+/**
  * Options container for configuring createPopoverStore with custom slices and infrastructure dependencies.
  *
  * @template TData - Resolved data payload type.
@@ -180,15 +191,14 @@ export function createPopoverStore<
         const patch = typeof partial === 'function' ? partial(state) : partial;
         const nextPatch = middlewareEngine.apply(patch, state);
 
-        if (
-          nextPatch === false ||
-          !nextPatch ||
-          (typeof nextPatch === 'object' && Object.keys(nextPatch).length === 0)
-        ) {
-          return state;
-        }
+        if (!nextPatch) return state;
+        if (typeof nextPatch === 'object' && isEmptyOwnObject(nextPatch)) return state;
 
-        return { ...state, ...nextPatch };
+        // Zustand shallow-merges the partial into a fresh state object itself,
+        // so returning the patch directly avoids a second full-state copy
+        // on every dispatch. The cast bridges the generic PopoverStore patch
+        // and the custom-slice-extended CombinedStore view of the same state.
+        return nextPatch as CombinedStore;
       });
     };
 
@@ -250,6 +260,7 @@ export function createPopoverStore<
       isRootStale: hydrationManager.isRootStale,
       incrementNestedCounter: hydrationManager.incrementNestedCounter,
       isNestedStale: hydrationManager.isNestedStale,
+      markAllCountersStale: hydrationManager.markAllCountersStale,
       findEntryByKey,
       resolvePopoverEntry: boundResolvePopoverEntry,
       pushSnapshot: historyManager.pushSnapshot,
@@ -300,6 +311,7 @@ export function createPopoverStore<
     isRootStale: hydrationManager.isRootStale,
     incrementNestedCounter: hydrationManager.incrementNestedCounter,
     isNestedStale: hydrationManager.isNestedStale,
+    markAllCountersStale: hydrationManager.markAllCountersStale,
     findEntryByKey: (k) => findEntryInStore(store.getState().floating, store.getState().trail, k),
     resolvePopoverEntry: async () => {},
     pushSnapshot: historyManager.pushSnapshot,
@@ -316,7 +328,6 @@ export function createPopoverStore<
   };
 
   const dispose = () => {
-    store.getState().destroy();
     if (customSlices) {
       const sliceCtx: SliceContext<TData, TContext, TPopoverKey> = {
         set: (partial, replace) => {
@@ -342,6 +353,7 @@ export function createPopoverStore<
         }
       }
     }
+    store.getState().destroy();
     controllerManager.dispose();
     transitionScheduler.dispose();
     eventBus.clear();

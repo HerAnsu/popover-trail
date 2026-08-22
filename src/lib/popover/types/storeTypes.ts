@@ -20,7 +20,6 @@ import type {
   ZIndexBaseMap,
   PopoverSlotComponents,
   PopoverPersistConfig,
-  DeepReadonly,
 } from './configTypes';
 import type { PopoverStoreEvent } from './eventTypes';
 import type { StoreApi } from 'zustand/vanilla';
@@ -446,8 +445,6 @@ export type ResolveDataForKey<
   TFallback = unknown,
 > = K extends keyof TDataMap ? TDataMap[K] : TFallback;
 
-export type { DeepReadonly };
-
 export type StateSelector<TState, TResult> = (state: TState) => TResult;
 export type StateEqualityFn<T> = (a: T, b: T) => boolean;
 
@@ -540,7 +537,7 @@ export interface PopoverActions<
   /** Closes all popover cards (alias for clear). */
   closeAll: () => void;
   /** Clears active trail cards while preserving pinned floating cards. */
-  clearTrail: () => void;
+  clearTrail: (options?: { transition?: boolean }) => void;
   /** Closes the topmost active trail card. */
   closeTopmost: (options?: { transition?: boolean }) => void;
   /** Opens a root popover and executes async data resolution with caching. */
@@ -555,8 +552,8 @@ export interface PopoverActions<
     sourceKey: TPopoverKey,
     options?: Readonly<OpenNestedOptions>,
   ) => Promise<void>;
-  /** Retries failed data resolution for a specific card. */
-  retryPopover: (key: TPopoverKey) => Promise<void>;
+  /** Retries failed data resolution for a specific card. Pass `{ forceRefresh: true }` to retry even while a resolution is still loading. */
+  retryPopover: (key: TPopoverKey, options?: Readonly<{ forceRefresh?: boolean }>) => Promise<void>;
   /** Prefetches data for a popover card into the cache without opening it. */
   prefetchPopover: (key: TPopoverKey, parentData?: TData) => Promise<TData | undefined>;
   /** Invalidates cache and refetches data for one or more keys. */
@@ -713,3 +710,5 @@ export type PopoverStore<
   };
 
 export { type PopoverKey, type ParentKey, type ZIndexDepth } from './branded';
+
+export { type DeepReadonly } from './configTypes';

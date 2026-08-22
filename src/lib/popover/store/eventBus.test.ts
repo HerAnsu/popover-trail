@@ -58,6 +58,41 @@ describe('eventBus module', () => {
     expect(l2).not.toHaveBeenCalled();
   });
 
+  it('does not double-fire or leak when the same listener registers twice', () => {
+    const bus = new PopoverEventBus();
+    const listener = vi.fn();
+
+    const unsub1 = bus.on('popover:open', listener);
+    const unsub2 = bus.on('popover:open', listener);
+
+    bus.emit('popover:open', { key: 'c1' });
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsub1();
+    bus.emit('popover:open', { key: 'c2' });
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsub2();
+    bus.emit('popover:open', { key: 'c3' });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(bus.size).toBe(0);
+  });
+
+  it('removes once() subscription from the registry after it fires', () => {
+    const bus = new PopoverEventBus();
+    const listener = vi.fn();
+
+    bus.once('popover:close', listener);
+    expect(bus.size).toBe(1);
+
+    bus.emit('popover:close', { keys: ['c1'], key: 'c1' });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(bus.size).toBe(0);
+
+    bus.emit('popover:close', { keys: ['c1'], key: 'c1' });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it('tracks subscription size and supports clear/dispose', () => {
     const bus = new PopoverEventBus();
     expect(bus.size).toBe(0);

@@ -223,10 +223,8 @@ export function usePopoverDraggableCard({
   const setCombinedRef = useMergedRef(card.ref, domRef, isDragAllowed ? setNodeRef : undefined);
 
   const handlePinToggle = useCallback(() => {
-    if (domRef.current) {
-      const currentRect = domRef.current.getBoundingClientRect();
-      card.actions.togglePin(entry.key, currentRect);
-    }
+    const currentRect = domRef.current ? domRef.current.getBoundingClientRect() : undefined;
+    card.actions.togglePin(entry.key, currentRect);
   }, [card.actions, entry.key]);
 
   return {
@@ -428,6 +426,10 @@ export function PopoverCanvas<TData = unknown>({
     [store, updateOffset],
   );
 
+  const handleDragCancel = useCallback((_event: DragEndEvent) => {
+    // Aborted or cancelled drag, do not commit delta
+  }, []);
+
   const zIndexOrder = usePopoverStore((state) => state.zIndexOrder);
 
   const activeEntries = useMemo(() => {
@@ -454,7 +456,7 @@ export function PopoverCanvas<TData = unknown>({
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onDragCancel={handleDragEnd}
+      onDragCancel={handleDragCancel}
       modifiers={computedModifiers}>
       <div ref={containerRef} style={FIXED_CONTAINER_STYLE}>
         {activeEntries.map(({ entry, isPinned, index: entryIndex }) => (
@@ -519,6 +521,10 @@ export interface PopoverCardProps<TData> {
   enableFocusLock?: boolean;
   /** Custom drag handle trigger element. If not specified, the entire card is draggable. */
   dragHandle?: (props: PopoverDragHandleProps) => ReactNode;
+  /** Optional accessible label string for the popover dialog. */
+  'aria-label'?: string;
+  /** Optional element ID that labels the popover dialog. */
+  'aria-labelledby'?: string;
 }
 
 function resolveFeatureFlag(featureVal?: boolean, propVal?: boolean): boolean {
@@ -615,7 +621,10 @@ function PopoverCardInner<TData = unknown>(props: Readonly<PopoverCardProps<TDat
       id={`popover-card-${entry.key}`}
       ref={ref}
       style={combinedStyle}
-      aria-labelledby={`title-${entry.key}`}
+      aria-label={
+        props['aria-label'] ?? (props['aria-labelledby'] ? undefined : `Popover ${entry.key}`)
+      }
+      aria-labelledby={props['aria-labelledby']}
       aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
       className={combinedClassName}>
       <FocusLock

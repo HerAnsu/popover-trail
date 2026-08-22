@@ -125,6 +125,9 @@ export function sanitizePersistedEntries<TData, TPopoverKey extends string>(
     if (!isSafeKey(entry.key)) return [];
     const cleanEntry: TrailEntry<TData, TPopoverKey> = { ...entry };
     delete cleanEntry.dataPromise;
+    delete cleanEntry.onError;
+    delete cleanEntry.onPin;
+    delete cleanEntry.onClose;
     return [cleanEntry];
   });
 }
@@ -233,11 +236,13 @@ export function safeJsonParse<T>(raw: string): T | null {
  * @template TPopoverKey - Popover key string type.
  * @param parsed - Raw parsed JSON snapshot.
  * @param set - Zustand store `set` dispatcher.
+ * @param dag - Optional PopoverDAG instance to restore.
  * @returns `true` if rehydration succeeded.
  */
 export function applyRehydratedState<TData, TContext, TPopoverKey extends string>(
   parsed: unknown,
   set: (patch: StatePatch<TData, TContext, TPopoverKey>) => void,
+  dag?: { clear: () => void; addNode: (key: TPopoverKey, parentKey?: TPopoverKey) => void },
 ): boolean {
   if (!isRecord(parsed)) return false;
 
@@ -263,6 +268,8 @@ export function applyRehydratedState<TData, TContext, TPopoverKey extends string
         (k): k is TPopoverKey => typeof k === 'string' && isSafeKey(k) && isKeyInSet(k, activeKeys),
       )
     : [...activeKeys];
+
+  restoreDAGFromState(dag, [], nextFloating);
 
   set({
     floating: nextFloating,

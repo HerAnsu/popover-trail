@@ -14,9 +14,11 @@ import {
 
 function normalizeOriginalEntry<TData, TPopoverKey extends string = string>(
   entry: TrailEntry<TData, TPopoverKey>,
+  isRoot = false,
 ): TrailEntry<TData, TPopoverKey> {
   return {
     ...entry,
+    parentKey: isRoot ? undefined : entry.parentKey,
     originalParentKey: entry.originalParentKey ?? entry.parentKey,
     originalRect: entry.originalRect ?? entry.rect,
   };
@@ -53,7 +55,7 @@ export function openRootState<TData, TContext, TPopoverKey extends string = stri
   if (state.floating.some((e) => e.key === entry.key)) {
     return bringToFrontPatch(state, entry.key);
   }
-  const nextEntry = normalizeOriginalEntry(entry);
+  const nextEntry = normalizeOriginalEntry(entry, true);
   const filteredTrail = state.trail.filter((e) => e.key !== entry.key);
   const nextTrail = state.ownerId === ownerId ? [...filteredTrail, nextEntry] : [nextEntry];
 
@@ -94,9 +96,14 @@ export function pushNestedState<TData, TContext, TPopoverKey extends string = st
     return bringToFrontPatch(state, entry.key);
   }
 
+  const isFloating = index < state.floating.length;
   const finalEntry = normalizeOriginalEntry(entry);
   const nextTrail = computeNextTrailForNestedPush(state, index, finalEntry);
   if (!nextTrail) return {};
 
-  return buildActiveTrailPatch(state, nextTrail, entry.key);
+  const extraPatch = isFloating
+    ? { ownerId: state.floating[index]?.key ?? state.ownerId }
+    : undefined;
+
+  return buildActiveTrailPatch(state, nextTrail, entry.key, extraPatch);
 }

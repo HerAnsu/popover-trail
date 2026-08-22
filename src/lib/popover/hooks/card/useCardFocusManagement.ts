@@ -69,9 +69,14 @@ export function useCardFocusManagement(
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+    if (
+      !previouslyFocusedElementRef.current &&
+      typeof document !== 'undefined' &&
+      document.activeElement instanceof HTMLElement
+    ) {
       previouslyFocusedElementRef.current = document.activeElement;
     }
+
     const cardElement = cardRef.current;
 
     return () => {

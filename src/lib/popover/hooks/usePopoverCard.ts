@@ -167,7 +167,8 @@ export function usePopoverCard({
   );
 
   const handlePinToggle = useCallback(() => {
-    actions.togglePin(entry.key);
+    const currentRect = ref.current ? ref.current.getBoundingClientRect() : undefined;
+    actions.togglePin(entry.key, currentRect);
   }, [actions, entry.key]);
 
   const onMouseEnter = useCallback(() => {

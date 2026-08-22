@@ -83,6 +83,18 @@ describe('typeGuards utility', () => {
       if (errState.status === 'error') {
         expect(errState.error.message).toBe('Failed to load');
       }
+
+      const staticEntry: TrailEntry<void> = {
+        key: 'static-card',
+        status: 'success',
+        isLoading: false,
+        error: null,
+        data: undefined,
+      };
+      expect(isResolvedEntry(staticEntry)).toBe(true);
+      const staticState = getEntryState(staticEntry);
+      expect(staticState.status).toBe('success');
+      expect(staticState.isLoading).toBe(false);
     });
   });
 

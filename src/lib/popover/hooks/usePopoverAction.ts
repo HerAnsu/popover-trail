@@ -96,9 +96,16 @@ export function usePopoverAction<TData, TInput = void>(
           updateCardData(result.data);
           callbacksRef.current.onSuccess?.(result.data);
         } else if (result.status === 'error') {
+          if (prevState.data !== undefined) {
+            updateCardData(prevState.data);
+          }
           callbacksRef.current.onError?.(result.error);
         }
         return result;
+      }
+
+      if (prevState.data !== undefined) {
+        updateCardData(prevState.data);
       }
 
       const error =

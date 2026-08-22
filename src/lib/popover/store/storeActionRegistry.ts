@@ -45,6 +45,7 @@ export interface StoreAsyncPipelineService<
   isRootStale: (startedCounter: number) => boolean;
   incrementNestedCounter: (parentKey: string) => number;
   isNestedStale: (parentKey: string, startedCounter: number) => boolean;
+  markAllCountersStale: () => void;
   resolvePopoverEntry: (
     params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
   ) => Promise<void>;
@@ -219,14 +220,12 @@ export function createStoreActions<
     if (!extension || typeof extension !== 'object') continue;
 
     for (const [actionName, actionFn] of Object.entries(extension)) {
-      if (
-        typeof process !== 'undefined' &&
-        process?.env?.NODE_ENV !== 'production' &&
-        RESERVED_CORE_ACTION_NAMES.has(actionName)
-      ) {
-        console.warn(
-          `[popover-trail OCP Warning]: Custom slice "${descriptor.name}" attempted to override reserved core action "${actionName}". Core action was preserved.`,
-        );
+      if (RESERVED_CORE_ACTION_NAMES.has(actionName)) {
+        if (typeof process !== 'undefined' && process?.env?.NODE_ENV !== 'production') {
+          console.warn(
+            `[popover-trail OCP Warning]: Custom slice "${descriptor.name}" attempted to override reserved core action "${actionName}". Core action was preserved.`,
+          );
+        }
         continue;
       }
       mergedActions[actionName] = actionFn;

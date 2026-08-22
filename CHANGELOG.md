@@ -5,6 +5,24 @@ All notable changes to the `popover-trail` package will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2026-08-22
+
+### Optimized & Enhanced
+- **V8 structural sharing & zero-allocation hot paths**:
+  - Replaced object cloning with `reuseOrCloneRecord` and `reuseOrCloneArray` in `history.ts`, eliminating allocations on unchanged history states.
+  - Implemented single-pass `buildEntryIndex` in `storeSelectors.ts` for breadcrumbs and depth resolution, replacing $O(\text{depth} \times n)$ list traversals with $O(n)$ lookup index.
+  - Optimized `EventBus` listener re-registration, wildcard tracking, and lifecycle unsubscription.
+  - Inline error handling in `storeMiddlewareEngine.ts` avoiding extra OkResult allocations on high-frequency dispatch hot paths.
+- **Concurrent & race safety**:
+  - Added identity protection in `storeControllers.ts` and in-flight promise handlers to prevent older asynchronous resolutions from overriding newer controllers.
+  - Enhanced hydration counter tracking across root and nested branches.
+- **Strict type system refinements**:
+  - Polished TypeScript declarations in `types/storeTypes.ts`, improving inference for domain slice actions and state tuples.
+
+### Tests & Verification
+- Expanded test suite to **558 passing tests** across **88 test files**.
+- Added test coverage for `equality.ts`, `objectPool.ts`, `quadTree.ts`, `eventBus.ts`, `history.ts`, and `sliceResolver.ts`.
+
 ## [1.2.0] - 2026-08-20
 
 ### Added

@@ -36,8 +36,8 @@ class RingBuffer<T> {
   private readonly capacity: number;
 
   constructor(capacity: number) {
-    this.capacity = capacity;
-    this.buffer = Array.from({ length: capacity });
+    this.capacity = Math.max(1, Math.floor(capacity) || 1);
+    this.buffer = Array.from({ length: this.capacity });
     this.head = 0;
     this.tail = 0;
     this._length = 0;
@@ -104,6 +104,30 @@ function cloneNonEmptyArray<T>(arr?: readonly T[]): readonly T[] {
 }
 
 /**
+ * Reuses the previous snapshot's record reference when content-equal, so
+ * accepted pushes do not clone untouched history slices on every interaction.
+ */
+function reuseOrCloneRecord<T extends object>(last: T | undefined, next?: T): T {
+  if (last !== undefined && next !== undefined && shallowEqual(last, next)) {
+    return last;
+  }
+  return cloneNonEmptyRecord(next);
+}
+
+/** Array counterpart of {@link reuseOrCloneRecord} using element-wise identity. */
+function reuseOrCloneArray<T>(last: readonly T[] | undefined, next?: readonly T[]): readonly T[] {
+  if (
+    last !== undefined &&
+    next !== undefined &&
+    last.length === next.length &&
+    last.every((v, i) => v === next[i])
+  ) {
+    return last;
+  }
+  return cloneNonEmptyArray(next);
+}
+
+/**
  * Creates an immutable snapshot from the current popover store state for history tracking.
  *
  * @template TData - Resolved data payload type.
@@ -152,18 +176,28 @@ export function createHistoryManager<TData = unknown, TPopoverKey extends string
     const lastSnapshot = undoBuffer.peekLast();
     const offsets = state.offsets ?? EMPTY_OBJECT;
     const pinnedStates = state.pinnedStates ?? EMPTY_OBJECT;
+    const zIndexOrder = state.zIndexOrder ?? EMPTY_ARRAY;
 
     if (
       lastSnapshot?.trail === state.trail &&
       lastSnapshot.floating === state.floating &&
       lastSnapshot.ownerId === state.ownerId &&
       shallowEqual(lastSnapshot.offsets, offsets) &&
-      shallowEqual(lastSnapshot.pinnedStates, pinnedStates)
+      shallowEqual(lastSnapshot.pinnedStates, pinnedStates) &&
+      lastSnapshot.zIndexOrder.length === zIndexOrder.length &&
+      lastSnapshot.zIndexOrder.every((k, i) => k === zIndexOrder[i])
     ) {
       return;
     }
 
-    undoBuffer.push(createHistorySnapshot(state));
+    undoBuffer.push({
+      trail: state.trail ?? EMPTY_ARRAY,
+      floating: state.floating ?? EMPTY_ARRAY,
+      offsets: reuseOrCloneRecord(lastSnapshot?.offsets, offsets),
+      pinnedStates: reuseOrCloneRecord(lastSnapshot?.pinnedStates, pinnedStates),
+      zIndexOrder: reuseOrCloneArray(lastSnapshot?.zIndexOrder, zIndexOrder),
+      ownerId: state.ownerId ?? null,
+    });
     redoBuffer.clear();
   };
 

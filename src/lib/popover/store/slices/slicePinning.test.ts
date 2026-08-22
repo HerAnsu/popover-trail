@@ -71,4 +71,44 @@ describe('slicePinning module', () => {
     pinning.updateOffset('card-1', 40, 50);
     expect(getState().offsets['card-1']).toEqual({ x: 40, y: 50 });
   });
+
+  it('preserves logical hierarchy in PopoverDAG when toggling pin', () => {
+    const { ctx } = createMockContext();
+    ctx.deps.popoverDAG?.addNode('card-root');
+    ctx.deps.popoverDAG?.addNode('card-child', 'card-root');
+    ctx.state = {
+      ...ctx.state,
+      trail: [
+        { key: 'card-root', isLoading: false, error: null },
+        { key: 'card-child', parentKey: 'card-root', isLoading: false, error: null },
+      ],
+      zIndexOrder: ['card-root', 'card-child'],
+    };
+
+    const pinning = createPinningSlice(ctx);
+    pinning.togglePin('card-child');
+
+    expect(ctx.deps.popoverDAG?.getNode('card-child')?.parentKey).toBe('card-root');
+    expect(ctx.deps.popoverDAG?.getDescendantKeys('card-root').has('card-child')).toBe(true);
+  });
+
+  it('elevates child nodes when parent is topmost in bringToFront', () => {
+    const { ctx, getState } = createMockContext();
+    ctx.deps.popoverDAG?.addNode('card-parent');
+    ctx.deps.popoverDAG?.addNode('card-child', 'card-parent');
+    ctx.set({
+      trail: [
+        { key: 'card-parent', isLoading: false, error: null },
+        { key: 'card-other', isLoading: false, error: null },
+        { key: 'card-child', parentKey: 'card-parent', isLoading: false, error: null },
+      ],
+      zIndexOrder: ['card-child', 'card-other', 'card-parent'],
+    });
+
+    const pinning = createPinningSlice(ctx);
+    pinning.bringToFront('card-parent');
+
+    // Both parent and its child should be moved to topmost
+    expect(getState().zIndexOrder.slice(-2)).toEqual(['card-parent', 'card-child']);
+  });
 });

@@ -24,11 +24,11 @@ describe('Store Exotic Edge-Cases & Chaos Stress Suite', () => {
 
     store.getState().actions.setDebug(true);
     expect(store.getState().debug).toBe(true);
-    // Re-entrant setCascadeOffsetStep(24) is applied before the outer safeSet finalises,
-    // so the outer patch (which carries cascadeOffsetStep: 8 from the snapshot) wins.
-    // The reentrant call was executed (reentrantCalled is true) but its effect is lost.
+    // Patches carry only their changed keys, so the re-entrant
+    // setCascadeOffsetStep(24) commit is no longer clobbered by the outer
+    // patch replaying a stale full-state snapshot.
     expect(reentrantCalled).toBe(true);
-    expect(store.getState().cascadeOffsetStep).toBe(8);
+    expect(store.getState().cascadeOffsetStep).toBe(24);
   });
 
   it('survives chaos dragging with extreme numbers, subnormals and negative zeros', () => {

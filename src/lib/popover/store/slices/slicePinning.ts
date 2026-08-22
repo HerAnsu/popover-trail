@@ -27,6 +27,9 @@ export function createPinningSlice<
   return {
     togglePin: (key: TPopoverKey, rect?: DOMRect) => {
       if (!key) return;
+      const targetEntry = findEntryByKey(key);
+      if (!targetEntry) return;
+
       pushSnapshot(get());
       transitionScheduler.cancelHover(key);
       set((state) => togglePinState(state, key, rect));
@@ -34,7 +37,7 @@ export function createPinningSlice<
       const entry = findEntryByKey(key);
       const isPinned = selectIsPinned(key)(get());
 
-      dispatchStoreEvent(eventListeners, { type: isPinned ? 'pin' : 'unpin', key });
+      dispatchStoreEvent(eventListeners, { type: isPinned ? 'pin' : 'unpin', key }, deps.eventBus);
 
       if (entry?.onPin) {
         const pinResult = wrapResult(() => entry.onPin?.(key, isPinned));
@@ -49,7 +52,6 @@ export function createPinningSlice<
       set((state) => {
         const entry = findEntryInStore(state.floating, state.trail, key);
         if (!entry) return {};
-        if (state.zIndexOrder.at(-1) === key) return {};
         if (entry.transitionStatus === 'unmounting') return {};
         return bringToFrontPatch(state, key, deps.popoverDAG);
       });

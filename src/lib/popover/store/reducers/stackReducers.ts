@@ -21,22 +21,35 @@ export function filterRecord<T, K extends string = string>(
 ): Partial<Record<K, T>> {
   if (allowedKeys.size === 0) return {};
 
+  let sourceCount = 0;
+  let hasDisallowedKey = false;
+
+  for (const key in record) {
+    if (Object.hasOwn(record, key)) {
+      sourceCount++;
+      if (!allowedKeys.has(key as K)) {
+        hasDisallowedKey = true;
+      }
+    }
+  }
+
+  if (!hasDisallowedKey) {
+    return record;
+  }
+
   const nextRecord: Partial<Record<K, T>> = {};
-  let changed = false;
+  let copiedCount = 0;
 
   for (const key of allowedKeys) {
     if (isUnsafeProperty(key)) continue;
     const val = record[key];
     if (val !== undefined) {
       nextRecord[key] = val;
+      copiedCount++;
     }
   }
 
-  if (Object.keys(record).length !== Object.keys(nextRecord).length) {
-    changed = true;
-  }
-
-  return changed ? nextRecord : record;
+  return copiedCount === sourceCount ? record : nextRecord;
 }
 
 export function getActiveKeys<TData, TPopoverKey extends string = string>(
@@ -106,7 +119,7 @@ export function getAllDescendants<TData, TPopoverKey extends string = string>(
     return descendants;
   }
 
-  const queue = Array.isArray(parentKeys) ? [...parentKeys] : [...parentKeys];
+  const queue = [...parentKeys];
 
   while (queue.length > 0) {
     const pKey = queue.pop();

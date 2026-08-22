@@ -5,9 +5,10 @@
  * @module store/resolver/pipelineCache
  */
 
-import type { PopoverCache, PopoverStore, TrailEntry } from '../../types';
+import type { PopoverCache, PopoverStore, TrailEntry, PopoverStoreEvent } from '../../types';
 import { wrapResult, isOk } from '../../utils/result';
 import { isPromise } from '../../utils/storeHelpers';
+import { dispatchStoreEvent, type PopoverEventBus } from '../eventBus';
 import type { ResolvePopoverEntryParams } from './resolverTypes';
 
 /**
@@ -49,6 +50,8 @@ export function getSyncCachedData<TData>(
  * @param params - Resolution parameters.
  * @param safeSet - Zustand safeSet dispatcher.
  * @param buildEntry - Entry builder function.
+ * @param eventListeners - Optional event listener collection.
+ * @param eventBus - Optional store event bus.
  * @returns `true` if resolved synchronously from cache or state.
  */
 export function tryResolveFromCacheOrState<
@@ -73,12 +76,19 @@ export function tryResolveFromCacheOrState<
     error?: Error | null,
     isLoading?: boolean,
   ) => TrailEntry<TData, TPopoverKey>,
+  eventListeners?: Set<(event: PopoverStoreEvent<TData>) => void>,
+  eventBus?: PopoverEventBus<TData, TPopoverKey>,
 ): boolean {
   const effectiveCache = cache ?? storeCache ?? undefined;
   const cachedData = getSyncCachedData(effectiveCache, key);
 
   if (cachedData !== undefined) {
     if (!params.isStale(requestCounter)) {
+      dispatchStoreEvent(
+        eventListeners,
+        { type: 'resolve_success', key, data: cachedData },
+        eventBus,
+      );
       safeSet(
         params.insertStatePatch(buildEntry(cachedData, null, false)) as (
           state: PopoverStore<TData, TContext, TPopoverKey>,
@@ -88,8 +98,13 @@ export function tryResolveFromCacheOrState<
     return true;
   }
 
-  if (existingEntry?.status === 'success' && existingEntry.data !== undefined && !forceRefresh) {
+  if (existingEntry?.status === 'success' && !forceRefresh) {
     if (!params.isStale(requestCounter)) {
+      dispatchStoreEvent(
+        eventListeners,
+        { type: 'resolve_success', key, data: existingEntry.data as TData },
+        eventBus,
+      );
       safeSet(
         params.insertStatePatch(buildEntry(existingEntry.data, null, false)) as (
           state: PopoverStore<TData, TContext, TPopoverKey>,

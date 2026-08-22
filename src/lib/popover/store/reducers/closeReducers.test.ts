@@ -79,4 +79,23 @@ describe('closeReducers module', () => {
     expect(result.floating).toHaveLength(0);
     expect(result.pinnedStates?.['pinned-1']).toBeUndefined();
   });
+
+  it('removes pinned descendants with originalParentKey when closePinnedDescendants is true', () => {
+    const state = createMockState({
+      closePinnedDescendants: true,
+      floating: [
+        {
+          key: 'pinned-1',
+          parentKey: undefined,
+          originalParentKey: 'root-1',
+          isLoading: false,
+          error: null,
+        },
+      ],
+    });
+
+    const result = closeFromState(state, 1); // Close root-1
+    expect(result.floating).toHaveLength(0);
+    expect(result.pinnedStates?.['pinned-1']).toBeUndefined();
+  });
 });

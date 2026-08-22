@@ -116,7 +116,10 @@ export function usePopoverGeometry({
 
   useEffect(() => {
     refs.setReference(virtualElement);
-  }, [virtualElement, refs]);
+    if (virtualElement && !isPinned && !isDragging) {
+      void update();
+    }
+  }, [virtualElement, refs, isPinned, isDragging, update]);
 
   useFloatingResizeObserver(refs.floating.current, isPinned, isDragging, update);
 

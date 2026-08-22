@@ -6,7 +6,7 @@
  */
 
 import type { PopoverResolver, ResolverParams, TrailEntry, PopoverCache } from '../../types';
-import { isPromise, toError, findEntryInStore } from '../../utils/storeHelpers';
+import { isPromise, toError } from '../../utils/storeHelpers';
 import { isOk, isErr, wrapResult, wrapAsyncResult } from '../../utils/result';
 import { PopoverErrorCode, createPopoverError } from '../../utils/errors';
 import { dispatchStoreEvent } from '../eventBus';
@@ -24,11 +24,12 @@ function isDestructuringSignatureMismatch(err: unknown): boolean {
     const msg = err.message.toLowerCase();
     return (
       msg.includes('destructure') ||
-      msg.includes('cannot read property') ||
-      msg.includes('cannot read properties') ||
-      msg.includes('expected object') ||
-      msg.includes('undefined') ||
-      msg.includes('null')
+      msg.includes('cannot destructure property') ||
+      (msg.includes('cannot read property') &&
+        (msg.includes('of undefined') || msg.includes('of null'))) ||
+      msg.includes('cannot read properties of undefined') ||
+      msg.includes('cannot read properties of null') ||
+      msg.includes('expected object')
     );
   }
   return false;
@@ -121,11 +122,13 @@ export function handleResolverError<TData, TContext, TPopoverKey extends string>
   objErr: unknown,
   key: TPopoverKey,
   deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
+  params?: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
+  errorEntry?: TrailEntry<TData, TPopoverKey>,
 ): void {
   const error = toError(objErr);
   if (error.name === 'AbortError') return;
 
-  dispatchStoreEvent(deps.eventListeners, { type: 'resolve_error', key, error });
+  dispatchStoreEvent(deps.eventListeners, { type: 'resolve_error', key, error }, deps.eventBus);
   const currentEntry = deps.findEntryByKey(key);
 
   if (currentEntry?.onError) {
@@ -137,10 +140,25 @@ export function handleResolverError<TData, TContext, TPopoverKey extends string>
     }
   }
 
-  updateEntryInStoreLists(deps.safeSet, key, {
-    error,
-    isLoading: false,
-    status: 'error',
+  deps.safeSet((state) => {
+    const inFloating = state.floating.some((e) => e.key === key);
+    const inTrail = state.trail.some((e) => e.key === key);
+
+    if (inFloating || inTrail) {
+      const update = (e: TrailEntry<TData, TPopoverKey>) =>
+        e.key === key ? { ...e, error, isLoading: false, status: 'error' as const } : e;
+      return {
+        floating: inFloating ? state.floating.map(update) : state.floating,
+        trail: inTrail ? state.trail.map(update) : state.trail,
+      };
+    }
+
+    if (params && errorEntry) {
+      const patchOrFn = params.insertStatePatch(errorEntry);
+      return typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
+    }
+
+    return {};
   });
 }
 
@@ -157,17 +175,20 @@ export function handleResolverSuccess<TData, TContext, TPopoverKey extends strin
     wrapResult(() => activeCache.set(key, data));
   }
 
-  dispatchStoreEvent(deps.eventListeners, { type: 'resolve_success', key, data });
+  dispatchStoreEvent(deps.eventListeners, { type: 'resolve_success', key, data }, deps.eventBus);
 
   deps.safeSet((state) => {
-    const patchOrFn = params.insertStatePatch(successEntry);
-    const computedPatch = typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
+    // Single membership scan; the caller's insert patch is computed lazily
+    // and only when the entry actually vanished mid-flight.
+    if (state.floating.some((e) => e.key === key)) {
+      return { floating: state.floating.map((e) => (e.key === key ? successEntry : e)) };
+    }
+    if (state.trail.some((e) => e.key === key)) {
+      return { trail: state.trail.map((e) => (e.key === key ? successEntry : e)) };
+    }
 
-    return findEntryInStore(state.floating, state.trail, key)
-      ? state.floating.some((e) => e.key === key)
-        ? { floating: state.floating.map((e) => (e.key === key ? successEntry : e)) }
-        : { trail: state.trail.map((e) => (e.key === key ? successEntry : e)) }
-      : computedPatch;
+    const patchOrFn = params.insertStatePatch(successEntry);
+    return typeof patchOrFn === 'function' ? patchOrFn(state) : patchOrFn;
   });
 }
 
@@ -182,9 +203,15 @@ export function startInFlightResolver<
   activeResolver: PopoverResolver<TData, TContext>,
   currentContext: TContext,
   deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
+  params?: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
+  buildEntry?: (
+    data?: TData | null,
+    error?: Error | null,
+    isLoading?: boolean,
+  ) => TrailEntry<TData, TPopoverKey>,
 ): { isSync: true; result: TData } | { isSync: false; hasError: boolean } {
-  const { eventListeners, registerController, removeController, inFlightPromises } = deps;
-  dispatchStoreEvent(eventListeners, { type: 'resolve_start', key });
+  const { eventListeners, registerController, removeController, inFlightPromises, eventBus } = deps;
+  dispatchStoreEvent(eventListeners, { type: 'resolve_start', key }, eventBus);
   const controller = registerController(controllerKey);
 
   const resolveAttempt = wrapResult(() =>
@@ -198,27 +225,35 @@ export function startInFlightResolver<
   );
 
   if (isErr(resolveAttempt)) {
-    removeController(controllerKey);
-    handleResolverError(resolveAttempt.error.cause ?? resolveAttempt.error, key, deps);
+    removeController(controllerKey, controller);
+    const error = toError(resolveAttempt.error.cause ?? resolveAttempt.error);
+    const errorEntry = buildEntry ? buildEntry(null, error, false) : undefined;
+    handleResolverError(error, key, deps, params, errorEntry);
     return { isSync: false, hasError: true };
   }
 
   const res = resolveAttempt.data;
 
   if (isPromise(res)) {
-    const promise: Promise<TData> = (async () => {
+    // Holder indirection lets the cleanup closure compare its own registered
+    // promise against the map without a definite-assignment self-reference.
+    const tracked: { promise?: Promise<TData> } = {};
+    tracked.promise = (async () => {
       try {
         return (await res) as TData;
       } finally {
-        inFlightPromises.delete(key);
-        removeController(controllerKey);
+        // Identity guard: a newer resolution may have replaced this entry.
+        if (tracked.promise && inFlightPromises.get(key) === tracked.promise) {
+          inFlightPromises.delete(key);
+        }
+        removeController(controllerKey, controller);
       }
     })();
-    inFlightPromises.set(key, promise);
+    inFlightPromises.set(key, tracked.promise);
     return { isSync: false, hasError: false };
   }
 
-  removeController(controllerKey);
+  removeController(controllerKey, controller);
   return { isSync: true, result: res as TData };
 }
 
@@ -253,7 +288,9 @@ export async function awaitInFlightResolution<
       storeCache,
     );
   } else {
-    handleResolverError(asyncResult.error.cause ?? asyncResult.error, key, deps);
+    const error = toError(asyncResult.error.cause ?? asyncResult.error);
+    const errorEntry = buildEntry(null, error, false);
+    handleResolverError(error, key, deps, params, errorEntry);
   }
 }
 
@@ -288,6 +325,8 @@ export function tryLaunchSyncResolver<
     activeResolver,
     currentContext,
     deps,
+    params,
+    buildEntry,
   );
 
   if (launch.isSync) {

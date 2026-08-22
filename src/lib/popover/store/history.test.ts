@@ -141,6 +141,51 @@ describe('HistoryManager', () => {
     expect(history.undoStack).toHaveLength(1);
   });
 
+  it('pushes snapshot when zIndexOrder changes (e.g. bringToFront)', () => {
+    const history = createHistoryManager(5);
+    const trailRef = [{ key: 'card-1', isLoading: false, error: null }];
+
+    const state1 = createMockStoreState({
+      trail: trailRef,
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: ['card-1', 'card-2'],
+      ownerId: 'owner-1',
+    });
+
+    const state2 = createMockStoreState({
+      trail: trailRef,
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: ['card-2', 'card-1'],
+      ownerId: 'owner-1',
+    });
+
+    history.pushSnapshot(state1);
+    expect(history.undoStack).toHaveLength(1);
+
+    history.pushSnapshot(state2);
+    expect(history.undoStack).toHaveLength(2);
+    expect(history.undoStack[1]?.zIndexOrder).toEqual(['card-2', 'card-1']);
+  });
+
+  it('safely clamps capacity <= 0 to at least 1 in RingBuffer', () => {
+    const history = createHistoryManager(0);
+    const mockState = createMockStoreState({
+      trail: [{ key: 'c1', isLoading: false, error: null }],
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: ['c1'],
+      ownerId: 'o1',
+    });
+
+    expect(() => history.pushSnapshot(mockState)).not.toThrow();
+    expect(history.undoStack).toHaveLength(1);
+  });
+
   it('cleans up via dispose() and Symbol.dispose', () => {
     const history = createHistoryManager(5);
     history.pushSnapshot(

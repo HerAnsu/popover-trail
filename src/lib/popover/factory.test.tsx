@@ -23,5 +23,6 @@ describe('createPopoverTrail factory', () => {
     expect(schema.keys).toEqual({ profile: 'profile' });
     expect(typeof schema.createResolver).toBe('function');
     expect(schema.Trigger).toBeDefined();
+    expect(schema.PopoverProvider).toBeDefined();
   });
 });

@@ -130,6 +130,8 @@ describe('Popover FSM Engine', () => {
 
     expect(isValidTransitionStatusChange('mounting', 'mounted')).toBe(true);
     expect(isValidTransitionStatusChange('unmounting', 'mounted')).toBe(false);
+    expect(isValidTransitionStatusChange('mounted', 'mounting')).toBe(true);
+    expect(isValidTransitionStatusChange('mounted', 'unmounting')).toBe(true);
   });
 
   it('supports bitmask queries (getStatusBit, isActive, isResolved)', () => {
@@ -154,5 +156,15 @@ describe('Popover FSM Engine', () => {
     fsm.send({ type: 'OPEN_ROOT', key: 'card-dispose' });
 
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('transitions from Unmounting back to Hydrating on OPEN_ROOT or PUSH_NESTED', () => {
+    const fsm = createPopoverFSM<string>('card-reopen');
+    fsm.send({ type: 'OPEN_ROOT', key: 'card-reopen' });
+    fsm.send({ type: 'CLOSE' });
+    expect(fsm.getState().value).toBe('Unmounting');
+
+    fsm.send({ type: 'OPEN_ROOT', key: 'card-reopen' });
+    expect(fsm.getState().value).toBe('Hydrating');
   });
 });

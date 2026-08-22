@@ -17,7 +17,7 @@ export interface ControllerManager<TData = unknown, TPopoverKey extends string =
   activeControllers: Map<TPopoverKey, AbortController>;
   inFlightPromises: Map<TPopoverKey, Promise<TData>>;
   registerController: (key: TPopoverKey) => AbortController;
-  removeController: (key: TPopoverKey) => void;
+  removeController: (key: TPopoverKey, controller?: AbortController) => void;
   abortControllersForKeys: (keys: Iterable<TPopoverKey>) => void;
   abortAllControllers: () => void;
   hasInFlight: (key: TPopoverKey) => boolean;
@@ -52,7 +52,10 @@ export function createControllerManager<
     return controller;
   };
 
-  const removeController = (key: TPopoverKey): void => {
+  const removeController = (key: TPopoverKey, controller?: AbortController): void => {
+    // With an identity reference, never remove a newer controller that a
+    // concurrent resolution has registered under the same key.
+    if (controller && activeControllers.get(key) !== controller) return;
     activeControllers.delete(key);
   };
 

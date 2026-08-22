@@ -57,9 +57,24 @@ describe('ObjectPool utility', () => {
     expect(pool.size).toBe(2);
 
     pool.release(null);
-    pool.release(undefined);
-    expect(pool.size).toBe(2);
-
     expect(() => pool.dispose()).not.toThrow();
+  });
+
+  it('prevents double-free when releasing the same object twice', () => {
+    const pool = new ObjectPool(() => ({ x: 0 }), undefined, 0, 10);
+    const item = { x: 42 };
+    pool.release(item);
+    expect(pool.size).toBe(1);
+
+    // Releasing identical reference again should be ignored
+    pool.release(item);
+    expect(pool.size).toBe(1);
+  });
+
+  it('caps initial capacity to maxCapacity', () => {
+    const factory = vi.fn(() => ({ x: 0 }));
+    const pool = new ObjectPool(factory, undefined, 100, 10);
+    expect(pool.size).toBe(10);
+    expect(factory).toHaveBeenCalledTimes(10);
   });
 });

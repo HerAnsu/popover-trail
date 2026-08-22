@@ -2854,4 +2854,137 @@ describe('createPopoverStore', () => {
       expect(store2.getState().offsets['custom-btn-card']).toEqual({ x: 123.45, y: 678.9 });
     });
   });
+
+  describe('resolver pipeline edge-case regressions', () => {
+    it('setResolveData marks in-flight resolutions from the previous resolver as stale', async () => {
+      let releaseOld!: (data: { v: string }) => void;
+      const oldResolver = (_key: string) =>
+        new Promise<{ v: string }>((resolve) => {
+          releaseOld = resolve;
+        });
+
+      const store = createPopoverStore(oldResolver);
+      const opening = store.getState().openRootWithResolver('item-a', createMockAnchor());
+      expect(store.getState().trail[0]?.isLoading).toBe(true);
+
+      store.getState().setResolveData(async () => ({ v: 'new' }));
+
+      // The swapped-out resolver ignores its AbortSignal and tries to commit late.
+      releaseOld({ v: 'old' });
+      await opening;
+
+      const entry = store.getState().trail.find((e) => e.key === 'item-a');
+      expect(entry?.data?.v).not.toBe('old');
+    });
+
+    it('invalidate retriggers resolution for an in-flight loading popover', async () => {
+      let callCount = 0;
+      let releaseFirst!: () => void;
+      const resolver = async () => {
+        callCount++;
+        if (callCount === 1) {
+          await new Promise<void>((resolve) => {
+            releaseFirst = resolve;
+          });
+          return { v: 'first' };
+        }
+        return { v: 'second' };
+      };
+
+      const store = createPopoverStore(resolver);
+      const opening = store.getState().openRootWithResolver('item-a', createMockAnchor());
+      expect(store.getState().trail[0]?.isLoading).toBe(true);
+
+      await store.getState().invalidate('item-a');
+
+      const entry = store.getState().trail.find((e) => e.key === 'item-a');
+      expect(entry?.data?.v).toBe('second');
+
+      // The abandoned first resolution must not commit after being released.
+      releaseFirst();
+      await opening;
+      expect(store.getState().trail.find((e) => e.key === 'item-a')?.data?.v).toBe('second');
+    });
+
+    it('preserves entry mutations that happen while a resolver is in flight', async () => {
+      let release!: (data: { v: string }) => void;
+      const resolver = (_key: string) =>
+        new Promise<{ v: string }>((resolve) => {
+          release = resolve;
+        });
+
+      const store = createPopoverStore(resolver);
+      const opening = store.getState().openRootWithResolver('item-a', createMockAnchor());
+
+      // Pin while the resolver is still in flight.
+      store.getState().togglePin('item-a');
+      expect(store.getState().floating).toHaveLength(1);
+
+      release({ v: 'late' });
+      await opening;
+
+      const entry = store.getState().floating.find((e) => e.key === 'item-a');
+      expect(entry?.pinnedLayoutPos ?? null).not.toBeNull();
+      expect(entry?.data?.v).toBe('late');
+    });
+
+    it('prefetch does not drop a controller registered by a concurrent resolution', async () => {
+      const signals: AbortSignal[] = [];
+      let releaseFirst!: () => void;
+      let callCount = 0;
+      const resolver = (
+        _key: string,
+        _parentData: unknown,
+        _ctx: unknown,
+        signal?: AbortSignal,
+      ) => {
+        if (signal) signals.push(signal);
+        callCount++;
+        if (callCount === 1) {
+          return new Promise<{ v: string }>((resolve) => {
+            releaseFirst = () => resolve({ v: 'prefetch' });
+          });
+        }
+        return new Promise<{ v: string }>((resolve) => {
+          setTimeout(resolve, 5, { v: 'nested' });
+        });
+      };
+
+      const store = createPopoverStore(resolver);
+      store.getState().openRoot('owner-1', { key: 'root' } as TrailEntry<{ v: string }>);
+
+      const prefetching = store.getState().prefetchPopover('child');
+      const nested = store.getState().openNestedWithResolver('child', 'root', {
+        forceRefresh: true,
+      });
+
+      // Prefetch settles while the nested resolution is still in flight.
+      releaseFirst();
+      await prefetching;
+
+      // The nested controller must survive the prefetch teardown...
+      expect(signals[1]?.aborted).toBe(false);
+
+      // ...so closing everything can still abort it.
+      store.getState().closeAll();
+      expect(signals[1]?.aborted).toBe(true);
+
+      await nested;
+    });
+
+    it('inserts error card into trail when resolver synchronously throws on initial open', async () => {
+      const syncFailingResolver = (_key: string) => {
+        throw new Error('Immediate sync failure');
+      };
+
+      const store = createPopoverStore(syncFailingResolver);
+      await store.getState().openRootWithResolver('sync-err-card', createMockAnchor());
+
+      const state = store.getState();
+      expect(state.trail).toHaveLength(1);
+      expect(state.trail[0]?.key).toBe('sync-err-card');
+      expect(state.trail[0]?.status).toBe('error');
+      expect(state.trail[0]?.error?.message).toBe('Immediate sync failure');
+    });
+  });
 });

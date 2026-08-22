@@ -34,4 +34,5 @@ dist-ssr
 # Architecture & store analysis docs
 docs/STORE_ARCHITECTURE_AND_IMPROVEMENTS.md
 repomix-output.xml
+.zcode/
 

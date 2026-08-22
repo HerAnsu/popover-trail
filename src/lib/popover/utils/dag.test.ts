@@ -99,4 +99,11 @@ describe('PopoverDAG utility', () => {
     expect(dag.hasNode('child')).toBe(true);
     expect(dag.getNode('child')?.parentKey).toBeUndefined();
   });
+
+  it('normalizes self-referential parentKey to undefined', () => {
+    const dag = new PopoverDAG();
+    dag.addNode('self-node', 'self-node');
+    expect(dag.getNode('self-node')?.parentKey).toBeUndefined();
+    expect(dag.getDescendantKeys('self-node').size).toBe(0);
+  });
 });

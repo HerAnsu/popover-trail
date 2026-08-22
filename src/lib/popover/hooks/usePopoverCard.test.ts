@@ -49,5 +49,17 @@ describe('usePopoverCard hook & keyboard navigation', () => {
       expect(event.preventDefault).toHaveBeenCalled();
       expect(actions.closeFrom).toHaveBeenCalledWith(1);
     });
+
+    it('closes pinned card via closeByKey when Escape is pressed on pinned card', () => {
+      const entry: TrailEntry = { key: 'pinned-win', isLoading: false, error: null };
+      const event = createMockKeyEvent('Escape');
+      const actions = { closeFrom: vi.fn(), closeByKey: vi.fn() };
+
+      handleCardKeyboardNavigation(event, null, entry, true, true, [], 1, actions);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(actions.closeByKey).toHaveBeenCalledWith('pinned-win');
+      expect(actions.closeFrom).not.toHaveBeenCalled();
+    });
   });
 });

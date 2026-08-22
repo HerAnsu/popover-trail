@@ -64,20 +64,12 @@ export function buildFloatingMiddlewareList(
 }
 
 export function useVirtualAnchorElement(anchorRect: DOMRect | null | undefined) {
-  const anchorRectHash = anchorRect
-    ? Math.imul(Math.round(anchorRect.top), 73856093) ^
-      Math.imul(Math.round(anchorRect.left), 19349663) ^
-      Math.imul(Math.round(anchorRect.width), 83492791) ^
-      Math.imul(Math.round(anchorRect.height), 4256233)
-    : 0;
-
   return useMemo(() => {
     if (!anchorRect) return null;
     return {
       getBoundingClientRect: () => anchorRect,
     };
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [anchorRectHash]);
+  }, [anchorRect]);
 }
 
 export function useFloatingResizeObserver(

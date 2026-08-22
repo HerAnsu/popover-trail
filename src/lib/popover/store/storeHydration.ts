@@ -27,7 +27,7 @@ function clearRecordKeys(record: Record<string, unknown>): void {
  */
 export function createHydrationManager() {
   let rootCounter = 0;
-  const nestedCounters: Record<string, number> = {};
+  const nestedCounters: Record<string, number> = Object.create(null);
 
   const incrementRootCounter = (): number => {
     rootCounter += 1;
@@ -53,6 +53,19 @@ export function createHydrationManager() {
     delete nestedCounters[parentKey];
   };
 
+  /**
+   * Bumps the root counter and every nested counter at once, marking all
+   * in-flight resolutions stale. Used when the active resolver is replaced:
+   * resolvers that ignore their AbortSignal must not commit data produced
+   * by the previous resolver.
+   */
+  const markAllCountersStale = (): void => {
+    rootCounter += 1;
+    for (const parentKey of Object.keys(nestedCounters)) {
+      nestedCounters[parentKey] = (nestedCounters[parentKey] ?? 0) + 1;
+    }
+  };
+
   const resetHydrationCounters = () => {
     rootCounter = 0;
     clearRecordKeys(nestedCounters as Record<string, unknown>);
@@ -66,6 +79,7 @@ export function createHydrationManager() {
     incrementNestedCounter,
     isNestedStale,
     deleteNestedCounter,
+    markAllCountersStale,
     resetHydrationCounters,
   };
 }

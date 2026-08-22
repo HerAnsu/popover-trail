@@ -69,7 +69,10 @@ export async function resolvePopoverEntry<
       parentKey,
       rect ?? null,
       options,
-      existingEntry,
+      // Re-read at call time: the entry may be pinned, dragged, or otherwise
+      // mutated while a resolver is in flight. Committing a snapshot taken
+      // before the await would revert those mutations on success.
+      findEntryInStore(get().floating, get().trail, key),
       data ?? undefined,
       error,
       isLoading,
@@ -89,6 +92,8 @@ export async function resolvePopoverEntry<
       params,
       safeSet,
       buildEntry,
+      deps.eventListeners,
+      deps.eventBus,
     )
   ) {
     return;

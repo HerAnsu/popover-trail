@@ -53,6 +53,7 @@ export function createMockSliceContext<
     isRootStale: () => false,
     incrementNestedCounter: () => 1,
     isNestedStale: () => false,
+    markAllCountersStale: () => {},
     resolvePopoverEntry: () => Promise.resolve(),
     transitionScheduler,
     eventBus,

@@ -443,12 +443,12 @@ export function usePopoverHydration<
         data: undefined,
         error: entry.error,
       };
-    } else if (entry.data !== undefined) {
+    } else if (!entry.isLoading && !entry.error) {
       state = {
         status: 'hydrated',
         isHydrating: false,
         isHydrated: true,
-        data: entry.data,
+        data: (entry.data ?? null) as TData | null,
         error: null,
       };
     }

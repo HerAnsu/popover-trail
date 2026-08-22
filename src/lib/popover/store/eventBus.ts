@@ -186,20 +186,36 @@ export class PopoverEventBus<
 
     this.warnIfOverCapacity();
 
+    // Re-registering an existing listener must replace its native handler.
+    // Otherwise the previous handler stays attached to the EventTarget and
+    // keeps firing after the Map entry (and any later off()) is gone.
+    const existingHandler = subscribersForType.get(listener);
+    if (existingHandler) {
+      this.target.removeEventListener(type, existingHandler);
+    }
+
+    const { once, ...nativeOptions } = options ?? {};
+
     const handler: EventListener = (e: Event) => {
-      if (isPopoverCustomEvent<K, TData, TPopoverKey>(e, type)) {
-        const result = wrapResult(() => listener(e));
-        if (isErr(result)) {
-          console.error(
-            `[popover-trail]: Exception in EventBus listener for "${type}":`,
-            result.error,
-          );
-        }
+      if (!isPopoverCustomEvent<K, TData, TPopoverKey>(e, type)) return;
+
+      // Native `once` removes only the DOM listener; clean the registry entry
+      // too so `size` stays accurate and closed-over handlers are released.
+      if (once) {
+        this.off(type, listener);
+      }
+
+      const result = wrapResult(() => listener(e));
+      if (isErr(result)) {
+        console.error(
+          `[popover-trail]: Exception in EventBus listener for "${type}":`,
+          result.error,
+        );
       }
     };
 
     subscribersForType.set(listener, handler);
-    this.target.addEventListener(type, handler, options);
+    this.target.addEventListener(type, handler, nativeOptions);
 
     return () => {
       this.off(type, listener, options);
@@ -302,9 +318,10 @@ function extractEventPayload<TData, TPopoverKey extends string>(
   return payload as PopoverEventPayloadMap<TData, TPopoverKey>[PopoverEventType];
 }
 
-export function dispatchStoreEvent<TData>(
+export function dispatchStoreEvent<TData, TPopoverKey extends string = string>(
   listeners: ReadonlySet<(event: PopoverStoreEvent<TData>) => void> | undefined,
   event: PopoverStoreEvent<TData>,
+  localEventBus?: PopoverEventBus<TData, TPopoverKey>,
 ): void {
   if (listeners) {
     for (const listener of listeners) {
@@ -321,15 +338,23 @@ export function dispatchStoreEvent<TData>(
       rawType.startsWith('popover:') ? rawType : `popover:${rawType}`
     ) as PopoverEventType;
 
-    const payload = extractEventPayload<unknown, string>(event);
+    const payload = extractEventPayload<TData, TPopoverKey>(event);
 
-    globalPopoverEventBus.emit(canonicalType, payload);
+    globalPopoverEventBus.emit(canonicalType, payload as PopoverEventPayloadMap[PopoverEventType]);
+    localEventBus?.emit(
+      canonicalType,
+      payload as PopoverEventPayloadMap<TData, TPopoverKey>[PopoverEventType],
+    );
 
     const aliases = ALIAS_PROJECTIONS[rawType];
     if (aliases) {
       for (const alias of aliases) {
         if (alias !== canonicalType) {
-          globalPopoverEventBus.emit(alias, payload);
+          globalPopoverEventBus.emit(alias, payload as PopoverEventPayloadMap[PopoverEventType]);
+          localEventBus?.emit(
+            alias,
+            payload as PopoverEventPayloadMap<TData, TPopoverKey>[PopoverEventType],
+          );
         }
       }
     }

@@ -107,4 +107,63 @@ describe('slicePersistence module', () => {
     unsub();
     expect(ctx.deps.eventListeners.has(listener)).toBe(false);
   });
+
+  it('restores PopoverDAG hierarchy nodes on rehydrateState', async () => {
+    const { ctx, storage } = createMockContext();
+    const persistence = createPersistenceSlice(ctx);
+
+    const payload = JSON.stringify({
+      version: '1.1',
+      floating: [{ key: 'pinned-root' }, { key: 'pinned-child', parentKey: 'pinned-root' }],
+      offsets: {},
+      pinnedStates: { 'pinned-root': true, 'pinned-child': true },
+      zIndexOrder: ['pinned-root', 'pinned-child'],
+    });
+
+    await storage.setItem('dag_rehydrate_test', payload);
+    const ok = await persistence.rehydrateState({ storage, key: 'dag_rehydrate_test' });
+
+    expect(ok).toBe(true);
+    expect(ctx.deps.popoverDAG?.hasNode('pinned-root')).toBe(true);
+    expect(ctx.deps.popoverDAG?.hasNode('pinned-child')).toBe(true);
+    expect(ctx.deps.popoverDAG?.getDescendantKeys('pinned-root').has('pinned-child')).toBe(true);
+  });
+
+  it('restores PopoverDAG hierarchy nodes on undo and redo', () => {
+    const { ctx } = createMockContext();
+    const persistence = createPersistenceSlice(ctx);
+
+    // Initial state with root
+    ctx.state = {
+      ...ctx.state,
+      trail: [{ key: 'h-root', isLoading: false, error: null }],
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: ['h-root'],
+      ownerId: 'o1',
+    };
+    ctx.deps.historyManager?.pushSnapshot(ctx.state);
+
+    // Modified state with child
+    ctx.state = {
+      ...ctx.state,
+      trail: [
+        { key: 'h-root', isLoading: false, error: null },
+        { key: 'h-child', parentKey: 'h-root', isLoading: false, error: null },
+      ],
+      zIndexOrder: ['h-root', 'h-child'],
+    };
+    ctx.deps.popoverDAG?.addNode('h-root');
+    ctx.deps.popoverDAG?.addNode('h-child', 'h-root');
+
+    // Undo -> should restore DAG to only have h-root
+    persistence.undo();
+    expect(ctx.deps.popoverDAG?.hasNode('h-child')).toBe(false);
+    expect(ctx.deps.popoverDAG?.hasNode('h-root')).toBe(true);
+
+    // Redo -> should restore DAG to have h-child again
+    persistence.redo();
+    expect(ctx.deps.popoverDAG?.hasNode('h-child')).toBe(true);
+  });
 });

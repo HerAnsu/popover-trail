@@ -85,6 +85,7 @@ class ResizeObserverRegistryImpl {
         currentSet.delete(callback);
         if (currentSet.size === 0) {
           this.listeners.delete(element);
+          this.pendingEntries.delete(element);
           this.observer?.unobserve(element);
         }
       }

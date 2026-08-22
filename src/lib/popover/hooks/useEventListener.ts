@@ -35,9 +35,10 @@ export function useEventListener<K extends keyof WindowEventMap>(
       savedHandler.current(event as WindowEventMap[K]);
     };
 
-    target.addEventListener(eventName, listener, optionsRef.current);
+    const currentOptions = options;
+    target.addEventListener(eventName, listener, currentOptions);
     return () => {
-      target.removeEventListener(eventName, listener, optionsRef.current);
+      target.removeEventListener(eventName, listener, currentOptions);
     };
-  }, [eventName, element]);
+  }, [eventName, element, options]);
 }

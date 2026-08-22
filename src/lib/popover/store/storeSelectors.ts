@@ -163,6 +163,20 @@ export function selectChildrenKeys<TPopoverKey extends string = string>(key: str
     collectChildrenKeys(state.floating, state.trail, key);
 }
 
+/**
+ * Builds a key→entry lookup index in a single pass over both lists.
+ * Mirrors `findEntryInStore` precedence: on duplicate keys the floating entry wins.
+ */
+function buildEntryIndex<TData, TPopoverKey extends string>(
+  floating: readonly TrailEntry<unknown, TPopoverKey>[],
+  trail: readonly TrailEntry<unknown, TPopoverKey>[],
+): Map<string, TrailEntry<TData, TPopoverKey>> {
+  const index = new Map<string, TrailEntry<TData, TPopoverKey>>();
+  for (const e of trail) index.set(e.key, e as TrailEntry<TData, TPopoverKey>);
+  for (const e of floating) index.set(e.key, e as TrailEntry<TData, TPopoverKey>);
+  return index;
+}
+
 function buildBreadcrumbPath<TPopoverKey extends string>(
   floating: readonly TrailEntry<unknown, TPopoverKey>[],
   trail: readonly TrailEntry<unknown, TPopoverKey>[],
@@ -171,14 +185,12 @@ function buildBreadcrumbPath<TPopoverKey extends string>(
   const path: TPopoverKey[] = [];
   let currentKey: string | undefined = key;
   const visited = new Set<string>();
+  // One index build replaces the previous O(depth × n) repeated list scans.
+  const index = buildEntryIndex<unknown, TPopoverKey>(floating, trail);
 
   while (currentKey && !visited.has(currentKey)) {
     visited.add(currentKey);
-    const entry: TrailEntry<unknown, TPopoverKey> | undefined = findEntryInStore(
-      floating,
-      trail,
-      currentKey,
-    );
+    const entry: TrailEntry<unknown, TPopoverKey> | undefined = index.get(currentKey);
     if (!entry) break;
 
     path.push(entry.key);
@@ -199,14 +211,12 @@ export function selectPopoverDepth<TPopoverKey extends string = string>(key: str
     let depth = 0;
     let currentKey: string | undefined = key;
     const visited = new Set<string>();
+    // One index build replaces the previous O(depth × n) repeated list scans.
+    const index = buildEntryIndex<unknown, TPopoverKey>(state.floating, state.trail);
 
     while (currentKey && !visited.has(currentKey)) {
       visited.add(currentKey);
-      const entry: TrailEntry<unknown, TPopoverKey> | undefined = findEntryInStore(
-        state.floating,
-        state.trail,
-        currentKey,
-      );
+      const entry: TrailEntry<unknown, TPopoverKey> | undefined = index.get(currentKey);
       const parentKey: TPopoverKey | undefined = entry?.parentKey ?? entry?.originalParentKey;
       if (!parentKey) break;
       depth++;
@@ -223,12 +233,15 @@ export function selectTrailBranch<TData = unknown, TPopoverKey extends string = 
   return (
     state: HasActiveEntriesState<TData, TPopoverKey>,
   ): readonly TrailEntry<TData, TPopoverKey>[] => {
-    const breadcrumbKeys = new Set(selectBreadcrumbs(key)(state));
-    const childrenKeys = new Set(selectChildrenKeys(key)(state));
+    const breadcrumbKeys = new Set(buildBreadcrumbPath(state.floating, state.trail, key));
+    const childrenKeys = new Set(collectChildrenKeys(state.floating, state.trail, key));
+    const match = (entry: TrailEntry<TData, TPopoverKey>) =>
+      breadcrumbKeys.has(entry.key) || childrenKeys.has(entry.key);
 
-    return [...state.floating, ...state.trail].filter(
-      (entry) => breadcrumbKeys.has(entry.key) || childrenKeys.has(entry.key),
-    );
+    const matches = [...state.floating.filter(match), ...state.trail.filter(match)];
+    return matches.length > 0
+      ? matches
+      : (EMPTY_ARRAY as readonly TrailEntry<TData, TPopoverKey>[]);
   };
 }
 

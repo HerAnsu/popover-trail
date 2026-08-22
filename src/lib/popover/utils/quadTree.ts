@@ -49,10 +49,20 @@ function isValidQuadItem<TId extends string = string>(item: unknown): item is Qu
     typeof item === 'object' &&
     item !== null &&
     'id' in item &&
-    Boolean(item.id) &&
+    Boolean((item as QuadItem<TId>).id) &&
     'bounds' in item &&
-    typeof item.bounds === 'object' &&
-    item.bounds !== null
+    typeof (item as QuadItem<TId>).bounds === 'object' &&
+    (item as QuadItem<TId>).bounds !== null &&
+    typeof (item as QuadItem<TId>).bounds.x === 'number' &&
+    Number.isFinite((item as QuadItem<TId>).bounds.x) &&
+    typeof (item as QuadItem<TId>).bounds.y === 'number' &&
+    Number.isFinite((item as QuadItem<TId>).bounds.y) &&
+    typeof (item as QuadItem<TId>).bounds.width === 'number' &&
+    Number.isFinite((item as QuadItem<TId>).bounds.width) &&
+    (item as QuadItem<TId>).bounds.width >= 0 &&
+    typeof (item as QuadItem<TId>).bounds.height === 'number' &&
+    Number.isFinite((item as QuadItem<TId>).bounds.height) &&
+    (item as QuadItem<TId>).bounds.height >= 0
   );
 }
 

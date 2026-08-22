@@ -2,6 +2,7 @@ import React, { type ReactNode, type ElementType } from 'react';
 import { clsx } from '../../utils/clsx';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
+import { getPolymorphicProps } from '../../utils/componentUtils';
 
 /**
  * Sub-component for the Undo Action Button.
@@ -30,7 +31,7 @@ export function PopoverTimelineUndoButton<E extends ElementType = 'button'>({
   disabled,
   ...restProps
 }: PopoverTimelineUndoButtonProps<E>) {
-  const Component = as || 'button';
+  const { Component, buttonProps } = getPolymorphicProps(as);
   const { timeline } = usePopoverTimelineScope();
 
   const isDisabled = disabled ?? !timeline.canUndo;
@@ -50,6 +51,7 @@ export function PopoverTimelineUndoButton<E extends ElementType = 'button'>({
 
   return (
     <Component
+      {...buttonProps}
       className={mergedClassName}
       disabled={isDisabled}
       aria-label="Undo Popover Action"
@@ -87,7 +89,7 @@ export function PopoverTimelineRedoButton<E extends ElementType = 'button'>({
   disabled,
   ...restProps
 }: PopoverTimelineRedoButtonProps<E>) {
-  const Component = as || 'button';
+  const { Component, buttonProps } = getPolymorphicProps(as);
   const { timeline } = usePopoverTimelineScope();
 
   const isDisabled = disabled ?? !timeline.canRedo;
@@ -107,6 +109,7 @@ export function PopoverTimelineRedoButton<E extends ElementType = 'button'>({
 
   return (
     <Component
+      {...buttonProps}
       className={mergedClassName}
       disabled={isDisabled}
       aria-label="Redo Popover Action"

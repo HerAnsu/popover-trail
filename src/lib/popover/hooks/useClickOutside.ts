@@ -36,7 +36,13 @@ function isElementMatchingPopover(
   escapedIgnoreClass?: string | null,
   ignoreClass?: string | null,
 ): boolean {
-  const matchResult = wrapResult(() => el.matches(popoverSelector));
+  const matchResult = wrapResult(
+    () =>
+      el.matches(popoverSelector) ||
+      el.matches('.popover-card') ||
+      el.matches('[data-key]') ||
+      el.matches('[role="dialog"]'),
+  );
   if (isOk(matchResult) && matchResult.data) return true;
 
   if (escapedIgnoreClass) {
@@ -122,7 +128,7 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
         return;
       }
 
-      state.clearTrail();
+      state.clearTrail({ transition: true });
     };
 
     const eventType =

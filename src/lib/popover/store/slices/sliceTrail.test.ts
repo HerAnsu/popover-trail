@@ -109,4 +109,23 @@ describe('sliceTrail module', () => {
 
     expect(popoverDAG.hasNode('child-1')).toBe(false);
   });
+
+  it('clearTrail preserves pinned floating cards when clearing the active trail', () => {
+    const { ctx, getState } = createMockContext();
+    // Add a pinned floating card and an active trail
+    ctx.state = {
+      ...ctx.state,
+      floating: [{ key: 'pinned-win', isLoading: false, error: null }],
+      pinnedStates: { 'pinned-win': true },
+      trail: [{ key: 'trail-root', isLoading: false, error: null }],
+      zIndexOrder: ['pinned-win', 'trail-root'],
+    };
+
+    const trailSlice = createTrailSlice(ctx);
+    trailSlice.clearTrail();
+
+    expect(getState().trail).toHaveLength(0);
+    expect(getState().floating).toHaveLength(1);
+    expect(getState().floating[0]?.key).toBe('pinned-win');
+  });
 });

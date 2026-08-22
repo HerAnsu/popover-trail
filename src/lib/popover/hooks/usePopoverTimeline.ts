@@ -104,12 +104,16 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
       const targetStep = history[stepIndex];
       if (!targetStep) return;
 
+      if (trail.length > 0 && stepIndex < trail.length - 1) {
+        actions.closeFrom(stepIndex + 1);
+      }
+
       // Bring target popover to front and focus
       if (targetStep.primaryKey) {
         actions.bringToFront(targetStep.primaryKey);
       }
     },
-    [history, actions],
+    [history, trail.length, actions],
   );
 
   useDebugValue(

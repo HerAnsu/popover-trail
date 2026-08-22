@@ -56,11 +56,12 @@ export class PopoverDAG<TPopoverKey extends string = string> {
    * @param parentKey - Optional parent popover key.
    */
   addNode(key: TPopoverKey, parentKey?: TPopoverKey): void {
+    const cleanParentKey = parentKey === key ? undefined : parentKey;
     let node = this.nodes.get(key);
     if (!node) {
       node = {
         key,
-        parentKey,
+        parentKey: cleanParentKey,
         childrenKeys: new Set<TPopoverKey>(),
         depth: 0,
       };
@@ -68,18 +69,18 @@ export class PopoverDAG<TPopoverKey extends string = string> {
     } else {
       // Reparenting: cleanly unlink from previous parent if it changed
       const oldParentKey = node.parentKey;
-      if (oldParentKey && oldParentKey !== parentKey) {
+      if (oldParentKey && oldParentKey !== cleanParentKey) {
         const oldParentNode = this.nodes.get(oldParentKey);
         if (oldParentNode) {
           oldParentNode.childrenKeys.delete(key);
         }
       }
-      node.parentKey = parentKey;
+      node.parentKey = cleanParentKey;
     }
 
     // Link into parent's children set and recalculate relative depth
-    if (parentKey && parentKey !== key) {
-      const parentNode = this.nodes.get(parentKey);
+    if (cleanParentKey) {
+      const parentNode = this.nodes.get(cleanParentKey);
       if (parentNode) {
         parentNode.childrenKeys.add(key);
         node.depth = parentNode.depth + 1;

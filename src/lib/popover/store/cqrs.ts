@@ -230,6 +230,10 @@ export class PopoverCommandBus<
     this.getActions().pushNested(index, entry);
   }
 
+  pushNested(index: number, entry: TrailEntry<TData, TPopoverKey>): void {
+    this.getActions().pushNested(index, entry);
+  }
+
   async openRootWithResolver(
     keyOrName: TPopoverKey,
     anchorEvent?: AnchorEventLike,
@@ -254,7 +258,11 @@ export class PopoverCommandBus<
     this.getActions().closeTopmost(options);
   }
 
-  clearTrail(): void {
+  clearTrail(options?: { transition?: boolean }): void {
+    if (options !== undefined) {
+      this.getActions().clearTrail(options);
+      return;
+    }
     this.getActions().clearTrail();
   }
 
@@ -274,8 +282,10 @@ export class PopoverCommandBus<
     this.getActions().updateOffset(key, x, y);
   }
 
-  async retry(key: TPopoverKey): Promise<void> {
-    await this.getActions().retryPopover(key);
+  async retry(key: TPopoverKey, options?: Readonly<{ forceRefresh?: boolean }>): Promise<void> {
+    await (options !== undefined
+      ? this.getActions().retryPopover(key, options)
+      : this.getActions().retryPopover(key));
   }
 
   async prefetch(key: TPopoverKey, parentData?: TData): Promise<TData | undefined> {
@@ -317,7 +327,7 @@ export class PopoverCommandBus<
   }
 
   dispose(): void {
-    this.clearAll();
+    this.getActions().destroy?.();
   }
 
   [DISPOSE_SYMBOL](): void {
