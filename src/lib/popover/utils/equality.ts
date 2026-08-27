@@ -1,6 +1,4 @@
-function isRecord(val: unknown): val is Record<string, unknown> {
-  return typeof val === 'object' && val !== null && !Array.isArray(val);
-}
+import { isRecord, isUnsafeKey } from './safeKeys';
 
 /**
  * Shallow equality comparison utility for plain objects, arrays, and primitive values.
@@ -53,7 +51,7 @@ function areObjectsDeepEqual(
   const keysA = Object.keys(recA);
   if (keysA.length !== Object.keys(recB).length) return false;
   for (const key of keysA) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    if (isUnsafeKey(key)) continue;
     if (!Object.hasOwn(recB, key) || !isDeepEqual(recA[key], recB[key])) {
       return false;
     }

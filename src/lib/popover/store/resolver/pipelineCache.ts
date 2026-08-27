@@ -5,11 +5,11 @@
  * @module store/resolver/pipelineCache
  */
 
-import type { PopoverCache, PopoverStore, TrailEntry, PopoverStoreEvent } from '../../types';
+import type { PopoverCache } from '../../types';
 import { wrapResult, isOk } from '../../utils/result';
 import { isPromise } from '../../utils/storeHelpers';
-import { dispatchStoreEvent, type PopoverEventBus } from '../eventBus';
-import type { ResolvePopoverEntryParams } from './resolverTypes';
+import { dispatchStoreEvent } from '../eventBus';
+import type { CacheResolutionAttemptArgs } from './resolverTypes';
 
 /**
  * Reads data synchronously from the provided cache instance.
@@ -36,80 +36,53 @@ export function getSyncCachedData<TData>(
 }
 
 /**
- * Attempts to synchronously resolve popover data from L1 memory state or L2 cache.
+ * Attempts to synchronously resolve popover data from the L1 cache or an already
+ * hydrated success entry, committing the result through `safeSet` when fresh.
  *
- * @template TData - Resolved data payload type.
- * @template TContext - Global shared context type.
- * @template TPopoverKey - Popover key string type.
- * @param cache - Global or store-level cache instance.
- * @param storeCache - Per-store cache instance if configured.
- * @param existingEntry - Existing trail entry if already present.
- * @param key - Target popover key.
- * @param forceRefresh - Whether to bypass cache and state.
- * @param requestCounter - Stale request counter.
- * @param params - Resolution parameters.
- * @param safeSet - Zustand safeSet dispatcher.
- * @param buildEntry - Entry builder function.
- * @param eventListeners - Optional event listener collection.
- * @param eventBus - Optional store event bus.
  * @returns `true` if resolved synchronously from cache or state.
  */
 export function tryResolveFromCacheOrState<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
->(
-  cache: PopoverCache<TData> | undefined,
-  storeCache: PopoverCache<TData> | null | undefined,
-  existingEntry: TrailEntry<TData, TPopoverKey> | undefined,
-  key: TPopoverKey,
-  forceRefresh: boolean,
-  requestCounter: number,
-  params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
-  safeSet: (
-    patch: (
-      state: PopoverStore<TData, TContext, TPopoverKey>,
-    ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>,
-  ) => void,
-  buildEntry: (
-    data?: TData | null,
-    error?: Error | null,
-    isLoading?: boolean,
-  ) => TrailEntry<TData, TPopoverKey>,
-  eventListeners?: Set<(event: PopoverStoreEvent<TData>) => void>,
-  eventBus?: PopoverEventBus<TData, TPopoverKey>,
-): boolean {
+>(args: CacheResolutionAttemptArgs<TData, TContext, TPopoverKey>): boolean {
+  const {
+    cache,
+    storeCache,
+    existingEntry,
+    key,
+    forceRefresh,
+    requestCounter,
+    resolveParams,
+    safeSet,
+    buildEntry,
+    eventListeners,
+    eventBus,
+  } = args;
+
   const effectiveCache = cache ?? storeCache ?? undefined;
   const cachedData = getSyncCachedData(effectiveCache, key);
 
   if (cachedData !== undefined) {
-    if (!params.isStale(requestCounter)) {
+    if (!resolveParams.isStale(requestCounter)) {
       dispatchStoreEvent(
         eventListeners,
         { type: 'resolve_success', key, data: cachedData },
         eventBus,
       );
-      safeSet(
-        params.insertStatePatch(buildEntry(cachedData, null, false)) as (
-          state: PopoverStore<TData, TContext, TPopoverKey>,
-        ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>,
-      );
+      safeSet(resolveParams.insertStatePatch(buildEntry(cachedData, null, false)));
     }
     return true;
   }
 
   if (existingEntry?.status === 'success' && !forceRefresh) {
-    if (!params.isStale(requestCounter)) {
+    if (!resolveParams.isStale(requestCounter)) {
       dispatchStoreEvent(
         eventListeners,
         { type: 'resolve_success', key, data: existingEntry.data as TData },
         eventBus,
       );
-      safeSet(
-        params.insertStatePatch(buildEntry(existingEntry.data, null, false)) as (
-          state: PopoverStore<TData, TContext, TPopoverKey>,
-        ) => Partial<PopoverStore<TData, TContext, TPopoverKey>>,
-      );
+      safeSet(resolveParams.insertStatePatch(buildEntry(existingEntry.data, null, false)));
     }
     return true;
   }

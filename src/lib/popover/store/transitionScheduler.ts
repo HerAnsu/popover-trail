@@ -8,12 +8,64 @@
 import { type ScopeDisposable, DISPOSE_SYMBOL } from '../utils/disposable';
 
 /**
+ * Opaque handle returned by {@link PopoverTransitionScheduler.scheduleBatch}.
+ * Identifies a synthetic cleanup timer without occupying the popover-key
+ * namespace, so key-scoped cancellation can never hit it by accident.
+ */
+export interface TransitionBatchHandle {
+  readonly batchId: number;
+}
+
+/** Internal counter guaranteeing unique batch handles per scheduler instance. */
+let batchSeq = 0;
+
+/**
  * Coordinates and cancels timed transitions across the popover hierarchy.
  */
 export class PopoverTransitionScheduler implements ScopeDisposable {
   private readonly hoverTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly exitTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly batchTimers = new Map<number, ReturnType<typeof setTimeout>>();
   private isDisposed = false;
+
+  /**
+   * Schedules a deferred cleanup callback scoped to an explicit handle instead
+   * of a popover key. Used for grouped exit-transition cleanups where several
+   * removed keys share one timer: `cancelAllForKeys` must not be able to
+   * cancel it, while {@link cancelBatch} revokes it deterministically.
+   *
+   * @param duration - Delay in milliseconds before firing callback.
+   * @param onComplete - Action to execute upon timer expiration.
+   * @returns Handle for {@link cancelBatch}.
+   */
+  public scheduleBatch(duration: number, onComplete: () => void): TransitionBatchHandle {
+    const batchId = ++batchSeq;
+    if (this.isDisposed) return { batchId };
+
+    const timer = setTimeout(
+      () => {
+        this.batchTimers.delete(batchId);
+        if (!this.isDisposed) {
+          onComplete();
+        }
+      },
+      Math.max(0, duration),
+    );
+
+    this.batchTimers.set(batchId, timer);
+    return { batchId };
+  }
+
+  /**
+   * Cancels a pending batched cleanup scheduled via {@link scheduleBatch}.
+   */
+  public cancelBatch(handle: TransitionBatchHandle): void {
+    const timer = this.batchTimers.get(handle.batchId);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      this.batchTimers.delete(handle.batchId);
+    }
+  }
 
   /**
    * Schedules a delayed hover-leave close action, automatically cancelling any previous hover timer.
@@ -76,6 +128,9 @@ export class PopoverTransitionScheduler implements ScopeDisposable {
     this.exitTimers.set(key, timer);
   }
 
+  /**
+   * @deprecated Use {@link scheduleExitTransition}. Kept as a working alias until the next major.
+   */
   public scheduleExit(key: string, duration: number, onComplete: () => void): void {
     this.scheduleExitTransition(key, duration, onComplete);
   }
@@ -147,6 +202,11 @@ export class PopoverTransitionScheduler implements ScopeDisposable {
       clearTimeout(timer);
     }
     this.exitTimers.clear();
+
+    for (const timer of this.batchTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.batchTimers.clear();
   }
 
   /**

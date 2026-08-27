@@ -6,6 +6,7 @@
  */
 
 import type { PopoverCache } from '../types';
+import { isValidStorageKey } from './safeKeys';
 import { DISPOSE_SYMBOL } from './disposable';
 
 function hasUnrefMethod(timer: unknown): timer is { unref: () => void } {
@@ -15,12 +16,6 @@ function hasUnrefMethod(timer: unknown): timer is { unref: () => void } {
     'unref' in timer &&
     typeof timer.unref === 'function'
   );
-}
-
-const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
-
-function isSafeKey(key: string): boolean {
-  return key.trim().length > 0 && !UNSAFE_KEYS_SET.has(key);
 }
 
 function isCatchablePromise(
@@ -132,7 +127,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @returns True if a valid (non-expired) entry exists.
    */
   has(key: string): boolean {
-    if (!isSafeKey(key)) return false;
+    if (!isValidStorageKey(key)) return false;
     const entry = this.cache.get(key);
     if (!entry) return false;
     if (this.isExpired(entry)) {
@@ -150,7 +145,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @returns The cached data payload if valid; otherwise `undefined`.
    */
   get(key: string): TData | undefined {
-    if (!isSafeKey(key)) return undefined;
+    if (!isValidStorageKey(key)) return undefined;
 
     const entry = this.cache.get(key);
     if (!entry || this.isExpired(entry)) {
@@ -176,7 +171,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @param ttlMs - Optional custom TTL override in milliseconds.
    */
   set(key: string, data: TData, ttlMs?: number): void {
-    if (!isSafeKey(key)) return;
+    if (!isValidStorageKey(key)) return;
 
     if (this.cache.has(key)) {
       this.cache.delete(key);
@@ -209,7 +204,7 @@ export class SimplePopoverCache<TData = unknown> implements PopoverCache<TData> 
    * @returns True if the item was found and deleted.
    */
   delete(key: string): boolean {
-    if (!isSafeKey(key)) return false;
+    if (!isValidStorageKey(key)) return false;
     return this.cache.delete(key);
   }
 

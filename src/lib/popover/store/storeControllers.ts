@@ -98,3 +98,36 @@ export function createControllerManager<
     [DISPOSE_SYMBOL]: abortAllControllers,
   };
 }
+
+/**
+ * Runs `task` as the tracked in-flight promise for `key`.
+ * Concurrent callers observing the map share a single execution; on settle the
+ * entry is removed only when no newer resolution has replaced it (identity guard).
+ *
+ * @template TData - Promise resolution payload type.
+ * @param inFlightPromises - Shared dedup map owned by the controller manager.
+ * @param key - Dedup key identifying the resolution.
+ * @param task - Async work to execute exactly once per key.
+ * @returns The tracked promise stored under `key`.
+ */
+export function runTracked<TData>(
+  inFlightPromises: Map<string, Promise<TData>>,
+  key: string,
+  task: () => Promise<TData>,
+): Promise<TData> {
+  // Holder indirection lets the cleanup closure compare its own registered
+  // promise against the map without a definite-assignment self-reference.
+  const tracked: { promise?: Promise<TData> } = {};
+  const promise = (async () => {
+    try {
+      return await task();
+    } finally {
+      if (tracked.promise && inFlightPromises.get(key) === tracked.promise) {
+        inFlightPromises.delete(key);
+      }
+    }
+  })();
+  tracked.promise = promise;
+  inFlightPromises.set(key, promise);
+  return promise;
+}

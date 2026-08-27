@@ -15,10 +15,6 @@
   ],
   "jsPlugins": [
     {
-      "name": "sonarjs",
-      "specifier": "eslint-plugin-sonarjs"
-    },
-    {
       "name": "regexp",
       "specifier": "eslint-plugin-regexp"
     },
@@ -174,8 +170,6 @@
     "eslint/no-useless-catch": "deny",
     "eslint/no-useless-escape": "deny",
     "eslint/no-useless-return": "deny",
-    "sonarjs/no-redundant-jump": "deny",
-    "sonarjs/prefer-immediate-return": "warn",
     "regexp/no-super-linear-backtracking": "deny",
     "regexp/optimal-quantifier-concatenation": "warn",
     "regexp/no-useless-assertions": "warn",

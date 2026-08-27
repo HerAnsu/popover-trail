@@ -5,6 +5,8 @@
  * @module fsm
  */
 
+import type { PopoverTransitionStatus } from '../types';
+import { TRANSITION_STATUS_UNMOUNTING } from '../constants';
 import { wrapResult, isErr } from '../utils/result';
 import { DISPOSE_SYMBOL } from '../utils/disposable';
 import { PopoverErrorCode, createPopoverError } from '../utils/errors';
@@ -160,20 +162,74 @@ export type PopoverFSMInitialParam<TData = unknown, TPopoverKey extends string =
   | TPopoverKey
   | PopoverFSMOptions<TData, TPopoverKey>;
 
+/**
+ * Shared target-state builders. Every transition arm below composes these,
+ * so identical entry-context reset rules live in exactly one place.
+ */
+
+function toHydrating<TData, TPopoverKey extends string>(
+  key: TPopoverKey,
+  overrides?: Partial<PopoverFSMContext<TData, TPopoverKey>>,
+): HydratingFSMState<TData, TPopoverKey> {
+  return {
+    value: 'Hydrating',
+    context: {
+      key,
+      data: undefined,
+      error: undefined,
+      pinnedPos: undefined,
+      ...overrides,
+    },
+  };
+}
+
+function toResolvedTrailing<TData, TPopoverKey extends string>(
+  key: TPopoverKey,
+  data: TData,
+): ResolvedTrailingFSMState<TData, TPopoverKey> {
+  return {
+    value: 'Resolved.Trailing',
+    context: { key, data, error: undefined, pinnedPos: undefined },
+  };
+}
+
+function toResolvedPinned<TData, TPopoverKey extends string>(
+  key: TPopoverKey,
+  data: TData | undefined,
+  pinnedPos?: { top: number; left: number },
+): ResolvedPinnedFSMState<TData, TPopoverKey> {
+  return {
+    value: 'Resolved.Pinned',
+    context: { key, data, error: undefined, pinnedPos } as ResolvedPinnedFSMState<
+      TData,
+      TPopoverKey
+    >['context'],
+  };
+}
+
+function toErrorState<TData, TPopoverKey extends string>(
+  key: TPopoverKey,
+  error: Error,
+): ErrorFSMState<TData, TPopoverKey> {
+  return {
+    value: 'Error',
+    context: { key, data: undefined, error, pinnedPos: undefined },
+  };
+}
+
+/** CLOSE keeps the outgoing context intact for exit-animation inspection. */
+function toUnmounting<TData, TPopoverKey extends string>(
+  state: PopoverFSMState<TData, TPopoverKey>,
+): UnmountingFSMState<TData, TPopoverKey> {
+  return { value: 'Unmounting', context: state.context };
+}
+
 function handleIdleTransition<TData, TPopoverKey extends string>(
   state: IdleFSMState<TData, TPopoverKey>,
   event: PopoverFSMEvent<TData, TPopoverKey>,
 ): PopoverFSMState<TData, TPopoverKey> {
   if (event.type === 'OPEN_ROOT' || event.type === 'PUSH_NESTED') {
-    return {
-      value: 'Hydrating',
-      context: {
-        key: event.key,
-        data: undefined,
-        error: undefined,
-        pinnedPos: undefined,
-      },
-    };
+    return toHydrating(event.key);
   }
   return state;
 }
@@ -184,49 +240,21 @@ function handleHydratingTransition<TData, TPopoverKey extends string>(
 ): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'RESOLVE_SUCCESS':
-      return {
-        value: 'Resolved.Trailing',
-        context: {
-          key: state.context.key,
-          data: event.data,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return toResolvedTrailing(state.context.key, event.data);
     case 'RESOLVE_FAILURE':
-      return {
-        value: 'Error',
-        context: {
-          key: state.context.key,
-          data: undefined,
-          error: event.error,
-          pinnedPos: undefined,
-        },
-      };
+      return toErrorState(state.context.key, event.error);
     case 'RETRY':
-      return {
-        value: 'Hydrating',
-        context: {
-          key: state.context.key,
-          data: undefined,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return toHydrating(state.context.key);
     case 'CLOSE':
-      return {
-        value: 'Unmounting',
-        context: state.context,
-      };
+      return toUnmounting(state);
     case 'OPEN_ROOT':
     case 'PUSH_NESTED':
-      return {
-        value: 'Hydrating',
-        context: {
-          ...state.context,
-          key: event.key,
-        },
-      };
+      // Explicit field carry-over keeps event.key authoritative over the old context key.
+      return toHydrating(event.key, {
+        data: state.context.data,
+        error: state.context.error,
+        pinnedPos: state.context.pinnedPos,
+      });
     default:
       return state;
   }
@@ -238,41 +266,14 @@ function handleTrailingTransition<TData, TPopoverKey extends string>(
 ): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'TOGGLE_PIN':
-      return {
-        value: 'Resolved.Pinned',
-        context: {
-          key: state.context.key,
-          data: state.context.data,
-          error: undefined,
-          pinnedPos: event.rect,
-        },
-      };
+      return toResolvedPinned(state.context.key, state.context.data, event.rect);
     case 'RETRY':
-      return {
-        value: 'Hydrating',
-        context: {
-          key: state.context.key,
-          data: undefined,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return toHydrating(state.context.key);
     case 'CLOSE':
-      return {
-        value: 'Unmounting',
-        context: state.context,
-      };
+      return toUnmounting(state);
     case 'OPEN_ROOT':
     case 'PUSH_NESTED':
-      return {
-        value: 'Hydrating',
-        context: {
-          key: event.key,
-          data: undefined,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return toHydrating(event.key);
     default:
       return state;
   }
@@ -284,41 +285,15 @@ function handlePinnedTransition<TData, TPopoverKey extends string>(
 ): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'TOGGLE_PIN':
-      return {
-        value: 'Resolved.Trailing',
-        context: {
-          key: state.context.key,
-          data: state.context.data,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return toResolvedTrailing(state.context.key, state.context.data);
     case 'RETRY':
-      return {
-        value: 'Hydrating',
-        context: {
-          key: state.context.key,
-          data: undefined,
-          error: undefined,
-          pinnedPos: state.context.pinnedPos,
-        },
-      };
+      // A retry from a floating card must not lose its detached coordinates.
+      return toHydrating(state.context.key, { pinnedPos: state.context.pinnedPos });
     case 'CLOSE':
-      return {
-        value: 'Unmounting',
-        context: state.context,
-      };
+      return toUnmounting(state);
     case 'OPEN_ROOT':
     case 'PUSH_NESTED':
-      return {
-        value: 'Hydrating',
-        context: {
-          key: event.key,
-          data: undefined,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return toHydrating(event.key);
     default:
       return state;
   }
@@ -330,31 +305,12 @@ function handleErrorTransition<TData, TPopoverKey extends string>(
 ): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'RETRY':
-      return {
-        value: 'Hydrating',
-        context: {
-          key: state.context.key,
-          data: undefined,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return toHydrating(state.context.key);
     case 'CLOSE':
-      return {
-        value: 'Unmounting',
-        context: state.context,
-      };
+      return toUnmounting(state);
     case 'OPEN_ROOT':
     case 'PUSH_NESTED':
-      return {
-        value: 'Hydrating',
-        context: {
-          key: event.key,
-          data: undefined,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return toHydrating(event.key);
     default:
       return state;
   }
@@ -366,26 +322,10 @@ function handleUnmountingTransition<TData, TPopoverKey extends string>(
 ): PopoverFSMState<TData, TPopoverKey> {
   switch (event.type) {
     case 'TRANSITION_END':
-      return {
-        value: 'Idle',
-        context: {
-          key: state.context.key,
-          data: undefined,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return { value: 'Idle', context: { key: state.context.key } };
     case 'OPEN_ROOT':
     case 'PUSH_NESTED':
-      return {
-        value: 'Hydrating',
-        context: {
-          key: event.key,
-          data: undefined,
-          error: undefined,
-          pinnedPos: undefined,
-        },
-      };
+      return toHydrating(event.key);
     default:
       return state;
   }
@@ -583,12 +523,12 @@ export function assertPopoverFSMState<
  * @returns `true` if transition is allowed.
  */
 export function isValidTransitionStatusChange(
-  current: import('../types').PopoverTransitionStatus | undefined,
-  next: import('../types').PopoverTransitionStatus,
+  current: PopoverTransitionStatus | undefined,
+  next: PopoverTransitionStatus,
 ): boolean {
   if (!current || current === next) return true;
-  if (current === 'unmounting') return next === 'mounting';
-  if (current === 'mounting') return next === 'mounted' || next === 'unmounting';
-  if (current === 'mounted') return next === 'unmounting' || next === 'mounting';
+  if (current === TRANSITION_STATUS_UNMOUNTING) return next === 'mounting';
+  if (current === 'mounting') return next === 'mounted' || next === TRANSITION_STATUS_UNMOUNTING;
+  if (current === 'mounted') return next === TRANSITION_STATUS_UNMOUNTING || next === 'mounting';
   return false;
 }

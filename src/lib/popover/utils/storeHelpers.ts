@@ -4,6 +4,7 @@ import type {
   OpenNestedOptions,
   PopoverTransitionStatus,
 } from '../types';
+import { TRANSITION_STATUS_UNMOUNTING } from '../constants';
 import { toFiniteNumber } from './styles';
 import { extractDisplayOptions, mergeDisplayOptions } from './displayOptions';
 
@@ -165,7 +166,7 @@ function resolveEntryStatus<TData, TPopoverKey extends string = string>(
 function resolveInitialTransitionStatus(
   existing?: PopoverTransitionStatus,
 ): PopoverTransitionStatus {
-  return existing && existing !== 'unmounting' ? existing : 'mounting';
+  return existing && existing !== TRANSITION_STATUS_UNMOUNTING ? existing : 'mounting';
 }
 
 function resolveEntryGeometryMetadata<TData, TPopoverKey extends string = string>(

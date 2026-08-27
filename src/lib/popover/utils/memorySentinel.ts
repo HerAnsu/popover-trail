@@ -4,12 +4,9 @@
  */
 
 import { wrapResult, isOk } from './result';
-
-declare const process: { env?: Record<string, string | undefined> } | undefined;
+import { isDevEnv } from '../validators/warningEngine';
 
 let sentinelRegistry: FinalizationRegistry<string> | null = null;
-
-const isDevEnv = process !== undefined && process?.env?.NODE_ENV !== 'production';
 
 if (typeof globalThis !== 'undefined' && typeof FinalizationRegistry !== 'undefined') {
   const initResult = wrapResult(
@@ -34,7 +31,7 @@ if (typeof globalThis !== 'undefined' && typeof FinalizationRegistry !== 'undefi
  * @param popoverKey - Identifying popover key string.
  */
 export function trackMemoryCleanup(target?: object | null, popoverKey?: string | null): void {
-  if (!target || !popoverKey || !sentinelRegistry || !isDevEnv) return;
+  if (!target || !popoverKey || !sentinelRegistry || !isDevEnv()) return;
 
   wrapResult(() => sentinelRegistry?.register(target, popoverKey, target));
 }

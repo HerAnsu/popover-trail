@@ -6,6 +6,7 @@
 
 import type { PopoverMiddleware, PopoverStore } from '../types';
 import { toError } from '../utils/storeHelpers';
+import { isUnsafeKey } from '../utils/safeKeys';
 import { DISPOSE_SYMBOL } from '../utils/disposable';
 
 function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
@@ -22,7 +23,7 @@ function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
 
 function mergeSanitizedPatch<T extends object>(target: T, source: object): void {
   for (const k of Object.keys(source)) {
-    if (k !== '__proto__' && k !== 'constructor' && k !== 'prototype') {
+    if (!isUnsafeKey(k)) {
       (target as Record<string, unknown>)[k] = (source as Record<string, unknown>)[k];
     }
   }

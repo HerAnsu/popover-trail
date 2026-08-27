@@ -82,19 +82,19 @@ export async function resolvePopoverEntry<
   const forceRefresh = Boolean(options?.forceRefresh);
 
   if (
-    tryResolveFromCacheOrState(
+    tryResolveFromCacheOrState({
       cache,
       storeCache,
       existingEntry,
       key,
       forceRefresh,
       requestCounter,
-      params,
+      resolveParams: params,
       safeSet,
       buildEntry,
-      deps.eventListeners,
-      deps.eventBus,
-    )
+      eventListeners: deps.eventListeners,
+      eventBus: deps.eventBus,
+    })
   ) {
     return;
   }
@@ -102,7 +102,7 @@ export async function resolvePopoverEntry<
   const activeResolver = get().resolveData ?? resolveData;
   const currentContext = (get().context ?? initialContext) as TContext;
 
-  const isResolvedOrErrored = tryLaunchSyncResolver(
+  const isResolvedOrErrored = tryLaunchSyncResolver({
     key,
     controllerKey,
     parentData,
@@ -110,11 +110,11 @@ export async function resolvePopoverEntry<
     currentContext,
     forceRefresh,
     requestCounter,
-    params,
+    resolveParams: params,
     deps,
     storeCache,
     buildEntry,
-  );
+  });
   if (isResolvedOrErrored) return;
 
   const inFlight = inFlightPromises.get(key);
@@ -125,13 +125,13 @@ export async function resolvePopoverEntry<
     safeSet(insertStatePatch(loadingEntry));
   }
 
-  await awaitInFlightResolution(
+  await awaitInFlightResolution({
     inFlight,
     key,
     requestCounter,
-    params,
+    resolveParams: params,
     deps,
-    storeCache ?? undefined,
+    storeCache: storeCache ?? undefined,
     buildEntry,
-  );
+  });
 }

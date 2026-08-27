@@ -26,6 +26,9 @@ export function isKeyInZIndexOrder(zIndexOrder: readonly string[], key: string):
 
 /**
  * Pure reducer delegator calculating state patch for toggling pin status.
+ *
+ * @deprecated Import `togglePinState` from `./reducers/pinReducers` directly.
+ * Kept as a working alias until the next major release.
  */
 export function reduceTogglePinState<TData, TContext, TPopoverKey extends string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
@@ -37,6 +40,9 @@ export function reduceTogglePinState<TData, TContext, TPopoverKey extends string
 
 /**
  * Pure reducer delegator updating drag offsets for a specific popover card.
+ *
+ * @deprecated Import `updateOffsetState` from `./reducers/pinReducers` directly.
+ * Kept as a working alias until the next major release.
  */
 export function reduceUpdateOffsetState<TData, TContext, TPopoverKey extends string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,

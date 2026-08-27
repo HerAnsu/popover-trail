@@ -18,6 +18,8 @@ import { createTrailSlice } from './slices/sliceTrail';
 import { createPinningSlice } from './slices/slicePinning';
 import { createResolverSlice } from './slices/sliceResolver';
 import { createConfigSlice } from './slices/sliceConfig';
+import { createSubscriptionsSlice } from './slices/sliceSubscriptions';
+import { createTransactionsSlice } from './slices/sliceTransactions';
 import { createPersistenceSlice } from './slices/slicePersistence';
 import type { PopoverMiddlewareEngine } from './storeMiddlewareEngine';
 import type { PopoverTransitionScheduler } from './transitionScheduler';
@@ -27,8 +29,7 @@ import type { ResolvePopoverEntryParams } from './storeResolverPipeline';
 import type { StoreSetFn, StoreGetFn } from './storeTypes';
 import type { HistoryManager, HistorySnapshot } from './history';
 import type { PopoverDAG } from '../utils/dag';
-
-declare const process: { env?: Record<string, string | undefined> } | undefined;
+import { isDevEnv } from '../validators/warningEngine';
 
 /**
  * Service dependencies container for asynchronous resolution, cancellation, and race condition management.
@@ -103,6 +104,8 @@ export interface StoreInfrastructureService<
     TContext,
     TPopoverKey
   >[];
+  /** Optional low-priority transition scheduler (React startTransition adapter). */
+  scheduleTransition?: (callback: () => void) => void;
 }
 
 /**
@@ -118,63 +121,6 @@ export interface ActionRegistryDependencies<
     StoreTimerService,
     StoreHistoryService<TData, TContext, TPopoverKey>,
     StoreInfrastructureService<TData, TContext, TPopoverKey> {}
-
-const RESERVED_CORE_ACTION_NAMES: ReadonlySet<string> = new Set([
-  'setContext',
-  'setResolveData',
-  'setOwnerId',
-  'openRoot',
-  'pushNested',
-  'togglePin',
-  'bringToFront',
-  'closeFrom',
-  'updateOffset',
-  'clear',
-  'closeAll',
-  'clearTrail',
-  'closeTopmost',
-  'openRootWithResolver',
-  'openNestedWithResolver',
-  'retryPopover',
-  'prefetchPopover',
-  'invalidate',
-  'subscribeKey',
-  'destroy',
-  'setClosePinnedDescendants',
-  'setCollisionConfig',
-  'closeByKey',
-  'setEnableArrowNavigation',
-  'setDebug',
-  'hoverEnter',
-  'hoverLeave',
-  'setCascadeOffsetStep',
-  'setTransitionStatus',
-  'setExitTransitionDuration',
-  'setDefaultOffset',
-  'setBaseZIndex',
-  'setGlobalAnimationClassNames',
-  'setAllowDragWhenPinned',
-  'setAllowDragWhenUnpinned',
-  'setMobileBreakpoint',
-  'setFocusLockOptions',
-  'subscribeEvent',
-  'batchUpdates',
-  'runTransition',
-  'useMiddleware',
-  'undo',
-  'redo',
-  'canUndo',
-  'canRedo',
-  'transaction',
-  'persistState',
-  'rehydrateState',
-  'setButtonControls',
-  'toggleButtonControl',
-  'setStackGroupFilter',
-  'setResponsiveMode',
-  'setZIndexBaseMap',
-  'setSlotComponents',
-]);
 
 /**
  * Composes all domain action slices into a unified PopoverActions object bound to Zustand set/get.
@@ -202,8 +148,14 @@ export function createStoreActions<
     ...createPinningSlice<TData, TContext, TPopoverKey>(ctx),
     ...createResolverSlice<TData, TContext, TPopoverKey>(ctx),
     ...createConfigSlice<TData, TContext, TPopoverKey>(ctx),
+    ...createSubscriptionsSlice<TData, TContext, TPopoverKey>(ctx),
+    ...createTransactionsSlice<TData, TContext, TPopoverKey>(ctx),
     ...createPersistenceSlice<TData, TContext, TPopoverKey>(ctx),
   };
+
+  // Reserved names derive from the composed core itself: adding a core action
+  // automatically extends the override protection without maintaining a list.
+  const reservedCoreActionNames: ReadonlySet<string> = new Set(Object.keys(coreActions));
 
   const customSlices = deps.customSlices;
   if (!customSlices || customSlices.length === 0) {
@@ -220,8 +172,8 @@ export function createStoreActions<
     if (!extension || typeof extension !== 'object') continue;
 
     for (const [actionName, actionFn] of Object.entries(extension)) {
-      if (RESERVED_CORE_ACTION_NAMES.has(actionName)) {
-        if (typeof process !== 'undefined' && process?.env?.NODE_ENV !== 'production') {
+      if (reservedCoreActionNames.has(actionName)) {
+        if (isDevEnv()) {
           console.warn(
             `[popover-trail OCP Warning]: Custom slice "${descriptor.name}" attempted to override reserved core action "${actionName}". Core action was preserved.`,
           );

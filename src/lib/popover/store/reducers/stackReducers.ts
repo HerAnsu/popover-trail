@@ -9,11 +9,8 @@ import type { DragOffset, PopoverStateData, StatePatch, TrailEntry } from '../..
 import type { HistorySnapshot } from '../history';
 import { EMPTY_ARRAY, EMPTY_OBJECT } from '../storeDefaults';
 import { shallowEqual } from '../../utils/equality';
+import { isUnsafeKey } from '../../utils/safeKeys';
 import type { PopoverDAG } from '../../utils/dag';
-
-function isUnsafeProperty(key: string): boolean {
-  return key === '__proto__' || key === 'constructor' || key === 'prototype';
-}
 
 export function filterRecord<T, K extends string = string>(
   record: Partial<Record<K, T>>,
@@ -41,7 +38,7 @@ export function filterRecord<T, K extends string = string>(
   let copiedCount = 0;
 
   for (const key of allowedKeys) {
-    if (isUnsafeProperty(key)) continue;
+    if (isUnsafeKey(key)) continue;
     const val = record[key];
     if (val !== undefined) {
       nextRecord[key] = val;
@@ -164,6 +161,39 @@ export function updateEntryInLists<TData, TContext, TPopoverKey extends string =
       floating,
       trail: nextTrail,
     };
+  }
+
+  return {};
+}
+
+/**
+ * Builds a minimal structural-sharing patch transforming the entry identified by
+ * `key` through `update`, rebuilding only the list (floating/trail) that holds it.
+ * Returns an empty patch when the key is absent so callers can fall back to their
+ * own insert/insert-patch strategies. Single-key counterpart of `updateEntryInLists`.
+ */
+export function patchEntryInLists<TData, TContext, TPopoverKey extends string = string>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
+  key: TPopoverKey,
+  update: (entry: TrailEntry<TData, TPopoverKey>) => TrailEntry<TData, TPopoverKey>,
+): StatePatch<TData, TContext, TPopoverKey> {
+  const floatingIdx = floating.findIndex((e) => e.key === key);
+  if (floatingIdx !== -1) {
+    const current = floating[floatingIdx];
+    if (!current) return {};
+    const nextFloating = [...floating];
+    nextFloating[floatingIdx] = update(current);
+    return { floating: nextFloating };
+  }
+
+  const trailIdx = trail.findIndex((e) => e.key === key);
+  if (trailIdx !== -1) {
+    const current = trail[trailIdx];
+    if (!current) return {};
+    const nextTrail = [...trail];
+    nextTrail[trailIdx] = update(current);
+    return { trail: nextTrail };
   }
 
   return {};

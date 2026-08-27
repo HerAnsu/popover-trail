@@ -7,6 +7,12 @@
 
 import type { PopoverResolver, PopoverCache, PopoverStateData, DragOffset } from '../types';
 import { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT } from '../types/branded';
+import {
+  DEFAULT_BASE_Z_INDEX,
+  DEFAULT_CASCADE_OFFSET_STEP,
+  DEFAULT_MOBILE_BREAKPOINT_PX,
+  DEFAULT_OFFSET_PX,
+} from '../constants';
 
 /** Initial state slice for trail hierarchy */
 export const INITIAL_TRAIL_STATE = Object.freeze({
@@ -33,16 +39,16 @@ export const INITIAL_CONFIG_STATE = Object.freeze({
   collisionConfig: null,
   enableArrowNavigation: true,
   debug: false,
-  cascadeOffsetStep: 8,
+  cascadeOffsetStep: DEFAULT_CASCADE_OFFSET_STEP,
   exitTransitionDuration: 0,
-  defaultOffset: 8,
-  baseZIndex: 1000,
+  defaultOffset: DEFAULT_OFFSET_PX,
+  baseZIndex: DEFAULT_BASE_Z_INDEX,
   mountingClassName: '',
   unmountingClassName: '',
   mountedClassName: '',
   activeStackGroup: null,
   responsiveMode: 'auto' as const,
-  mobileBreakpoint: 768,
+  mobileBreakpoint: DEFAULT_MOBILE_BREAKPOINT_PX,
   components: null,
   zIndexBaseMap: null,
   allowDragWhenPinned: true,
@@ -70,12 +76,13 @@ export function getInitialStoreState<
     ...INITIAL_TRAIL_STATE,
     ...INITIAL_PINNING_STATE,
     ...INITIAL_CONFIG_STATE,
+    // These three re-assignments carry no new runtime values: they narrow the
+    // branded EMPTY_READONLY_* spreads down to the generic-keyed record types.
     offsets: EMPTY_READONLY_OBJECT as Readonly<Partial<Record<TPopoverKey, Readonly<DragOffset>>>>,
     pinnedStates: EMPTY_READONLY_OBJECT as Readonly<Partial<Record<TPopoverKey, boolean>>>,
     nestedHydrationRequestCounters: EMPTY_READONLY_OBJECT as Readonly<
       Partial<Record<TPopoverKey, number>>
     >,
-    zIndexBaseMap: null,
     resolveData,
     context: initialContext ?? null,
     cache: cache ?? null,

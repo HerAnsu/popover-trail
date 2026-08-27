@@ -5,7 +5,6 @@
  * @module store/slices/persistenceHelpers
  */
 
-import * as React from 'react';
 import type {
   PopoverPersistConfig,
   TrailEntry,
@@ -14,10 +13,10 @@ import type {
   StatePatch,
   StateStorageEngine,
 } from '../../types';
+import { isRecord, isValidStorageKey } from '../../utils/safeKeys';
 
 export const PERSIST_SCHEMA_VERSION = '1.1';
 export const DEFAULT_STORAGE_KEY = 'popover_store_state';
-export const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
 
 /**
  * Validates that a key is a safe string without prototype pollution vectors.
@@ -26,7 +25,7 @@ export const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor'
  * @returns `true` if safe.
  */
 export function isSafeKey(key: unknown): key is string {
-  return typeof key === 'string' && key.trim().length > 0 && !UNSAFE_KEYS_SET.has(key);
+  return typeof key === 'string' && isValidStorageKey(key);
 }
 
 /**
@@ -75,16 +74,6 @@ export function isDragOffset(val: unknown): val is DragOffset {
     typeof val.y === 'number' &&
     Number.isFinite(val.y)
   );
-}
-
-/**
- * Type guard verifying an unknown value is a non-null object record.
- *
- * @param val - Candidate value.
- * @returns `true` if plain object record.
- */
-export function isRecord(val: unknown): val is Record<string, unknown> {
-  return typeof val === 'object' && val !== null && !Array.isArray(val);
 }
 
 /**
@@ -282,13 +271,19 @@ export function applyRehydratedState<TData, TContext, TPopoverKey extends string
 }
 
 /**
- * Executes a state update inside React's `startTransition` if available.
+ * Executes a state update through an injected transition scheduler when one is
+ * provided (e.g. React's `startTransition`), otherwise runs it synchronously.
+ * Kept free of framework imports: scheduling is wired by the composition root.
  *
  * @param callback - Transition mutation callback.
+ * @param scheduleTransition - Optional low-priority scheduler injected via deps.
  */
-export function executeWithTransition(callback: () => void): void {
-  if ('startTransition' in React && typeof React.startTransition === 'function') {
-    React.startTransition(callback);
+export function executeWithTransition(
+  callback: () => void,
+  scheduleTransition?: (cb: () => void) => void,
+): void {
+  if (scheduleTransition) {
+    scheduleTransition(callback);
   } else {
     callback();
   }

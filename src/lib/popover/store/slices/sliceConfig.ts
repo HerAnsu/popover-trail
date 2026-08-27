@@ -17,6 +17,8 @@ import type {
   StatePatch,
 } from '../../types';
 import { isDeepEqual, findEntryInStore, shallowEqual } from '../../utils/storeHelpers';
+import { DEFAULT_HOVER_CLOSE_DELAY_MS } from '../../constants';
+import { patchEntryInLists } from '../reducers/stackReducers';
 import { isPinnedEntry } from '../storeActions';
 import { isValidTransitionStatusChange } from '../fsm';
 import { validateBaseZIndex } from '../../validators';
@@ -39,18 +41,12 @@ function patchEntryButtonControls<TData, TContext, TPopoverKey extends string = 
     return {};
   }
 
-  const updatedEntry: TrailEntry<TData, TPopoverKey> = {
-    ...entry,
-    buttonControls: nextControls,
-  };
-
-  const inFloating = state.floating.some((e) => e.key === key);
-  return {
-    floating: inFloating
-      ? state.floating.map((e) => (e.key === key ? updatedEntry : e))
-      : state.floating,
-    trail: inFloating ? state.trail : state.trail.map((e) => (e.key === key ? updatedEntry : e)),
-  };
+  return patchEntryInLists<TData, TContext, TPopoverKey>(
+    state.floating,
+    state.trail,
+    key,
+    (prev) => ({ ...prev, buttonControls: nextControls }),
+  );
 }
 
 export function createConfigSlice<
@@ -136,7 +132,7 @@ export function createConfigSlice<
       }
     },
 
-    hoverLeave: (key: TPopoverKey, delay = 300) => {
+    hoverLeave: (key: TPopoverKey, delay = DEFAULT_HOVER_CLOSE_DELAY_MS) => {
       if (!key) return;
       if (isPinnedEntry(get().pinnedStates, key)) return;
       const performClose = () => {
@@ -155,17 +151,12 @@ export function createConfigSlice<
       if (!entry || entry.transitionStatus === status) return;
       if (!isValidTransitionStatusChange(entry.transitionStatus, status)) return;
 
-      set((state) => {
-        const inFloating = state.floating.some((e) => e.key === key);
-        return {
-          floating: inFloating
-            ? state.floating.map((e) => (e.key === key ? { ...e, transitionStatus: status } : e))
-            : state.floating,
-          trail: inFloating
-            ? state.trail
-            : state.trail.map((e) => (e.key === key ? { ...e, transitionStatus: status } : e)),
-        };
-      });
+      set((state) =>
+        patchEntryInLists<TData, TContext, TPopoverKey>(state.floating, state.trail, key, (e) => ({
+          ...e,
+          transitionStatus: status,
+        })),
+      );
     },
 
     setExitTransitionDuration: (exitTransitionDuration: number) =>
@@ -174,7 +165,8 @@ export function createConfigSlice<
     setDefaultOffset: (defaultOffset: number) => setIfChanged('defaultOffset', defaultOffset),
 
     setBaseZIndex: (baseZIndex: number) => {
-      validateBaseZIndex(baseZIndex);
+      validateBaseZIndex(baseZIndex); // dev-mode warning report
+      // Runtime guard complements the dev validator by also rejecting NaN/Infinity.
       if (!Number.isFinite(baseZIndex) || baseZIndex < 0) return;
       setIfChanged('baseZIndex', baseZIndex);
     },

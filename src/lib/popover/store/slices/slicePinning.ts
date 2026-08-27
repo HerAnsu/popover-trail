@@ -9,6 +9,7 @@ import { togglePinState, updateOffsetState } from '../reducers/pinReducers';
 import { bringToFrontPatch } from '../reducers/stackReducers';
 import { findEntryInStore } from '../../utils/storeHelpers';
 import { selectIsPinned } from '../storeSelectors';
+import { TRANSITION_STATUS_UNMOUNTING } from '../../constants';
 import { dispatchStoreEvent } from '../eventBus';
 import { wrapResult, isErr } from '../../utils/result';
 import type { SliceContext } from './sliceContext';
@@ -52,7 +53,7 @@ export function createPinningSlice<
       set((state) => {
         const entry = findEntryInStore(state.floating, state.trail, key);
         if (!entry) return {};
-        if (entry.transitionStatus === 'unmounting') return {};
+        if (entry.transitionStatus === TRANSITION_STATUS_UNMOUNTING) return {};
         return bringToFrontPatch(state, key, deps.popoverDAG);
       });
     },

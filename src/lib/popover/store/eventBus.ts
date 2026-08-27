@@ -9,8 +9,7 @@ import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
 import type { PopoverStoreEvent } from '../types/eventTypes';
 import { wrapResult, isErr } from '../utils/result';
 import { DISPOSE_SYMBOL } from '../utils/disposable';
-
-declare const process: { env?: Record<string, string | undefined> } | undefined;
+import { isDevEnv } from '../validators/warningEngine';
 
 /**
  * Open interface for TypeScript declaration merging.
@@ -143,11 +142,7 @@ export class PopoverEventBus<
   private readonly wildcardListeners = new Set<PopoverWildcardListener<TData, TPopoverKey>>();
 
   private warnIfOverCapacity(): void {
-    if (
-      this.size >= this.maxListeners &&
-      process !== undefined &&
-      process?.env?.NODE_ENV !== 'production'
-    ) {
+    if (this.size >= this.maxListeners && isDevEnv()) {
       console.warn(
         `[popover-trail]: PopoverEventBus listener count (${this.size}) reached limit (${this.maxListeners}). Ensure listeners are unsubscribed on unmount.`,
       );
@@ -281,11 +276,8 @@ export class PopoverEventBus<
   }
 
   public clear(): void {
-    for (const [type, subscribers] of this.listenersByEvent.entries()) {
-      for (const handler of subscribers.values()) {
-        this.target.removeEventListener(type, handler);
-      }
-    }
+    // Swapping the EventTarget drops every native listener at once;
+    // removing handlers individually first would be redundant work.
     this.listenersByEvent.clear();
     this.wildcardListeners.clear();
     this.target = new EventTarget();
@@ -300,6 +292,12 @@ export class PopoverEventBus<
   }
 }
 
+/**
+ * Process-wide shared bus. Every store also mirrors its events here.
+ *
+ * @deprecated Prefer the per-store `deps.eventBus` instance for isolation;
+ * the global singleton remains functional until the next major release.
+ */
 export const globalPopoverEventBus: PopoverEventBus = new PopoverEventBus();
 
 const ALIAS_PROJECTIONS: Readonly<Record<string, readonly PopoverEventType[]>> = Object.freeze({

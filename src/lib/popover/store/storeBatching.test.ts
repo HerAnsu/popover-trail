@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createBatchingManager, batchUpdatesScope } from './storeBatching';
+import { createBatchingManager, batchUpdatesScope, type BatchedStoreApi } from './storeBatching';
 import type { StoreApi } from 'zustand/vanilla';
 
 describe('storeBatching module (Microtask Coalescing & Batching)', () => {
@@ -22,12 +22,34 @@ describe('storeBatching module (Microtask Coalescing & Batching)', () => {
           listener(state, prevState);
         }
       },
-      subscribe: (listener: (state: TState, prevState: TState) => void) => {
-        rawListeners.add(listener);
-        return () => {
-          rawListeners.delete(listener);
+      subscribe: ((
+        listener: (state: TState, prevState: TState) => void,
+        selector?: (state: TState) => unknown,
+        equalityFn?: (a: unknown, b: unknown) => boolean,
+      ) => {
+        if (!selector) {
+          rawListeners.add(listener);
+          return () => {
+            rawListeners.delete(listener);
+          };
+        }
+        // Mirrors zustand/subscribeWithSelector: immediate, per-selection notifications.
+        let prevSelected = selector(state);
+        const selectorListener = () => {
+          const nextSelected = selector(state);
+          const isEqual = equalityFn
+            ? equalityFn(prevSelected, nextSelected)
+            : Object.is(prevSelected, nextSelected);
+          if (!isEqual) {
+            prevSelected = nextSelected;
+            listener(nextSelected as TState, prevSelected as TState);
+          }
         };
-      },
+        rawListeners.add(selectorListener);
+        return () => {
+          rawListeners.delete(selectorListener);
+        };
+      }) as StoreApi<TState>['subscribe'],
     };
 
     return store;
@@ -194,5 +216,41 @@ describe('storeBatching module (Microtask Coalescing & Batching)', () => {
     await Promise.resolve();
 
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('BatchedStoreApi contract: selector subscriptions bypass batching and honor equalityFn', async () => {
+    const manager = createBatchingManager(true);
+    const store = createMockStore({ count: 0, label: 'a' });
+    manager.attachSubscriber(store);
+
+    const seen: number[] = [];
+    let equalityCalls = 0;
+    const batchedStore = store as unknown as BatchedStoreApi<{ count: number; label: string }>;
+    const unsubscribe = batchedStore.subscribe(
+      (selected: number) => {
+        seen.push(selected);
+      },
+      (state: { count: number; label: string }) => state.count,
+      () => {
+        // Count invocations to prove the selector overload tunnels through
+        // untouched instead of joining the batch channel.
+        equalityCalls++;
+        return false;
+      },
+    );
+
+    // Two synchronous mutations coalesce plain listeners into one notification,
+    // but the selector listener observes each intermediate value immediately.
+    store.setState({ count: 1 });
+    store.setState({ count: 2 });
+
+    expect(seen).toEqual([1, 2]);
+    await Promise.resolve();
+    expect(seen).toEqual([1, 2]);
+    expect(equalityCalls).toBeGreaterThan(0);
+
+    unsubscribe();
+    store.setState({ count: 3 });
+    expect(seen).toEqual([1, 2]);
   });
 });

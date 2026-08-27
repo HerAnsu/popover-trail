@@ -14,6 +14,7 @@ import type {
   OpenNestedOptions,
   DefaultDataMap,
   ResolveDataFromMap,
+  DragOffset,
 } from '../types';
 import type { TrailEntry } from '../types/entryTypes';
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
@@ -25,10 +26,12 @@ import {
   selectBreadcrumbs,
   selectPopoverDepth,
   selectTrailBranch,
+  selectOffset,
+  selectTotalActiveCount,
+  selectIsIdle,
+  selectDiscriminatedStatus,
 } from './storeSelectors';
 import { DISPOSE_SYMBOL } from '../utils/disposable';
-
-const ZERO_OFFSET = Object.freeze({ x: 0, y: 0 });
 
 function isStoreApi<TStore>(value: unknown): value is StoreApi<TStore> {
   return (
@@ -80,20 +83,15 @@ export class PopoverQueryBus<
   }
 
   get activeCount(): number {
-    const s = this.getStoreState();
-    return s.trail.length + s.floating.length;
+    return selectTotalActiveCount(this.getStoreState());
   }
 
   get isIdle(): boolean {
-    const s = this.getStoreState();
-    return s.trail.length === 0 && s.floating.length === 0;
+    return selectIsIdle(this.getStoreState());
   }
 
   get discriminatedStatus(): 'idle' | 'active-trail' | 'pinned-only' {
-    const s = this.getStoreState();
-    if (s.trail.length > 0) return 'active-trail';
-    if (s.floating.length > 0) return 'pinned-only';
-    return 'idle';
+    return selectDiscriminatedStatus(this.getStoreState());
   }
 
   get topmost(): TrailEntry<TData, TPopoverKey> | undefined {
@@ -170,8 +168,8 @@ export class PopoverQueryBus<
     return order.length > 0 && order.at(-1) === key;
   }
 
-  getOffset(key: TPopoverKey): { x: number; y: number } {
-    return this.getStoreState().offsets[key] ?? ZERO_OFFSET;
+  getOffset(key: TPopoverKey): DragOffset {
+    return selectOffset<TPopoverKey>(key)(this.getStoreState());
   }
 
   getParent(key: TPopoverKey): TPopoverKey | undefined {
@@ -226,6 +224,9 @@ export class PopoverCommandBus<
     this.getActions().openRoot(ownerId, entry);
   }
 
+  /**
+   * @deprecated Use {@link PopoverCommandBus.pushNested}. Working alias until the next major.
+   */
   openNested(index: number, entry: TrailEntry<TData, TPopoverKey>): void {
     this.getActions().pushNested(index, entry);
   }
@@ -259,6 +260,7 @@ export class PopoverCommandBus<
   }
 
   clearTrail(options?: { transition?: boolean }): void {
+    // Branch preserves the single-argument call shape instead of forwarding undefined.
     if (options !== undefined) {
       this.getActions().clearTrail(options);
       return;
@@ -266,6 +268,9 @@ export class PopoverCommandBus<
     this.getActions().clearTrail();
   }
 
+  /**
+   * @deprecated Use {@link PopoverCommandBus.clearTrail}. Working alias until the next major.
+   */
   clearAll(): void {
     this.getActions().closeAll();
   }
@@ -283,6 +288,7 @@ export class PopoverCommandBus<
   }
 
   async retry(key: TPopoverKey, options?: Readonly<{ forceRefresh?: boolean }>): Promise<void> {
+    // Branch preserves the single-argument call shape instead of forwarding undefined.
     await (options !== undefined
       ? this.getActions().retryPopover(key, options)
       : this.getActions().retryPopover(key));

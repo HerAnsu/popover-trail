@@ -10,10 +10,15 @@ import { isPromise, toError } from '../../utils/storeHelpers';
 import { isOk, isErr, wrapResult, wrapAsyncResult } from '../../utils/result';
 import { PopoverErrorCode, createPopoverError } from '../../utils/errors';
 import { dispatchStoreEvent } from '../eventBus';
+import { ABORT_ERROR_NAME } from '../constants';
+import { patchEntryInLists } from '../reducers/stackReducers';
+import { runTracked } from '../storeControllers';
 import type {
   ResolverPipelineDependencies,
   ResolvePopoverEntryParams,
   AnyResolverFn,
+  SyncResolutionLaunchArgs,
+  AwaitInFlightResolutionArgs,
 } from './resolverTypes';
 
 /**
@@ -102,20 +107,12 @@ export function updateEntryInStoreLists<TData, TContext, TPopoverKey extends str
   key: TPopoverKey,
   patch: Partial<TrailEntry<TData, TPopoverKey>>,
 ): void {
-  safeSet((state) => {
-    const inFloating = state.floating.some((e) => e.key === key);
-    const inTrail = state.trail.some((e) => e.key === key);
-    if (!inFloating && !inTrail) return {};
-
-    const nextFloating = inFloating
-      ? state.floating.map((e) => (e.key === key ? { ...e, ...patch } : e))
-      : state.floating;
-    const nextTrail = inTrail
-      ? state.trail.map((e) => (e.key === key ? { ...e, ...patch } : e))
-      : state.trail;
-
-    return { floating: nextFloating, trail: nextTrail };
-  });
+  safeSet((state) =>
+    patchEntryInLists<TData, TContext, TPopoverKey>(state.floating, state.trail, key, (e) => ({
+      ...e,
+      ...patch,
+    })),
+  );
 }
 
 export function handleResolverError<TData, TContext, TPopoverKey extends string>(
@@ -126,7 +123,7 @@ export function handleResolverError<TData, TContext, TPopoverKey extends string>
   errorEntry?: TrailEntry<TData, TPopoverKey>,
 ): void {
   const error = toError(objErr);
-  if (error.name === 'AbortError') return;
+  if (error.name === ABORT_ERROR_NAME) return;
 
   dispatchStoreEvent(deps.eventListeners, { type: 'resolve_error', key, error }, deps.eventBus);
   const currentEntry = deps.findEntryByKey(key);
@@ -141,16 +138,13 @@ export function handleResolverError<TData, TContext, TPopoverKey extends string>
   }
 
   deps.safeSet((state) => {
-    const inFloating = state.floating.some((e) => e.key === key);
-    const inTrail = state.trail.some((e) => e.key === key);
-
-    if (inFloating || inTrail) {
-      const update = (e: TrailEntry<TData, TPopoverKey>) =>
-        e.key === key ? { ...e, error, isLoading: false, status: 'error' as const } : e;
-      return {
-        floating: inFloating ? state.floating.map(update) : state.floating,
-        trail: inTrail ? state.trail.map(update) : state.trail,
-      };
+    if (state.floating.some((e) => e.key === key) || state.trail.some((e) => e.key === key)) {
+      return patchEntryInLists<TData, TContext, TPopoverKey>(
+        state.floating,
+        state.trail,
+        key,
+        (e) => ({ ...e, error, isLoading: false, status: 'error' as const }),
+      );
     }
 
     if (params && errorEntry) {
@@ -178,13 +172,15 @@ export function handleResolverSuccess<TData, TContext, TPopoverKey extends strin
   dispatchStoreEvent(deps.eventListeners, { type: 'resolve_success', key, data }, deps.eventBus);
 
   deps.safeSet((state) => {
-    // Single membership scan; the caller's insert patch is computed lazily
+    // Membership scan first; the caller's insert patch is applied lazily
     // and only when the entry actually vanished mid-flight.
-    if (state.floating.some((e) => e.key === key)) {
-      return { floating: state.floating.map((e) => (e.key === key ? successEntry : e)) };
-    }
-    if (state.trail.some((e) => e.key === key)) {
-      return { trail: state.trail.map((e) => (e.key === key ? successEntry : e)) };
+    if (state.floating.some((e) => e.key === key) || state.trail.some((e) => e.key === key)) {
+      return patchEntryInLists<TData, TContext, TPopoverKey>(
+        state.floating,
+        state.trail,
+        key,
+        () => successEntry,
+      );
     }
 
     const patchOrFn = params.insertStatePatch(successEntry);
@@ -235,21 +231,13 @@ export function startInFlightResolver<
   const res = resolveAttempt.data;
 
   if (isPromise(res)) {
-    // Holder indirection lets the cleanup closure compare its own registered
-    // promise against the map without a definite-assignment self-reference.
-    const tracked: { promise?: Promise<TData> } = {};
-    tracked.promise = (async () => {
+    void runTracked<TData>(inFlightPromises, key, async () => {
       try {
         return (await res) as TData;
       } finally {
-        // Identity guard: a newer resolution may have replaced this entry.
-        if (tracked.promise && inFlightPromises.get(key) === tracked.promise) {
-          inFlightPromises.delete(key);
-        }
         removeController(controllerKey, controller);
       }
-    })();
-    inFlightPromises.set(key, tracked.promise);
+    });
     return { isSync: false, hasError: false };
   }
 
@@ -261,36 +249,26 @@ export async function awaitInFlightResolution<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
->(
-  inFlight: Promise<TData>,
-  key: TPopoverKey,
-  requestCounter: number,
-  params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
-  deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
-  storeCache: PopoverCache<TData> | undefined,
-  buildEntry: (
-    data?: TData | null,
-    error?: Error | null,
-    isLoading?: boolean,
-  ) => TrailEntry<TData, TPopoverKey>,
-): Promise<void> {
+>(args: AwaitInFlightResolutionArgs<TData, TContext, TPopoverKey>): Promise<void> {
+  const { inFlight, key, requestCounter, resolveParams, deps, storeCache, buildEntry } = args;
+
   const asyncResult = await wrapAsyncResult(inFlight);
 
-  if (params.isStale(requestCounter)) return;
+  if (resolveParams.isStale(requestCounter)) return;
 
   if (isOk(asyncResult)) {
     handleResolverSuccess(
       asyncResult.data,
       key,
       buildEntry(asyncResult.data, null, false),
-      params,
+      resolveParams,
       deps,
       storeCache,
     );
   } else {
     const error = toError(asyncResult.error.cause ?? asyncResult.error);
     const errorEntry = buildEntry(null, error, false);
-    handleResolverError(error, key, deps, params, errorEntry);
+    handleResolverError(error, key, deps, resolveParams, errorEntry);
   }
 }
 
@@ -298,23 +276,21 @@ export function tryLaunchSyncResolver<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
->(
-  key: TPopoverKey,
-  controllerKey: string,
-  parentData: unknown,
-  activeResolver: PopoverResolver<TData, TContext> | undefined,
-  currentContext: TContext,
-  forceRefresh: boolean,
-  requestCounter: number,
-  params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
-  deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
-  storeCache: PopoverCache<TData> | null | undefined,
-  buildEntry: (
-    data?: TData | null,
-    error?: Error | null,
-    isLoading?: boolean,
-  ) => TrailEntry<TData, TPopoverKey>,
-): boolean {
+>(args: SyncResolutionLaunchArgs<TData, TContext, TPopoverKey>): boolean {
+  const {
+    key,
+    controllerKey,
+    parentData,
+    activeResolver,
+    currentContext,
+    forceRefresh,
+    requestCounter,
+    resolveParams,
+    deps,
+    storeCache,
+    buildEntry,
+  } = args;
+
   if (!activeResolver) return false;
   if (deps.inFlightPromises.has(key) && !forceRefresh) return false;
 
@@ -325,17 +301,17 @@ export function tryLaunchSyncResolver<
     activeResolver,
     currentContext,
     deps,
-    params,
+    resolveParams,
     buildEntry,
   );
 
   if (launch.isSync) {
-    if (!params.isStale(requestCounter)) {
+    if (!resolveParams.isStale(requestCounter)) {
       handleResolverSuccess(
         launch.result,
         key,
         buildEntry(launch.result, null, false),
-        params,
+        resolveParams,
         deps,
         storeCache ?? undefined,
       );

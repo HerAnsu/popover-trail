@@ -12,6 +12,27 @@ import { DISPOSE_SYMBOL } from '../utils/disposable';
 
 export type BatchListener<TState = unknown> = (state: TState, prevState: TState) => void;
 
+/**
+ * Store surface produced by {@link BatchingManager.attachSubscriber}.
+ * Plain listeners are registered against the microtask-coalesced batch channel
+ * (one notification per event-loop tick), while selector subscriptions tunnel
+ * straight to zustand's `subscribeWithSelector` overload untouched.
+ *
+ * The reassignment of `store.subscribe` below is a deliberate, documented adapter:
+ * React consumers reach the store through `useSyncExternalStore`, whose raw
+ * subscription cannot be intercepted any other way.
+ */
+export interface BatchedStoreApi<TState> extends StoreApi<TState> {
+  subscribe: {
+    (listener: (state: TState, prevState: TState) => void): () => void;
+    <T>(
+      listener: (selectedState: T) => void,
+      selector: (state: TState) => T,
+      equalityFn?: (a: T, b: T) => boolean,
+    ): () => void;
+  };
+}
+
 export interface BatchingManager {
   startBatch: () => void;
   endBatch: (getState?: () => unknown) => void;
@@ -148,27 +169,19 @@ export function createBatchingManager(autoBatchMicrotasks = true): BatchingManag
         notifyBatchSubscribers(batchListeners, currentState, previousState);
       });
 
-      type TypedListener = (state: TState, prevState: TState) => void;
-      interface ZustandSubscribeWithSelector<S> {
-        (listener: (state: S, prevState: S) => void): () => void;
-        <T>(
-          listener: (selectedState: T) => void,
-          selector: (state: S) => T,
-          equalityFn?: (a: T, b: T) => boolean,
-        ): () => void;
-      }
-
       store.subscribe = ((listener: unknown, selector?: unknown, equalityFn?: unknown) => {
         if (typeof selector === 'function') {
-          const subscribeWithSelector = rawSubscribe as ZustandSubscribeWithSelector<TState>;
+          // Selector overload: forward verbatim — batching would break
+          // per-selection change semantics.
+          const subscribeWithSelector = rawSubscribe as BatchedStoreApi<TState>['subscribe'];
           return subscribeWithSelector(
-            listener as (selectedState: unknown) => void,
-            selector as (state: TState) => unknown,
-            equalityFn as ((a: unknown, b: unknown) => boolean) | undefined,
+            listener as (selectedState: never) => void,
+            selector as (state: TState) => never,
+            equalityFn as ((a: never, b: never) => boolean) | undefined,
           );
         }
 
-        const typedListener = listener as TypedListener;
+        const typedListener = listener as BatchListener<TState>;
         const handler: BatchListener = (s, p) => {
           typedListener(s as TState, p as TState);
         };

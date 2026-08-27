@@ -1,8 +1,7 @@
 import type { PopoverPlacement } from '../types';
 import { VALID_PLACEMENTS_SET } from '../constants';
+import { isUnsafeKey } from '../utils/safeKeys';
 import { isDevEnv, warnDevDetails } from './warningEngine';
-
-const UNSAFE_PROP_NAMES_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
 
 /** PT-101: Validates popover key format. */
 export function validatePopoverKey(key: string | undefined): void {
@@ -16,7 +15,7 @@ export function validatePopoverKey(key: string | undefined): void {
     return;
   }
 
-  if (UNSAFE_PROP_NAMES_SET.has(key)) {
+  if (isUnsafeKey(key)) {
     warnDevDetails(true, {
       code: 'PT-101',
       message: `Unsafe JavaScript property name "${key}" cannot be used as a popover key.`,

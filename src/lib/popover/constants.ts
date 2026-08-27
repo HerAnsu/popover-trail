@@ -76,3 +76,19 @@ export const TILT_ZERO_THRESHOLD = 0.05;
 
 /** Default hover close delay fallback in milliseconds when cursor leaves card. */
 export const DEFAULT_HOVER_CLOSE_DELAY_MS = 300;
+
+/** Default pixel step offset applied between cascading trail levels inside the store state. */
+export const DEFAULT_CASCADE_OFFSET_STEP = 8;
+
+/** Default pixel offset applied to newly opened cards inside the store state. */
+export const DEFAULT_OFFSET_PX = 8;
+
+/** Default viewport width breakpoint (px) separating desktop and mobile behavior. */
+export const DEFAULT_MOBILE_BREAKPOINT_PX = 768;
+
+/**
+ * Transition status marking entries that are playing their exit animation
+ * before final removal from the store. Referenced across selectors,
+ * slices, resolvers, and FSM guards — centralize to prevent typos.
+ */
+export const TRANSITION_STATUS_UNMOUNTING = 'unmounting';

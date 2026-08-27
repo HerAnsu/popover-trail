@@ -3,7 +3,9 @@
   "project": ["src/**/*.{ts,tsx}"],
   "rules": {
     "exports": "off",
-    "types": "off"
+    "types": "off",
+    "duplicates": "off"
   },
+  "ignoreDependencies": ["repomix"],
   "ignoreExportsUsedInFile": true
 }

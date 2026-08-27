@@ -13,33 +13,17 @@ import type {
   PopoverStateData,
   StatePatch,
 } from '../../types';
-import {
-  findEntryInStore,
-  findEntryIndex,
-  openRootState,
-  pushNestedState,
-} from '../../utils/storeHelpers';
+import { findEntryInStore, findEntryIndex, toError } from '../../utils/storeHelpers';
+import { runTracked } from '../storeControllers';
+import { openRootState, pushNestedState } from '../reducers/openReducers';
 import { selectEntryByKey } from '../storeSelectors';
+import { patchEntryInLists } from '../reducers/stackReducers';
 import { invokeResolverSafely, type ResolvePopoverEntryParams } from '../storeResolverPipeline';
+import { ROOT_CONTROLLER_KEY, DEFAULT_OWNER_ID, ABORT_ERROR_NAME } from '../constants';
+import { TRANSITION_STATUS_UNMOUNTING } from '../../constants';
 import { extractDisplayOptions } from '../../utils/displayOptions';
+import { hasBoundingClientRect, stopEventPropagation } from '../../utils/domGuards';
 import type { SliceContext } from './sliceContext';
-
-function stopEventPropagation(event?: AnchorEventLike): void {
-  if (event && 'stopPropagation' in event && typeof event.stopPropagation === 'function') {
-    event.stopPropagation();
-  }
-}
-
-function hasBoundingClientRect(
-  target: unknown,
-): target is { getBoundingClientRect: () => DOMRect } {
-  return (
-    typeof target === 'object' &&
-    target !== null &&
-    'getBoundingClientRect' in target &&
-    typeof target.getBoundingClientRect === 'function'
-  );
-}
 
 function resolveTriggerBoundingRect(
   anchorEvent?: AnchorEventLike,
@@ -67,15 +51,11 @@ function createEntryUpdatePatch<TData, TContext, TPopoverKey extends string>(
   key: TPopoverKey,
   updatedEntry: TrailEntry<TData, TPopoverKey>,
 ) {
+  // Rebuilds only the list holding the key; the untouched list keeps its reference.
   return (
     state: PopoverStateData<TData, TContext, TPopoverKey>,
   ): StatePatch<TData, TContext, TPopoverKey> =>
-    findEntryInStore(state.floating, state.trail, key)
-      ? {
-          floating: state.floating.map((e) => (e.key === key ? updatedEntry : e)),
-          trail: state.trail.map((e) => (e.key === key ? updatedEntry : e)),
-        }
-      : {};
+    patchEntryInLists(state.floating, state.trail, key, () => updatedEntry);
 }
 
 function isRootAlreadyActive<TData, TPopoverKey extends string>(
@@ -88,7 +68,9 @@ function isRootAlreadyActive<TData, TPopoverKey extends string>(
   if (forceRefresh || trail.length === 0) return false;
   const root = trail[0];
   return (
-    root?.key === key && root?.transitionStatus !== 'unmounting' && currentOwnerId === finalOwnerId
+    root?.key === key &&
+    root?.transitionStatus !== TRANSITION_STATUS_UNMOUNTING &&
+    currentOwnerId === finalOwnerId
   );
 }
 
@@ -98,7 +80,7 @@ function isNestedAlreadyActive<TData, TPopoverKey extends string>(
   forceRefresh?: boolean,
 ): boolean {
   if (!existingEntry || forceRefresh) return false;
-  if (existingEntry.transitionStatus === 'unmounting') return false;
+  if (existingEntry.transitionStatus === TRANSITION_STATUS_UNMOUNTING) return false;
   return existingEntry.parentKey === sourceKey || existingEntry.originalParentKey === sourceKey;
 }
 
@@ -133,7 +115,7 @@ function buildRetryPipelineParams<TData, TContext, TPopoverKey extends string = 
     rect: entry.rect ?? null,
     parentData: undefined,
     options,
-    controllerKey: '__root__',
+    controllerKey: ROOT_CONTROLLER_KEY,
     incrementCounter: deps.incrementRootCounter,
     isStale: deps.isRootStale,
     insertStatePatch: updateStateForEntry,
@@ -164,7 +146,7 @@ export function createResolverSlice<
   const bringToFront = (key: TPopoverKey) => {
     set((state) => {
       const entry = selectEntryByKey<TData, TPopoverKey>(key)(state);
-      if (!entry || entry.transitionStatus === 'unmounting') return {};
+      if (!entry || entry.transitionStatus === TRANSITION_STATUS_UNMOUNTING) return {};
       // Already topmost: returning a fresh array here would notify every
       // subscriber on each re-open of an already-open popover.
       if (state.zIndexOrder.at(-1) === key) return {};
@@ -180,7 +162,7 @@ export function createResolverSlice<
     ) => {
       stopEventPropagation(anchorEvent);
       const { ownerId, trail, floating } = get();
-      const finalOwnerId = options?.ownerId ?? ownerId ?? 'default';
+      const finalOwnerId = options?.ownerId ?? ownerId ?? DEFAULT_OWNER_ID;
 
       if (isRootAlreadyActive(trail, ownerId, finalOwnerId, keyOrName, options?.forceRefresh)) {
         bringToFront(keyOrName);
@@ -189,7 +171,9 @@ export function createResolverSlice<
 
       if (
         !options?.forceRefresh &&
-        floating.some((e) => e.key === keyOrName && e.transitionStatus !== 'unmounting')
+        floating.some(
+          (e) => e.key === keyOrName && e.transitionStatus !== TRANSITION_STATUS_UNMOUNTING,
+        )
       ) {
         bringToFront(keyOrName);
         return;
@@ -209,7 +193,7 @@ export function createResolverSlice<
         rect: triggerRect,
         parentData: undefined,
         options,
-        controllerKey: '__root__',
+        controllerKey: ROOT_CONTROLLER_KEY,
         incrementCounter: incrementRootCounter,
         isStale: isRootStale,
         insertStatePatch: (entry: TrailEntry<TData, TPopoverKey>) => (state) =>
@@ -235,7 +219,7 @@ export function createResolverSlice<
       }
 
       const sourceEntry = findEntryInStore(floating, trail, sourceKey);
-      if (!sourceEntry || sourceEntry.transitionStatus === 'unmounting') return;
+      if (!sourceEntry || sourceEntry.transitionStatus === TRANSITION_STATUS_UNMOUNTING) return;
 
       const rect = options?.triggerRect ?? sourceEntry.rect;
 
@@ -292,8 +276,7 @@ export function createResolverSlice<
         try {
           return await inFlight;
         } catch (err: unknown) {
-          const error = err instanceof Error ? err : new Error(String(err));
-          if (error.name === 'AbortError') {
+          if (toError(err).name === ABORT_ERROR_NAME) {
             return undefined;
           }
           throw err;
@@ -307,8 +290,9 @@ export function createResolverSlice<
         activeControllers.set(key, controller);
       }
 
-      const tracked: { promise?: Promise<TData | undefined> } = {};
-      tracked.promise = (async () => {
+      // runTracked owns the in-flight dedup entry and its identity-guarded removal;
+      // this closure only handles caching, abort swallowing, and its own controller.
+      return runTracked<TData | undefined>(inFlightPromises, key, async () => {
         try {
           const resolveData = get().resolveData;
           const activeCtx = get().context ?? undefined;
@@ -322,23 +306,16 @@ export function createResolverSlice<
           activeCache?.set(key, res);
           return res;
         } catch (err: unknown) {
-          const error = err instanceof Error ? err : new Error(String(err));
-          if (error.name === 'AbortError') {
+          if (toError(err).name === ABORT_ERROR_NAME) {
             return undefined;
           }
           throw err;
         } finally {
-          if (inFlightPromises.get(key) === tracked.promise) {
-            inFlightPromises.delete(key);
-          }
           if (ownsController && activeControllers.get(key) === controller) {
             activeControllers.delete(key);
           }
         }
-      })();
-
-      inFlightPromises.set(key, tracked.promise as Promise<TData>);
-      return tracked.promise;
+      }) as Promise<TData>;
     },
 
     /**

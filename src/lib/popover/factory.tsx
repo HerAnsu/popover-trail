@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { isDevEnv, validateFactoryPlacement } from './validators';
 import { PopoverProvider as CorePopoverProvider } from './context/PopoverProvider';
 import type { PopoverProviderProps } from './context/PopoverProviderProps';
 import { usePopoverActions as coreUsePopoverActions } from './context/usePopoverStore';
@@ -21,11 +22,8 @@ import {
   type PopoverSchemaDefinition,
   type PopoverSchemaInstance,
 } from './schema';
-import { validateFactoryPlacement } from './validators';
 import { wrapResult, isOk } from './utils/result';
 import type { RegisteredKeys, RegisteredDataMap } from './types/registerTypes';
-
-declare const process: { env: { NODE_ENV?: string } } | undefined;
 
 declare module 'react' {
   interface ReactSharedInternals {
@@ -143,11 +141,7 @@ export function createPopoverTrail<
  * Validates module placement in development mode and returns the bound suite.
  */
 export function createPopoverTrail(schema?: unknown): object {
-  if (
-    process !== undefined &&
-    process?.env?.NODE_ENV !== 'production' &&
-    isCurrentlyRenderingInReact()
-  ) {
+  if (isDevEnv() && isCurrentlyRenderingInReact()) {
     validateFactoryPlacement(true);
   }
 

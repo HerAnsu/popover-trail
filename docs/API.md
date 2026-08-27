@@ -877,6 +877,25 @@ const unsubscribe = globalPopoverEventBus.on('popover:open', (event) => {
 
 ---
 
+### Deprecated store API surface (1.2.x)
+
+The following aliases remain fully functional but emit `@deprecated` hints and will be
+removed in the next major release. Prefer the replacements:
+
+| Deprecated | Replacement |
+|---|---|
+| `actions.clear` / `actions.closeAll` | [`actions.clearTrail`](#core-engines-and-architecture) |
+| `commandBus.openNested(...)` | `commandBus.pushNested(...)` |
+| `commandBus.clearAll()` | `commandBus.clearTrail()` |
+| `scheduler.scheduleExit(key, ...)` | `scheduler.scheduleExitTransition(key, ...)` |
+| `reduceTogglePinState` / `reduceUpdateOffsetState` | `togglePinState` / `updateOffsetState` from reducers |
+| `globalPopoverEventBus` | per-store event bus (`deps.eventBus`) for instance isolation |
+
+`persistState` snapshots now carry a stable per-store-instance `tabId` (previously a new id was
+minted on every save), enabling self-echo filtering for cross-tab consumers.
+
+---
+
 ### Pluggable layout strategies
 
 Strategy registry supporting custom positioning algorithms alongside built-in implementations:

@@ -8,7 +8,15 @@
 
 import { validateStorageKey } from '../validators';
 import { generateTabId } from '../utils/uuid';
+import { areKeysSafe, isRecord, isUnsafeKey } from '../utils/safeKeys';
 import { wrapResult, isOk, isErr } from '../utils/result';
+import {
+  readStorageItem,
+  removeStorageItem,
+  resolvePlatformStorage,
+  serializeJson,
+  writeStorageItem,
+} from './persistence/persistenceCore';
 import { DISPOSE_SYMBOL } from '../utils/disposable';
 
 /** Current schema version tag for stored snapshot payloads. */
@@ -59,17 +67,6 @@ export interface SnapshotManagerOptions<TData = unknown> {
   deserialize?: (raw: string) => PopoverSnapshotData<TData>;
 }
 
-function isRecord(val: unknown): val is Record<string, unknown> {
-  return typeof val === 'object' && val !== null && !Array.isArray(val);
-}
-
-function areKeysSafe(keys: Iterable<unknown>): boolean {
-  for (const key of keys) {
-    if (typeof key !== 'string' || UNSAFE_KEYS_SET.has(key)) return false;
-  }
-  return true;
-}
-
 function isSnapshotMessageEvent<TData>(
   event: Event,
 ): event is MessageEvent<PopoverSnapshotData<TData>> {
@@ -98,9 +95,6 @@ function isSnapshotMessageEvent<TData>(
   return false;
 }
 
-/** Keys that are rejected unconditionally to prevent prototype pollution vulnerability attacks. */
-const UNSAFE_KEYS_SET = Object.freeze(new Set(['__proto__', 'constructor', 'prototype']));
-
 const DEFAULT_SNAPSHOT_STORAGE_KEY = 'pt_popover_trail_snapshot';
 
 /**
@@ -114,12 +108,7 @@ function sanitizePayloads<TData>(
   if (!payloads || typeof payloads !== 'object') return undefined;
   const clean: Record<string, TData> = {};
   for (const [k, v] of Object.entries(payloads)) {
-    if (
-      v !== undefined &&
-      typeof v !== 'function' &&
-      !(v instanceof Promise) &&
-      !UNSAFE_KEYS_SET.has(k)
-    ) {
+    if (v !== undefined && typeof v !== 'function' && !(v instanceof Promise) && !isUnsafeKey(k)) {
       clean[k] = v;
     }
   }
@@ -144,7 +133,7 @@ function sanitizeOffsets(
   if (!offsets || typeof offsets !== 'object') return {};
   const clean: Record<string, { x: number; y: number }> = {};
   for (const [k, pt] of Object.entries(offsets)) {
-    if (UNSAFE_KEYS_SET.has(k)) continue;
+    if (isUnsafeKey(k)) continue;
     const cleanPt = sanitizePoint(pt);
     if (cleanPt) clean[k] = cleanPt;
   }
@@ -240,15 +229,11 @@ export class PopoverSnapshotManager<TData = unknown> {
    * @param snapshot - Snapshot data to persist.
    */
   saveSnapshot(snapshot: PopoverSnapshotData<TData>): void {
-    if (this.storageType !== 'none' && typeof window !== 'undefined') {
-      const writeResult = wrapResult(() => {
-        const storage =
-          this.storageType === 'localStorage' ? window.localStorage : window.sessionStorage;
-        const raw = this.serializer ? this.serializer(snapshot) : JSON.stringify(snapshot);
-        storage.setItem(this.storageKey, raw);
-      });
-      if (isErr(writeResult)) {
-        console.warn('[SnapshotManager] Failed to write snapshot to storage:', writeResult.error);
+    if (this.storageType !== 'none') {
+      const storage = resolvePlatformStorage(this.storageType);
+      const raw = this.serializer ? this.serializer(snapshot) : serializeJson(snapshot);
+      if (storage && raw !== null && !writeStorageItem(storage, this.storageKey, raw)) {
+        console.warn('[SnapshotManager] Failed to write snapshot to storage.');
       }
     }
 
@@ -276,35 +261,27 @@ export class PopoverSnapshotManager<TData = unknown> {
    * @returns Deserialized snapshot object or null if invalid/empty.
    */
   loadSnapshot(): PopoverSnapshotData<TData> | null {
-    if (this.storageType === 'none' || typeof window === 'undefined') return null;
+    if (this.storageType === 'none') return null;
 
-    const loadResult = wrapResult(() => {
-      const storage =
-        this.storageType === 'localStorage' ? window.localStorage : window.sessionStorage;
-      const raw = storage.getItem(this.storageKey);
-      if (!raw) return null;
-      try {
-        const parsed: unknown = this.deserializer ? this.deserializer(raw) : JSON.parse(raw);
-        return this.isValidSnapshot(parsed) ? parsed : null;
-      } catch {
-        return null;
-      }
-    });
+    const storage = resolvePlatformStorage(this.storageType);
+    const raw = storage ? readStorageItem(storage, this.storageKey) : null;
+    if (!raw) return null;
 
-    return isOk(loadResult) ? loadResult.data : null;
+    try {
+      const parsed: unknown = this.deserializer ? this.deserializer(raw) : JSON.parse(raw);
+      return this.isValidSnapshot(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
   }
 
   /**
    * Clears saved snapshot from configured storage engine.
    */
   clearSnapshot(): void {
-    if (this.storageType !== 'none' && typeof window !== 'undefined') {
-      wrapResult(() => {
-        const storage =
-          this.storageType === 'localStorage' ? window.localStorage : window.sessionStorage;
-        storage.removeItem(this.storageKey);
-      });
-    }
+    if (this.storageType === 'none') return;
+    const storage = resolvePlatformStorage(this.storageType);
+    if (storage) removeStorageItem(storage, this.storageKey);
   }
 
   /**

@@ -26,13 +26,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.zcode
+zcode
 
 # Antigravity technical loop internal runner & reports
 .gemini/scripts/
 .gemini/reports/
+audit-*.json
+detailed-audit-report-data.json
 
 # Architecture & store analysis docs
 docs/STORE_ARCHITECTURE_AND_IMPROVEMENTS.md
 repomix-output.xml
-.zcode/
 

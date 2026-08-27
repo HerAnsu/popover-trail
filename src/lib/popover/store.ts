@@ -32,6 +32,7 @@ import { resolvePopoverEntry, type ResolvePopoverEntryParams } from './store/sto
 import { SimplePopoverCache } from './utils/cache';
 import { PopoverTransitionScheduler } from './store/transitionScheduler';
 import { PopoverEventBus } from './store/eventBus';
+import { reactScheduleTransition } from './utils/reactTransitions';
 import { wrapResult, isErr } from './utils/result';
 import type { SliceContext } from './store/slices/sliceContext';
 import { DISPOSE_SYMBOL } from './utils/disposable';
@@ -275,6 +276,7 @@ export function createPopoverStore<
       popoverDAG,
       subscribeState: (listener) => (storeInstance ? storeInstance.subscribe(listener) : () => {}),
       customSlices,
+      scheduleTransition: reactScheduleTransition,
     };
 
     const actions = Object.freeze(
@@ -325,6 +327,7 @@ export function createPopoverStore<
     cache: effectiveCache,
     popoverDAG,
     customSlices,
+    scheduleTransition: reactScheduleTransition,
   };
 
   const dispose = () => {

@@ -4,12 +4,14 @@
  * @module utils/clsx
  */
 
+import { isUnsafeKey } from './safeKeys';
+
 function appendRecordClasses(
   rec: Record<string, boolean | null | undefined>,
   classes: string[],
 ): void {
   for (const key in rec) {
-    if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype' && rec[key]) {
+    if (!isUnsafeKey(key) && rec[key]) {
       classes.push(key);
     }
   }

@@ -8,6 +8,7 @@
 import type { TrailEntry, DragOffset, PopoverStore } from '../types';
 import { findEntryInStore, hasEntryWithKey } from '../utils/storeHelpers';
 import { EMPTY_ARRAY } from './storeDefaults';
+import { TRANSITION_STATUS_UNMOUNTING } from '../constants';
 
 const ZERO_OFFSET: Readonly<DragOffset> = Object.freeze({ x: 0, y: 0 });
 
@@ -62,16 +63,16 @@ export function selectTopmostEntry<TData = unknown, TPopoverKey extends string =
     const key = state.zIndexOrder[i];
     if (key) {
       const entry = findEntryInStore<TData, TPopoverKey>(state.floating, state.trail, key);
-      if (entry && entry.transitionStatus !== 'unmounting') return entry;
+      if (entry && entry.transitionStatus !== TRANSITION_STATUS_UNMOUNTING) return entry;
     }
   }
   for (let i = state.trail.length - 1; i >= 0; i--) {
     const entry = state.trail[i];
-    if (entry && entry.transitionStatus !== 'unmounting') return entry;
+    if (entry && entry.transitionStatus !== TRANSITION_STATUS_UNMOUNTING) return entry;
   }
   for (let i = state.floating.length - 1; i >= 0; i--) {
     const entry = state.floating[i];
-    if (entry && entry.transitionStatus !== 'unmounting') return entry;
+    if (entry && entry.transitionStatus !== TRANSITION_STATUS_UNMOUNTING) return entry;
   }
   return undefined;
 }
