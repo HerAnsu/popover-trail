@@ -58,7 +58,20 @@ export const INITIAL_CONFIG_STATE = Object.freeze({
   focusLockOptions: null,
 });
 
-export const RESETTABLE_STORE_PATCH = Object.freeze({
+export interface ResettableStorePatch<TPopoverKey extends string = string> {
+  readonly trail: readonly never[];
+  readonly floating: readonly never[];
+  readonly ownerId: null;
+  readonly zIndexOrder: readonly never[];
+  readonly offsets: Readonly<Partial<Record<TPopoverKey, Readonly<DragOffset>>>>;
+  readonly pinnedStates: Readonly<Partial<Record<TPopoverKey, boolean>>>;
+  readonly rootHydrationRequestCounter: 0;
+  readonly nestedHydrationRequestCounters: Readonly<Partial<Record<TPopoverKey, number>>>;
+  readonly anchorElement: null;
+  readonly anchorRect: null;
+}
+
+export const RESETTABLE_STORE_PATCH: ResettableStorePatch<string> = Object.freeze({
   ...INITIAL_TRAIL_STATE,
   offsets: emptyRecord<string, Readonly<DragOffset>>(),
   pinnedStates: emptyRecord<string, boolean>(),
@@ -69,18 +82,16 @@ export const RESETTABLE_STORE_PATCH = Object.freeze({
   anchorRect: null,
 });
 
-export function getResettableStorePatch<TPopoverKey extends string = string>() {
-  return RESETTABLE_STORE_PATCH as unknown as {
-    readonly trail: readonly never[];
-    readonly floating: readonly never[];
-    readonly ownerId: null;
-    readonly zIndexOrder: readonly never[];
-    readonly offsets: Readonly<Partial<Record<TPopoverKey, Readonly<DragOffset>>>>;
-    readonly pinnedStates: Readonly<Partial<Record<TPopoverKey, boolean>>>;
-    readonly rootHydrationRequestCounter: 0;
-    readonly nestedHydrationRequestCounters: Readonly<Partial<Record<TPopoverKey, number>>>;
-    readonly anchorElement: null;
-    readonly anchorRect: null;
+export function getResettableStorePatch<TPopoverKey extends string = string>(): ResettableStorePatch<TPopoverKey> {
+  return {
+    ...INITIAL_TRAIL_STATE,
+    offsets: emptyRecord<TPopoverKey, Readonly<DragOffset>>(),
+    pinnedStates: emptyRecord<TPopoverKey, boolean>(),
+    zIndexOrder: EMPTY_READONLY_ARRAY,
+    rootHydrationRequestCounter: 0,
+    nestedHydrationRequestCounters: emptyRecord<TPopoverKey, number>(),
+    anchorElement: null,
+    anchorRect: null,
   };
 }
 

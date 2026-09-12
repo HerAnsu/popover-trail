@@ -20,7 +20,27 @@ import { findNearestQuadItem } from './spatialKNN';
 import { insertQuadTreeItem, removeQuadTreeItem, splitQuadTreeNodes } from './spatialInsert';
 import { tryCoalesceQuadTree } from './spatialCoalesce';
 import type { Point2D } from './spatialEnergy';
+import { ok, err, type Result } from '../result';
 
+/**
+ * Diagnostic error payload returned when a spatial range query or KNN search finds no candidates.
+ */
+export interface SpatialNotFoundError {
+  readonly type: 'spatial_not_found';
+  /** Descriptive error message. */
+  readonly message: string;
+}
+
+/**
+ * 2D QuadTree spatial index for fast rectangular bounding box queries.
+ *
+ * @remarks
+ * Recursively partitions 2D space into four quadrants to speed up collision detection,
+ * viewport overlap testing, and finding nearest neighboring popovers without checking
+ * every card on screen. Supports `Symbol.dispose` for clean memory release.
+ *
+ * @template TId - Domain identifier type for indexed items (defaults to string).
+ */
 export class QuadTree<TId extends string = string> {
   private items: QuadItem<TId>[] = [];
   private nodes: QuadTree<TId>[] = [];
@@ -29,6 +49,14 @@ export class QuadTree<TId extends string = string> {
   readonly bounds: BoundingBox;
   private readonly level: number;
 
+  /**
+   * Initializes a QuadTree node.
+   *
+   * @param bounds - Spatial boundaries of this node.
+   * @param maxItems - Threshold count before splitting into 4 sub-quadrants (default 16).
+   * @param maxLevels - Maximum tree depth limit to prevent infinite subdivision (default 8).
+   * @param level - Current depth tier of this node (root is 0).
+   */
   constructor(bounds: BoundingBox, maxItems = 16, maxLevels = 8, level = 0) {
     this.bounds = sanitizeSpatialBounds(bounds);
     this.maxItems = isPositiveFinite(maxItems) ? maxItems : 16;
@@ -142,8 +170,48 @@ export class QuadTree<TId extends string = string> {
     return findFirstInNodes(this.nodes, this.items, this.bounds, target, predicate);
   }
 
+  /**
+   * Queries the tree for the first item intersecting the target bounding box that satisfies an optional predicate.
+   *
+   * @returns `Ok(QuadItem)` if found, or `Err(SpatialNotFoundError)` if no matching item exists.
+   */
+  public findFirstResult(
+    target: BoundingBox,
+    predicate?: (item: QuadItem<TId>) => boolean,
+  ): Result<QuadItem<TId>, SpatialNotFoundError> {
+    const item = this.findFirst(target, predicate);
+    if (!item) {
+      return err({
+        type: 'spatial_not_found',
+        message: 'No spatial item matching the bounding box and predicate was found in QuadTree.',
+      });
+    }
+    return ok(item);
+  }
+
   public nearest(point: Point2D, maxDistance?: number): QuadItem<TId> | undefined {
     return findNearestQuadItem(this, point, maxDistance);
+  }
+
+  /**
+   * Searches for the spatially nearest item to a 2D coordinate point within an optional maximum Euclidean radius.
+   *
+   * @param point - Target 2D point (x, y).
+   * @param maxDistance - Optional maximum Euclidean distance threshold.
+   * @returns `Ok(QuadItem)` if a candidate exists within radius, or `Err(SpatialNotFoundError)`.
+   */
+  public nearestResult(
+    point: Point2D,
+    maxDistance?: number,
+  ): Result<QuadItem<TId>, SpatialNotFoundError> {
+    const item = this.nearest(point, maxDistance);
+    if (!item) {
+      return err({
+        type: 'spatial_not_found',
+        message: 'No nearest spatial item found in QuadTree within the specified distance.',
+      });
+    }
+    return ok(item);
   }
 
   public dispose(): void {

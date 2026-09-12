@@ -94,6 +94,47 @@ export function isValidTransition(from: PopoverStateValue, to: PopoverStateValue
   return VALID_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
+/**
+ * Type helper returning the valid target states reachable from `TState`.
+ *
+ * @remarks
+ * Derived directly from `FSM_STATE_MANIFEST` for compile-time transition checks:
+ * - `ValidNextFSMState<'Idle'>` -> strictly `'Hydrating'`
+ * - `ValidNextFSMState<'Unmounting'>` -> strictly `'Idle' | 'Hydrating'`
+ *
+ * @template TState - Current FSM state name.
+ */
+export type ValidNextFSMState<TState extends PopoverStateValue> =
+  (typeof FSM_STATE_MANIFEST)[TState]['validTransitions'][number];
+
+/**
+ * Type guard checking whether transitioning from `from` to `to` is allowed.
+ *
+ * @remarks
+ * Checks the state transition manifest in $O(1)$ time and narrows the type of `to`
+ * to `ValidNextFSMState<From>` on success.
+ *
+ * @template From - Current state type.
+ * @template To - Target state type.
+ * @param from - Current state.
+ * @param to - Next proposed state.
+ * @returns True if the transition is allowed.
+ *
+ * @example
+ * ```typescript
+ * if (canTransition(currentState, nextState)) {
+ *   // nextState is narrowed to ValidNextFSMState<typeof currentState>
+ *   transitionTo(nextState);
+ * }
+ * ```
+ */
+export function canTransition<From extends PopoverStateValue, To extends PopoverStateValue>(
+  from: From,
+  to: To,
+): to is To & ValidNextFSMState<From> {
+  return isValidTransition(from, to);
+}
+
 export function isValidTransitionStatusChange(
   from?: PopoverTransitionStatus,
   to?: PopoverTransitionStatus,

@@ -6,7 +6,7 @@
  */
 
 import { wrapAsyncResult, isOk } from '../result';
-import type { WorkerTaskMessage } from './workerTypes';
+import type { WorkerTaskMessage, WorkerTaskResolveMessage } from './workerTypes';
 
 function handleWorkerAbort(activeTasks: Map<number, AbortController>, id: number): void {
   const controller = activeTasks.get(id);
@@ -19,7 +19,7 @@ function handleWorkerAbort(activeTasks: Map<number, AbortController>, id: number
 async function handleWorkerResolve<TData, TContext>(
   selfScope: WindowOrWorkerGlobalScope & { postMessage(message: unknown): void },
   activeTasks: Map<number, AbortController>,
-  msg: WorkerTaskMessage<TContext>,
+  msg: WorkerTaskResolveMessage<TContext>,
   handler: (key: string, parentData?: unknown, context?: TContext) => TData | Promise<TData>,
 ): Promise<void> {
   const { id, key = '', parentData, context } = msg;

@@ -64,23 +64,49 @@ export interface TrailEntry<
   data?: TData | null;
 }
 
+/**
+ * Discriminated algebraic union of all active trail entry variant types.
+ *
+ * @remarks
+ * Models popover card lifecycles as a strict disjoint union:
+ * - Idle: Registered or pre-mounted card before data resolution.
+ * - Loading: Data resolution in-flight, isLoading is true, error is null.
+ * - Error: Resolution failed, error contains the thrown exception, data is undefined.
+ * - Success: Resolution succeeded, data is guaranteed to be non-null TData.
+ */
 export type DiscriminatedTrailEntry<TData = unknown, TPopoverKey extends string = string> =
   | IdleTrailEntry<TData, TPopoverKey>
   | LoadingTrailEntry<TData, TPopoverKey>
   | ErrorTrailEntry<TData, TPopoverKey>
   | SuccessTrailEntry<TData, TPopoverKey>;
 
+/**
+ * Pure discriminated state tuple representation for popover entries.
+ * Decouples state analysis from the full DOM-bound TrailEntry structure.
+ *
+ * @remarks
+ * Guarantees compile-time exhaustiveness in pattern matchers:
+ * ```typescript
+ * if (state.status === 'success') {
+ *   // TypeScript guarantees state.data is TData!
+ *   console.log(state.data);
+ * }
+ * ```
+ */
 export type PopoverEntryDiscriminatedState<TData = unknown> =
-  | { status: 'loading'; isLoading: true; data: undefined; error: null }
-  | { status: 'error'; isLoading: false; data: undefined; error: Error }
-  | { status: 'success'; isLoading: false; data: TData; error: null };
+  | { readonly status: 'idle'; readonly isLoading: false; readonly data: undefined; readonly error: null }
+  | { readonly status: 'loading'; readonly isLoading: true; readonly data: undefined; readonly error: null }
+  | { readonly status: 'error'; readonly isLoading: false; readonly data: undefined; readonly error: Error }
+  | { readonly status: 'success'; readonly isLoading: false; readonly data: TData; readonly error: null };
 
 export type NarrowTrailEntry<
   TData,
-  TStatus extends 'loading' | 'error' | 'success',
+  TStatus extends 'idle' | 'loading' | 'error' | 'success',
   TPopoverKey extends string = string,
-> = TStatus extends 'loading'
-  ? LoadingTrailEntry<TData, TPopoverKey>
-  : TStatus extends 'error'
-    ? ErrorTrailEntry<TData, TPopoverKey>
-    : SuccessTrailEntry<TData, TPopoverKey>;
+> = TStatus extends 'idle'
+  ? IdleTrailEntry<TData, TPopoverKey>
+  : TStatus extends 'loading'
+    ? LoadingTrailEntry<TData, TPopoverKey>
+    : TStatus extends 'error'
+      ? ErrorTrailEntry<TData, TPopoverKey>
+      : SuccessTrailEntry<TData, TPopoverKey>;

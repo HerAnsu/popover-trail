@@ -22,6 +22,38 @@ import { shallowEqual } from '../../utils/equality';
 
 const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
+/**
+ * High-level ergonomic composite hook for reactive inspection and control of an individual popover card.
+ *
+ * @remarks
+ * Subscribes to popover presence, pinning, z-index stacking depth, and spatial drag offset using
+ * shallow value equality (`shallowEqual`), eliminating redundant re-renders.
+ * Returns a discriminated union narrowed on `isOpen`:
+ * - When `isOpen: true`, `entry` is guaranteed to be non-undefined with typed data.
+ * - When `isOpen: false`, `entry` is undefined with idle state and negative z-index (-1).
+ *
+ * @template K - Branded key type matching registered schema or raw string.
+ * @template TData - Inferred data payload type associated with key K.
+ * @template TContext - Ambient context type.
+ * @param key - Unique popover card key.
+ * @returns Discriminated result object containing state flags, entry snapshot, and action dispatchers.
+ *
+ * @example
+ * ```tsx
+ * function ProfileCard() {
+ *   const { isOpen, entry, isPinned, pin, close } = usePopover('user_profile');
+ *   if (!isOpen) return null;
+ *
+ *   return (
+ *     <div>
+ *       <h3>{entry.data.name}</h3>
+ *       <button onClick={() => pin()}>Pin</button>
+ *       <button onClick={close}>Dismiss</button>
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
 export function usePopover<
   K extends RegisteredKeys = RegisteredKeys,
   TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
@@ -64,25 +96,40 @@ export function usePopover<
       : `Popover "${key}" [Closed]`,
   );
 
-  return useMemo(
-    (): UsePopoverResult<TData> => ({
-      entry: slice.entry,
-      state: slice.entry
-        ? getEntryState(slice.entry)
-        : { status: 'loading', isLoading: true, data: undefined, error: null },
-      isOpen: slice.isOpen,
-      isPinned: slice.isPinned,
-      zIndex: slice.zIndex,
-      isTop: slice.isTop,
+  return useMemo((): UsePopoverResult<TData> => {
+    if (slice.isOpen && slice.entry) {
+      return {
+        isOpen: true,
+        entry: slice.entry,
+        state: getEntryState(slice.entry),
+        isPinned: slice.isPinned,
+        zIndex: slice.zIndex,
+        isTop: slice.isTop,
+        offset: slice.offset,
+        isLoading: slice.entry.isLoading ?? false,
+        data: slice.entry.data ?? null,
+        error: slice.entry.error ?? null,
+        close,
+        pin,
+        bringToFront,
+        updateOffset,
+      };
+    }
+    return {
+      isOpen: false,
+      entry: undefined,
+      state: { status: 'idle', isLoading: false, data: undefined, error: null },
+      isPinned: false,
+      zIndex: -1,
+      isTop: false,
       offset: slice.offset,
-      isLoading: slice.entry?.isLoading ?? false,
-      data: slice.entry?.data,
-      error: slice.entry?.error,
+      isLoading: false,
+      data: undefined,
+      error: undefined,
       close,
       pin,
       bringToFront,
       updateOffset,
-    }),
-    [slice, close, pin, bringToFront, updateOffset],
-  );
+    };
+  }, [slice, close, pin, bringToFront, updateOffset]);
 }

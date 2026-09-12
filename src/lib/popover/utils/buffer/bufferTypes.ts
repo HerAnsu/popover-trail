@@ -29,11 +29,11 @@ export interface ReadonlyRingBuffer<T> extends Iterable<T> {
   peekOldest(): T | undefined;
   peekFirst(): T | undefined;
   peekLast(): T | undefined;
-  /** Safe monadic peek returning Ok(item) or Err(BufferEmptyError). */
+  /** Safe peek returning Ok(item) or Err(BufferEmptyError). */
   peekResult(): Result<T, BufferEmptyError>;
   /** Relative index lookup: supports positive offsets and negative wrap offsets. */
   at(relativeIndex: BufferRelativeIndex): T | undefined;
-  /** Safe monadic relative item lookup returning Ok(item) or Err(IndexOutOfBoundsError). */
+  /** Safe relative item lookup returning Ok(item) or Err(IndexOutOfBoundsError). */
   atResult(relativeIndex: BufferRelativeIndex): Result<T, IndexOutOfBoundsError>;
   find<S extends T>(predicate: BufferTypeGuard<T, S>): S | undefined;
   find(predicate: BufferPredicate<T>): T | undefined;

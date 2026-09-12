@@ -10,6 +10,9 @@ import {
   type ViewportX,
   type ViewportY,
   type ZIndexDepth,
+  type WorkerTaskId,
+  type CausalSequence,
+  type HistoryCapacity,
   createBrand,
 } from '../types/branded';
 
@@ -71,5 +74,71 @@ export function toViewportX(x: number): ViewportX {
 export function toViewportY(y: number): ViewportY {
   const safe = Number.isFinite(y) ? y : 0;
   return createBrand<number, 'ViewportY'>(safe);
+}
+
+/**
+ * Smart constructor for `WorkerTaskId`.
+ * Validates that the task id is a positive safe integer.
+ *
+ * @param id - Raw numeric task identifier.
+ * @returns Validated WorkerTaskId brand (defaults to 1 if non-positive or non-integer).
+ */
+export function toWorkerTaskId(id: number): WorkerTaskId {
+  const safe = Number.isSafeInteger(id) && id > 0 ? id : 1;
+  return createBrand<number, 'WorkerTaskId'>(safe);
+}
+
+/**
+ * Type guard checking if a value is a valid WorkerTaskId.
+ *
+ * @param value - Unknown input to check.
+ * @returns True if value is a positive safe integer.
+ */
+export function isWorkerTaskId(value: unknown): value is WorkerTaskId {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+}
+
+/**
+ * Smart constructor for `CausalSequence`.
+ * Validates that the logical sequence counter is a non-negative safe integer.
+ *
+ * @param seq - Raw numeric sequence counter.
+ * @returns Validated CausalSequence brand (defaults to 0 if negative or non-integer).
+ */
+export function toCausalSequence(seq: number): CausalSequence {
+  const safe = Number.isSafeInteger(seq) && seq >= 0 ? seq : 0;
+  return createBrand<number, 'CausalSequence'>(safe);
+}
+
+/**
+ * Type guard checking if a value is a valid CausalSequence.
+ *
+ * @param value - Unknown input to check.
+ * @returns True if value is a non-negative safe integer.
+ */
+export function isCausalSequence(value: unknown): value is CausalSequence {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+}
+
+/**
+ * Smart constructor for `HistoryCapacity`.
+ * Validates that history capacity is a positive safe integer >= 1 (defaults to 30).
+ *
+ * @param capacity - Raw capacity integer.
+ * @returns Validated HistoryCapacity brand.
+ */
+export function toHistoryCapacity(capacity: number): HistoryCapacity {
+  const safe = Number.isSafeInteger(capacity) && capacity >= 1 ? capacity : 30;
+  return createBrand<number, 'HistoryCapacity'>(safe);
+}
+
+/**
+ * Type guard checking if a value is a valid HistoryCapacity.
+ *
+ * @param value - Unknown input to check.
+ * @returns True if value is a safe integer >= 1.
+ */
+export function isHistoryCapacity(value: unknown): value is HistoryCapacity {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1;
 }
 

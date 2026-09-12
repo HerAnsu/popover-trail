@@ -10,6 +10,7 @@ import {
   isUnmountingFSM,
 } from './fsmGuards';
 import { assertPopoverFSMState } from './fsmTransitions';
+import { canTransition } from './fsmMatrix';
 import type { PopoverFSMState } from './fsmTypes';
 
 describe('fsmGuards', () => {
@@ -66,5 +67,14 @@ describe('fsmGuards', () => {
     expect(() => assertPopoverFSMState(idle, 'Hydrating')).toThrow(
       '[assertPopoverFSMState] Expected FSM state "Hydrating", received "Idle"',
     );
+  });
+
+  it('canTransition validates allowed state transitions and narrows type', () => {
+    expect(canTransition('Idle', 'Hydrating')).toBe(true);
+    expect(canTransition('Idle', 'Resolved.Trailing')).toBe(false);
+    expect(canTransition('Hydrating', 'Resolved.Trailing')).toBe(true);
+    expect(canTransition('Hydrating', 'Resolved.Pinned')).toBe(true);
+    expect(canTransition('Unmounting', 'Idle')).toBe(true);
+    expect(canTransition('Unmounting', 'Resolved.Pinned')).toBe(false);
   });
 });

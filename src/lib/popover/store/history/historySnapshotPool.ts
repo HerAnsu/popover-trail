@@ -4,7 +4,13 @@
  * @module historySnapshotPool
  */
 
-import { RingBuffer, type ReadonlyRingBuffer, type RingBufferMetrics } from '../../utils/buffer';
+import {
+  RingBuffer,
+  type ReadonlyRingBuffer,
+  type RingBufferMetrics,
+  type BufferEmptyError,
+} from '../../utils/buffer';
+import type { Result } from '../../utils/result';
 import { EMPTY_ARRAY } from '../hydration/storeDefaults';
 import {
   cloneNonEmptyRecord,
@@ -49,6 +55,12 @@ export class HistorySnapshotPool<TData, TPopoverKey extends string = string> {
   }
   peek(): HistorySnapshot<TData, TPopoverKey> | undefined {
     return this.buffer.peek();
+  }
+  popResult(): Result<HistorySnapshot<TData, TPopoverKey>, BufferEmptyError> {
+    return this.buffer.popResult();
+  }
+  peekResult(): Result<HistorySnapshot<TData, TPopoverKey>, BufferEmptyError> {
+    return this.buffer.peekResult();
   }
   clear(): void {
     this.buffer.clear();

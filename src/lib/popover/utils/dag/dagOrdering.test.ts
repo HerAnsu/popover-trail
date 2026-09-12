@@ -1,5 +1,7 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { PopoverDAG } from './dagCore';
+import { safeComputeLinearExtension } from './dagOrdering';
+import type { InternalDAGNode } from './dagTypes';
 
 describe('PopoverDAG Ordering and Teardown Plan', () => {
   it('generates reverse topological bottom-up teardown plan', () => {
@@ -31,5 +33,68 @@ describe('PopoverDAG Ordering and Teardown Plan', () => {
   it('returns empty geodesic path for non-existent node', () => {
     const dag = new PopoverDAG();
     expect(dag.getGeodesicPath('ghost')).toEqual([]);
+  });
+
+  it('safeComputeLinearExtension returns Ok with topological order when acyclic', () => {
+    const dag = new PopoverDAG();
+    dag.addNode('A');
+    dag.addNode('B', 'A');
+    dag.addNode('C', 'B');
+
+    const result = dag.safeComputeLinearExtension();
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.indexOf('A')).toBeLessThan(result.data.indexOf('B'));
+      expect(result.data.indexOf('B')).toBeLessThan(result.data.indexOf('C'));
+    }
+  });
+
+  it('supports addEdge with DAGEdge object interface and queries edges', () => {
+    const dag = new PopoverDAG();
+    dag.addNode('p1');
+    dag.addNode('c1');
+    const added = dag.addEdge({ from: 'p1', to: 'c1' });
+    expect(added).toBe(true);
+
+    const edges = dag.getEdges();
+    expect(edges).toEqual([{ from: 'p1', to: 'c1' }]);
+    expect(Object.isFrozen(edges)).toBe(true);
+  });
+
+  it('queries roots, leaves, and max depth', () => {
+    const dag = new PopoverDAG();
+    dag.addNode('root1');
+    dag.addNode('root2');
+    dag.addNode('mid', 'root1');
+    dag.addEdge({ from: 'root2', to: 'mid' });
+    dag.addNode('leaf', 'mid');
+
+    expect(dag.getRoots()).toEqual(['root1', 'root2']);
+    expect(dag.getLeaves()).toEqual(['leaf']);
+    expect(dag.getMaxDepth()).toBe(2);
+  });
+
+  it('safeComputeLinearExtension returns Err with DAGCycleError when cycle exists', () => {
+    const nodes = new Map<string, InternalDAGNode<string>>();
+    nodes.set('A', {
+      key: 'A',
+      parentKeys: new Set(['B']),
+      childrenKeys: new Set(['B']),
+      depth: 0,
+    });
+    nodes.set('B', {
+      key: 'B',
+      parentKeys: new Set(['A']),
+      childrenKeys: new Set(['A']),
+      depth: 1,
+    });
+
+    const result = safeComputeLinearExtension(nodes);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.type).toBe('DAG_CYCLE_ERROR');
+      expect(result.error.cycleKeys).toContain('A');
+      expect(result.error.cycleKeys).toContain('B');
+    }
   });
 });

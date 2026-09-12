@@ -1,5 +1,5 @@
 /**
- * Fluent Monadic Builder Factory for Scoped Popover Operations.
+ * Fluent Builder Factory for Scoped Popover Operations.
  * Clean Architecture Layer 2: Headless State Management & Orchestration.
  *
  * @module utils/controller/fluentBuilder

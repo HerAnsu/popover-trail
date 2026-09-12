@@ -48,13 +48,23 @@ export type WorkerResolver<TData = unknown, TContext = unknown> = PopoverResolve
   WorkerResolverDisposables;
 
 
-export interface WorkerTaskMessage<TContext = unknown> {
-  action?: 'resolve' | 'abort';
-  id: number;
-  key?: string;
-  parentData?: unknown;
-  context?: TContext;
+export interface WorkerTaskResolveMessage<TContext = unknown, TPopoverKey extends string = string> {
+  readonly action?: 'resolve';
+  readonly id: number;
+  readonly key?: TPopoverKey;
+  readonly parentData?: unknown;
+  readonly context?: TContext;
 }
+
+export interface WorkerTaskAbortMessage {
+  readonly action: 'abort';
+  readonly id: number;
+  readonly key?: string;
+}
+
+export type WorkerTaskMessage<TContext = unknown, TPopoverKey extends string = string> =
+  | WorkerTaskResolveMessage<TContext, TPopoverKey>
+  | WorkerTaskAbortMessage;
 
 export type WorkerResponseMessage<TData = unknown> =
   | {

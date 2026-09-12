@@ -61,6 +61,24 @@ export type ScopeId<T extends string = string> = Brand<T, 'ScopeId'>;
 /** Nominal type for subscription listener tokens and identifiers. */
 export type SubscriptionId<T extends string = string> = Brand<T, 'SubscriptionId'>;
 
+/** Nominal type for Web Worker message correlation IDs. */
+export type WorkerTaskId = Brand<number, 'WorkerTaskId'>;
+
+/** Nominal type for monotonically increasing causal logical clock counter sequences. */
+export type CausalSequence = Brand<number, 'CausalSequence'>;
+
+/** Nominal type for persistence key-value storage keys. */
+export type StorageKey<T extends string = string> = Brand<T, 'StorageKey'>;
+
+/** Nominal type for cross-tab broadcast channels. */
+export type ChannelId<T extends string = string> = Brand<T, 'ChannelId'>;
+
+/** Nominal type for memory and storage cache keys. */
+export type CacheKey<T extends string = string> = Brand<T, 'CacheKey'>;
+
+/** Nominal type for history journal ring-buffer capacity. */
+export type HistoryCapacity = Brand<number, 'HistoryCapacity'>;
+
 /**
  * Generic brand constructor eliminating double type assertions across domain modules.
  */

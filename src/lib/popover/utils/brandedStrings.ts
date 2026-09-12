@@ -13,6 +13,9 @@ import {
   type TriggerId,
   type ScopeId,
   type SubscriptionId,
+  type StorageKey,
+  type ChannelId,
+  type CacheKey,
   createBrand,
 } from '../types/branded';
 
@@ -90,3 +93,27 @@ export const toSubscriptionId: <T extends string = string>(id: T) => Subscriptio
 /** Type guard predicate checking if a value is a valid non-empty SubscriptionId. */
 export const isSubscriptionId: (value: unknown) => value is SubscriptionId =
   subscriptionIdIdentity.isBrand;
+
+const storageKeyIdentity = createBrandedIdentity('StorageKey');
+/** Smart constructor for `StorageKey`. */
+export const toStorageKey: <T extends string = string>(key: T) => StorageKey<T> =
+  storageKeyIdentity.toBrand;
+/** Type guard predicate checking if a value is a valid non-empty StorageKey. */
+export const isStorageKey: (value: unknown) => value is StorageKey =
+  storageKeyIdentity.isBrand;
+
+const channelIdIdentity = createBrandedIdentity('ChannelId');
+/** Smart constructor for `ChannelId`. */
+export const toChannelId: <T extends string = string>(id: T) => ChannelId<T> =
+  channelIdIdentity.toBrand;
+/** Type guard predicate checking if a value is a valid non-empty ChannelId. */
+export const isChannelId: (value: unknown) => value is ChannelId =
+  channelIdIdentity.isBrand;
+
+const cacheKeyIdentity = createBrandedIdentity('CacheKey');
+/** Smart constructor for `CacheKey`. Validates non-empty trimmed string. */
+export const toCacheKey: <K extends string = string>(key: K) => CacheKey<K> =
+  cacheKeyIdentity.toBrand;
+/** Type guard predicate checking if a value is a valid non-empty CacheKey. */
+export const isCacheKey: (value: unknown) => value is CacheKey =
+  cacheKeyIdentity.isBrand;

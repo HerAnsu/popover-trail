@@ -82,4 +82,18 @@ describe('RingBuffer Monadic Result-Oriented Operations', () => {
     expect(isOk(ring.tryUnshift(99))).toBe(true);
     expect(ring.toArray()).toEqual([99, 2]);
   });
+
+  it('supports peekFirstResult and peekLastResult', () => {
+    const ring = new RingBuffer<string>(3);
+    expect(isErr(ring.peekFirstResult())).toBe(true);
+    expect(isErr(ring.peekLastResult())).toBe(true);
+
+    ring.push('first');
+    ring.push('second');
+
+    const first = ring.peekFirstResult();
+    const last = ring.peekLastResult();
+    expect(isOk(first) && first.data === 'first').toBe(true);
+    expect(isOk(last) && last.data === 'second').toBe(true);
+  });
 });

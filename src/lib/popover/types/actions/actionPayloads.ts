@@ -56,3 +56,35 @@ export type StoreActionPayload<
   | { type: 'SET_CONTEXT'; context: TContext }
   | { type: 'SET_TRANSITION_STATUS'; key: TPopoverKey; status: PopoverTransitionStatus }
   | { type: 'SET_DEBUG'; debug: boolean };
+
+/**
+ * Utility type to extract a specific action payload by its type discriminator.
+ *
+ * @template TType - The action type to extract (e.g. 'OPEN_ROOT', 'CLOSE_BY_KEY').
+ * @template TData - Resolved data payload type.
+ * @template TContext - External context type.
+ * @template TPopoverKey - Popover key domain type.
+ *
+ * @example
+ * ```typescript
+ * type OpenRootPayload = ExtractActionPayload<'OPEN_ROOT'>;
+ * ```
+ */
+export type ExtractActionPayload<
+  TType extends StoreActionType,
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> = Extract<StoreActionPayload<TData, TContext, TPopoverKey>, { type: TType }>;
+
+/**
+ * Mapped type associating each StoreActionType with its corresponding payload structure.
+ */
+export type StoreActionPayloadMap<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> = {
+  readonly [K in StoreActionType]: ExtractActionPayload<K, TData, TContext, TPopoverKey>;
+};
+

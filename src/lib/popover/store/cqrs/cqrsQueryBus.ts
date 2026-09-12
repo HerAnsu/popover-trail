@@ -21,9 +21,35 @@ import {
 } from '../selectors/storeSelectors';
 import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { createHistorySnapshot, type HistorySnapshot } from '../history/history';
+import { ok, err, type Result, mapResult } from '../../utils/result';
+
+/**
+ * Diagnostic error payload returned when a query operation targets a nonexistent or closed popover.
+ *
+ * @template K - Popover key type.
+ */
+export interface PopoverNotFoundError<K extends string = string> {
+  readonly type: 'popover_not_found';
+  /** Popover identifier that was not found. */
+  readonly key: K;
+  /** Explanatory message. */
+  readonly message: string;
+}
 
 const ZERO_OFFSET: DragOffset = Object.freeze({ x: 0, y: 0 });
 
+/**
+ * Read-only query bus for inspecting popover store state.
+ *
+ * @remarks
+ * Separates reads from writes (CQRS). All methods and getters inspect immutable
+ * state snapshots and never mutate the store or trigger re-renders.
+ *
+ * @template TData - Default popover payload data.
+ * @template TContext - Global application context.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @template TDataMap - Type registry mapping specific keys to specific data types.
+ */
 export class PopoverQueryBus<
   TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
@@ -31,50 +57,75 @@ export class PopoverQueryBus<
   TDataMap extends Record<string, unknown> = DefaultDataMap<TPopoverKey, TData>,
 > {
   private readonly getStoreState: () => PopoverStateData<TData, TContext, TPopoverKey>;
+
+  /**
+   * Initializes the query bus with an immutable state snapshot accessor.
+   *
+   * @param getStoreState - Thunk returning the current immutable store snapshot.
+   */
   constructor(getStoreState: () => PopoverStateData<TData, TContext, TPopoverKey>) {
     this.getStoreState = getStoreState;
   }
 
+  /** Active cascading trail entries in root-to-leaf order. */
   get trail(): readonly TrailEntry<TData, TPopoverKey>[] {
     return this.getStoreState().trail;
   }
+  /** Pinned/floating entries detached from the active trail. */
   get floating(): readonly TrailEntry<TData, TPopoverKey>[] {
     return this.getStoreState().floating;
   }
+  /** Root popover entry anchoring the active cascading trail. */
   get root(): TrailEntry<TData, TPopoverKey> | undefined {
     return this.getStoreState().trail[0];
   }
+  /** Z-index stacking sequence of active popover keys. */
   get zIndexOrder(): readonly TPopoverKey[] {
     return this.getStoreState().zIndexOrder;
   }
+  /** Topmost focused popover entry in visual and keyboard order. */
   get topmost(): TrailEntry<TData, TPopoverKey> | undefined {
     return selectTopmostEntry<TData, TPopoverKey>(this.getStoreState());
   }
+  /** Total count of all open popovers (trail + floating). */
   get totalCount(): number {
     return selectTotalActiveCount(this.getStoreState());
   }
+  /** Alias for totalCount. */
   get activeCount(): number {
     return this.totalCount;
   }
+  /** `true` if no popovers are currently open. */
   get isIdle(): boolean {
     return selectIsIdle(this.getStoreState());
   }
+  /** Identifier of the current trail session owner. */
   get ownerId(): string | null {
     return this.getStoreState().ownerId;
   }
+  /** Injected shared context object. */
   get context(): TContext | null {
     return this.getStoreState().context;
   }
+  /** Immutable snapshot of current state suitable for history journaling. */
   get snapshot(): HistorySnapshot<TData, TPopoverKey> {
     return createHistorySnapshot(this.getStoreState());
   }
+  /** Discrete discriminated operational state: `'idle' | 'active-trail' | 'pinned-only'`. */
   get status(): 'idle' | 'active-trail' | 'pinned-only' {
     return selectDiscriminatedStatus(this.getStoreState());
   }
+  /** Alias for status. */
   get discriminatedStatus(): 'idle' | 'active-trail' | 'pinned-only' {
     return this.status;
   }
 
+  /**
+   * Retrieves the trail entry for a given key, with strongly-typed payload resolution.
+   *
+   * @param key - Registered popover key.
+   * @returns TrailEntry if found, otherwise `undefined`.
+   */
   public getEntry<K extends TPopoverKey>(
     key: K,
   ): TrailEntry<ResolveDataFromMap<TDataMap, K, TData>, K> | undefined {
@@ -84,10 +135,57 @@ export class PopoverQueryBus<
       | undefined;
   }
 
+  /**
+   * Retrieves the trail entry for a given key returning a `Result`.
+   *
+   * @remarks
+   * Eliminates the need for null-checks or throw-catch blocks by returning an explicit `Ok(entry)`
+   * or `Err(PopoverNotFoundError)` structure.
+   *
+   * @example
+   * ```ts
+   * const entryResult = queryBus.getEntryResult('userProfile');
+   * if (isOk(entryResult)) {
+   *   console.log('User data:', entryResult.value.data);
+   * }
+   * ```
+   *
+   * @param key - Target popover key.
+   * @returns `Ok(TrailEntry)` or `Err(PopoverNotFoundError)`.
+   */
+  public getEntryResult<K extends TPopoverKey>(
+    key: K,
+  ): Result<TrailEntry<ResolveDataFromMap<TDataMap, K, TData>, K>, PopoverNotFoundError<K>> {
+    const entry = this.getEntry(key);
+    if (!entry) {
+      return err({
+        type: 'popover_not_found',
+        key,
+        message: `Popover entry with key "${key}" not found in active trail or floating stack.`,
+      });
+    }
+    return ok(entry);
+  }
+
+  /**
+   * Retrieves the resolved data payload for a given popover key.
+   */
   public getData<K extends TPopoverKey>(
     key: K,
   ): ResolveDataFromMap<TDataMap, K, TData> | null | undefined {
     return this.getEntry(key)?.data ?? null;
+  }
+
+  /**
+   * Retrieves the resolved data payload for a given popover key returning a `Result`.
+   *
+   * @param key - Target popover key.
+   * @returns `Ok(data)` or `Err(PopoverNotFoundError)`.
+   */
+  public getDataResult<K extends TPopoverKey>(
+    key: K,
+  ): Result<ResolveDataFromMap<TDataMap, K, TData> | null, PopoverNotFoundError<K>> {
+    return mapResult(this.getEntryResult(key), (entry) => entry.data ?? null);
   }
 
   public getOffset(key: TPopoverKey): DragOffset {

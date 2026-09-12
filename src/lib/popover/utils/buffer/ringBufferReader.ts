@@ -10,7 +10,7 @@ import type { BufferCapacity, BufferRevision, BufferLogicalIndex, BufferRelative
 import type { BufferConsumer } from './bufferTypes';
 import type { BufferEmptyError, IndexOutOfBoundsError } from './bufferErrors';
 import { isBufferEmpty, isBufferFull } from './bufferGuards';
-import { peekRingResult, itemAtRingResult } from './bufferMonadic';
+import { peekRingResult, peekFirstRingResult, itemAtRingResult } from './bufferMonadic';
 import {
   forEachItem,
   forEachReversedItem,
@@ -35,7 +35,13 @@ export abstract class RingBufferReader<T> extends RingBufferQuery<T> {
   peekOldest(): T | undefined { return this.at(0); }
   peekFirst(): T | undefined { return this.at(0); }
   peekLast(): T | undefined { return this.at(-1); }
+
+  /** Returns newest item wrapped in Ok Result, or Err(BufferEmptyError) if empty. */
   peekResult(): Result<T, BufferEmptyError> { return peekRingResult(this.state); }
+  /** Returns oldest item wrapped in Ok Result, or Err(BufferEmptyError) if empty. */
+  peekFirstResult(): Result<T, BufferEmptyError> { return peekFirstRingResult(this.state); }
+  /** Returns newest item wrapped in Ok Result, matching peekResult. */
+  peekLastResult(): Result<T, BufferEmptyError> { return peekRingResult(this.state); }
 
   at(relativeIndex: BufferRelativeIndex): T | undefined {
     return itemAt(this.state, relativeIndex);

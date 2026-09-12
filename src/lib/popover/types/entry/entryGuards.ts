@@ -15,7 +15,7 @@ import { isLoadingEntry, isErrorEntry, getEntryState } from '../../utils/guards/
 
 export function isEntryWithStatus<
   TData,
-  S extends 'loading' | 'error' | 'success',
+  S extends 'idle' | 'loading' | 'error' | 'success',
   K extends string = string,
 >(entry: TrailEntry<TData, K>, status: S): entry is NarrowTrailEntry<TData, S, K> {
   return getEntryState<TData, K>(entry).status === status;

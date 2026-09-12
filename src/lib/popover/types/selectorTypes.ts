@@ -15,6 +15,9 @@ import type { PopoverRect } from './geometry';
 export type StateSelector<TState, TResult> = (state: TState) => TResult;
 export type StateEqualityFn<T> = (a: T, b: T) => boolean;
 
+/**
+ * Result returned by `usePopover` when the queried popover is currently closed.
+ */
 export interface ClosedUsePopoverResult {
   readonly isOpen: false;
   readonly entry: undefined;
@@ -32,6 +35,10 @@ export interface ClosedUsePopoverResult {
   readonly updateOffset: (x: number, y: number) => void;
 }
 
+/**
+ * Result returned by `usePopover` when the queried popover is currently open.
+ * Guarantees that `entry` is present and non-undefined.
+ */
 export interface OpenUsePopoverResult<TData = unknown, TPopoverKey extends string = string> {
   readonly isOpen: true;
   readonly entry: TrailEntry<TData, TPopoverKey>;
@@ -49,26 +56,27 @@ export interface OpenUsePopoverResult<TData = unknown, TPopoverKey extends strin
   readonly updateOffset: (x: number, y: number) => void;
 }
 
+/**
+ * Discriminated union for `usePopover` results narrowed on `isOpen`.
+ *
+ * @remarks
+ * Eliminates optional chaining friction:
+ * ```typescript
+ * const popover = usePopover('profile');
+ * if (popover.isOpen) {
+ *   // TypeScript automatically narrows popover to OpenUsePopoverResult!
+ *   // popover.entry is guaranteed to be defined:
+ *   console.log(popover.entry.key, popover.zIndex);
+ * }
+ * ```
+ */
 export type DiscriminatedUsePopoverResult<TData = unknown, TPopoverKey extends string = string> =
   | ClosedUsePopoverResult
   | OpenUsePopoverResult<TData, TPopoverKey>;
 
-export interface UsePopoverResult<TData = unknown, TPopoverKey extends string = string> {
-  readonly entry: TrailEntry<TData, TPopoverKey> | undefined;
-  readonly state: PopoverEntryDiscriminatedState<TData>;
-  readonly isOpen: boolean;
-  readonly isPinned: boolean;
-  readonly zIndex: number;
-  readonly isTop: boolean;
-  readonly offset: DragOffset;
-  readonly isLoading: boolean;
-  readonly data: TData | null | undefined;
-  readonly error: Error | null | undefined;
-  readonly close: () => void;
-  readonly pin: (rect?: DOMRect | PopoverRect) => void;
-  readonly bringToFront: () => void;
-  readonly updateOffset: (x: number, y: number) => void;
-}
+/** Alias for DiscriminatedUsePopoverResult. */
+export type UsePopoverResult<TData = unknown, TPopoverKey extends string = string> =
+  DiscriminatedUsePopoverResult<TData, TPopoverKey>;
 
 export type PopoverStore<
   TData = unknown,

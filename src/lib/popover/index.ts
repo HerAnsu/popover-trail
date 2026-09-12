@@ -28,6 +28,9 @@ export type {
   PopoverMiddleware,
   TypedMiddlewarePatch,
   StoreActionPayload,
+  StoreActionType,
+  ExtractActionPayload,
+  StoreActionPayloadMap,
   OnlyDataState,
   TypedPopoverStoreApi,
   StoreSliceDescriptor,
@@ -93,6 +96,7 @@ export type {
   PopoverStoreEventMap,
   PopoverEventMap,
   OnPopoverEventMap,
+  PopoverEventHandlerMap,
   ActiveTimelineStep,
   UndoneTimelineStep,
 } from './types/eventTypes';
@@ -114,6 +118,12 @@ export type {
   TriggerId,
   ScopeId,
   SubscriptionId,
+  WorkerTaskId,
+  CausalSequence,
+  StorageKey,
+  ChannelId,
+  CacheKey,
+  HistoryCapacity,
 } from './types/branded';
 
 // Types: Global Schema Registry Declaration Merging
@@ -138,6 +148,11 @@ export { isSuccessEntry, isIdleEntry, isEntryWithStatus } from './types/entry/en
 export * from './utils/typeGuards';
 
 export { matchEntryState } from './types/entryTypes';
+export { matchActionState, type ActionStateMatchers } from './utils/matchActionState';
+export type { HistoryError } from './store/history';
+export type { PopoverNotFoundError } from './store/cqrs';
+export type { SingularMatrixError, SpatialNotFoundError } from './utils/spatial';
+export { invertMatrix2DResult } from './utils/spatial';
 export { defineStoreSlice } from './types/storeTypes';
 
 // Core Store & Context
@@ -180,9 +195,12 @@ export {
   BasePopoverCache,
   MemoryStorageAdapter,
   WebStorageAdapter,
+  getCacheEntryState,
   type TypedPopoverCache,
   type CacheStats,
   type CacheEntry,
+  type CacheEntryState,
+  type CacheEventHandlerMap,
   type CacheOptions,
   type SWRFetchOptions,
   type StorageAdapter,
@@ -213,6 +231,11 @@ export {
   tapErr,
   wrapResult,
   wrapAsyncResult,
+  fromThrowable,
+  fromPromise,
+  collectResults,
+  partitionResults,
+  combineResults,
   type Result,
   type OkResult,
   type ErrResult,
@@ -223,6 +246,8 @@ export {
   AsyncCompositeDisposable,
   using,
   usingAsync,
+  usingResult,
+  usingAsyncResult,
   createTimerDisposable,
   createRafDisposable,
   createEventListenerDisposable,
@@ -290,7 +315,7 @@ export {
   hasEntryWithKey,
   findEntryInStore,
 } from './utils/storeHelpers';
-export { PopoverMiddlewareEngine } from './store';
+export { PopoverMiddlewareEngine, composeMiddlewares } from './store';
 export {
   isKeyInZIndexOrder,
   isPinnedEntry,
@@ -338,9 +363,11 @@ export {
   createPopoverFSM,
   popoverFSMReducer,
   assertPopoverFSMState,
+  canTransition,
   FSMStatusBit,
   STATE_VALUE_TO_BIT_MAP,
   type PopoverStateValue,
+  type ValidNextFSMState,
   type ValidStateTransitions,
   type PopoverFSMContext,
   type PopoverFSMEvent,
@@ -394,9 +421,15 @@ export {
   toTriggerId,
   toScopeId,
   toSubscriptionId,
+  toWorkerTaskId,
+  toCausalSequence,
+  toStorageKey,
+  toChannelId,
+  toCacheKey,
   toDurationMs,
   toTimestampMs,
   toZIndexDepth,
+  toHistoryCapacity,
   isPopoverKey,
   isParentKey,
   isOwnerId,
@@ -404,6 +437,12 @@ export {
   isTriggerId,
   isScopeId,
   isSubscriptionId,
+  isWorkerTaskId,
+  isCausalSequence,
+  isStorageKey,
+  isChannelId,
+  isCacheKey,
+  isHistoryCapacity,
 } from './utils/branded';
 export { useCrossVersionActionState, useCrossVersionOptimistic } from './utils/react19Adapters';
 export { Slot, mergeProps, type SlotProps } from './utils/slot';

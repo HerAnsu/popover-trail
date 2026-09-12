@@ -103,6 +103,30 @@ describe('CQRS buses module', () => {
     buses.command.togglePin('pin-test');
     expect(buses.query.isPinned('pin-test')).toBe(true);
 
+    // Monadic query operations
+    const entryRes = buses.query.getEntryResult('pin-test');
+    expect(entryRes.success).toBe(true);
+    if (entryRes.success) {
+      expect(entryRes.data.key).toBe('pin-test');
+    }
+
+    const missingRes = buses.query.getEntryResult('non-existent');
+    expect(missingRes.success).toBe(false);
+    if (!missingRes.success) {
+      expect(missingRes.error.type).toBe('popover_not_found');
+      expect(missingRes.error.key).toBe('non-existent');
+    }
+
+    // Monadic batch operations
+    const batchRes = buses.command.batchResult((cmd) => {
+      cmd.bringToFront('pin-test');
+      return { success: true as const, data: 42 };
+    });
+    expect(batchRes.success).toBe(true);
+    if (batchRes.success) {
+      expect(batchRes.data).toBe(42);
+    }
+
     expect(() => buses.dispose()).not.toThrow();
   });
 });

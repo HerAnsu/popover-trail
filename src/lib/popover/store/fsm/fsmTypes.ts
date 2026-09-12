@@ -91,3 +91,5 @@ export interface FSMRegistryOptions<TData = unknown, TPopoverKey extends string 
   ) => void;
   readonly isDev?: boolean;
 }
+
+export type { ValidNextFSMState } from './fsmMatrix';
