@@ -133,6 +133,23 @@ export function createBrand<T, B extends string>(value: T): Brand<T, B> {
   return value as Brand<T, B>;
 }
 
+/**
+ * Strips nominal brand tag at runtime and compile-time, returning the underlying primitive value.
+ *
+ * @template T - Branded or primitive value type.
+ * @param value - Value to unbrand.
+ * @returns The unbranded primitive value.
+ *
+ * @example
+ * ```typescript
+ * const rawKey = unbrand(toPopoverKey('card-1')); // 'card-1' (string)
+ * const rawMs = unbrand(toDurationMs(300)); // 300 (number)
+ * ```
+ */
+export function unbrand<T>(value: T): Unbrand<T> {
+  return value as Unbrand<T>;
+}
+
 export const EMPTY_READONLY_ARRAY: readonly never[] = Object.freeze([]);
 export const EMPTY_READONLY_OBJECT: Readonly<Partial<Record<string, unknown>>> = Object.freeze({});
 
@@ -145,3 +162,4 @@ export function emptyRecord<K extends string = string, V = unknown>(): Readonly<
 > {
   return EMPTY_READONLY_OBJECT as Readonly<Partial<Record<K, V>>>;
 }
+

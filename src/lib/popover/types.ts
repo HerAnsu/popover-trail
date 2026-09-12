@@ -13,6 +13,7 @@ export * from './utils/typeGuards';
 export * from './types/registerTypes';
 export * from './types/polymorphicTypes';
 export * from './types/react19Types';
+export * from './types/utilityTypes';
 export type {
   Brand,
   PopoverKey,
@@ -22,5 +23,10 @@ export type {
   ZIndexDepth,
   DurationMs,
   TimestampMs,
+  Unbrand,
+  BrandTagOf,
+  IsBranded,
+  AnyBrand,
 } from './types/branded';
-export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT } from './types/branded';
+export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT, emptyRecord, unbrand } from './types/branded';
+

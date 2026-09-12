@@ -48,7 +48,20 @@ import {
   type IsBranded,
   type AnyBrand,
   type NarrowTrailEntry,
+  type MaybePromise,
+  type Nullable,
+  type Maybe,
+  type Falsy,
+  type Predicate,
+  type AsyncPredicate,
+  type ValueOf,
+  type DeepPartial,
+  type InferOk,
+  type InferErr,
+  type NonEmptyArray,
+  type EventPayload,
   emptyRecord,
+  unbrand,
   collectResults,
   partitionResults,
   usingResult,
@@ -59,6 +72,7 @@ import {
   isSuccessEntry,
   isIdleEntry,
 } from '../index';
+
 import type {
   PopoverFSMState,
   IdleFSMState,
@@ -296,4 +310,61 @@ describe('Type-Level Static Assertions (test-d)', () => {
     const rec = emptyRecord<string, number>();
     expectTypeOf(rec).toMatchTypeOf<Readonly<Partial<Record<string, number>>>>();
   });
+
+  it('verifies unbrand function extracts primitive type', () => {
+    expectTypeOf(unbrand).toBeFunction();
+    const key = 'test' as PopoverKey;
+    const raw = unbrand(key);
+    expectTypeOf(raw).toEqualTypeOf<string>();
+    const dur = 100 as DurationMs;
+    const rawDur = unbrand(dur);
+    expectTypeOf(rawDur).toEqualTypeOf<number>();
+  });
+
+  it('verifies MaybePromise, Nullable, Maybe, and Falsy type utilities', () => {
+    expectTypeOf<MaybePromise<string>>().toEqualTypeOf<string | Promise<string>>();
+    expectTypeOf<Nullable<number>>().toEqualTypeOf<number | null>();
+    expectTypeOf<Maybe<boolean>>().toEqualTypeOf<boolean | null | undefined>();
+    expectTypeOf<false>().toMatchTypeOf<Falsy>();
+    expectTypeOf<0>().toMatchTypeOf<Falsy>();
+    expectTypeOf<null>().toMatchTypeOf<Falsy>();
+    expectTypeOf<undefined>().toMatchTypeOf<Falsy>();
+  });
+
+  it('verifies Predicate and AsyncPredicate functional utilities', () => {
+    type TestPred = Predicate<number>;
+    expectTypeOf<TestPred>().toEqualTypeOf<(value: number) => boolean>();
+
+    type TestAsyncPred = AsyncPredicate<string>;
+    expectTypeOf<TestAsyncPred>().toEqualTypeOf<(value: string) => MaybePromise<boolean>>();
+  });
+
+  it('verifies ValueOf, DeepPartial, NonEmptyArray, and EventPayload', () => {
+    const config = { a: 1, b: 'two', c: true } as const;
+    expectTypeOf<ValueOf<typeof config>>().toEqualTypeOf<1 | 'two' | true>();
+
+    interface Nested {
+      x: number;
+      inner: { y: string; items: number[] };
+    }
+    type PartialNested = DeepPartial<Nested>;
+    expectTypeOf<PartialNested>().toMatchTypeOf<{
+      x?: number;
+      inner?: { y?: string; items?: number[] };
+    }>();
+
+
+    type NonEmpty = NonEmptyArray<string>;
+    expectTypeOf<['hello']>().toMatchTypeOf<NonEmpty>();
+
+    type EventMap = { 'open': { key: string }; 'close': { key: string } };
+    expectTypeOf<EventPayload<EventMap, 'open'>>().toEqualTypeOf<{ key: string }>();
+  });
+
+  it('verifies InferOk and InferErr extract payload types from Result', () => {
+    type TestResult = Result<{ user: string }, { code: number }>;
+    expectTypeOf<InferOk<TestResult>>().toEqualTypeOf<{ user: string }>();
+    expectTypeOf<InferErr<TestResult>>().toEqualTypeOf<{ code: number }>();
+  });
 });
+

@@ -6,6 +6,8 @@
  * @module triggerRegistry
  */
 
+import type { Unbrand } from '../types/branded';
+
 /**
  * Singleton registry mapping popover keys to `WeakRef<HTMLElement>` anchor elements.
  *
@@ -26,12 +28,12 @@ function pruneDeadRefs(): void {
 
 export const TriggerRegistry = {
   /**
-   * Registers a trigger element for a popover key.
+   * Registers a trigger element for a popover key. Accepts branded and unbranded keys.
    *
-   * @param key - Unique popover key string.
+   * @param key - Unique popover key string or branded domain key.
    * @param el - DOM HTMLElement of the trigger button or container.
    */
-  register(key: string, el?: HTMLElement | null): void {
+  register<K extends string = string>(key: K | Unbrand<K>, el?: HTMLElement | null): void {
     if (!key || !el || typeof el !== 'object' || typeof WeakRef === 'undefined') return;
     if (registry.size > MAX_REGISTRY_SIZE_BEFORE_SWEEP) {
       pruneDeadRefs();
@@ -40,7 +42,7 @@ export const TriggerRegistry = {
   },
 
   /** Retrieve the anchor element, or null if GC'd or not registered. */
-  get(key: string): HTMLElement | null {
+  get<K extends string = string>(key: K | Unbrand<K>): HTMLElement | null {
     if (!key) return null;
     const ref = registry.get(key);
     if (!ref) return null;
@@ -53,7 +55,7 @@ export const TriggerRegistry = {
   },
 
   /** Unregister a popover key. */
-  unregister(key: string): void {
+  unregister<K extends string = string>(key: K | Unbrand<K>): void {
     if (!key) return;
     registry.delete(key);
   },
@@ -69,7 +71,7 @@ export const TriggerRegistry = {
   },
 
   /** Check if a key has a living (non-GC'd) element. Prunes stale WeakRef if GC'd. */
-  has(key: string): boolean {
+  has<K extends string = string>(key: K | Unbrand<K>): boolean {
     const ref = registry.get(key);
     if (!ref) return false;
     const el = ref.deref();
@@ -85,3 +87,4 @@ export const TriggerRegistry = {
     return registry.size;
   },
 } as const;
+

@@ -4,7 +4,7 @@
  * @module store/persistence/persistenceTypes
  */
 
-import type { DragOffset, TrailEntry } from '../../types';
+import type { DragOffset, TrailEntry, OwnerId, Unbrand } from '../../types';
 import type { DISPOSE_SYMBOL } from '../../utils/disposable';
 
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -18,8 +18,10 @@ export interface PersistedEnvelope<TData = unknown, TPopoverKey extends string =
   readonly offsets: Readonly<Partial<Record<TPopoverKey, Readonly<DragOffset>>>>;
   readonly pinnedStates: Readonly<Partial<Record<TPopoverKey, boolean>>>;
   readonly zIndexOrder: readonly TPopoverKey[];
-  readonly ownerId: string | null;
+  readonly ownerId: Unbrand<OwnerId> | null;
 }
+
+
 
 export interface CrossTabBroadcaster {
   postMessage(message: unknown): void;

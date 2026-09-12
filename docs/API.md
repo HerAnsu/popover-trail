@@ -81,6 +81,7 @@ Complete technical specification for components, hooks, schema builders, core en
    - [PolymorphicPropsWithRef](#polymorphicpropswithref)
    - [TypedMiddlewarePatch](#typedmiddlewarepatch)
    - [Branded primitive types and constructors](#branded-primitive-types-and-constructors)
+   - [Universal domain type utilities](#universal-domain-type-utilities)
    - [Store slices and defineStoreSlice](#store-slices-and-definestoreslice)
    - [Domain error models](#domain-error-models)
    - [React 19 Action and Optimistic types](#react-19-action-and-optimistic-types)
@@ -2383,10 +2384,11 @@ Nominal branding attaches phantom brand tags to primitives, preventing developer
 - `BrandTagOf<T>`: Extracts the literal string brand tag from branded type `T` (e.g. `BrandTagOf<PopoverKey>` is `'PopoverKey'`).
 - `IsBranded<T>`: Evaluates to `true` if `T` carries a nominal brand tag, otherwise `false`.
 - `AnyBrand`: Universal wildcard type constraint matching any nominal branded type.
+- `unbrand(value)`: Runtime function stripping nominal brand tags from branded values at runtime and compile-time (e.g. `unbrand(toPopoverKey('card-1'))` returns `'card-1'`).
 
 #### Smart constructors and type guards
 
-All smart constructors validate invariants at runtime and return the branded type without requiring double type assertions:
+All smart constructors validate invariants at runtime and return the branded type without requiring double type assertions. They seamlessly accept both unbranded primitives and already-branded values:
 
 | Constructor | Input Type | Invariant & Sanitization | Type Guard |
 | :--- | :--- | :--- | :--- |
@@ -2415,6 +2417,7 @@ import {
   isPopoverKey,
   toDurationMs,
   toZIndexDepth,
+  unbrand,
 } from 'popover-trail';
 
 // 1. Safe creation of branded keys
@@ -2429,9 +2432,62 @@ if (isPopoverKey(userInput)) {
 // 3. Sanitized numbers
 const safeDelay = toDurationMs(-50); // Returns 0ms branded DurationMs
 const zIndex = toZIndexDepth(100.7); // Returns 100 branded ZIndexDepth
+
+// 4. Safe unbranding for DOM attributes or external APIs
+const rawKey = unbrand(userKey); // Type: 'user-card' (string)
+const rawDelay = unbrand(safeDelay); // Type: 0 (number)
 ```
 
 ---
+
+### Universal domain type utilities
+
+High-utility zero-runtime-overhead algebraic type operators exported from `'popover-trail'` for building robust, compile-time safe popover configurations, async resolvers, and event pipelines:
+
+| Utility Type | Definition / Signature | Description & Usage |
+| :--- | :--- | :--- |
+| `MaybePromise<T>` | `T \| Promise<T>` | Asynchronous or synchronous value. Used across `PopoverResolver`, cache layers, and custom hooks. |
+| `Nullable<T>` | `T \| null` | Explicit domain type representing a nullable value. |
+| `Maybe<T>` | `T \| null \| undefined` | Explicit domain type representing an optional or absent value. |
+| `Falsy` | `false \| 0 \| -0 \| 0n \| '' \| null \| undefined` | Complete union of all JavaScript falsy primitive values. |
+| `Predicate<T>` | `(value: T) => boolean` | Unary functional predicate function. |
+| `AsyncPredicate<T>` | `(value: T) => MaybePromise<boolean>` | Unary predicate supporting both async and sync boolean evaluations. |
+| `ValueOf<T>` | `T[keyof T]` | Extracts the union of all property values from object type `T`. |
+| `DeepPartial<T>` | Deep recursive partial | Makes all properties of an object and nested collections optional. Complements `DeepReadonly<T>`. |
+| `InferOk<R>` | `R extends { success: true; data: infer T } ? T : never` | Extracts success payload type `T` from a `Result<T, E>`. |
+| `InferErr<R>` | `R extends { success: false; error: infer E } ? E : never` | Extracts error payload type `E` from a `Result<T, E>`. |
+| `NonEmptyArray<T>` | `readonly [T, ...T[]]` | Array type statically guaranteed to contain at least one element. |
+| `EventPayload<TMap, K>`| `TMap[K]` | Extracts specific event payload type from an event map. |
+
+```typescript
+import type {
+  MaybePromise,
+  ValueOf,
+  DeepPartial,
+  InferOk,
+  InferErr,
+  Result,
+  PopoverDisplayOptions,
+} from 'popover-trail';
+
+// 1. Partial display configuration overrides
+type CustomPopoverOptions = DeepPartial<PopoverDisplayOptions>;
+
+// 2. Monadic payload extraction
+type UserResult = Result<{ id: string; name: string }, Error>;
+type UserData = InferOk<UserResult>; // { id: string; name: string }
+type UserError = InferErr<UserResult>; // Error
+
+// 3. Values of constant maps
+const THEME_NAMES = { LIGHT: 'light', DARK: 'dark', AUTO: 'auto' } as const;
+type ThemeName = ValueOf<typeof THEME_NAMES>; // 'light' | 'dark' | 'auto'
+
+// 4. Async or sync resolver helper
+type CustomResolver = (id: string) => MaybePromise<UserData>;
+```
+
+---
+
 
 ### Domain error models
 

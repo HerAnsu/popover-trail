@@ -141,7 +141,24 @@ export type {
   ResolveRegisteredData,
 } from './types/registerTypes';
 
-export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT, emptyRecord } from './types/branded';
+export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT, emptyRecord, unbrand } from './types/branded';
+
+// Types: Universal Type Utilities
+export type {
+  MaybePromise,
+  Nullable,
+  Maybe,
+  Falsy,
+  Predicate,
+  AsyncPredicate,
+  ValueOf,
+  DeepPartial,
+  InferOk,
+  InferErr,
+  NonEmptyArray,
+  EventPayload,
+} from './types/utilityTypes';
+
 
 export type {
   PolymorphicRef,

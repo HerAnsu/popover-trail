@@ -16,6 +16,7 @@ import {
   type StorageKey,
   type ChannelId,
   type CacheKey,
+  type Unbrand,
   createBrand,
 } from '../types/branded';
 
@@ -27,16 +28,17 @@ import {
  */
 export function createBrandedIdentity<B extends string>(brandName: B) {
   return {
-    toBrand: <S extends string = string>(val: S): Brand<S, B> => {
+    toBrand: <S extends string = string>(val: S | Unbrand<Brand<S, B>>): Brand<S, B> => {
       if (typeof val !== 'string' || val.trim().length === 0) {
         throw new TypeError(`[popover-trail]: ${brandName} must be a non-empty string.`);
       }
-      return createBrand<S, B>(val);
+      return createBrand<S, B>(val as S);
     },
     isBrand: (val: unknown): val is Brand<string, B> =>
       typeof val === 'string' && val.trim().length > 0,
   };
 }
+
 
 const popoverKeyIdentity = createBrandedIdentity('PopoverKey');
 /** Smart constructor for `PopoverKey`. Validates non-empty trimmed string. */
