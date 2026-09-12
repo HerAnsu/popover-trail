@@ -11,6 +11,7 @@ import type { PopoverStateData, DragOffset, StatePatch } from './state';
 import type { PopoverActions } from './actions';
 import type { RegisteredKeys, RegisteredDataMap } from './registerTypes';
 import type { PopoverRect } from './geometry';
+import type { ZIndexDepth } from './branded';
 
 export type StateSelector<TState, TResult> = (state: TState) => TResult;
 export type StateEqualityFn<T> = (a: T, b: T) => boolean;
@@ -44,7 +45,7 @@ export interface OpenUsePopoverResult<TData = unknown, TPopoverKey extends strin
   readonly entry: TrailEntry<TData, TPopoverKey>;
   readonly state: PopoverEntryDiscriminatedState<TData>;
   readonly isPinned: boolean;
-  readonly zIndex: number;
+  readonly zIndex: ZIndexDepth | number;
   readonly isTop: boolean;
   readonly offset: DragOffset;
   readonly isLoading: boolean;

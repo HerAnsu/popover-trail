@@ -6,6 +6,7 @@
  */
 
 import type { CSSProperties } from 'react';
+import type { ZIndexDepth } from '../types/branded';
 import { createLRUCache } from './lruCache';
 import { hashTransformCoordinates, toFiniteNumber, buildTransformString } from './stylesTransform';
 
@@ -19,7 +20,7 @@ export interface GetPopoverStylesParams {
   readonly rotation?: number;
   readonly rotationX?: number;
   readonly rotationY?: number;
-  readonly zIndex?: number;
+  readonly zIndex?: ZIndexDepth | number;
 }
 
 const styleCache = createLRUCache<number, CSSProperties>(128);

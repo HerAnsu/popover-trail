@@ -55,6 +55,9 @@ export type PopoverLayoutStrategy = (typeof POPOVER_LAYOUT_STRATEGIES)[number];
 
 export type PopoverPlacement = Placement | 'auto';
 
+/**
+ * Extended CSS properties dictionary including popover engine custom CSS variables.
+ */
 export interface PopoverCSSProperties extends React.CSSProperties {
   '--popover-z-index'?: number | string;
   '--popover-offset-x'?: number | string;
@@ -62,5 +65,16 @@ export interface PopoverCSSProperties extends React.CSSProperties {
   '--popover-transition-duration'?: string;
   '--popover-max-height'?: string;
   '--popover-max-width'?: string;
+  '--popover-translate-x'?: string;
+  '--popover-translate-y'?: string;
+  '--popover-rotate-x'?: string;
+  '--popover-rotate-y'?: string;
+  '--popover-rotate-z'?: string;
+  '--pt-top'?: string;
+  '--pt-left'?: string;
+  '--pt-z-index'?: number | string;
+  '--pt-drag-x'?: string;
+  '--pt-drag-y'?: string;
+  '--pt-tilt-deg'?: string;
   [key: `--${string}`]: string | number | undefined;
 }
