@@ -2606,10 +2606,10 @@ export function matchEntryState<TData, R, TPopoverKey extends string = string>(
 | `success` | `SuccessTrailEntry<TData>` | Card data resolved successfully (`data: TData`). |
 
 ```tsx
-import { usePopoverCard, matchEntryState } from 'popover-trail';
+import { usePopover, matchEntryState } from 'popover-trail';
 
 export function UserProfileCard({ popoverKey }: { popoverKey: string }) {
-  const { entry } = usePopoverCard<UserData>(popoverKey);
+  const { entry } = usePopover<UserData>(popoverKey);
 
   if (!entry) return null;
 

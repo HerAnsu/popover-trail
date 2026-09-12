@@ -33,8 +33,12 @@ import { toError } from '../utils/typeGuards';
  * @param options - Configuration options for initial data, optimistic values, and callbacks.
  * @returns Tuple of current action state, dispatch function, and isPending boolean.
  */
-export function usePopoverAction<TData, TInput = void>(
-  cardKey: string,
+export function usePopoverAction<
+  TData,
+  TInput = void,
+  TPopoverKey extends string = string,
+>(
+  cardKey: TPopoverKey,
   action: PopoverServerAction<TData, TInput>,
   options: Omit<UsePopoverActionOptions<TData, TInput>, 'action'> = {},
 ): UsePopoverActionResult<TData, TInput> {
