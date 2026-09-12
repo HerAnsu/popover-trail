@@ -23,8 +23,8 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name === 'executeResolverPipeline') {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name === 'executeResolverPipeline') {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (body && !body.includes('signal') && !body.includes('aborted')) {
             context.report({
               node,

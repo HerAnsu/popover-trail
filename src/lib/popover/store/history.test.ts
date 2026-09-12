@@ -203,4 +203,31 @@ describe('HistoryManager', () => {
     history.dispose();
     expect(history.undoStack).toHaveLength(0);
   });
+
+  it('exposes readonly buffers and operational metrics', () => {
+    const history = createHistoryManager(5);
+    const mockState = createMockStoreState({
+      trail: [{ key: 'c1', isLoading: false, error: null }],
+      floating: [],
+      offsets: {},
+      pinnedStates: {},
+      zIndexOrder: ['c1'],
+      ownerId: 'o1',
+    });
+
+    history.pushSnapshot(mockState);
+
+    const undoBuffer = history.getUndoBuffer();
+    expect(undoBuffer.size).toBe(1);
+    expect(undoBuffer.peek()?.ownerId).toBe('o1');
+
+    const metrics = history.getMetrics();
+    expect(metrics.undo.size).toBe(1);
+    expect(metrics.undo.capacity).toBe(5);
+    expect(metrics.undo.totalPushes).toBe(1);
+    expect(metrics.redo.size).toBe(0);
+
+    const redoBuffer = history.getRedoBuffer();
+    expect(redoBuffer.isEmpty).toBe(true);
+  });
 });

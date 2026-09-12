@@ -17,13 +17,12 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'createPortal' &&
+          ((node.callee?.name || node.callee?.property?.name) || node.callee?.property?.name) === 'createPortal' &&
           node.arguments.length >= 2 &&
-          node.arguments[1].type === 'Identifier' &&
+          node.arguments[1]?.type === 'Identifier' &&
           node.arguments[1].name === 'target'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (!src.includes('if (!target)') && !src.includes('target ?')) {
             context.report({ node, messageId: 'unvalidatedPortal' });
           }

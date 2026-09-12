@@ -32,12 +32,10 @@ export default {
           node.callee &&
           (node.callee.name === 'useEffect' || node.callee.name === 'useLayoutEffect') &&
           node.arguments[0] &&
-          (node.arguments[0].type === 'ArrowFunctionExpression' ||
-            node.arguments[0].type === 'FunctionExpression')
+          (node.arguments[0]?.type === 'ArrowFunctionExpression' ||
+            node.arguments[0]?.type === 'FunctionExpression')
         ) {
-          const body = context.getSourceCode
-            ? context.getSourceCode().getText(node.arguments[0])
-            : '';
+          const body = context.getSourceCode?.()?.getText?.(node.arguments[0]) ?? '';
           if (body.includes('requestAnimationFrame(') && !body.includes('cancelAnimationFrame(')) {
             context.report({
               node,

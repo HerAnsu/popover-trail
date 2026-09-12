@@ -24,12 +24,10 @@ export default {
     return {
       AssignmentExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
+          node.left?.type === 'MemberExpression' &&
           node.left.property &&
           (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML') &&
-          node.right &&
-          node.right.type === 'Identifier'
+          node.right?.type === 'Identifier'
         ) {
           context.report({
             node,

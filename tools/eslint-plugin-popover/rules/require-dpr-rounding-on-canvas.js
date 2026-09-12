@@ -18,13 +18,11 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'getContext' &&
-          node.arguments[0] &&
-          node.arguments[0].value === '2d'
+          node.arguments[0]?.value === '2d'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (!src.includes('devicePixelRatio')) {
             context.report({ node, messageId: 'dprScaling' });
           }

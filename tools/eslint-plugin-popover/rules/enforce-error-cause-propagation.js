@@ -1,7 +1,3 @@
-/**
- * @fileoverview Recommend passing original error in { cause: err } when re-throwing PopoverError.
- */
-
 export default {
   meta: {
     type: 'suggestion',
@@ -17,17 +13,15 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
     if (!filename.includes('errors') && !filename.includes('Errors')) return {};
 
     return {
       ThrowStatement(node) {
         if (
-          node.argument &&
-          node.argument.type === 'NewExpression' &&
-          node.argument.callee &&
-          node.argument.callee.name &&
-          node.argument.callee.name.includes('Error') &&
-          node.argument.arguments.length === 1
+          node.argument?.type === 'NewExpression' &&
+          node.argument?.callee?.name?.includes?.('Error') &&
+          node.argument?.arguments?.length === 1
         ) {
           context.report({
             node,

@@ -1,3 +1,6 @@
+import { isElementLike, isFunction } from './typeGuards';
+import { DATA_POPOVER_PORTAL, DATA_POPOVER_IGNORE_OUTSIDE } from '../constants';
+
 /**
  * Returns the event propagation path array, with support for Shadow DOM `composedPath()`.
  *
@@ -5,7 +8,7 @@
  * @returns Array of EventTarget nodes traversed during event propagation.
  */
 export function getEventPath(e: Event): EventTarget[] {
-  if (typeof e.composedPath === 'function') {
+  if (isFunction(e.composedPath)) {
     return e.composedPath();
   }
   return e.target ? [e.target] : [];
@@ -18,12 +21,17 @@ export function getEventPath(e: Event): EventTarget[] {
  * @param e - DOM Event instance.
  * @returns Target element or null if unavailable.
  */
-export function getEventTarget<T extends EventTarget = HTMLElement>(e: Event): T | null {
-  if (typeof e.composedPath === 'function') {
-    const path = e.composedPath();
-    if (path.length > 0) return (path[0] as T) ?? (e.target as T | null);
+export function getEventTarget<T extends EventTarget = HTMLElement>(
+  e: Event,
+  guard?: (node: EventTarget) => node is T,
+): T | null {
+  const path = isFunction(e.composedPath) ? e.composedPath() : null;
+  const candidate = path && path.length > 0 ? (path[0] ?? e.target) : e.target;
+  if (!candidate) return null;
+  if (guard) {
+    return guard(candidate) ? candidate : null;
   }
-  return (e.target as T | null) ?? null;
+  return candidate as T;
 }
 
 /**
@@ -37,9 +45,9 @@ export function isPortalOrExcludedTarget(e: Event): boolean {
   const path = getEventPath(e);
   for (const target of path) {
     if (
-      target instanceof Element &&
-      (target.hasAttribute('data-popover-portal') ||
-        target.hasAttribute('data-popover-ignore-outside'))
+      isElementLike(target) &&
+      (target.hasAttribute(DATA_POPOVER_PORTAL) ||
+        target.hasAttribute(DATA_POPOVER_IGNORE_OUTSIDE))
     ) {
       return true;
     }

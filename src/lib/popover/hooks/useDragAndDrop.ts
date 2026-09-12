@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useDebugValue } from 'react';
 import type { DragAxis } from '../types';
-import { computeTiltMatrix } from '../utils/dragMath';
+import { computeTiltMatrixInPlace } from '../utils/dragMath';
 import { validateDragOffset } from '../utils/devWarnings';
+
+import { isBrowser, isFunction } from '../utils/typeGuards';
 
 /**
  * Options parameters for the `usePopoverDragAndDrop` hook.
@@ -44,12 +46,12 @@ export interface UsePopoverDragAndDropResult {
 }
 
 interface LegacyMediaQueryList extends MediaQueryList {
-  addListener(listener: (e: MediaQueryListEvent) => void): void;
-  removeListener(listener: (e: MediaQueryListEvent) => void): void;
+  addListener: (listener: (e: MediaQueryListEvent) => void) => void;
+  removeListener: (listener: (e: MediaQueryListEvent) => void) => void;
 }
 
 function hasLegacyMediaQueryListener(mq: MediaQueryList): mq is LegacyMediaQueryList {
-  return 'addListener' in mq && typeof mq.addListener === 'function';
+  return 'addListener' in mq && isFunction(mq.addListener);
 }
 
 class ReducedMotionObserverImpl {
@@ -57,14 +59,14 @@ class ReducedMotionObserverImpl {
   private listeners = new Set<() => void>();
 
   constructor() {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    if (isBrowser() && isFunction(window.matchMedia)) {
       const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.matches = mediaQuery.matches;
       const listener = (e: MediaQueryListEvent) => {
         this.matches = e.matches;
         this.listeners.forEach((cb) => cb());
       };
-      if (typeof mediaQuery.addEventListener === 'function') {
+      if (isFunction(mediaQuery.addEventListener)) {
         mediaQuery.addEventListener('change', listener);
       } else if (hasLegacyMediaQueryListener(mediaQuery)) {
         mediaQuery.addListener(listener);
@@ -86,17 +88,17 @@ class ReducedMotionObserverImpl {
 
 const ReducedMotionObserver = new ReducedMotionObserverImpl();
 
-function calculateDecayedRotation(
+function decayRotationInPlace(
   c: { x: number; y: number; z: number },
   decay: number,
-): { x: number; y: number; z: number; done: boolean } {
+): boolean {
   const safeDecay = Math.min(Math.max(decay, 0.1), 0.99);
-  const x = Math.abs(c.x * safeDecay) < 0.05 ? 0 : c.x * safeDecay;
-  const y = Math.abs(c.y * safeDecay) < 0.05 ? 0 : c.y * safeDecay;
-  const z = Math.abs(c.z * safeDecay) < 0.05 ? 0 : c.z * safeDecay;
-  const done = x === 0 && y === 0 && z === 0;
-  return { x, y, z, done };
+  c.x = Math.abs(c.x * safeDecay) < 0.05 ? 0 : c.x * safeDecay;
+  c.y = Math.abs(c.y * safeDecay) < 0.05 ? 0 : c.y * safeDecay;
+  c.z = Math.abs(c.z * safeDecay) < 0.05 ? 0 : c.z * safeDecay;
+  return c.x === 0 && c.y === 0 && c.z === 0;
 }
+
 
 function applyElementTiltStyles(
   el: HTMLElement | null,
@@ -142,6 +144,7 @@ export function usePopoverDragAndDrop({
   const transformYRef = useRef(0);
 
   const rotationRef = useRef({ z: 0, x: 0, y: 0 });
+  const tiltTargetRef = useRef({ rotationX: 0, rotationY: 0 });
 
   useEffect(() => {
     transformXRef.current = dragAxis === 'y' ? 0 : (transform?.x ?? 0);
@@ -171,20 +174,24 @@ export function usePopoverDragAndDrop({
       const velocityY = (currentDragY - lastDragY.current) / dt;
 
       const curr = rotationRef.current;
-      const tiltMatrix = computeTiltMatrix(
+      computeTiltMatrixInPlace(
         velocityX * (1 - tiltFriction) * 1.5,
         velocityY * (1 - tiltFriction) * 1.5,
         maxTiltAngle,
         tiltSensitivity,
+        tiltTargetRef.current,
       );
       const safeFriction = Math.pow(tiltFriction, frameRatio);
-      const boundedX = curr.x * safeFriction + tiltMatrix.rotationX;
-      const boundedY = curr.y * safeFriction + tiltMatrix.rotationY;
+      const boundedX = curr.x * safeFriction + tiltTargetRef.current.rotationX;
+      const boundedY = curr.y * safeFriction + tiltTargetRef.current.rotationY;
 
       const nextZ = curr.z * safeFriction + velocityX * (tiltSensitivity / 2) * (1 - tiltFriction);
       const boundedZ = Math.max(-maxTiltAngle / 2, Math.min(maxTiltAngle / 2, nextZ));
 
-      rotationRef.current = { z: boundedZ, x: boundedX, y: boundedY };
+      curr.z = boundedZ;
+      curr.x = boundedX;
+      curr.y = boundedY;
+
       const el = cardRef?.current;
       if (el) {
         el.style.setProperty('--pt-rotate-z', `${boundedZ}deg`);
@@ -225,11 +232,10 @@ export function usePopoverDragAndDrop({
       const c = rotationRef.current;
       if (c.x === 0 && c.y === 0 && c.z === 0) return;
 
-      const next = calculateDecayedRotation(c, tiltDecay);
-      rotationRef.current = { z: next.z, x: next.x, y: next.y };
-      applyElementTiltStyles(cardRef?.current ?? null, next, next.done);
+      const done = decayRotationInPlace(c, tiltDecay);
+      applyElementTiltStyles(cardRef?.current ?? null, c, done);
 
-      if (!next.done) {
+      if (!done) {
         frameId = requestAnimationFrame(returnToZero);
       }
     };
@@ -237,6 +243,7 @@ export function usePopoverDragAndDrop({
     frameId = requestAnimationFrame(returnToZero);
     return () => cancelAnimationFrame(frameId);
   }, [isDragging, enableTilt, tiltDecay, cardRef, prefersReducedMotion]);
+
 
   const dragX = dragAxis === 'y' ? 0 : (transform?.x ?? 0);
   const dragY = dragAxis === 'x' ? 0 : (transform?.y ?? 0);

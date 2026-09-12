@@ -22,14 +22,10 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'Boolean' &&
-          node.arguments &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'UnaryExpression' &&
+          node.callee?.name === 'Boolean' &&
+          node.arguments?.[0]?.type === 'UnaryExpression' &&
           node.arguments[0].operator === '!' &&
-          node.arguments[0].argument &&
-          node.arguments[0].argument.type === 'UnaryExpression' &&
+          node.arguments[0].argument?.type === 'UnaryExpression' &&
           node.arguments[0].argument.operator === '!'
         ) {
           context.report({

@@ -27,7 +27,7 @@ export default {
 
     return {
       NewExpression(node) {
-        if (node.callee && node.callee.name === 'HistoryManager' && node.arguments.length === 0) {
+        if (node.callee?.name === 'HistoryManager' && node.arguments.length === 0) {
           context.report({
             node,
             messageId: 'requireHistoryLimit',

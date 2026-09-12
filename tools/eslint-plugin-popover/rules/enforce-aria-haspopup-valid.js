@@ -33,12 +33,10 @@ export default {
     return {
       JSXAttribute(node) {
         if (
-          node.name &&
-          node.name.name === 'aria-haspopup' &&
-          node.value &&
-          node.value.type === 'Literal'
+          node.name?.name === 'aria-haspopup' &&
+          node.value?.type === 'Literal'
         ) {
-          const val = String(node.value.value);
+          const val = String(node.value?.value);
           if (!VALID_HASPOPUP_VALUES.has(val)) {
             context.report({
               node,

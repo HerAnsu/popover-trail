@@ -29,10 +29,8 @@ export default {
     return {
       CatchClause(node) {
         if (
-          node.param &&
-          node.param.typeAnnotation &&
-          node.param.typeAnnotation.typeAnnotation &&
-          node.param.typeAnnotation.typeAnnotation.type === 'TSAnyKeyword'
+          node.param?.typeAnnotation &&
+          node.param.typeAnnotation.typeAnnotation?.type === 'TSAnyKeyword'
         ) {
           context.report({
             node: node.param,

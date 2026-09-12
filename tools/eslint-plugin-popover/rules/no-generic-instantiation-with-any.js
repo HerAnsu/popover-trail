@@ -31,8 +31,7 @@ export default {
         if (
           node.typeName &&
           (node.typeName.name === 'Map' || node.typeName.name === 'Set') &&
-          node.typeParameters &&
-          node.typeParameters.params.some((p) => p.type === 'TSAnyKeyword')
+          node.typeParameters?.params.some((p) => p.type === 'TSAnyKeyword')
         ) {
           context.report({
             node,

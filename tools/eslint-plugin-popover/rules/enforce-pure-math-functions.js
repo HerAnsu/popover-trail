@@ -27,7 +27,7 @@ export default {
           node.id &&
           (node.id.name.startsWith('compute') || node.id.name.startsWith('calculate'))
         ) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (body.includes('window.') || body.includes('document.')) {
             context.report({
               node,

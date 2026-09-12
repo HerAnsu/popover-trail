@@ -23,8 +23,8 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name === 'handleVerticalArrowNavigation') {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name === 'handleVerticalArrowNavigation') {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (body && (!body.includes('ArrowDown') || !body.includes('ArrowUp'))) {
             context.report({
               node,

@@ -30,11 +30,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'acquire' &&
-          node.callee.object &&
-          node.callee.object.name &&
+          node.callee.object?.name &&
           node.callee.object.name.toLowerCase().includes('pool')
         ) {
           let parent = node.parent;
@@ -46,7 +44,7 @@ export default {
             parent = parent.parent;
           }
           if (parent) {
-            const body = context.getSourceCode ? context.getSourceCode().getText(parent) : '';
+            const body = context.getSourceCode?.()?.getText?.(parent) ?? '';
             if (body.includes('.release(') && !body.includes('finally')) {
               context.report({
                 node,

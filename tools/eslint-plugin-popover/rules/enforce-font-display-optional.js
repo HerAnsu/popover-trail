@@ -28,10 +28,8 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'typography' &&
-          node.value &&
-          node.value.type === 'ObjectExpression'
+          node.key?.name === 'typography' &&
+          node.value?.type === 'ObjectExpression'
         ) {
           const hasSmoothing = node.value.properties.some(
             (p) =>

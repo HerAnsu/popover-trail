@@ -18,12 +18,11 @@ export default {
     return {
       JSXElement(node) {
         if (
-          node.openingElement &&
-          node.openingElement.name &&
+          node.openingElement?.name &&
           node.openingElement.name.name === 'PopoverModal'
         ) {
           const hasInert = node.openingElement.attributes.some(
-            (attr) => attr.name && attr.name.name === 'inert',
+            (attr) => attr.name?.name === 'inert',
           );
           if (!hasInert && node.openingElement.attributes.length > 5) {
             context.report({ node, messageId: 'suggestInert' });

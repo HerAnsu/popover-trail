@@ -19,15 +19,14 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.')) return {};
     return {
       JSXAttribute(node) {
         if (
           node.name &&
           (node.name.name === 'fill' || node.name.name === 'stroke') &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'string'
         ) {
           const val = node.value.value;

@@ -18,13 +18,13 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (!filename.includes('EventMap') && !filename.includes('eventBus')) return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       TSInterfaceDeclaration(node) {
-        if (node.id && node.id.name && node.id.name.endsWith('Event') && node.body) {
-          const hasType = node.body.body.some(
-            (m) => m.type === 'TSPropertySignature' && m.key && m.key.name === 'type',
+        if (node.id?.name && node.id.name.endsWith('Event') && node.body) {
+          const hasType = node.body?.body?.some(
+            (m) => m.type === 'TSPropertySignature' && m.key?.name === 'type',
           );
           if (!hasType) {
             context.report({

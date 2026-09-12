@@ -32,7 +32,7 @@ export default {
           node.id &&
           (node.id.name.includes('EdgeInsets') || node.id.name.includes('FloatingBoundary'))
         ) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             !body.includes('safeArea') &&
             !body.includes('safe-area') &&

@@ -81,4 +81,33 @@ describe('broadcastSync utility', () => {
     expect(() => unsub()).not.toThrow();
     expect(() => sync.destroy()).not.toThrow();
   });
+
+  it('validates sync message envelope with isPopoverSyncMessage', async () => {
+    const { isPopoverSyncMessage, isPopoverSyncActionType } = await import('./guards/syncGuards');
+
+    expect(isPopoverSyncActionType('OPEN')).toBe(true);
+    expect(isPopoverSyncActionType('INVALID')).toBe(false);
+
+    expect(
+      isPopoverSyncMessage({
+        type: 'OPEN',
+        key: 'card-1',
+        timestamp: Date.now(),
+        tabId: 'tab-123',
+      }),
+    ).toBe(true);
+
+    expect(
+      isPopoverSyncMessage({
+        type: 'INVALID',
+        timestamp: Date.now(),
+        tabId: 'tab-123',
+      }),
+    ).toBe(false);
+
+    expect(isPopoverSyncMessage(null)).toBe(false);
+    expect(isPopoverSyncMessage({ type: 'OPEN', timestamp: 'invalid', tabId: 'tab-1' })).toBe(
+      false,
+    );
+  });
 });

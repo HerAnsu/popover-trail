@@ -28,13 +28,10 @@ export default {
     return {
       ArrowFunctionExpression(node) {
         if (
-          node.body &&
-          node.body.type === 'MemberExpression' &&
+          node.body?.type === 'MemberExpression' &&
           node.body.optional &&
-          node.parent &&
-          node.parent.type === 'VariableDeclarator' &&
-          node.parent.id &&
-          node.parent.id.name.startsWith('select')
+          node.parent?.type === 'VariableDeclarator' &&
+          node.parent.id?.name.startsWith('select')
         ) {
           context.report({
             node,

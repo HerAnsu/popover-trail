@@ -1,204 +1,73 @@
+/**
+ * Card Keyboard Navigation Dispatcher for popover-trail.
+ * Clean Architecture Layer 3: Reactive Integration & Hooks.
+ *
+ * @module hooks/card/useCardKeyboardNav
+ */
+
 import type { TrailEntry } from '../../types';
-import { FOCUSABLE_ELEMENTS_SELECTOR } from '../../constants';
+import { isRecordObject } from '../../utils/typeGuards';
+import {
+  type KeyboardNavEvent,
+  handleCustomShortcuts,
+  handleVerticalArrowNavigation,
+  handleHorizontalArrowNavigation,
+} from './cardKeyboardStrategies';
 
-export type KeyboardNavEvent =
-  | React.KeyboardEvent<HTMLElement>
-  | Pick<React.KeyboardEvent<HTMLElement>, 'key' | 'preventDefault'>;
+export { focusParentCard, getFocusableCardElements } from './cardKeyboardFocus';
+export type { KeyboardNavEvent } from './cardKeyboardStrategies';
 
-export interface CardKeyboardNavigationOptions {
+export interface CardKeyboardNavigationOptions<
+  TData = unknown,
+  TPopoverKey extends string = string,
+> {
   event: KeyboardNavEvent;
   cardElement: HTMLElement | null;
-  entry: TrailEntry;
+  entry: TrailEntry<TData, TPopoverKey>;
   enableArrowNavigation: boolean;
   isPinned: boolean;
-  trail: readonly TrailEntry[];
+  trail: readonly TrailEntry<TData, TPopoverKey>[];
   floatingCount: number;
-  actions: { closeFrom: (index: number) => void; closeByKey?: (key: string) => void };
+  actions: {
+    closeFrom: (index: number, options?: { transition?: boolean }) => void;
+    closeByKey?: (key: TPopoverKey, options?: { transition?: boolean }) => void;
+  };
 }
 
-function handleCustomShortcuts(e: KeyboardNavEvent, cardEntry: TrailEntry): boolean {
-  if (!cardEntry.keyboardShortcuts) return false;
-  const keyName = e.key;
-  const modKey =
-    (('metaKey' in e && e.metaKey) || ('ctrlKey' in e && e.ctrlKey) ? 'Mod+' : '') + keyName;
-  const handler = cardEntry.keyboardShortcuts[modKey] ?? cardEntry.keyboardShortcuts[keyName];
-  if (handler) {
-    e.preventDefault();
-    handler(cardEntry.key);
-    return true;
-  }
-  return false;
+function isCardKeyboardNavOptions<
+  TData = unknown,
+  TPopoverKey extends string = string,
+>(val: unknown): val is CardKeyboardNavigationOptions<TData, TPopoverKey> {
+  return isRecordObject(val) && 'event' in val && isRecordObject(val.event);
 }
 
-function getFocusableCardElements(cardEl: HTMLElement | null): HTMLElement[] {
-  if (!cardEl) return [];
-  return Array.from(
-    cardEl.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS_SELECTOR),
-    (el) => el,
-  ).filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0);
-}
-
-function isUserEditingText(el: HTMLElement | null): boolean {
-  if (!el) return false;
-  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
-}
-
-function getActiveHtmlElement(): HTMLElement | null {
-  return typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
-    ? document.activeElement
-    : null;
-}
-
-function handleVerticalArrowNavigation(e: KeyboardNavEvent, cardEl: HTMLElement | null): void {
-  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-  const activeEl = getActiveHtmlElement();
-
-  if (isUserEditingText(activeEl) || !cardEl) return;
-  const elements = getFocusableCardElements(cardEl);
-  if (elements.length === 0) return;
-
-  e.preventDefault();
-  const currentIndex = activeEl ? elements.indexOf(activeEl) : -1;
-  const nextIndex =
-    e.key === 'ArrowDown'
-      ? (currentIndex + 1) % elements.length
-      : (currentIndex - 1 + elements.length) % elements.length;
-  elements[nextIndex]?.focus();
-}
-
-function handleArrowRightNavigation(e: KeyboardNavEvent): void {
-  if (e.key !== 'ArrowRight') return;
-  const activeEl = getActiveHtmlElement();
-  if (activeEl && (activeEl.tagName === 'BUTTON' || activeEl.tagName === 'A')) {
-    e.preventDefault();
-    activeEl.click();
-  }
-}
-
-function handleArrowLeftNavigation(
-  e: KeyboardNavEvent,
-  cardEntry: TrailEntry,
-  pinned: boolean,
-  trailList: readonly TrailEntry[],
-  act?: { closeFrom: (index: number) => void; closeByKey?: (key: string) => void },
-): void {
-  if (e.key !== 'ArrowLeft' || pinned) return;
-  const trailIndex = trailList.findIndex((t) => t.key === cardEntry.key);
-  if (trailIndex > 0) {
-    e.preventDefault();
-    if (act?.closeByKey) {
-      act.closeByKey(cardEntry.key);
-    } else {
-      act?.closeFrom(trailIndex);
-    }
-    const parentKey = trailList[trailIndex - 1]?.key;
-    if (parentKey) {
-      focusParentCard(parentKey);
-    }
-  }
-}
-
-function handleEscapeNavigation(
-  e: KeyboardNavEvent,
-  cardEntry: TrailEntry,
-  pinned: boolean,
-  trailList: readonly TrailEntry[],
-  act?: { closeFrom: (index: number) => void; closeByKey?: (key: string) => void },
-): void {
-  if (e.key !== 'Escape') return;
-  e.preventDefault();
-  if (act?.closeByKey) {
-    act.closeByKey(cardEntry.key);
-    return;
-  }
-  if (!pinned) {
-    const trailIndex = trailList.findIndex((t) => t.key === cardEntry.key);
-    if (trailIndex >= 0) {
-      act?.closeFrom(trailIndex);
-    }
-  }
-}
-
-function handleHorizontalArrowNavigation(
-  e: KeyboardNavEvent,
-  cardEntry: TrailEntry,
-  pinned: boolean,
-  trailList: readonly TrailEntry[],
-  act?: { closeFrom: (index: number) => void; closeByKey?: (key: string) => void },
-): void {
-  handleArrowRightNavigation(e);
-  handleArrowLeftNavigation(e, cardEntry, pinned, trailList, act);
-  handleEscapeNavigation(e, cardEntry, pinned, trailList, act);
-}
-
-/**
- * Focuses the parent popover card in the cascade tree by resolving its DOM ID or data-key.
- *
- * @param parentKey - Unique key string of the parent card.
- * @returns True if the parent card was found and focused.
- */
-export function focusParentCard(parentKey: string): boolean {
-  if (typeof document === 'undefined' || !parentKey) return false;
-
-  const escapedKey =
-    typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
-      ? CSS.escape(parentKey)
-      : parentKey.replace(/[^a-zA-Z0-9_-]/g, '');
-
-  // Robust multi-selector lookup matching PopoverCard and dnd PopoverCard DOM structures
-  const parentCard =
-    document.querySelector<HTMLElement>(`#popover-card-${escapedKey}`) ??
-    document.querySelector<HTMLElement>(`[data-key="${escapedKey}"]`) ??
-    document.querySelector<HTMLElement>(`[aria-labelledby="title-${escapedKey}"]`);
-
-  if (!parentCard) return false;
-
-  const firstFocusable = parentCard.querySelector<HTMLElement>(
-    "button, a, input, select, textarea, [tabindex]:not([tabindex='-1'])",
-  );
-
-  if (firstFocusable && typeof firstFocusable.focus === 'function') {
-    firstFocusable.focus();
-    return true;
-  }
-
-  if (typeof parentCard.focus === 'function') {
-    parentCard.focus();
-    return true;
-  }
-
-  return false;
-}
-
-function isNavOptionsObject(
-  arg: KeyboardNavEvent | CardKeyboardNavigationOptions,
-): arg is CardKeyboardNavigationOptions {
-  return 'event' in arg && typeof arg.event === 'object';
-}
-
-function resolveNavParams(
-  eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions,
+function resolveNavParams<
+  TData = unknown,
+  TPopoverKey extends string = string,
+>(
+  eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions<TData, TPopoverKey>,
   cardElement?: HTMLElement | null,
-  entry?: TrailEntry,
+  entry?: TrailEntry<TData, TPopoverKey>,
   enableArrowNavigation?: boolean,
   isPinned?: boolean,
-  trail?: readonly TrailEntry[],
-  floatingCount?: number,
-  actions?: { closeFrom: (index: number) => void },
+  trail?: readonly TrailEntry<TData, TPopoverKey>[],
+  actions?: {
+    closeFrom: (index: number, options?: { transition?: boolean }) => void;
+    closeByKey?: (key: TPopoverKey, options?: { transition?: boolean }) => void;
+  },
 ) {
-  if (isNavOptionsObject(eventOrOptions)) {
+  if (isCardKeyboardNavOptions<TData, TPopoverKey>(eventOrOptions)) {
+    const o = eventOrOptions;
     return {
-      e: eventOrOptions.event,
-      cardEl: eventOrOptions.cardElement,
-      cardEntry: eventOrOptions.entry,
-      enableArrow: eventOrOptions.enableArrowNavigation,
-      pinned: eventOrOptions.isPinned,
-      trailList: eventOrOptions.trail ?? [],
-      floatCount: eventOrOptions.floatingCount,
-      act: eventOrOptions.actions,
+      e: o.event,
+      cardEl: o.cardElement,
+      cardEntry: o.entry,
+      enableArrow: o.enableArrowNavigation,
+      pinned: o.isPinned,
+      trailList: o.trail ?? [],
+      act: o.actions,
     };
   }
-
   return {
     e: eventOrOptions,
     cardEl: cardElement,
@@ -206,39 +75,32 @@ function resolveNavParams(
     enableArrow: Boolean(enableArrowNavigation),
     pinned: Boolean(isPinned),
     trailList: trail ?? [],
-    floatCount: floatingCount ?? 0,
     act: actions,
   };
 }
 
-/**
- * Handles Arrow navigation and custom keyboard shortcuts on popover cards.
- */
-export function handleCardKeyboardNavigation(
-  eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions,
+export function handleCardKeyboardNavigation<
+  TData = unknown,
+  TPopoverKey extends string = string,
+>(
+  eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions<TData, TPopoverKey>,
   cardElement?: HTMLElement | null,
-  entry?: TrailEntry,
+  entry?: TrailEntry<TData, TPopoverKey>,
   enableArrowNavigation?: boolean,
   isPinned?: boolean,
-  trail?: readonly TrailEntry[],
-  floatingCount?: number,
-  actions?: { closeFrom: (index: number) => void; closeByKey?: (key: string) => void },
+  trail?: readonly TrailEntry<TData, TPopoverKey>[],
+  _floatingCount?: number,
+  actions?: {
+    closeFrom: (index: number, options?: { transition?: boolean }) => void;
+    closeByKey?: (key: TPopoverKey, options?: { transition?: boolean }) => void;
+  },
 ): void {
-  const { e, cardEl, cardEntry, enableArrow, pinned, trailList, act } = resolveNavParams(
-    eventOrOptions,
-    cardElement,
-    entry,
-    enableArrowNavigation,
-    isPinned,
-    trail,
-    floatingCount,
-    actions,
+  const p = resolveNavParams<TData, TPopoverKey>(
+    eventOrOptions, cardElement, entry, enableArrowNavigation, isPinned, trail, actions,
   );
-
-  if (!e || !cardEntry) return;
-  if (handleCustomShortcuts(e, cardEntry)) return;
-  if (!enableArrow) return;
-
-  handleVerticalArrowNavigation(e, cardEl ?? null);
-  handleHorizontalArrowNavigation(e, cardEntry, pinned, trailList, act);
+  if (!p.e || !p.cardEntry) return;
+  if (handleCustomShortcuts(p.e, p.cardEntry)) return;
+  if (!p.enableArrow) return;
+  handleVerticalArrowNavigation(p.e, p.cardEl ?? null);
+  handleHorizontalArrowNavigation(p.e, p.cardEntry, p.pinned, p.trailList, p.act);
 }

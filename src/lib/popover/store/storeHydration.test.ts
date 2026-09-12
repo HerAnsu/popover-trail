@@ -51,4 +51,19 @@ describe('storeHydration module', () => {
     expect(manager.getNestedCounters()).not.toHaveProperty('p1');
     expect(manager.getNestedCounters()).toHaveProperty('p2');
   });
+
+  it('tracks monotonic epoch and validates epoch staleness', () => {
+    const manager = createHydrationManager();
+    expect(manager.getEpoch()).toBe(0);
+
+    const epoch1 = manager.getEpoch();
+    expect(manager.isEpochStale(epoch1)).toBe(false);
+
+    manager.incrementEpoch();
+    expect(manager.getEpoch()).toBe(1);
+    expect(manager.isEpochStale(epoch1)).toBe(true);
+
+    manager.markAllCountersStale();
+    expect(manager.getEpoch()).toBe(2);
+  });
 });

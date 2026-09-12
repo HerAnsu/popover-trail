@@ -24,12 +24,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'postMessage' &&
-          node.arguments &&
-          node.arguments[1] &&
-          node.arguments[1].type === 'Literal' &&
+          node.arguments?.[1]?.type === 'Literal' &&
           node.arguments[1].value === '*'
         ) {
           context.report({

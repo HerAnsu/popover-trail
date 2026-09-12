@@ -28,10 +28,8 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name.startsWith('select') && node.returnType) {
-          const typeStr = context.getSourceCode
-            ? context.getSourceCode().getText(node.returnType)
-            : '';
+        if (node.id?.name.startsWith('select') && node.returnType) {
+          const typeStr = context.getSourceCode?.()?.getText?.(node.returnType) ?? '';
           if (typeStr.includes('Map<') && !typeStr.includes('ReadonlyMap')) {
             context.report({
               node: node.returnType,

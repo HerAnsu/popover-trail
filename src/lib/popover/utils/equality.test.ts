@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shallowEqual, isDeepEqual } from './equality';
+import { shallowEqual, isDeepEqual, areSetsEqual } from './equality';
 
 describe('equality utility functions', () => {
   describe('shallowEqual', () => {
@@ -20,6 +20,17 @@ describe('equality utility functions', () => {
       expect(shallowEqual([1, 2], [1, 2])).toBe(true);
       expect(shallowEqual([1, 2], [1, 3])).toBe(false);
       expect(shallowEqual([1], [1, 2])).toBe(false);
+    });
+  });
+
+  describe('areSetsEqual', () => {
+    it('compares sets by value without allocation', () => {
+      expect(areSetsEqual(new Set(['a', 'b']), new Set(['a', 'b']))).toBe(true);
+      expect(areSetsEqual(new Set(['a', 'b']), new Set(['b', 'a']))).toBe(true);
+      expect(areSetsEqual(new Set(['a']), new Set(['a', 'b']))).toBe(false);
+      expect(areSetsEqual(new Set(['a', 'b']), new Set(['a', 'c']))).toBe(false);
+      expect(areSetsEqual(undefined, undefined)).toBe(true);
+      expect(areSetsEqual(new Set(['a']), undefined)).toBe(false);
     });
   });
 

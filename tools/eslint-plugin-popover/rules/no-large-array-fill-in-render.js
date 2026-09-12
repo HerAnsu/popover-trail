@@ -30,10 +30,8 @@ export default {
     return {
       NewExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'Array' &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Literal' &&
+          node.callee?.name === 'Array' &&
+          node.arguments[0]?.type === 'Literal' &&
           typeof node.arguments[0].value === 'number' &&
           node.arguments[0].value > 500
         ) {

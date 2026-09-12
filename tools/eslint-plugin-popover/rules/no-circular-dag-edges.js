@@ -18,9 +18,7 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
-          node.callee.property.name === 'addEdge' &&
+            node.callee?.property?.name === 'addEdge' &&
           node.arguments.length >= 2 &&
           node.arguments[0].type === 'Literal' &&
           node.arguments[1].type === 'Literal' &&

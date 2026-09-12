@@ -22,3 +22,15 @@ export function getPolymorphicProps<E extends ElementType>(
     buttonProps: isNativeButton ? { type: 'button' as const } : {},
   };
 }
+
+/**
+ * Resolves a container reference, function, or DOM element to a raw HTMLElement.
+ */
+export function resolveContainerElement(
+  container?: HTMLElement | (() => HTMLElement | null) | { current: HTMLElement | null } | null,
+): HTMLElement | null {
+  if (!container) return null;
+  if (typeof container === 'function') return container();
+  if ('current' in container) return container.current;
+  return container;
+}

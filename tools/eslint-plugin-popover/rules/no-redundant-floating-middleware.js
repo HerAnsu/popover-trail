@@ -17,14 +17,12 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'middleware' &&
-          node.value &&
-          node.value.type === 'ArrayExpression'
+          node.key?.name === 'middleware' &&
+          node.value?.type === 'ArrayExpression'
         ) {
           const names = new Set();
           for (const el of node.value.elements) {
-            if (el && el.type === 'CallExpression' && el.callee && el.callee.name) {
+            if (el?.type === 'CallExpression' && el.callee?.name) {
               if (names.has(el.callee.name)) {
                 context.report({
                   node: el,

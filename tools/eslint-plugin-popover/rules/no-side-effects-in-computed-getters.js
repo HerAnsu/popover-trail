@@ -22,8 +22,8 @@ export default {
 
     return {
       MethodDefinition(node) {
-        if (node.kind === 'get' && node.value && node.value.body) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node.value) : '';
+        if (node.kind === 'get' && node.value?.body) {
+          const body = context.getSourceCode?.()?.getText?.(node.value) ?? '';
           if (body.includes('.setState(') || body.includes('.dispatch(')) {
             context.report({
               node,

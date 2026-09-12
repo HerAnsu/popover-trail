@@ -17,13 +17,11 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'mark' &&
-          node.callee.object &&
-          node.callee.object.name === 'performance'
+          node.callee.object?.name === 'performance'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (!src.includes('clearMarks')) {
             context.report({ node, messageId: 'missingClearMarks' });
           }

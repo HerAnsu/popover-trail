@@ -24,11 +24,9 @@ export default {
     return {
       MemberExpression(node) {
         if (
-          node.object &&
-          node.object.name === 'window' &&
+          node.object?.name === 'window' &&
           (node.property.name === 'innerWidth' || node.property.name === 'innerHeight') &&
-          node.parent &&
-          node.parent.parent &&
+          node.parent?.parent &&
           node.parent.parent.type === 'Program'
         ) {
           context.report({

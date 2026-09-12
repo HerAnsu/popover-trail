@@ -18,29 +18,19 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       JSXElement(node) {
         if (
-          node.openingElement &&
-          node.openingElement.name &&
-          node.openingElement.name.name === 'PopoverAsyncContent'
+          node.openingElement?.name?.name === 'PopoverAsyncContent'
         ) {
           let parent = node.parent;
           let inErrorBoundary = false;
           while (parent) {
             if (
               parent.type === 'JSXElement' &&
-              parent.openingElement &&
-              parent.openingElement.name &&
-              parent.openingElement.name.name.includes('ErrorBoundary')
+              parent.openingElement?.name?.name?.includes('ErrorBoundary')
             ) {
               inErrorBoundary = true;
               break;

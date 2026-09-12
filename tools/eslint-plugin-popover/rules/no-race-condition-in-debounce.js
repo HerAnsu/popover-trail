@@ -22,8 +22,8 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name.includes('debounce')) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name.includes('debounce')) {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (body && !body.includes('clearTimeout')) {
             context.report({
               node,

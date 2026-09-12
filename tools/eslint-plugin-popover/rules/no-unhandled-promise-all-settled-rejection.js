@@ -30,22 +30,19 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'allSettled' &&
-          node.callee.object &&
-          node.callee.object.name === 'Promise'
+          node.callee.object?.name === 'Promise'
         ) {
           let parent = node.parent;
           while (
-            parent &&
-            parent.type !== 'FunctionDeclaration' &&
+            parent?.type !== 'FunctionDeclaration' &&
             parent.type !== 'ArrowFunctionExpression'
           ) {
             parent = parent.parent;
           }
           if (parent) {
-            const body = context.getSourceCode ? context.getSourceCode().getText(parent) : '';
+            const body = context.getSourceCode?.()?.getText?.(parent) ?? '';
             if (!body.includes('rejected') && !body.includes('.status')) {
               context.report({
                 node,

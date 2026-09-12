@@ -14,17 +14,14 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (!filename.includes('reducers/')) return {};
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
-          node.callee.object &&
-          node.callee.object.name === 'Math' &&
-          node.callee.property &&
-          node.callee.property.name === 'random'
+          node.callee?.type === 'MemberExpression' &&
+          node.callee.object?.name === 'Math' &&
+          node.callee.property?.name === 'random'
         ) {
           context.report({ node, messageId: 'impureReducer' });
         }

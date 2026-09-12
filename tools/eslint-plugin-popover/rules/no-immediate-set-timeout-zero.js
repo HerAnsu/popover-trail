@@ -30,10 +30,8 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'setTimeout' &&
-          node.arguments[1] &&
-          node.arguments[1].type === 'Literal' &&
+          node.callee?.name === 'setTimeout' &&
+          node.arguments[1]?.type === 'Literal' &&
           node.arguments[1].value === 0
         ) {
           context.report({

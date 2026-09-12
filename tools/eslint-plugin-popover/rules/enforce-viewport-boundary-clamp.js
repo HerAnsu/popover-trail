@@ -13,12 +13,12 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (!filename.includes('geometry') || filename.includes('.test.')) return {};
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name.includes('clampPoint')) {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name.includes('clampPoint')) {
+          const src = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (!src.includes('Math.min') && !src.includes('Math.max')) {
             context.report({ node, messageId: 'clampViewport' });
           }

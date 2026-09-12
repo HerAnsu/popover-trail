@@ -14,12 +14,12 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.') || !filename.includes('hooks/')) return {};
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name.startsWith('use') && node.id.name.includes('Close')) {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name.startsWith('use') && node.id.name.includes('Close')) {
+          const src = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             !src.includes('focus') &&
             !src.includes('restoreFocus') &&

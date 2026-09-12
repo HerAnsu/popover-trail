@@ -16,11 +16,10 @@ export default {
   create(context) {
     return {
       CallExpression(node) {
-        if (node.callee && node.callee.name === 'setTimeout' && node.arguments.length >= 2) {
+        if (node.callee?.name === 'setTimeout' && node.arguments.length >= 2) {
           const delay = node.arguments[1];
           if (
-            delay &&
-            delay.type === 'Literal' &&
+            delay?.type === 'Literal' &&
             typeof delay.value === 'number' &&
             delay.value > 60000
           ) {

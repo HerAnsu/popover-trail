@@ -15,20 +15,18 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.')) return {};
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
+          node.callee?.type === 'MemberExpression' &&
           node.callee.property &&
           ['push', 'splice', 'pop', 'shift', 'unshift'].includes(node.callee.property.name)
         ) {
           const obj = node.callee.object;
           if (
-            obj &&
-            obj.type === 'MemberExpression' &&
+            obj?.type === 'MemberExpression' &&
             obj.object &&
             (obj.object.name === 'state' || obj.object.name === 'prev')
           ) {

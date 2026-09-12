@@ -1,94 +1,31 @@
-import type { CSSProperties } from 'react';
-
 /**
- * Parameters for the popover style generation helper.
+ * Hardware-Accelerated Dynamic Style Generator with LRU Caching.
+ * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
+ *
+ * @module utils/styles
  */
-interface GetPopoverStylesParams {
-  /** Viewport relative absolute base layout position returned by Floating UI. */
+
+import type { CSSProperties } from 'react';
+import { createLRUCache } from './lruCache';
+import { hashTransformCoordinates, toFiniteNumber, buildTransformString } from './stylesTransform';
+
+export { hashTransformCoordinates, toFiniteNumber };
+
+export interface GetPopoverStylesParams {
   readonly finalLayoutPos: { readonly top: number; readonly left: number };
-  /** Retained cumulative coordinate drag offset stored inside the Zustand state. */
   readonly offset?: { readonly x: number; readonly y: number };
-  /** Temporary, immediate drag translation coordinates from active drag actions. */
   readonly dragX?: number;
-  /** Temporary, immediate drag translation coordinates from active drag actions. */
   readonly dragY?: number;
-  /** Physics-based spring rotation angle in degrees (rotateZ). */
   readonly rotation?: number;
-  /** Physics-based spring 3D tilt rotation around the horizontal X-axis (rotateX). */
   readonly rotationX?: number;
-  /** Physics-based spring 3D tilt rotation around the vertical Y-axis (rotateY). */
   readonly rotationY?: number;
-  /** Layer depth index to stack topmost/pinned items. */
   readonly zIndex?: number;
 }
 
-const styleMemoCache = new Map<number, CSSProperties>();
-const MAX_MEMO_CACHE_SIZE = 128;
+const styleCache = createLRUCache<number, CSSProperties>(128);
 const DEFAULT_FALLBACK_Z_INDEX = 1000;
-const DEFAULT_PERSPECTIVE_PX = 1000;
+const DEFAULT_ZERO_OFFSET: Readonly<{ x: number; y: number }> = Object.freeze({ x: 0, y: 0 });
 
-/**
- * Computes a 32-bit integer hash from numeric style coordinates.
- * Uses integer multiplication with large prime-like constants (Knuth-style multiplicative hashing)
- * and XOR bit-shifts to disperse coordinate values evenly across the 32-bit signed integer range.
- *
- * Why: Avoids template string allocations (`${top}_${left}_...`) when looking up cached CSSProperties.
- * Collisions in typical screen pixel ranges (0..4000) are virtually 0.
- */
-function hashStyleKey(top: number, left: number, tx: number, ty: number, zIndex: number): number {
-  let h =
-    Math.imul(Math.round(top), 73856093) ^
-    Math.imul(Math.round(left), 19349663) ^
-    Math.imul(Math.round(tx), 83492791) ^
-    Math.imul(Math.round(ty), 4256233) ^
-    Math.imul(zIndex, 38865001);
-  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
-  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
-  return h ^ (h >>> 16);
-}
-
-/**
- * Safely converts an unknown value to a finite number with an optional fallback (default: 0).
- * Protects against NaN, Infinity, or undefined leaking into CSS translate properties.
- */
-export function toFiniteNumber(val: unknown, fallback = 0): number {
-  return typeof val === 'number' && Number.isFinite(val) ? val : fallback;
-}
-
-/** Single source of truth frozen zero offset constant for style generation */
-const DEFAULT_ZERO_OFFSET: Readonly<{ x: number; y: number }> = Object.freeze({
-  x: 0,
-  y: 0,
-});
-
-function buildTransformString(
-  translateX: number,
-  translateY: number,
-  rotX: number,
-  rotY: number,
-  rotZ: number,
-): string {
-  const hasRotation = rotZ !== 0 || rotX !== 0 || rotY !== 0;
-  if (!hasRotation) {
-    return `translate3d(${translateX}px, ${translateY}px, 0px)`;
-  }
-  return `perspective(${DEFAULT_PERSPECTIVE_PX}px) translate3d(${translateX}px, ${translateY}px, 0px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) rotateZ(${rotZ.toFixed(2)}deg)`;
-}
-
-function storeStyleInMemoCache(key: number, style: CSSProperties): void {
-  if (styleMemoCache.size >= MAX_MEMO_CACHE_SIZE) {
-    const firstKey = styleMemoCache.keys().next().value;
-    if (firstKey) styleMemoCache.delete(firstKey);
-  }
-  styleMemoCache.set(key, style);
-}
-
-/**
- * Calculates deterministic, hardware-accelerated CSS properties for a popover card.
- *
- * @param params - The coordinates, offsets, and transformation properties.
- * @returns A CSS properties style object ready to be applied on the outer card element.
- */
 export function getPopoverStyles({
   finalLayoutPos,
   offset = DEFAULT_ZERO_OFFSET,
@@ -112,36 +49,33 @@ export function getPopoverStyles({
 
   const isDynamic =
     safeDragX !== 0 || safeDragY !== 0 || safeRot !== 0 || safeRotX !== 0 || safeRotY !== 0;
-
   const rawX = safeDragX + safeOffsetX;
   const rawY = safeDragY + safeOffsetY;
   const translateX = isDynamic ? Math.round(rawX * 100) / 100 : Math.round(rawX);
   const translateY = isDynamic ? Math.round(rawY * 100) / 100 : Math.round(rawY);
 
-  const cacheKey = isDynamic ? 0 : hashStyleKey(top, left, translateX, translateY, safeZ);
+  const cacheKey = isDynamic
+    ? 0
+    : hashTransformCoordinates(top, left, translateX, translateY, safeZ);
   if (!isDynamic) {
-    const cached = styleMemoCache.get(cacheKey);
+    const cached = styleCache.get(cacheKey);
     if (cached) return cached;
   }
-
-  const transformStr = buildTransformString(translateX, translateY, safeRotX, safeRotY, safeRot);
 
   const computedStyle: CSSProperties & Record<`--${string}`, string | number> = {
     position: 'absolute',
     top,
     left,
-    transform: transformStr,
+    transform: buildTransformString(translateX, translateY, safeRotX, safeRotY, safeRot),
     backfaceVisibility: 'hidden',
     willChange: isDynamic ? 'transform' : 'auto',
     zIndex: safeZ,
-    // CSS Custom Properties for external style overrides and animations
     '--popover-translate-x': `${translateX}px`,
     '--popover-translate-y': `${translateY}px`,
     '--popover-rotate-x': `${rotationX}deg`,
     '--popover-rotate-y': `${rotationY}deg`,
     '--popover-rotate-z': `${rotation}deg`,
     '--popover-z-index': `${safeZ}`,
-    // Standard --pt-* namespace CSS custom properties
     '--pt-top': `${top}px`,
     '--pt-left': `${left}px`,
     '--pt-z-index': `${safeZ}`,
@@ -150,9 +84,6 @@ export function getPopoverStyles({
     '--pt-tilt-deg': `${rotation}deg`,
   };
 
-  if (!isDynamic) {
-    storeStyleInMemoCache(cacheKey, computedStyle);
-  }
-
+  if (!isDynamic) styleCache.set(cacheKey, computedStyle);
   return computedStyle;
 }

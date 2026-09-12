@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import type { Boundary } from '@floating-ui/react';
 import { wrapResult, isOk } from '../../utils/result';
+import { isFunction } from '../../utils/typeGuards';
 
 export function useResolvedBoundary(
   boundary?: Boundary | (() => Boundary | null | undefined),
 ): Boundary | undefined {
   const [resolvedBoundary, setResolvedBoundary] = useState<Boundary | undefined>(
-    typeof boundary !== 'function' ? boundary : undefined,
+    !isFunction(boundary) ? boundary : undefined,
   );
 
   useEffect(() => {
-    if (typeof boundary === 'function') {
+    if (isFunction(boundary)) {
       const boundaryResult = wrapResult(() => boundary());
       if (isOk(boundaryResult) && boundaryResult.data) {
         setResolvedBoundary(boundaryResult.data);

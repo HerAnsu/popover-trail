@@ -13,12 +13,12 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (!filename.includes('closeReducers.ts')) return {};
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name === 'closePopoverReducer') {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name === 'closePopoverReducer') {
+          const src = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             !src.includes('getChildren') &&
             !src.includes('dag') &&

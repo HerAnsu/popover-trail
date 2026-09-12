@@ -28,14 +28,10 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'createStateMachine' &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'ObjectExpression'
+          ((node.callee?.name || node.callee?.property?.name) || node.callee?.property?.name) === 'createStateMachine' &&
+          node.arguments[0]?.type === 'ObjectExpression'
         ) {
-          const src = context.getSourceCode
-            ? context.getSourceCode().getText(node.arguments[0])
-            : '';
+          const src = context.getSourceCode?.()?.getText?.(node.arguments[0]) ?? '';
           if (!src.includes('*') && !src.includes('default') && !src.includes('fallback')) {
             context.report({
               node,

@@ -22,11 +22,9 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name === 'buildFloatingMiddlewareList') {
+        if (node.id?.name === 'buildFloatingMiddlewareList') {
           const names = new Set();
-          const callExpressions = context.getSourceCode
-            ? context.getSourceCode().getText(node)
-            : '';
+          const callExpressions = context.getSourceCode?.()?.getText?.(node) ?? '';
           const matches = callExpressions.match(/\b(offset|flip|shift|size)\(/g) || [];
           for (const m of matches) {
             const mName = m.replace('(', '');

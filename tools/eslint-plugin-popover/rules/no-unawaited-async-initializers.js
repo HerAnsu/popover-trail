@@ -29,16 +29,13 @@ export default {
 
     return {
       MethodDefinition(node) {
-        if (node.kind === 'constructor' && node.value && node.value.body) {
+        if (node.kind === 'constructor' && node.value?.body) {
           for (const stmt of node.value.body.body) {
             if (
               stmt.type === 'ExpressionStatement' &&
-              stmt.expression &&
-              stmt.expression.type === 'CallExpression' &&
-              stmt.expression.callee &&
-              stmt.expression.callee.type === 'MemberExpression' &&
-              stmt.expression.callee.property &&
-              stmt.expression.callee.property.name.startsWith('initAsync')
+              stmt.expression?.type === 'CallExpression' &&
+              stmt.expression.callee?.type === 'MemberExpression' &&
+              stmt.expression.callee.property?.name.startsWith('initAsync')
             ) {
               context.report({
                 node: stmt,

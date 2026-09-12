@@ -29,7 +29,7 @@ export default {
     return {
       FunctionDeclaration(node) {
         if (node.generator && node.body) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node.body) : '';
+          const body = context.getSourceCode?.()?.getText?.(node.body) ?? '';
           if (body.includes('yield ') && !body.includes('try {')) {
             context.report({
               node,

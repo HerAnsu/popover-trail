@@ -29,10 +29,8 @@ export default {
     return {
       AssignmentExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
-          node.left.object &&
-          node.left.object.name &&
+          node.left?.type === 'MemberExpression' &&
+          node.left.object?.name &&
           /^[A-Z_]+_CONFIG$/.test(node.left.object.name)
         ) {
           context.report({

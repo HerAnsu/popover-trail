@@ -17,10 +17,8 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'velocity' &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.key?.name === 'velocity' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'number' &&
           Math.abs(node.value.value) > 10000
         ) {

@@ -16,10 +16,8 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'groupId' &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.key?.name === 'groupId' &&
+          node.value?.type === 'Literal' &&
           node.value.value === ''
         ) {
           context.report({ node, messageId: 'invalidGroupId' });

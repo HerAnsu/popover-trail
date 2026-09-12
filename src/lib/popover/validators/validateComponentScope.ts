@@ -1,4 +1,4 @@
-import { isDevEnv, warnDevDetails } from './warningEngine';
+import { isDevEnv, warnDevDetails, PopoverWarningCode } from './warningEngine';
 
 /** PT-106: Validates card sub-component context placement. */
 export function validateCardSubComponentScope(hasContext: boolean, subComponentName: string): void {
@@ -6,7 +6,7 @@ export function validateCardSubComponentScope(hasContext: boolean, subComponentN
 
   if (!hasContext) {
     warnDevDetails(true, {
-      code: 'PT-106',
+      code: PopoverWarningCode.CARD_SUBCOMPONENT_OUTSIDE_SCOPE,
       message: `<PopoverCard.${subComponentName}> was rendered outside of a <PopoverCard> container.`,
     });
   }
@@ -21,7 +21,7 @@ export function validateTimelineSubComponentScope(
 
   if (!hasContext) {
     warnDevDetails(true, {
-      code: 'PT-107',
+      code: PopoverWarningCode.TIMELINE_SUBCOMPONENT_OUTSIDE_SCOPE,
       message: `<PopoverTimeline.${subComponentName}> was rendered outside of a <PopoverTimeline> container.`,
     });
   }
@@ -33,7 +33,7 @@ export function validatePortalContainer(container: Element | null): void {
 
   if (!container) {
     warnDevDetails(true, {
-      code: 'PT-125',
+      code: PopoverWarningCode.MISSING_PORTAL_CONTAINER,
       message: '<PopoverPortal> target container DOM node is null or unmounted.',
     });
   }
@@ -44,7 +44,7 @@ export function validatePortalExclusion(elementName: string): void {
   if (!isDevEnv()) return;
 
   warnDevDetails(true, {
-    code: 'PT-130',
+    code: PopoverWarningCode.PORTAL_EXCLUSION,
     message: `Element <${elementName}> is marked with data-popover-portal and will be excluded from click-outside teardown.`,
   });
 }

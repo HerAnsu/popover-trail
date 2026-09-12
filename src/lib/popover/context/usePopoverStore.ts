@@ -5,12 +5,13 @@ import type { PopoverStore } from '../types';
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
 import { PopoverStoreContext } from './PopoverStoreContext';
 import { invariant } from '../utils/invariant';
+import { isRecordObject } from '../utils/typeGuards';
 
 function assertStoreApi<TData, TContext, TPopoverKey extends string>(
   store: unknown,
 ): asserts store is StoreApi<PopoverStore<TData, TContext, TPopoverKey>> {
   invariant(
-    typeof store === 'object' && store !== null && 'getState' in store,
+    isRecordObject(store) && 'getState' in store,
     'usePopoverStoreApi must be used within a PopoverProvider',
   );
 }

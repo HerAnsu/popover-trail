@@ -29,15 +29,12 @@ export default {
     return {
       JSXElement(node) {
         if (
-          node.openingElement &&
-          node.openingElement.name &&
+          node.openingElement?.name &&
           (node.openingElement.name.name === 'button' ||
             node.openingElement.name.name === 'PopoverCardCloseButton' ||
             node.openingElement.name.name === 'PopoverCardPinButton')
         ) {
-          const src = context.getSourceCode
-            ? context.getSourceCode().getText(node.openingElement)
-            : '';
+          const src = context.getSourceCode?.()?.getText?.(node.openingElement) ?? '';
           if (
             src.includes('style=') &&
             !src.includes('touchAction') &&

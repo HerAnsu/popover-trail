@@ -23,19 +23,13 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'useRef' &&
-          node.parent &&
-          node.parent.type === 'VariableDeclarator' &&
-          node.parent.id &&
-          node.parent.id.name &&
+          node.callee?.name === 'useRef' &&
+          node.parent?.type === 'VariableDeclarator' &&
+          node.parent.id?.name &&
           node.parent.id.name.toLowerCase().includes('popoverref') &&
-          node.parent.parent &&
-          node.parent.parent.parent
+          node.parent.parent?.parent
         ) {
-          const scopeBody = context.getSourceCode
-            ? context.getSourceCode().getText(node.parent.parent.parent)
-            : '';
+          const scopeBody = context.getSourceCode?.()?.getText?.(node.parent.parent.parent) ?? '';
           if (scopeBody && !scopeBody.includes('.current') && !scopeBody.includes('ref=')) {
             context.report({
               node,

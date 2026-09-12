@@ -17,7 +17,7 @@ export default {
   create(context) {
     return {
       CallExpression(node) {
-        if (node.callee && node.callee.name === 'usePopoverStore' && node.arguments.length === 1) {
+        if (((node.callee?.name || node.callee?.property?.name) || node.callee?.property?.name) === 'usePopoverStore' && node.arguments.length === 1) {
           const selector = node.arguments[0];
           if (
             selector &&

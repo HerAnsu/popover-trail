@@ -24,13 +24,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.object &&
-          node.callee.object.name === 'Math' &&
-          node.callee.property &&
-          node.callee.property.name === 'random' &&
-          node.parent &&
-          node.parent.type === 'BinaryExpression'
+          node.callee?.object?.name === 'Math' &&
+          node.callee?.property?.name === 'random' &&
+          node.parent?.type === 'BinaryExpression'
         ) {
           context.report({
             node,

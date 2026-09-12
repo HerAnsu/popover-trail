@@ -20,20 +20,18 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.')) return {};
     return {
       JSXAttribute(node) {
-        const name = node.name && node.name.name;
+        const name = node.name?.name;
         if (
           (name === 'onDrag' ||
             name === 'onDragStart' ||
             name === 'onDragEnd' ||
             name === 'onPointerMove') &&
-          node.value &&
-          node.value.type === 'JSXExpressionContainer' &&
-          node.value.expression &&
-          node.value.expression.type === 'ArrowFunctionExpression'
+          node.value?.type === 'JSXExpressionContainer' &&
+          node.value.expression?.type === 'ArrowFunctionExpression'
         ) {
           context.report({ node, messageId: 'unmemoizedDragHandler', data: { prop: name } });
         }

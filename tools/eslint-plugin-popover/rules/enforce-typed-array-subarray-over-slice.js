@@ -29,11 +29,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'slice' &&
-          node.callee.object &&
-          node.callee.object.name &&
+          node.callee.object?.name &&
           (node.callee.object.name.endsWith('Array') || node.callee.object.name.includes('typed'))
         ) {
           context.report({

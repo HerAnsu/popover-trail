@@ -19,7 +19,7 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (
       filename.includes('.test.') ||
       filename.includes('test/') ||
@@ -51,14 +51,12 @@ export default {
       Identifier(node) {
         if (depth === 0 && (node.name === 'window' || node.name === 'document')) {
           if (
-            node.parent &&
-            node.parent.type === 'UnaryExpression' &&
+            node.parent?.type === 'UnaryExpression' &&
             node.parent.operator === 'typeof'
           )
             return;
           if (
-            node.parent &&
-            node.parent.type === 'MemberExpression' &&
+            node.parent?.type === 'MemberExpression' &&
             node.parent.property === node
           )
             return;

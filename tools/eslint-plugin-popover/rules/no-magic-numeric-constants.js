@@ -26,8 +26,7 @@ export default {
         if (
           node.callee &&
           (node.callee.name === 'setTimeout' || node.callee.name === 'setInterval') &&
-          node.arguments[1] &&
-          node.arguments[1].type === 'Literal' &&
+          node.arguments[1]?.type === 'Literal' &&
           typeof node.arguments[1].value === 'number' &&
           node.arguments[1].value >= 5000
         ) {

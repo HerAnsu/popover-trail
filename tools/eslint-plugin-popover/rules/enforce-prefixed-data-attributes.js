@@ -14,7 +14,7 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (!filename.includes('components/')) return {};
     return {
       JSXAttribute(node) {

@@ -17,8 +17,7 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'takeSnapshot' &&
           node.arguments.length > 0 &&
           node.arguments[0].type === 'Identifier' &&

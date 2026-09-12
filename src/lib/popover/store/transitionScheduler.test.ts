@@ -86,4 +86,58 @@ describe('PopoverTransitionScheduler', () => {
     vi.advanceTimersByTime(500);
     expect(callback).not.toHaveBeenCalled();
   });
+
+  it('schedules and cancels transition batches', () => {
+    const batchCb = vi.fn();
+    const handle = scheduler.scheduleBatch(200, batchCb);
+    vi.advanceTimersByTime(100);
+    scheduler.cancelBatch(handle);
+    vi.advanceTimersByTime(200);
+    expect(batchCb).not.toHaveBeenCalled();
+
+    const batchCb2 = vi.fn();
+    scheduler.scheduleBatch(200, batchCb2);
+    vi.advanceTimersByTime(200);
+    expect(batchCb2).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels all hover and exit timers via cancelAllHover and cancelAllExit', () => {
+    const cb1 = vi.fn();
+    const cb2 = vi.fn();
+
+    scheduler.scheduleHoverLeave('card-1', 300, cb1);
+    scheduler.cancelAllHover();
+    vi.advanceTimersByTime(500);
+    expect(cb1).not.toHaveBeenCalled();
+
+    scheduler.scheduleExitTransition('card-2', 300, cb2);
+    scheduler.cancelAllExit();
+    vi.advanceTimersByTime(500);
+    expect(cb2).not.toHaveBeenCalled();
+  });
+
+  it('checks active transition state predicates', () => {
+    expect(scheduler.hasPendingTransitions()).toBe(false);
+    expect(scheduler.hasActiveHover('card-1')).toBe(false);
+    expect(scheduler.hasActiveExit('card-1')).toBe(false);
+
+    scheduler.scheduleHoverLeave('card-1', 300, () => {});
+    expect(scheduler.hasActiveHover('card-1')).toBe(true);
+    expect(scheduler.hasPendingTransitions()).toBe(true);
+
+    scheduler.scheduleExit('card-2', 300, () => {});
+    expect(scheduler.hasActiveExit('card-2')).toBe(true);
+    scheduler.cancelExit('card-2');
+    expect(scheduler.hasActiveExit('card-2')).toBe(false);
+
+    // cancelAllForKey test
+    const hCb = vi.fn();
+    const eCb = vi.fn();
+    scheduler.scheduleHoverLeave('card-k', 300, hCb);
+    scheduler.scheduleExitTransition('card-k', 300, eCb);
+    scheduler.cancelAllForKey('card-k');
+    vi.advanceTimersByTime(500);
+    expect(hCb).not.toHaveBeenCalled();
+    expect(eCb).not.toHaveBeenCalled();
+  });
 });

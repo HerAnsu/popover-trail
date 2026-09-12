@@ -24,12 +24,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           (node.callee.property.name === 'emit' || node.callee.property.name === 'dispatch') &&
-          node.arguments &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'ObjectExpression'
+          node.arguments?.[0]?.type === 'ObjectExpression'
         ) {
           const props = node.arguments[0].properties || [];
           for (const prop of props) {

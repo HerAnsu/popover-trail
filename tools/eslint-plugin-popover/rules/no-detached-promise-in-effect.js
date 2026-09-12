@@ -24,19 +24,14 @@ export default {
     return {
       ExpressionStatement(node) {
         if (
-          node.expression &&
-          node.expression.type === 'CallExpression' &&
-          node.parent &&
-          node.parent.type === 'BlockStatement' &&
-          node.parent.parent &&
-          node.parent.parent.type === 'ArrowFunctionExpression' &&
-          node.parent.parent.parent &&
-          node.parent.parent.parent.type === 'CallExpression' &&
-          node.parent.parent.parent.callee &&
-          node.parent.parent.parent.callee.name === 'useEffect'
+          node.expression?.type === 'CallExpression' &&
+          node.parent?.type === 'BlockStatement' &&
+          node.parent.parent?.type === 'ArrowFunctionExpression' &&
+          node.parent.parent.parent?.type === 'CallExpression' &&
+          node.parent.parent.parent.callee?.name === 'useEffect'
         ) {
           const calleeName = node.expression.callee?.name || node.expression.callee?.property?.name;
-          if (calleeName && calleeName.startsWith('async') && !calleeName.includes('catch')) {
+          if (calleeName?.startsWith('async') && !calleeName.includes('catch')) {
             context.report({
               node,
               messageId: 'floatingPromiseInEffect',

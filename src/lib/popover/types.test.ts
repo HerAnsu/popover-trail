@@ -204,5 +204,13 @@ describe('Type Safety Guards & Event Predicates', () => {
       cardShadow: 'none',
     };
     expect(tokens.baseZIndex).toBe(1000);
+
+    const triggerId: PopoverLib.TriggerId = PopoverLib.toTriggerId('btn-1');
+    const scopeId: PopoverLib.ScopeId = PopoverLib.toScopeId('scope-1');
+    const subId: PopoverLib.SubscriptionId = PopoverLib.toSubscriptionId('sub-1');
+
+    expect(PopoverLib.isTriggerId(triggerId)).toBe(true);
+    expect(PopoverLib.isScopeId(scopeId)).toBe(true);
+    expect(PopoverLib.isSubscriptionId(subId)).toBe(true);
   });
 });

@@ -24,13 +24,11 @@ export default {
         if (
           node.callee &&
           (node.callee.name === 'dispatchStoreEvent' ||
-            (node.callee.property && node.callee.property.name === 'dispatchStoreEvent')) &&
-          node.arguments &&
-          node.arguments[1] &&
-          node.arguments[1].type === 'ObjectExpression'
+            (node.callee.property?.name === 'dispatchStoreEvent')) &&
+          node.arguments?.[1]?.type === 'ObjectExpression'
         ) {
-          const typeProp = node.arguments[1].properties.find((p) => p.key && p.key.name === 'type');
-          if (!typeProp || (typeProp.value && typeProp.value.value === '')) {
+          const typeProp = node.arguments[1].properties.find((p) => p.key?.name === 'type');
+          if (!typeProp || (typeProp.value?.value === '')) {
             context.report({
               node: node.arguments[1],
               messageId: 'emptyEventType',

@@ -13,13 +13,13 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (!filename.includes('worker') || filename.includes('.test.')) return {};
     return {
       Identifier(node) {
         if (
           node.name === 'document' ||
-          (node.name === 'window' && node.parent && node.parent.type !== 'UnaryExpression')
+          (node.name === 'window' && node.parent?.type !== 'UnaryExpression')
         ) {
           context.report({ node, messageId: 'workerDomAccess', data: { name: node.name } });
         }

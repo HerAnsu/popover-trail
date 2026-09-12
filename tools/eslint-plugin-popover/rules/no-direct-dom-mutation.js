@@ -15,13 +15,12 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.') || filename.includes('test/')) return {};
     return {
       AssignmentExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
+          node.left?.type === 'MemberExpression' &&
           node.left.property &&
           (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
         ) {

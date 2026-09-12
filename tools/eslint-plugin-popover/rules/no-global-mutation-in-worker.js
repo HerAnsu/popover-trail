@@ -22,12 +22,9 @@ export default {
     return {
       AssignmentExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
-          node.left.object &&
-          node.left.object.name === 'self' &&
-          node.left.property &&
-          node.left.property.name !== 'onmessage' &&
+          node.left?.type === 'MemberExpression' &&
+          node.left.object?.name === 'self' &&
+          node.left.property?.name !== 'onmessage' &&
           node.left.property.name !== 'onerror'
         ) {
           context.report({

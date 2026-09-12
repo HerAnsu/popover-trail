@@ -20,7 +20,7 @@ declare const __brandSymbol: unique symbol;
  * function getUser(id: UserId) { ... }
  * ```
  */
-export type Brand<T, B extends string> = T & { readonly [__brandSymbol]?: B };
+export type Brand<T, B extends string> = T & { readonly [__brandSymbol]: B };
 
 /** Nominal type for popover unique string keys. */
 export type PopoverKey<T extends string = string> = Brand<T, 'PopoverKey'>;
@@ -43,14 +43,40 @@ export type DurationMs = Brand<number, 'DurationMs'>;
 /** Nominal type for Unix epoch timestamps in milliseconds. */
 export type TimestampMs = Brand<number, 'TimestampMs'>;
 
-/**
- * Immutable, frozen empty array singleton (`readonly never[]`).
- * Covariantly assignable to `readonly T[]` for any type `T` with zero allocation.
- */
-export const EMPTY_READONLY_ARRAY: readonly never[] = Object.freeze([]);
+/** Nominal type for horizontal viewport coordinates. */
+export type ViewportX = Brand<number, 'ViewportX'>;
+
+/** Nominal type for vertical viewport coordinates. */
+export type ViewportY = Brand<number, 'ViewportY'>;
+
+/** Nominal type for cross-tab synchronizer tab identifiers. */
+export type TabId<T extends string = string> = Brand<T, 'TabId'>;
+
+/** Nominal type for trigger element identifiers. */
+export type TriggerId<T extends string = string> = Brand<T, 'TriggerId'>;
+
+/** Nominal type for card scope instance identifiers. */
+export type ScopeId<T extends string = string> = Brand<T, 'ScopeId'>;
+
+/** Nominal type for subscription listener tokens and identifiers. */
+export type SubscriptionId<T extends string = string> = Brand<T, 'SubscriptionId'>;
 
 /**
- * Immutable, frozen empty object singleton.
- * Safe for use as default record state across store slices with zero allocation.
+ * Generic brand constructor eliminating double type assertions across domain modules.
  */
+export function createBrand<T, B extends string>(value: T): Brand<T, B> {
+  return value as Brand<T, B>;
+}
+
+export const EMPTY_READONLY_ARRAY: readonly never[] = Object.freeze([]);
 export const EMPTY_READONLY_OBJECT: Readonly<Partial<Record<string, unknown>>> = Object.freeze({});
+
+/**
+ * Type-safe accessor for the frozen empty record singleton.
+ * Eliminates repetitive verbose type assertions across store slices, reducers, and initial states.
+ */
+export function emptyRecord<K extends string = string, V = unknown>(): Readonly<
+  Partial<Record<K, V>>
+> {
+  return EMPTY_READONLY_OBJECT as Readonly<Partial<Record<K, V>>>;
+}

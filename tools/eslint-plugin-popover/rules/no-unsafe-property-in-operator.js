@@ -31,8 +31,7 @@ export default {
       BinaryExpression(node) {
         if (
           node.operator === 'in' &&
-          node.right &&
-          node.right.type === 'Identifier' &&
+          node.right?.type === 'Identifier' &&
           (node.right.name === 'rawPrimitive' || node.right.name === 'unknownTarget')
         ) {
           context.report({

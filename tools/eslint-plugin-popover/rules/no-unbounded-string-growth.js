@@ -30,8 +30,7 @@ export default {
       AssignmentExpression(node) {
         if (
           node.operator === '+=' &&
-          node.left &&
-          node.left.type === 'Identifier' &&
+          node.left?.type === 'Identifier' &&
           (node.left.name.includes('Log') ||
             node.left.name.includes('Trace') ||
             node.left.name.includes('Buffer'))

@@ -1,7 +1,3 @@
-/**
- * @fileoverview Enforce max capacity limit or LRU eviction on internal Map caches.
- */
-
 export default {
   meta: {
     type: 'suggestion',
@@ -12,18 +8,18 @@ export default {
     },
     schema: [],
     messages: {
-      requireBoundedCache:
-        'Internal cache Map should have a MAX_SIZE check or LRU eviction to prevent unbounded memory growth.',
+      requireBoundedCache: 'Internal cache Map should have a MAX_SIZE check or LRU eviction to prevent unbounded memory growth.',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
     if (!filename.includes('cache') && !filename.includes('Cache')) return {};
 
     return {
       ClassDeclaration(node) {
-        if (node.id && node.id.name.includes('Cache')) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name?.includes('Cache')) {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             body &&
             !body.includes('maxSize') &&

@@ -15,11 +15,11 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.') || filename.includes('test/')) return {};
     return {
       CallExpression(node) {
-        if (node.callee && node.callee.name === 'useLayoutEffect') {
+        if (node.callee?.name === 'useLayoutEffect') {
           context.report({ node, messageId: 'useLayoutEffectSsrWarning' });
         }
       },

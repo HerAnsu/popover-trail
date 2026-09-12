@@ -30,13 +30,10 @@ export default {
     return {
       TSAsExpression(node) {
         if (
-          node.expression &&
-          node.expression.type === 'CallExpression' &&
-          node.expression.callee &&
-          node.expression.callee.property &&
+          node.expression?.type === 'CallExpression' &&
+          node.expression.callee?.property &&
           node.expression.callee.property.name === 'querySelector' &&
-          node.typeAnnotation &&
-          node.typeAnnotation.typeName &&
+          node.typeAnnotation?.typeName &&
           node.typeAnnotation.typeName.name === 'HTMLElement'
         ) {
           context.report({

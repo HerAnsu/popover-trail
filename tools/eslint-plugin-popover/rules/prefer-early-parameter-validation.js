@@ -33,7 +33,7 @@ export default {
           (node.id.name.startsWith('open') || node.id.name.startsWith('close')) &&
           node.params.length > 0
         ) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             body.includes('.push(') &&
             !body.includes('if (!') &&

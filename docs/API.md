@@ -1,4 +1,4 @@
-# Popover Trail API reference
+# Popover Trail - API Reference
 
 Complete technical specification for components, hooks, schema builders, core engines, type definitions, and diagnostic validators in `popover-trail`.
 
@@ -6,77 +6,275 @@ Complete technical specification for components, hooks, schema builders, core en
 
 ## Table of contents
 
-1. [Typed schema builder and factory](#1-typed-schema-builder-and-factory)
+1. [Quick start](#1-quick-start)
+2. [Architecture: 4-tier clean architecture model](#2-architecture-4-tier-clean-architecture-model)
+3. [Global type augmentation and module registration](#3-global-type-augmentation-and-module-registration)
+4. [Typed schema builder and factory](#4-typed-schema-builder-and-factory)
    - [createPopoverSchema](#createpopoverschema)
+   - [DomainPopoverKey](#domainpopoverkey)
    - [mergePopoverSchemas](#mergepopoverschemas)
    - [createPopoverTrail](#createpopovertrail)
    - [definePopoverContext](#definepopovercontext)
    - [defineSchemaNode and toSchemaKey](#defineschemanode-and-toschemakey)
-2. [Components and compound layouts](#2-components-and-compound-layouts)
+5. [Components and compound layouts](#5-components-and-compound-layouts)
    - [PopoverProvider](#popoverprovider)
    - [PopoverCard and compound subcomponents](#popovercard-and-compound-subcomponents)
    - [PopoverTrail](#popovertrail)
    - [PopoverTimeline and subcomponents](#popovertimeline-and-subcomponents)
    - [PopoverPortal](#popoverportal)
    - [PopoverTrigger](#popovertrigger)
-3. [Hooks and selectors](#3-hooks-and-selectors)
+6. [Hooks, selectors, and React 19 concurrency](#6-hooks-selectors-and-react-19-concurrency)
    - [usePopover](#usepopover)
-   - [usePopoverData](#usepopoverdata)
+   - [usePopoverData and Suspense](#usepopoverdata-and-suspense)
    - [usePopoverAction](#usepopoveraction)
    - [usePopoverOptimistic](#usepopoveroptimistic)
    - [usePopoverTimeline](#usepopovertimeline)
    - [usePopoverCard](#usepopovercard)
    - [usePopoverActions](#usepopoveractions)
-   - [usePopoverGeometry](#usepopovergeometry)
+   - [usePopoverGeometry and QuadTree collision](#usepopovergeometry-and-quadtree-collision)
    - [usePopoverDragAndDrop](#usepopoverdraganddrop)
    - [usePopoverHydration](#usepopoverhydration)
    - [useIsPopoverOpen and state selectors](#useispopoveropen-and-state-selectors)
    - [Utility and adapter hooks](#utility-and-adapter-hooks)
-4. [DND sub-package (popover-trail/dnd)](#4-dnd-sub-package-popover-traildnd)
+7. [DND sub-package (popover-trail/dnd)](#7-dnd-sub-package-popover-traildnd)
    - [PopoverCanvas](#popovercanvas)
    - [PopoverCard (DND version)](#popovercard-dnd-version)
    - [usePopoverDraggableCard](#usepopoverdraggablecard)
-5. [Core engines and architecture](#5-core-engines-and-architecture)
+8. [Core engines and architecture](#8-core-engines-and-architecture)
+   - [Transactions and atomic batching](#transactions-and-atomic-batching)
+   - [Persistence and cross-tab synchronization](#persistence-and-cross-tab-synchronization)
+   - [Middleware pipeline and telemetry interceptors](#middleware-pipeline-and-telemetry-interceptors)
    - [FSM statechart engine](#fsm-statechart-engine)
    - [DAG cascading graph](#dag-cascading-graph)
    - [QuadTree 2D spatial partitioning index](#quadtree-2d-spatial-partitioning-index)
    - [PopoverTransitionScheduler](#popovertransitionscheduler)
-   - [PopoverSnapshotManager](#popoversnapshotmanager)
    - [CQRS query and command buses](#cqrs-query-and-command-buses)
    - [EventBus and CustomEvent engine](#eventbus-and-customevent-engine)
    - [Pluggable layout strategies](#pluggable-layout-strategies)
    - [Theme tokens and CSS custom variables](#theme-tokens-and-css-custom-variables)
    - [Monadic Result pattern](#monadic-result-pattern)
    - [Disposable pattern (TS 5.2 using)](#disposable-pattern-ts-52-using)
-   - [Multi-tab broadcast synchronization](#multi-tab-broadcast-synchronization)
    - [Geometry value objects](#geometry-value-objects)
    - [ObjectPool and MemorySentinel](#objectpool-and-memorysentinel)
-6. [Types and discriminated unions](#6-types-and-discriminated-unions)
+9. [Multi-stack zones and micro-frontends](#9-multi-stack-zones-and-micro-frontends)
+   - [Stack group isolation (stackGroup)](#stack-group-isolation-stackgroup)
+   - [Z-index base map partitioning (zIndexBaseMap)](#z-index-base-map-partitioning-zindexbasemap)
+10. [Types and discriminated unions](#10-types-and-discriminated-unions)
+   - [PopoverStateData full property table](#popoverstatedata)
+   - [CollisionConfig specification](#collisionconfig-specification)
+   - [FocusLockOptions specification](#focuslockoptions-specification)
+   - [PopoverPersistConfig specification](#popoverpersistconfig-specification)
    - [TrailEntry and state subtypes](#trailentry-and-state-subtypes)
+   - [StoreActionPayload discriminated union](#storeactionpayload)
+   - [PopoverStoreEvent, ResolutionMetric, and event maps](#popoverstoreevent)
+   - [StoreSliceDescriptor and SliceContext](#storeslicedescriptor-and-slicecontext)
+   - [ActiveTimelineStep, UndoneTimelineStep, and PopoverTimelineItem](#timeline-step-types)
+   - [AnchorEventLike, ValidatedAnchorRef, and ResolverParams](#anchor-and-resolver-types)
+   - [PopoverResponsiveMode and PopoverLayoutStrategy](#responsive-modes-and-layout-strategies)
+   - [PopoverStoreDiscriminatedState](#popoverstorediscriminatedstate)
    - [PopoverFSMState](#popoverfsmstate)
-   - [PopoverTimelineStep](#popovertimelinestep)
    - [PopoverEntryDiscriminatedState](#popoverentrydiscriminatedstate)
    - [PolymorphicPropsWithRef](#polymorphicpropswithref)
    - [TypedMiddlewarePatch](#typedmiddlewarepatch)
    - [Branded primitive types](#branded-primitive-types)
    - [React 19 Action and Optimistic types](#react-19-action-and-optimistic-types)
-7. [Type guards and helper utilities](#7-type-guards-and-helper-utilities)
+11. [Type guards and helper utilities](#11-type-guards-and-helper-utilities)
    - [Entry type guards](#entry-type-guards)
    - [Anchor type guards](#anchor-type-guards)
    - [Store event type guards](#store-event-type-guards)
    - [Type-safe builder helpers](#type-safe-builder-helpers)
-8. [Utilities, caching, and controllers](#8-utilities-caching-and-controllers)
-   - [SimplePopoverCache](#simplepopovercache)
+12. [Utilities, caching, and controllers](#12-utilities-caching-and-controllers)
+   - [createPopoverStore direct API](#createpopoverstore)
+   - [PopoverCache interface and SimplePopoverCache](#popovercache-and-simplepopovercache)
    - [createWorkerResolver and definePopoverWorkerRPC](#createworkerresolver-and-definepopoverworkerrpc)
    - [createPopoverController](#createpopovercontroller)
    - [PopoverError and error codes](#popovererror-and-error-codes)
-9. [Guardrail warnings registry (PT-101 to PT-130)](#9-guardrail-warnings-registry)
-10. [CSS custom variables and theme tokens](#10-css-custom-variables-and-theme-tokens)
-11. [Keyboard accessibility and ARIA matrix](#11-keyboard-accessibility-and-aria-matrix)
+13. [Recipes and common patterns](#13-recipes-and-common-patterns)
+   - [Skeleton UI during resolution](#recipe-skeleton-ui-during-resolution)
+   - [Retry with backoff via retryPopover](#recipe-retry-with-backoff)
+   - [Prefetch on hover](#recipe-prefetch-on-hover)
+   - [Nested cascade (3-level drilldown)](#recipe-nested-cascade)
+   - [Pinning with drag onto canvas](#recipe-pinning-with-drag-onto-canvas)
+14. [Server-Side Rendering (SSR) and Next.js / Remix guide](#14-server-side-rendering-ssr-and-nextjs--remix-guide)
+15. [Performance optimization and zero-GC memory hygiene](#15-performance-optimization-and-zero-gc-memory-hygiene)
+16. [Testing guide](#16-testing-guide)
+17. [Guardrail warnings registry (PT-108 to PT-130)](#17-guardrail-warnings-registry)
+18. [CSS custom variables and theme tokens](#18-css-custom-variables-and-theme-tokens)
+19. [Keyboard accessibility, focus fiber restoration, and ARIA matrix](#19-keyboard-accessibility-focus-fiber-restoration-and-aria-matrix)
 
 ---
 
-## 1. Typed schema builder and factory
+## 1. Quick start
+
+Install `popover-trail` and its peer dependencies:
+
+```bash
+npm install popover-trail @floating-ui/react zustand
+```
+
+### 1. Define your typed schema
+
+```tsx
+// schema.ts
+import { createPopoverSchema } from 'popover-trail';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  role: string;
+}
+
+export const appSchema = createPopoverSchema({
+  userProfile: {
+    resolver: async (key, _parentData, _context, signal) => {
+      const res = await fetch(`/api/users/${key}`, { signal });
+      if (!res.ok) throw new Error(`User not found: ${key}`);
+      return (await res.json()) as UserProfile;
+    },
+    placement: 'right',
+    offset: 12,
+  },
+});
+```
+
+### 2. Wrap your app in `<PopoverProvider>`
+
+```tsx
+// App.tsx
+import React from 'react';
+import { PopoverProvider, PopoverTrail, PopoverCard, PopoverTrigger } from 'popover-trail';
+import { appSchema } from './schema';
+
+export function App() {
+  return (
+    <PopoverProvider schema={appSchema}>
+      <main style={{ padding: 40 }}>
+        <h1>Team Directory</h1>
+        
+        {/* Trigger opening the root card */}
+        <PopoverTrigger popoverKey="userProfile">
+          <button type="button">Inspect Alex</button>
+        </PopoverTrigger>
+      </main>
+
+      {/* Renders active cascade cards */}
+      <PopoverTrail
+        renderCard={(entry, index, isPinned) => (
+          <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
+            <PopoverCard.Handle>
+              <strong>{entry.key}</strong>
+            </PopoverCard.Handle>
+            <PopoverCard.Content>
+              {entry.isLoading && <p>Loading profile...</p>}
+              {entry.error && <p style={{ color: 'red' }}>{entry.error.message}</p>}
+              {entry.data && (
+                <div>
+                  <p>Name: {entry.data.name}</p>
+                  <p>Role: {entry.data.role}</p>
+                </div>
+              )}
+            </PopoverCard.Content>
+            <PopoverCard.PinButton />
+            <PopoverCard.CloseButton />
+          </PopoverCard>
+        )}
+      />
+    </PopoverProvider>
+  );
+}
+```
+
+---
+
+## 2. Architecture: 4-tier clean architecture model
+
+`popover-trail` follows a strict Clean Architecture (Onion) topology. Dependencies point inward only. Outer layers never dictate domain logic to inner layers, and the core kernel contains zero dependencies on React, Zustand, DOM elements, or browser APIs.
+
+```mermaid
+graph TD
+    L4["Layer 4: Presentation & UI Components<br/><i>(Compound Components, Portals, Slots, Dialogs, ARIA Roles)</i>"] --> L3["Layer 3: Reactive Integration & Hooks<br/><i>(Context Providers, Hook Composition, Viewport Adapters)</i>"]
+    L3 --> L2["Layer 2: Headless State Management & Orchestration<br/><i>(Store Slices, CQRS Dispatchers, Event Bus, Snapshot Sync)</i>"]
+    L2 --> L1["Layer 1: Core Kernel<br/><i>(Pure Reducers, DAG Topology, Vector Math, Result Monads)</i>"]
+```
+
+### Layer responsibilities and constraints
+
+- **Layer 1: Core Kernel (Pure Functional Domain)**
+  - *Responsibilities*: Pure state transition reducers, topological DAG algorithms, 2D coordinate geometry, Result monads, error models, and invariant validators.
+  - *Constraints*: Zero external dependencies. Completely decoupled from React, Zustand, Floating UI, DOM interfaces (`window`, `document`, `HTMLElement`), and Web APIs.
+- **Layer 2: Headless State Management (Orchestration)**
+  - *Responsibilities*: Zustand store composition, CQRS command and query dispatchers, event bus implementations, storage persistence, history management, and transition scheduling.
+  - *Constraints*: Orchestration only. Delegates all business calculations and coordinate math to Layer 1. Never imports React components, JSX, or DOM renderer internals.
+- **Layer 3: Reactive Integration & Hooks**
+  - *Responsibilities*: React lifecycle adapters, context providers, coordinate synchronization hooks, keyboard managers, and DOM event listeners.
+  - *Constraints*: Bridges Headless State with React reactivity. Never imports UI compound components or renders JSX markup.
+- **Layer 4: Presentation & UI Components**
+  - *Responsibilities*: Compound UI components (`PopoverCard`, `PopoverTrail`, `PopoverTimeline`, `PopoverTrigger`), portal integrations, accessible DOM wrappers, and polymorphic slots.
+  - *Constraints*: Thin declarative wrappers around Layer 3 hooks and contexts. Implements zero raw state logic or mathematical coordinate transformations.
+
+---
+
+## 3. Global type augmentation and module registration
+
+`popover-trail` exports a global `Register` interface. Augmenting this interface in your project enables workspace-wide autocompletion for popover keys, child hierarchy validation, and resolved payload data types across all components and hooks without passing generic parameters manually.
+
+### How to augment the `Register` interface
+
+Create a declaration file (for example `popover.d.ts` or at the bottom of your `schema.ts`):
+
+```typescript
+// schema.ts
+import { createPopoverSchema } from 'popover-trail';
+
+export const myAppSchema = createPopoverSchema({
+  userProfile: {
+    resolver: async (key: string) => ({ id: key, name: 'Alice', role: 'Admin' }),
+    children: ['userStats', 'userSettings'] as const,
+  },
+  userStats: {
+    resolver: async (key: string, parentData: { id: string }) => ({ views: 1200, score: 98 }),
+  },
+  userSettings: {
+    resolver: async () => ({ theme: 'dark', notifications: true }),
+  },
+});
+
+// Register schema globally for project-wide autocompletion
+declare module 'popover-trail' {
+  interface Register {
+    schema: typeof myAppSchema;
+  }
+}
+```
+
+### Inferred registration types
+
+Once registered, utility types automatically extract registered keys and payload structures:
+
+```typescript
+import type {
+  RegisteredSchema,
+  RegisteredKeys,
+  RegisteredDataMap,
+  ResolveRegisteredData,
+} from 'popover-trail';
+
+// 1. Union of all schema keys: 'userProfile' | 'userStats' | 'userSettings'
+type Keys = RegisteredKeys;
+
+// 2. Map of key to resolved data payload type:
+// { userProfile: { id: string; name: string; role: string }; userStats: { views: number; score: number }; ... }
+type DataMap = RegisteredDataMap;
+
+// 3. Strongly typed payload extraction for a specific key:
+type User = ResolveRegisteredData<'userProfile'>; // { id: string; name: string; role: string }
+```
+
+When no schema is registered globally, `RegisteredKeys` safely defaults to `string` and `RegisteredDataMap` defaults to `Record<string, unknown>`.
+
+---
+
+## 4. Typed schema builder and factory
 
 ### `createPopoverSchema`
 
@@ -114,8 +312,8 @@ export const appSchema = createPopoverSchema({
 
 | Option                  | Type                                                               | Default     | Description                                                                                 |
 | :---------------------- | :----------------------------------------------------------------- | :---------- | :------------------------------------------------------------------------------------------ |
-| `resolver`              | `(key, parentData?, context?, signal?) => TData \| Promise<TData>` | Required    | Data fetcher function resolving state for the popover key. Supports AbortSignal.            |
-| `children`              | `ReadonlyArray<string>`                                            | `undefined` | Restricts allowed child popover keys when calling `pushNested`.                             |
+| `resolver`              | `(key, parentData?, context?, signal?) => TData \| Promise<TData>` | Required    | Data fetcher resolving state for the popover key. Supports `AbortSignal`.                   |
+| `children`              | `ReadonlyArray<string>`                                            | `undefined` | Restricts allowed child popover keys when calling `openNestedWithResolver`.                 |
 | `placement`             | `PopoverPlacement`                                                 | `'right'`   | Preferred alignment placement relative to anchor element.                                   |
 | `offset`                | `number`                                                           | `8`         | Distance gap in pixels between anchor element and popover container.                        |
 | `collision`             | `CollisionConfig`                                                  | `undefined` | Boundary collision settings (`boundary`, `padding`, `flip`, `shift`, `size`).               |
@@ -123,13 +321,56 @@ export const appSchema = createPopoverSchema({
 | `allowDragWhenPinned`   | `boolean`                                                          | `true`      | Enable pointer dragging when card is pinned floating window.                                |
 | `allowDragWhenUnpinned` | `boolean`                                                          | `true`      | Enable pointer dragging when card is in trailing stack.                                     |
 
+#### 1. Typed `parentData` propagation in cascade chains
+
+When defining nested nodes in a schema, the resolver for child cards receives the strongly typed data payload of the initiating parent card:
+
+```typescript
+interface OrgData { id: string; orgName: string; }
+interface TeamData { teamId: string; members: string[]; }
+
+export const appSchema = createPopoverSchema({
+  orgCard: {
+    resolver: async (key: string): Promise<OrgData> => {
+      const res = await fetch(`/api/orgs/${key}`);
+      return res.json();
+    },
+    children: ['teamCard'] as const,
+    placement: 'right',
+  },
+  teamCard: {
+    // parentData is strongly typed as OrgData:
+    resolver: async (key: string, parentData: OrgData, ctx, signal): Promise<TeamData> => {
+      const res = await fetch(`/api/orgs/${parentData.id}/teams/${key}`, { signal });
+      return res.json();
+    },
+    placement: 'right',
+  },
+});
+```
+
+#### 2. Compile-time DAG constraint checking (`children: [...] as const`)
+
+Declaring `children: ['childA', 'childB'] as const` enforces Directed Acyclic Graph topology directly at compile time. TypeScript rejects illegal or undeclared child keys:
+
+```typescript
+const actions = appSchema.useActions();
+
+// OK: 'teamCard' is declared in orgCard's children array
+actions.openNestedWithResolver('teamCard', 'orgCard');
+
+// TypeScript Compilation Error:
+// Argument of type '"billingCard"' is not assignable to parameter of type '"teamCard"'.
+actions.openNestedWithResolver('billingCard', 'orgCard');
+```
+
 #### Schema instance properties (`PopoverSchemaInstance<TSchema>`)
 
 | Property              | Type                                       | Description                                                                         |
 | :-------------------- | :----------------------------------------- | :---------------------------------------------------------------------------------- |
 | `definition`          | `TSchema`                                  | Raw input definition object.                                                        |
 | `keys`                | `{ [K in keyof TSchema]: K }`              | Typed key mapping object (`appSchema.keys.userProfile`).                            |
-| `createResolver()`    | `() => PopoverResolver`                    | Factory function generating unified resolver for `<PopoverProvider>`.               |
+| `createResolver()`    | `() => PopoverResolver`                    | Factory generating unified resolver for `<PopoverProvider>`.                        |
 | `Trigger`             | `React.ComponentType`                      | Typed trigger component `<appSchema.Trigger popoverKey="...">`.                     |
 | `useData(key)`        | `(key) => SchemaData \| null \| undefined` | Hook returning typed data payload for specified schema key.                         |
 | `useEntry(key)`       | `(key) => TrailEntry \| undefined`         | Hook returning active `TrailEntry` for specified schema key.                        |
@@ -138,7 +379,7 @@ export const appSchema = createPopoverSchema({
 | `useChildren(key)`    | `(key) => readonly SchemaKeys[]`           | Hook returning active direct child keys spawned from key.                           |
 | `useParent(key)`      | `(key) => SchemaKeys \| undefined`         | Hook returning parent popover key.                                                  |
 | `useDepth(key)`       | `(key) => number`                          | Hook returning nesting depth level (0 for root).                                    |
-| `useIsOpen(key)`      | `(key) => boolean`                         | Hook checking whether popover is currently active in trail/floating stack.          |
+| `useIsOpen(key)`      | `(key) => boolean`                         | Hook checking whether popover is currently active in trail or floating stack.       |
 | `useIsPinned(key)`    | `(key) => boolean`                         | Hook checking whether popover is pinned as floating window.                         |
 | `useIsTopMost(key)`   | `(key) => boolean`                         | Hook checking whether popover is top-most in z-index order.                         |
 | `useIsLoading(key)`   | `(key) => boolean`                         | Hook checking whether data resolution is in progress for key.                       |
@@ -146,29 +387,71 @@ export const appSchema = createPopoverSchema({
 
 #### Methods on `schema.useActions()`
 
-- `openRoot(key, anchorEvent, options?)`: Opens root popover with typed key autocompletion.
-- `pushNested(key, sourceKey, options?)`: Pushes nested child popover. When parent defines `children`, `key` is strictly constrained to `AllowedChildrenOf<TSchema, sourceKey>`.
-- `close(key)`: Closes target popover and its active descendants.
-- `closeAll()`: Closes all popovers.
+- `openRootWithResolver(key, anchorEvent, options?)`: Opens root popover with typed key autocompletion.
+- `openNestedWithResolver(key, sourceKey, options?)`: Pushes nested child popover. When parent defines `children`, `key` is constrained to `AllowedChildrenOf<TSchema, sourceKey>` at compile time.
+- `closeByKey(key, options?)`: Closes target popover and its active descendants.
+- `closeAll(options?)`: Closes all popovers.
+- `clearTrail(options?)`: Clears active trail while preserving pinned floating cards.
 - `togglePin(key, rect?)`: Toggles pinned floating state.
 - `bringToFront(key)`: Raises popover to top of stack.
-- `retryPopover(key)`: Retries data resolution.
-- `prefetchPopover(key, parentData?)`: Prefetches data resolution into cache.
-- `clear()`: Clears all popovers immediately.
+- `retryPopover(key, options?)`: Retries data resolution.
+- `prefetchPopover(key, parentData?)`: Prefetches data resolution into cache without opening.
+- `invalidate(keyOrKeys)`: Invalidates cache and refetches one or more keys.
+- `clear(options?)`: Closes all trail and floating popovers immediately.
+
+---
+
+### `DomainPopoverKey`
+
+Template literal type `${TDomain}:${TName}` exported from `storeTypes.ts`. Use this pattern for multi-domain architectures where popover keys need explicit domain prefixes to prevent collisions across micro-frontends or modular feature slices:
+
+```typescript
+import type { DomainPopoverKey } from 'popover-trail';
+
+export type UserDomainKey = DomainPopoverKey<'user', 'profile' | 'settings' | 'billing'>;
+// Result: 'user:profile' | 'user:settings' | 'user:billing'
+
+export type AnalyticsDomainKey = DomainPopoverKey<'analytics', 'chart' | 'logs'>;
+// Result: 'analytics:chart' | 'analytics:logs'
+
+export type AppPopoverKey = UserDomainKey | AnalyticsDomainKey;
+```
 
 ---
 
 ### `mergePopoverSchemas`
 
-Merges multiple schema instances into a single combined schema definition with unified keys and resolvers:
+Merges multiple schema instances into a single combined schema definition with unified keys and resolvers. This allows modularizing popover topologies across domain modules in large codebases:
 
 ```tsx
-import { createPopoverSchema, mergePopoverSchemas } from 'popover-trail';
+import { createPopoverSchema, mergePopoverSchemas, PopoverProvider } from 'popover-trail';
 
-const userSchema = createPopoverSchema({ userProfile: { resolver: fetchUser } });
-const orgSchema = createPopoverSchema({ orgDetails: { resolver: fetchOrg } });
+// 1. User Domain Module:
+const userSchema = createPopoverSchema({
+  userProfile: {
+    resolver: async (key: string) => fetchUser(key),
+    children: ['userBilling'] as const,
+    placement: 'right',
+  },
+  userBilling: {
+    resolver: async (key: string, parentUser: { id: string }) => fetchBilling(parentUser.id),
+    placement: 'bottom',
+  },
+});
 
-export const rootSchema = mergePopoverSchemas(userSchema, orgSchema);
+// 2. Workspace Domain Module:
+const workspaceSchema = createPopoverSchema({
+  projectDetails: {
+    resolver: async (key: string) => fetchProject(key),
+    placement: 'right',
+  },
+});
+
+// 3. Combined Root Schema:
+export const appSchema = mergePopoverSchemas(userSchema, workspaceSchema);
+
+// Inferred Keys: 'userProfile' | 'userBilling' | 'projectDetails'
+export type AppPopoverKeys = keyof typeof appSchema.keys;
 ```
 
 ---
@@ -178,41 +461,32 @@ export const rootSchema = mergePopoverSchemas(userSchema, orgSchema);
 Overloaded factory supporting schema-driven definitions and generic type bindings.
 
 ```tsx
-// 1. Schema Mode
-const schemaInstance = createPopoverTrail({
-  accountCard: {
-    resolver: (key) => fetchAccount(key),
-  },
+// 1. Schema mode: keys and data types inferred from schema
+const trail = createPopoverTrail({
+  accountCard: { resolver: (key) => fetchAccount(key) },
 });
-const { PopoverProvider, PopoverTrigger, PopoverPortal, usePopover } = schemaInstance;
+const { PopoverProvider, PopoverTrigger, PopoverPortal, usePopover } = trail;
 
-// 2. Generic Mode
-const trailHelpers = createPopoverTrail<UserData, GlobalContextType>();
-const {
-  PopoverProvider,
-  PopoverTrigger,
-  PopoverPortal,
-  usePopover,
-  usePopoverActions,
-  usePopoverContext,
-} = trailHelpers;
+// 2. Generic mode: dynamic keys or global PopoverRegistry augmentation
+const trail = createPopoverTrail<UserData, GlobalContextType>();
+const { PopoverProvider, PopoverTrigger, PopoverPortal, usePopover, usePopoverActions, usePopoverContext } = trail;
 ```
+
+> **Warning (PT-126)**: `createPopoverTrail` must be called at module scope, not inside a React render body. The library emits a dev-mode guardrail warning if this is violated.
 
 ---
 
 ### `definePopoverContext`
 
-Factory generating pre-bound React Context hooks and provider components typed for a specific global `TContext` structure. Eliminates repeating generic parameter types across components.
+Factory generating pre-bound React Context hooks and provider components typed for a specific global `TContext` structure.
 
 ```tsx
 import { definePopoverContext } from 'popover-trail';
 
-export interface AppContext {
-  userId: string;
-  theme: 'light' | 'dark';
-}
+export interface AppContext { userId: string; theme: 'light' | 'dark'; }
 
-export const { Provider, useContext, useActions, useStoreApi } = definePopoverContext<AppContext>();
+export const { Provider, useContext, useActions, useStoreApi } =
+  definePopoverContext<AppContext>();
 ```
 
 ---
@@ -234,11 +508,11 @@ const validKey = toSchemaKey(appSchema, 'userProfile');
 
 ---
 
-## 2. Components and compound layouts
+## 5. Components and compound layouts
 
 ### `<PopoverProvider>`
 
-Instantiates the Zustand store, injects context into the React tree, and manages global event listeners for Escape key handling, keyboard navigation, and click-outside dismissal.
+Instantiates the Zustand store, injects context into the React tree, and manages global event listeners for Escape key, keyboard navigation, and click-outside dismissal.
 
 ```tsx
 <PopoverProvider
@@ -252,29 +526,30 @@ Instantiates the Zustand store, injects context into the React tree, and manages
 </PopoverProvider>
 ```
 
-#### Provider properties (`PopoverProviderProps<TData, TContext>`)
+#### Provider properties (`PopoverProviderProps<TData, TContext, TSlices>`)
 
 | Prop                     | Type                                               | Default             | Description                                                                                                                |
 | :----------------------- | :------------------------------------------------- | :------------------ | :------------------------------------------------------------------------------------------------------------------------- |
 | `children`               | `React.ReactNode`                                  | Required            | Child elements rendered within context scope.                                                                              |
-| `schema`                 | `PopoverSchemaInstance`                            | `undefined`         | Typed schema instance generated by `createPopoverSchema`.                                                                  |
+| `schema`                 | `PopoverSchemaInstance`                            | `undefined`         | Typed schema instance from `createPopoverSchema`.                                                                          |
 | `resolveData`            | `PopoverResolver`                                  | `undefined`         | Data resolver `(key, parentData?, context?, signal?) => TData \| Promise<TData>`.                                          |
 | `initialContext`         | `TContext`                                         | `undefined`         | Global shared context passed to all resolvers.                                                                             |
-| `clickOutside`           | `ClickOutsideConfig`                               | `{ enabled: true }` | Settings for click-outside auto-closing (`enabled`, `ignoreSelector`, `ignoreClass`, `popoverSelector`, `onClickOutside`). |
+| `slices`                 | `StoreSliceDescriptor[]`                           | `undefined`         | Custom extensible OCP domain slices registered into the store pipeline.                                                    |
+| `clickOutside`           | `ClickOutsideConfig`                               | `{ enabled: true }` | Click-outside auto-closing settings (`enabled`, `ignoreSelector`, `ignoreClass`, `popoverSelector`, `onClickOutside`).     |
 | `enableKeyboardClose`    | `boolean`                                          | `true`              | Close topmost popover when Escape key is pressed.                                                                          |
 | `enableArrowNavigation`  | `boolean`                                          | `true`              | Enable keyboard arrow key navigation between active popovers.                                                              |
 | `closePinnedDescendants` | `boolean`                                          | `false`             | Close pinned floating child popovers when a parent closes.                                                                 |
 | `allowDragWhenPinned`    | `boolean`                                          | `true`              | Allow mouse and touch dragging when card is pinned floating.                                                               |
 | `allowDragWhenUnpinned`  | `boolean`                                          | `true`              | Allow mouse and touch dragging when card is unpinned trailing.                                                             |
-| `cache`                  | `PopoverCache<TData>`                              | `undefined`         | Cache implementation for caching resolver promises.                                                                        |
+| `cache`                  | `PopoverCache<TData>`                              | `undefined`         | Cache implementation for resolver promises.                                                                                |
 | `collision`              | `CollisionConfig`                                  | `undefined`         | Global boundary collision configuration.                                                                                   |
 | `baseZIndex`             | `number`                                           | `1000`              | Base z-index depth factor.                                                                                                 |
-| `cascadeOffsetStep`      | `number`                                           | `24`                | Pixel offset shift added per level of nesting.                                                                             |
-| `exitTransitionDuration` | `number`                                           | `200`               | Unmount delay in milliseconds for CSS exit animations.                                                                     |
-| `defaultOffset`          | `number`                                           | `8`                 | Default gap offset distance in pixels.                                                                                     |
-| `mountingClassName`      | `string`                                           | `'mounting'`        | Global CSS class added while mounting.                                                                                     |
-| `unmountingClassName`    | `string`                                           | `'unmounting'`      | Global CSS class added while unmounting.                                                                                   |
-| `mountedClassName`       | `string`                                           | `'mounted'`         | Global CSS class added when fully mounted.                                                                                 |
+| `cascadeOffsetStep`      | `number`                                           | `8`                 | Pixel offset shift added per nesting level.                                                                                |
+| `exitTransitionDuration` | `number`                                           | `0`                 | Unmount delay in milliseconds for CSS exit animations.                                                                     |
+| `defaultOffset`          | `number`                                           | `8`                 | Default gap offset in pixels between trigger and popover.                                                                  |
+| `mountingClassName`      | `string`                                           | `'mounting'`        | CSS class added while card is mounting.                                                                                    |
+| `unmountingClassName`    | `string`                                           | `'unmounting'`      | CSS class added while card is unmounting.                                                                                  |
+| `mountedClassName`       | `string`                                           | `'mounted'`         | CSS class added when card is fully mounted.                                                                                |
 | `responsiveMode`         | `'auto' \| 'popover' \| 'bottom-sheet' \| 'modal'` | `'auto'`            | Responsive layout transformation mode.                                                                                     |
 | `mobileBreakpoint`       | `number`                                           | `640`               | Viewport width threshold in pixels for mobile transformation.                                                              |
 | `stackGroup`             | `string \| null`                                   | `null`              | Active stack group zone ID filter.                                                                                         |
@@ -289,53 +564,76 @@ Instantiates the Zustand store, injects context into the React tree, and manages
 
 Polymorphic container element for popover cards. Binds coordinates, accessibility attributes (`role="dialog"`), data attributes (`data-state`, `data-pinned`, `data-key`), and CSS custom variables automatically. Supports polymorphic `ref` inference via `PolymorphicPropsWithRef<E, P>`.
 
+#### Compound subcomponents and `asChild` composition
+
+| Subcomponent                | Prop `asChild` | Description                                                                                  |
+| :-------------------------- | :------------- | :------------------------------------------------------------------------------------------- |
+| `<PopoverCard.Handle>`      | `boolean`      | Drag handle attaching pointer listeners and dragging coordinates. Supports `asChild`.       |
+| `<PopoverCard.PinButton>`   | `boolean`      | Toggle button for pinning/unpinning. Supports `asChild` for custom icons.                    |
+| `<PopoverCard.CloseButton>` | `boolean`      | Close button triggering subtree unmount. Supports `asChild` for custom icons.               |
+| `<PopoverCard.Content>`     | `boolean`      | Wrapper container for the scrollable card body.                                              |
+
+#### Tailwind CSS & Lucide Icons compound card template
+
 ```tsx
-<PopoverCard
-  as="article"
-  entry={entry}
-  index={index}
-  isPinned={isPinned}
-  className="card-container">
-  <PopoverCard.Handle className="drag-handle">
-    <span>Drag Card</span>
-  </PopoverCard.Handle>
-  <PopoverCard.Content>
-    <h3>{entry.data?.title}</h3>
-  </PopoverCard.Content>
-  <PopoverCard.PinButton className="pin-btn" />
-  <PopoverCard.CloseButton className="close-btn" />
-</PopoverCard>
+import React from 'react';
+import { PopoverCard, type TrailEntry } from 'popover-trail';
+import { GripHorizontal, Pin, PinOff, X } from 'lucide-react';
+
+export function StyledPopoverCard({
+  entry,
+  index,
+  isPinned,
+}: {
+  entry: TrailEntry<{ title: string; body: string }>;
+  index: number;
+  isPinned: boolean;
+}) {
+  return (
+    <PopoverCard
+      entry={entry}
+      index={index}
+      isPinned={isPinned}
+      className="w-80 rounded-2xl border border-white/20 bg-slate-900/80 p-4 text-white shadow-2xl backdrop-blur-xl transition-all duration-200 data-[pinned=true]:ring-2 data-[pinned=true]:ring-cyan-400">
+      {/* Header with Drag Handle and Action Controls */}
+      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <PopoverCard.Handle asChild>
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white cursor-grab active:cursor-grabbing">
+            <GripHorizontal className="h-4 w-4" />
+            <span>{entry.key}</span>
+          </button>
+        </PopoverCard.Handle>
+
+        <div className="flex items-center gap-1">
+          <PopoverCard.PinButton asChild>
+            <button
+              type="button"
+              className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white">
+              {isPinned ? <PinOff className="h-3.5 w-3.5 text-cyan-400" /> : <Pin className="h-3.5 w-3.5" />}
+            </button>
+          </PopoverCard.PinButton>
+
+          <PopoverCard.CloseButton asChild>
+            <button
+              type="button"
+              className="rounded-lg p-1 text-slate-400 hover:bg-red-500/20 hover:text-red-400">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </PopoverCard.CloseButton>
+        </div>
+      </div>
+
+      {/* Card Body */}
+      <PopoverCard.Content className="mt-3 text-sm text-slate-200">
+        <h4 className="font-medium text-white">{entry.data?.title ?? 'Loading...'}</h4>
+        <p className="mt-1 text-xs text-slate-400">{entry.data?.body}</p>
+      </PopoverCard.Content>
+    </PopoverCard>
+  );
+}
 ```
-
-#### Card properties (`PopoverCardProps<E, TData>`)
-
-| Prop        | Type                                                    | Default     | Description                                       |
-| :---------- | :------------------------------------------------------ | :---------- | :------------------------------------------------ |
-| `as`        | `React.ElementType`                                     | `'div'`     | HTML tag or custom component type.                |
-| `entry`     | `TrailEntry<TData>`                                     | Required    | Active entry represented by this card.            |
-| `index`     | `number`                                                | Required    | Virtual depth index of the card in the cascade.   |
-| `isPinned`  | `boolean`                                               | Required    | True if card is pinned to the canvas.             |
-| `placement` | `PopoverPlacement`                                      | `'bottom'`  | Preferred placement direction relative to anchor. |
-| `children`  | `ReactNode \| ((scope: PopoverCardScope) => ReactNode)` | `undefined` | Card child elements or render prop function.      |
-
-#### Render prop scope (`PopoverCardScope<TData>`)
-
-When `children` is passed as a function, it receives:
-
-- `entry`: Active `TrailEntry<TData>`.
-- `index`: Virtual stack index.
-- `isPinned`: Pinning boolean.
-- `card`: Result of `usePopoverCard`.
-- `actions`: Store action dispatchers.
-
-#### Compound subcomponents
-
-| Subcomponent                | Description                                                          |
-| :-------------------------- | :------------------------------------------------------------------- |
-| `<PopoverCard.Handle>`      | Drag handle element attaching ARIA attributes and pointer listeners. |
-| `<PopoverCard.PinButton>`   | Toggle button for pinning. Invokes `actions.togglePin(key, rect)`.   |
-| `<PopoverCard.CloseButton>` | Close button. Invokes `actions.closeByKey(key)`.                     |
-| `<PopoverCard.Content>`     | Wrapper container for card body content.                             |
 
 ---
 
@@ -346,34 +644,67 @@ Headless list renderer iterating through active popover cards in sequence.
 ```tsx
 <PopoverTrail
   renderCard={(entry, index, isPinned) => (
-    <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
-      <PopoverCard.Content>
-        <h4>{entry.data?.title}</h4>
-      </PopoverCard.Content>
-    </PopoverCard>
+    <StyledPopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned} />
   )}
 />
 ```
 
 ---
 
-### `<PopoverTimeline>` and subcomponents
+### `<PopoverTimeline>` and interactive breadcrumbs
 
-Compound component rendering interactive visual breadcrumb steps and history undo/redo controls.
+Compound component rendering interactive visual breadcrumbs and history undo/redo controls:
 
 ```tsx
-<PopoverTimeline className="timeline-container">
-  <PopoverTimeline.UndoButton className="btn-undo">Undo</PopoverTimeline.UndoButton>
-  <PopoverTimeline.RedoButton className="btn-redo">Redo</PopoverTimeline.RedoButton>
-  <PopoverTimeline.StepList>
-    {(item, active) => (
-      <PopoverTimeline.Step stepIndex={item.stepIndex} active={active}>
-        {item.primaryKey}
-      </PopoverTimeline.Step>
-    )}
-  </PopoverTimeline.StepList>
-</PopoverTimeline>
+import React from 'react';
+import { PopoverTimeline } from 'popover-trail';
+import { Undo2, Redo2, ChevronRight } from 'lucide-react';
+
+export function PopoverBreadcrumbsTimeline() {
+  return (
+    <PopoverTimeline className="flex items-center gap-2 rounded-xl bg-slate-800/90 px-3 py-1.5 text-xs text-white backdrop-blur shadow-md">
+      {/* Undo Button */}
+      <PopoverTimeline.UndoButton asChild>
+        <button
+          type="button"
+          className="rounded p-1 text-slate-400 hover:bg-white/10 hover:text-white disabled:opacity-30">
+          <Undo2 className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTimeline.UndoButton>
+
+      {/* Breadcrumb Steps List */}
+      <PopoverTimeline.StepList className="flex items-center gap-1">
+        {({ step, index, isActive }) => (
+          <div key={step.stepKey} className="flex items-center gap-1">
+            {index > 0 && <ChevronRight className="h-3 w-3 text-slate-500" />}
+            <PopoverTimeline.Step
+              step={step}
+              index={index}
+              className={`rounded px-2 py-0.5 font-medium transition-colors ${
+                isActive
+                  ? 'bg-cyan-500/20 text-cyan-300'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+              }`}>
+              {step.primaryKey}
+            </PopoverTimeline.Step>
+          </div>
+        )}
+      </PopoverTimeline.StepList>
+
+      {/* Redo Button */}
+      <PopoverTimeline.RedoButton asChild>
+        <button
+          type="button"
+          className="rounded p-1 text-slate-400 hover:bg-white/10 hover:text-white disabled:opacity-30">
+          <Redo2 className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTimeline.RedoButton>
+    </PopoverTimeline>
+  );
+}
 ```
+
+---
 
 #### Timeline compound subcomponents
 
@@ -422,12 +753,59 @@ Anchor component attaching click and hover event listeners to open popovers. Clo
 | `offset`          | `number`                               | `8`         | Distance gap in pixels.                                           |
 | `options`         | `OpenRootOptions \| OpenNestedOptions` | `undefined` | Trigger options (`hover`, `collision`, `focusLockOptions`, etc.). |
 | `activeClassName` | `string`                               | `undefined` | CSS class applied when target popover is open.                    |
-| `asChild`         | `boolean`                              | `false`     | If true, passes props without mutating element.                   |
+| `asChild`         | `boolean`                              | `false`     | If true, passes props without wrapping element.                   |
 | `parentKey`       | `string`                               | `undefined` | Optional parent popover key for nested triggers.                  |
 
 ---
 
-## 3. Hooks and selectors
+## 6. Hooks, selectors, and React 19 concurrency
+
+### Hook selection decision matrix
+
+Choose the most appropriate hook based on required data and re-render scope:
+
+| What do you need? | Recommended Hook | Re-render Scope |
+| :--- | :--- | :--- |
+| Dispatch actions (`open`, `close`, `pin`) without re-rendering on state changes. | `usePopoverActions()` | **0 re-renders** (action dispatchers are referentially stable). |
+| All-in-one data, status flags, coordinates, and actions for a single card. | `usePopover(key)` | Re-renders only when this specific card's entry changes. |
+| Synchronous data access with React 19 `<Suspense>` boundary integration. | `usePopoverData(key)` | Suspends rendering until resolver promise fulfills. |
+| Check if a card is open or pinned to toggle UI button active state. | `useIsPopoverOpen(key)` / `useIsPopoverPinned(key)` | Re-renders only on boolean status changes. |
+| Track loading / error / success states with manual retry reload trigger. | `usePopoverHydration(key)` | Re-renders only on async status transitions. |
+| History time-travel, breadcrumb step navigation, and undo/redo buttons. | `usePopoverTimeline()` | Re-renders on history step change. |
+| Drag and drop velocity, 3D Euler tilt angles, and spring inertia physics. | `usePopoverDragAndDrop()` | Animates via CSS custom variables; 0 React re-renders. |
+| Layout positioning coordinates and 2D QuadTree spatial collision resolution. | `usePopoverGeometry()` | Re-renders on anchor or boundary layout shift. |
+
+---
+
+### `AbortSignal` lifecycle and network cancellation
+
+Every data resolver receives an `AbortSignal` as its 4th argument. The core store automatically triggers `signal.abort()` in any of the following scenarios:
+1. The user closes the card before the resolver promise resolves.
+2. The user opens a new root popover, unmounting the active cascade stack.
+3. The resolver duration exceeds the configured timeout threshold.
+
+Always forward `signal` to `fetch()` or `axios` to prevent wasted bandwidth and race conditions:
+
+```typescript
+const appSchema = createPopoverSchema({
+  userCard: {
+    resolver: async (key: string, _parentData, _context, signal?: AbortSignal) => {
+      const response = await fetch(`/api/users/${key}`, {
+        // Forward signal to abort the HTTP request if user closes the card:
+        signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load user: ${response.statusText}`);
+      }
+
+      return response.json();
+    },
+  },
+});
+```
+
+---
 
 ### `usePopover`
 
@@ -462,8 +840,8 @@ const {
 | `isOpen`             | `boolean`                               | True if popover is active in trail or floating stack.          |
 | `isPinned`           | `boolean`                               | True if popover is pinned as floating canvas window.           |
 | `isTop`              | `boolean`                               | True if popover is top-most in z-index order.                  |
-| `zIndex`             | `number`                                | Calculated 0-based depth layer z-index.                        |
-| `offset`             | `{ x: number, y: number }`              | Pixel coordinate drag offset.                                  |
+| `zIndex`             | `number`                                | 0-based depth layer index.                                     |
+| `offset`             | `{ x: number; y: number }`              | Pixel coordinate drag offset.                                  |
 | `entry`              | `TrailEntry<TData> \| undefined`        | Active state entry object.                                     |
 | `state`              | `PopoverEntryDiscriminatedState<TData>` | Discriminated union of status (`loading`, `error`, `success`). |
 | `close()`            | `() => void`                            | Closes target popover and its descendants.                     |
@@ -473,14 +851,26 @@ const {
 
 ---
 
-### `usePopoverData`
+### `usePopoverData` and Suspense
 
-Data selector hook. Leverages React 19 `use(promise)` for Suspense support when `entry.dataPromise` is pending.
+Data selector hook designed for synchronous retrieval and React 19 `<Suspense>` boundaries. When `entry.dataPromise` is pending and React 19 is detected, it consumes the promise via React's `use(promise)` hook, suspending rendering until resolution finishes:
 
 ```tsx
-function UserCard() {
+import React, { Suspense } from 'react';
+import { usePopoverData } from 'popover-trail';
+
+function UserCardBody() {
+  // Suspends automatically while resolver promise is in-flight:
   const data = usePopoverData<UserData>('userProfile');
-  return <div>{data?.name}</div>;
+  return <div>Welcome, {data?.name}!</div>;
+}
+
+export function UserCardWrapper() {
+  return (
+    <Suspense fallback={<div className="skeleton">Loading profile...</div>}>
+      <UserCardBody />
+    </Suspense>
+  );
 }
 ```
 
@@ -604,13 +994,49 @@ const {
 
 ### `usePopoverActions`
 
-Returns store dispatcher methods (`openRoot`, `pushNested`, `openRootWithResolver`, `openNestedWithResolver`, `closeByKey`, `closeAll`, `togglePin`, `bringToFront`, `updateOffset`, `retryPopover`, `prefetchPopover`, `hoverEnter`, `hoverLeave`, `closeTopmost`, `clear`, `clearTrail`, `undo`, `redo`).
+Returns the full store dispatcher interface. Key methods:
+
+| Method                            | Description                                                                  |
+| :-------------------------------- | :--------------------------------------------------------------------------- |
+| `openRootWithResolver(key, event, opts?)` | Spawns root popover card with full resolver pipeline.                |
+| `openNestedWithResolver(key, parentKey, opts?, event?)` | Pushes nested child card into the cascade.     |
+| `closeByKey(key, opts?)`          | Closes a specific popover and its descendants.                               |
+| `closeAll(opts?)`                 | Closes all active trail and floating popovers.                               |
+| `clearTrail(opts?)`               | Clears active trail while keeping pinned floating cards.                     |
+| `clear(opts?)`                    | Alias for `closeAll`: closes everything.                                     |
+| `closeTopmost(opts?)`             | Closes the topmost active trail card.                                        |
+| `togglePin(key, rect?)`           | Toggles pinned/floating status of a card.                                    |
+| `bringToFront(key)`               | Raises card to top of z-index order.                                         |
+| `updateOffset(key, x, y)`         | Updates drag position offset `(x, y)` for a card.                           |
+| `updateEntry(key, partial)`       | Patches partial fields of a trail or floating entry.                         |
+| `patchEntry(key, updater)`        | Patches an entry using a functional transformation.                          |
+| `setTrail(trail)`                 | Sets or replaces the active trail array.                                     |
+| `setFloating(floating)`           | Sets or replaces the pinned floating entries array.                          |
+| `retryPopover(key, opts?)`        | Retries failed data resolution for a card.                                   |
+| `prefetchPopover(key, parentData?)` | Prefetches data into cache without opening the card.                       |
+| `invalidate(keyOrKeys)`           | Invalidates cache and refetches one or more keys.                            |
+| `hoverEnter(key)`                 | Handles pointer hover entry buffer for a card.                               |
+| `hoverLeave(key, delay?)`         | Handles pointer hover leave buffer for a card.                               |
+| `subscribeKey(key, listener)`     | Subscribes to entry state changes for a specific key.                        |
+| `subscribeEvent(listener)`        | Subscribes to lifecycle store events.                                        |
+| `batchUpdates(fn)`                | Batches multiple mutations into a single subscriber notification.            |
+| `runTransition(fn)`               | Runs mutations wrapped in a React concurrent transition.                     |
+| `transaction(fn)`                 | Executes mutations with automatic rollback on error.                         |
+| `useMiddleware(mw)`               | Registers a middleware interceptor into the store pipeline.                  |
+| `undo()` / `redo()`               | Reverts or reapplies the last history step.                                  |
+| `canUndo()` / `canRedo()`         | Returns true if undo/redo history is available.                              |
+| `persistState(config?)`           | Persists current state to external storage.                                  |
+| `rehydrateState(config?)`         | Rehydrates persisted state from external storage.                            |
+| `updateConfig(patch)`             | Atomically updates multiple configuration settings.                          |
+| `setButtonControls(key, controls)` | Sets button control visibility for a card.                                  |
+| `toggleButtonControl(key, ctrl, enabled?)` | Toggles a specific button control on a card.                        |
+| `destroy()`                       | Destroys the store instance and disposes all listeners.                      |
 
 ---
 
-### `usePopoverGeometry`
+### `usePopoverGeometry` and QuadTree collision
 
-Calculates layout coordinates (`finalLayoutPos: { top, left }`). Accepts `enableSpatialCollision: true` to enable 2D QuadTree spatial collision resolution.
+Calculates layout coordinates (`finalLayoutPos: { top, left }`) by combining Floating UI anchor positioning with active drag offsets. When `enableSpatialCollision: true` is passed, it queries the 2D `QuadTree` spatial index to detect overlap against sibling cards and shifts placement vectors to prevent occlusion:
 
 ```tsx
 const { finalLayoutPos, setFloating } = usePopoverGeometry({
@@ -629,7 +1055,7 @@ const { finalLayoutPos, setFloating } = usePopoverGeometry({
 
 ### `usePopoverDragAndDrop`
 
-Calculates 3D Euler rotation tilt angles (`rotation`, `rotationX`, `rotationY`) and drag offsets based on pointer movement velocity with spring physics and inertia decay.
+Calculates 3D Euler rotation tilt angles and drag offsets based on pointer movement velocity with spring physics and inertia decay.
 
 ```tsx
 const { rotation, rotationX, rotationY, dragX, dragY } = usePopoverDragAndDrop({
@@ -649,7 +1075,7 @@ const { rotation, rotationX, rotationY, dragX, dragY } = usePopoverDragAndDrop({
 
 ### `usePopoverHydration`
 
-Tracks async data loading status (`state`, `isLoading`, `error`, `data`) and provides a `reload()` callback.
+Tracks async data loading status and provides a `reload()` callback.
 
 ```tsx
 const { state, isLoading, error, data, reload } = usePopoverHydration<UserData>('userProfile');
@@ -659,25 +1085,29 @@ const { state, isLoading, error, data, reload } = usePopoverHydration<UserData>(
 
 ### `useIsPopoverOpen` and state selectors
 
-Fine-grained selector hooks exported from `usePopoverSelectors`:
+Fine-grained selector hooks:
 
-- `useIsPopoverOpen(key)`: Returns `true` if key is active in trail or floating list.
-- `useIsPopoverPinned(key)`: Returns `true` if key is pinned.
+- `useIsPopoverOpen(key)` / `usePopoverIsOpen(key)`: `true` if key is active in trail or floating list.
+- `useIsPopoverPinned(key)` / `usePopoverIsPinned(key)`: `true` if key is pinned.
+- `useIsPopoverTopMost(key)` / `usePopoverIsTopMost(key)`: `true` if key is topmost in stack.
 - `usePopoverEntry(key)`: Returns `TrailEntry<TData> | undefined`.
-- `usePopoverEntryStatus(key, expectedStatus)`: Returns `NarrowTrailEntry<TData, S> | undefined` with narrowed type.
-- `usePopoverZIndex(key)`: Returns 0-based z-index depth index.
-- `useIsPopoverTopMost(key)`: Returns `true` if key is topmost in stack.
+- `usePopoverEntryStatus(key, expectedStatus?)`: Returns narrowed entry or `undefined` (defaults to `'success'`).
+- `usePopoverZIndex(key)`: Returns 0-based z-index depth index (`-1` if unmounted).
 - `usePopoverOffset(key)`: Returns `{ x, y }` drag offset for a specific key.
 - `usePopoverOffsets()`: Returns record of all card drag offsets.
 - `usePopoverTrail()`: Returns active trailing cascade array.
 - `usePopoverFloating()`: Returns active floating card array.
 - `usePopoverContext<TContext>()`: Returns current global context.
 - `usePopoverCollisionConfig()`: Returns global collision configuration.
-- `usePopoverIsLoading(key)`: Returns boolean loading status.
-- `usePopoverError(key)`: Returns error object if resolution failed.
+- `usePopoverIsLoading(key)` / `useIsPopoverLoading(key)`: Boolean loading status.
+- `usePopoverError(key)` / `useIsPopoverError(key)`: Error object if resolution failed.
 - `usePopoverRootEntry()`: Returns root popover entry from trail.
 - `usePopoverTotalActiveCount()`: Returns total count of active popovers.
-- `useIsPopoverIdle()`: Returns `true` when 0 popovers are active.
+- `useIsPopoverIdle()` / `usePopoverIsIdle()`: `true` when 0 popovers are active.
+- `usePopoverParentKey(key)`: Returns parent key or `undefined` if root.
+- `usePopoverChildrenKeys(key)`: Returns direct child keys spawned from `key`.
+- `usePopoverBreadcrumbs(key)`: Returns ancestor key path from root to `key`.
+- `usePopoverDepth(key)`: Returns nesting depth (0 for root).
 
 ---
 
@@ -685,14 +1115,14 @@ Fine-grained selector hooks exported from `usePopoverSelectors`:
 
 - `useEventListener(target, event, handler, options)`: Type-safe DOM event listener binder.
 - `useMergedRef(...refs)`: Merges multiple React refs into a single callback ref.
-- `useStableCallback(fn)`: Returns referentially stable callback function across renders.
+- `useStableCallback(fn)`: Returns referentially stable callback across renders.
 - `useClickOutside(config, isActive)`: Binds click-outside dismissal handlers.
 - `useCrossVersionActionState(action, initialState)`: Cross-version wrapper using React 19 `useActionState` when available, falling back to React 18 transition state.
 - `useCrossVersionOptimistic(passthrough, updateFn)`: Cross-version wrapper using React 19 `useOptimistic` when available, falling back to local state.
 
 ---
 
-## 4. DND sub-package (`popover-trail/dnd`)
+## 7. DND sub-package (`popover-trail/dnd`)
 
 Separate export entry point providing drag-and-drop canvas capabilities powered by `@dnd-kit/core`.
 
@@ -746,15 +1176,113 @@ High-level pre-bound card component that wraps `<dialog>` with focus locking (`r
 
 ### `usePopoverDraggableCard`
 
-Hook binding Floating UI positioning, `@dnd-kit/core` dragging, spring physics tilt, and focus lock into a single card handle.
+Composite hook binding Floating UI positioning, `@dnd-kit/core` dragging, spring physics tilt, and focus lock into a single card handle.
 
 ---
 
-## 5. Core engines and architecture
+## 8. Core engines and architecture
+
+### Transactions and atomic batching
+
+`popover-trail` implements ACID-like atomicity guarantees for complex multi-card operations:
+
+```typescript
+// 1. Synchronous microtask batching (single subscriber notification):
+actions.batchUpdates((actions) => {
+  actions.closeByKey('oldCard');
+  actions.openRoot('rootCard', rootEntry);
+  actions.bringToFront('rootCard');
+});
+
+// 2. Transaction with automatic rollback on error:
+const success = await actions.transaction(async (actions) => {
+  actions.closeAll();
+  actions.openRoot('step1', step1Entry);
+  
+  // If an external operation throws, the store rolls back atomically:
+  const verified = await verifyRemotePermissions();
+  if (!verified) throw new Error('Permission denied');
+  
+  actions.pushNested(1, step2Entry);
+});
+
+if (!success) {
+  console.warn('Transaction aborted and state restored to pre-transaction snapshot');
+}
+
+// 3. Concurrent mode low-priority transition:
+actions.runTransition((actions) => {
+  actions.pushNested(2, heavyAnalyticsCardEntry);
+});
+```
+
+---
+
+### Persistence and cross-tab synchronization
+
+The persistence engine serializes active cascade structures, pinned positions, and drag coordinates to local or remote storage, while synchronizing mutations across active browser tabs in real time.
+
+```typescript
+import { PopoverSnapshotManager, createBroadcastSync } from 'popover-trail';
+
+const manager = new PopoverSnapshotManager({
+  storageKey: 'my-app-popovers',
+  enableBroadcastChannel: true,
+  filter: (entry, key) => !key.startsWith('ephemeral:'),
+});
+
+// Manually trigger snapshot persistence:
+await actions.persistState();
+
+// Rehydrate state on startup:
+const restored = await actions.rehydrateState();
+```
+
+#### Cross-tab causal consistency and self-echo filtering
+
+1. **Stable Tab ID**: Every store instance creates a permanent `TabId` brand singleton (`TabId<string>`). Outgoing sync envelopes carry this identifier.
+2. **Self-Echo Suppression**: When a tab broadcasts an event over `BroadcastChannel` or `window.addEventListener('storage')`, receiving listener instances inspect `envelope.tabId` and drop self-originating envelopes in O(1) time.
+3. **Prototype Pollution Immunity**: Inbound storage JSON is parsed through `safeJsonParse` with explicit recursive filtering that strips `__proto__`, `constructor`, and `prototype` keys before state ingestion.
+
+---
+
+### Middleware pipeline and telemetry interceptors
+
+Store middleware interceptors allow monitoring, logging, modifying, or blocking state patches before they are committed to the Zustand store.
+
+#### Defining and registering middleware
+
+Use `definePopoverMiddleware` to create type-safe interceptors, and register them via `store.getState().actions.useMiddleware(mw)` or `<PopoverProvider slices={[...]}>`:
+
+```typescript
+import { definePopoverMiddleware } from 'popover-trail';
+
+// Production Telemetry Middleware:
+export const analyticsMiddleware = definePopoverMiddleware((patch, state) => {
+  // Inspect the target key and patch contents:
+  if (patch.targetKey && patch.trail) {
+    const isNewCard = patch.trail.some((entry) => entry.key === patch.targetKey);
+    if (isNewCard) {
+      console.log('[Analytics] Popover opened:', patch.targetKey, 'Total active:', patch.trail.length);
+      // Example: sendBeacon to analytics endpoint
+      navigator.sendBeacon?.('/api/telemetry', JSON.stringify({
+        event: 'popover_open',
+        key: patch.targetKey,
+        timestamp: Date.now(),
+      }));
+    }
+  }
+
+  // Return modified patch or original patch:
+  return patch;
+});
+```
+
+---
 
 ### FSM statechart engine
 
-Deterministic finite state machine reducer with static O(1) transition lookup table (`popoverFSMReducer` & `createPopoverFSM`). `PopoverFSMState<TData>` is a 6-state discriminated union allowing zero-assertion narrowing:
+Deterministic finite state machine reducer with static O(1) transition lookup table (`popoverFSMReducer` & `createPopoverFSM`). `PopoverFSMState<TData>` is a 6-state discriminated union:
 
 - `IdleFSMState` (`value: 'Idle'`)
 - `HydratingFSMState` (`value: 'Hydrating'`)
@@ -764,22 +1292,26 @@ Deterministic finite state machine reducer with static O(1) transition lookup ta
 - `UnmountingFSMState` (`value: 'Unmounting'`)
 
 ```typescript
-import { createPopoverFSM, popoverFSMReducer } from 'popover-trail';
+import { createPopoverFSM } from 'popover-trail';
 
 const fsm = createPopoverFSM({ key: 'userProfile' });
 fsm.send({ type: 'RESOLVE_SUCCESS', data: { id: '1', name: 'Alice' } });
 
-const fsmState = fsm.getState();
-if (fsmState.value === 'Resolved.Trailing') {
-  console.log(fsmState.context.data.name); // Type-safe narrowing to TData
+const state = fsm.getState();
+if (state.value === 'Resolved.Trailing') {
+  console.log(state.context.data.name); // type-safe TData narrowing
 }
 ```
+
+FSM events: `OPEN_ROOT`, `PUSH_NESTED`, `RESOLVE_SUCCESS`, `RESOLVE_FAILURE`, `TOGGLE_PIN`, `CLOSE`, `RETRY`, `TRANSITION_END`.
+
+Bitmask adjacency matrix `FSMStatusBit` enables O(1) transition validation via bitwise conjunction.
 
 ---
 
 ### DAG cascading graph
 
-`PopoverDAG` class for managing parent-child node relationships and querying topological ancestor and descendant paths. Includes recursion guards capped at 500 traversal steps.
+`PopoverDAG` class manages parent-child node relationships and topological ancestor/descendant paths. Includes recursion guards capped at 500 traversal steps.
 
 ```typescript
 import { PopoverDAG } from 'popover-trail';
@@ -815,35 +1347,15 @@ import { PopoverTransitionScheduler } from 'popover-trail';
 
 const scheduler = new PopoverTransitionScheduler();
 
-// Schedule unmount transition with auto-cleanup
 const disposable = scheduler.scheduleUnmount(
   'userProfile',
-  300, // durationMs
+  300,
   () => actions.setTransitionStatus('userProfile', 'unmounting'),
-  () => actions.finalizeUnmount('userProfile'),
+  () => actions.closeByKey('userProfile'),
 );
 
-// Explicit disposal cancels timers immediately
-disposable.dispose();
+disposable.dispose(); // cancel timers immediately
 ```
-
----
-
-### PopoverSnapshotManager
-
-Cross-tab state persistence and synchronization engine via `BroadcastChannel` and `localStorage`. Sanitizes keys against prototype pollution attacks before restoration.
-
-```typescript
-import { PopoverSnapshotManager } from 'popover-trail';
-
-const manager = new PopoverSnapshotManager({
-  storageKey: 'my-app-popovers',
-  enableBroadcastChannel: true,
-});
-manager.saveSnapshot(snapshot);
-```
-
----
 
 ### CQRS query and command buses
 
@@ -858,14 +1370,15 @@ const { queryBus, commandBus } = createCQRSBuses(storeApi);
 console.log(queryBus.activeCount, queryBus.isIdle, queryBus.topmost);
 
 // Command dispatchers
-commandBus.close('userProfile');
+commandBus.closeByKey('userProfile');
+commandBus.pushNested(index, entry);
 ```
 
 ---
 
 ### EventBus and CustomEvent engine
 
-Native EventTarget-based event bus for decoupled lifecycle communication:
+Native `EventTarget`-based event bus for decoupled lifecycle communication:
 
 ```typescript
 import { globalPopoverEventBus, PopoverCustomEvent } from 'popover-trail';
@@ -879,20 +1392,18 @@ const unsubscribe = globalPopoverEventBus.on('popover:open', (event) => {
 
 ### Deprecated store API surface (1.2.x)
 
-The following aliases remain fully functional but emit `@deprecated` hints and will be
-removed in the next major release. Prefer the replacements:
+The following aliases remain fully functional but emit `@deprecated` hints and will be removed in the next major release:
 
-| Deprecated | Replacement |
-|---|---|
-| `actions.clear` / `actions.closeAll` | [`actions.clearTrail`](#core-engines-and-architecture) |
-| `commandBus.openNested(...)` | `commandBus.pushNested(...)` |
-| `commandBus.clearAll()` | `commandBus.clearTrail()` |
-| `scheduler.scheduleExit(key, ...)` | `scheduler.scheduleExitTransition(key, ...)` |
-| `reduceTogglePinState` / `reduceUpdateOffsetState` | `togglePinState` / `updateOffsetState` from reducers |
-| `globalPopoverEventBus` | per-store event bus (`deps.eventBus`) for instance isolation |
+| Deprecated                                              | Replacement                                                |
+| :------------------------------------------------------ | :--------------------------------------------------------- |
+| `actions.clear` / `actions.closeAll`                    | `actions.clearTrail` (trail only) or `actions.clear` (all) |
+| `commandBus.openNested(...)`                            | `commandBus.openNestedWithResolver(...)`                   |
+| `commandBus.clearAll()`                                 | `commandBus.clearTrail()`                                  |
+| `scheduler.scheduleExit(key, ...)`                      | `scheduler.scheduleExitTransition(key, ...)`               |
+| `reduceTogglePinState` / `reduceUpdateOffsetState`      | `togglePinState` / `updateOffsetState` from reducers       |
+| `globalPopoverEventBus`                                 | per-store `deps.eventBus` for instance isolation           |
 
-`persistState` snapshots now carry a stable per-store-instance `tabId` (previously a new id was
-minted on every save), enabling self-echo filtering for cross-tab consumers.
+`persistState` snapshots now carry a stable per-store-instance `tabId` (previously a new id was minted on every save), enabling self-echo filtering for cross-tab consumers.
 
 ---
 
@@ -930,9 +1441,8 @@ const cleanup = applyThemeTokens({
   cardShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
 });
 
-// Remove tokens when unmounting
 cleanup();
-// or call directly:
+// or remove specific tokens:
 removeThemeTokens(['--pt-z-index-base', '--pt-cascade-offset']);
 ```
 
@@ -943,7 +1453,7 @@ removeThemeTokens(['--pt-z-index-base', '--pt-cascade-offset']);
 Railway-oriented error handling with `Result<T, E>`:
 
 ```typescript
-import { Ok, Err, isOk, matchResult, wrapResult } from 'popover-trail';
+import { Ok, Err, isOk, matchResult, wrapResult, wrapAsyncResult } from 'popover-trail';
 
 const result = wrapResult(() => JSON.parse(rawText));
 matchResult(result, {
@@ -964,21 +1474,7 @@ import { CompositeDisposable, createDisposable } from 'popover-trail';
 {
   using disposables = new CompositeDisposable();
   disposables.add(createDisposable(() => console.log('Cleaned up')));
-} // Automatically cleaned up on scope exit
-```
-
----
-
-### Multi-tab broadcast synchronization
-
-Synchronizes popover open, close, and pin actions across browser tabs:
-
-```typescript
-import { createBroadcastSync } from 'popover-trail';
-
-const sync = createBroadcastSync('app-popover-sync');
-sync.subscribe((msg) => console.log('Tab sync event:', msg));
-sync.broadcast('OPEN', 'userProfile');
+} // automatically cleaned up on scope exit
 ```
 
 ---
@@ -1006,34 +1502,199 @@ Zero-GC memory management and leak detection tools:
 
 ---
 
-## 6. Types and discriminated unions
+## 9. Multi-stack zones and micro-frontends
 
-### `TrailEntry<TData = unknown>` and state subtypes
+### Stack group isolation (`stackGroup`)
+
+In applications with distinct viewport zones (for example: a persistent Sidebar, a main Workspace Canvas, and a Header Toolbar), you can prevent popover dismissal collisions and separate active cascades using `stackGroup`:
+
+```tsx
+// 1. Sidebar Popover Context (stackGroup="sidebar")
+<PopoverProvider stackGroup="sidebar" baseZIndex={500}>
+  <SidebarMenu />
+  <PopoverTrail />
+</PopoverProvider>
+
+// 2. Canvas Popover Context (stackGroup="canvas")
+<PopoverProvider stackGroup="canvas" baseZIndex={1000}>
+  <InfiniteCanvas />
+  <PopoverTrail />
+</PopoverProvider>
+```
+
+When cards belong to different stack groups, clicking inside a `sidebar` popover will not unmount a pinned card on the `canvas`.
+
+---
+
+### Z-index base map partitioning (`zIndexBaseMap`)
+
+Configure deterministic stacking depth intervals per stack group to eliminate visual clipping:
 
 ```typescript
-export interface TrailEntry<TData = unknown> {
-  key: string;
-  parentKey?: string;
-  originalParentKey?: string;
+import { PopoverProvider, type ZIndexBaseMap } from 'popover-trail';
+
+const zIndexMap: ZIndexBaseMap = {
+  navigation: 2000,
+  workspace: 3000,
+  inspector: 4000,
+  modalOverlay: 5000,
+};
+
+<PopoverProvider zIndexBaseMap={zIndexMap} stackGroup="workspace">
+  <App />
+</PopoverProvider>
+```
+
+---
+
+## 10. Types and discriminated unions
+
+### `PopoverStateData`
+
+Complete reactive state snapshot container managed by the core Zustand store. Custom slices, selectors, and middleware inspect these fields:
+
+```typescript
+export interface PopoverStateData<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> { ... }
+```
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `stateRevision` | `number` | `0` | Monotonically increasing revision counter incremented on every state patch. |
+| `trail` | `readonly TrailEntry<TData, TPopoverKey>[]` | `[]` | Active cascading trail hierarchy (root at index 0, latest descendant at end). |
+| `floating` | `readonly TrailEntry<TData, TPopoverKey>[]` | `[]` | Active pinned and detached modeless floating cards. |
+| `ownerId` | `string \| null` | `null` | DOM trigger identifier that initiated the active root popover cascade. |
+| `offsets` | `Partial<Record<TPopoverKey, DragOffset>>` | `{}` | Manual pointer drag and position offsets `(x, y)` per popover key. |
+| `pinnedStates` | `Partial<Record<TPopoverKey, boolean>>` | `{}` | Boolean lookup dictionary of pinned status per popover key. |
+| `zIndexOrder` | `readonly TPopoverKey[]` | `[]` | Active visual stacking order arranged from bottom to topmost layer. |
+| `rootHydrationRequestCounter` | `number` | `0` | Lifecycle counter incremented on root popover hydration requests to abort stale async operations. |
+| `nestedHydrationRequestCounters` | `Partial<Record<TPopoverKey, number>>` | `{}` | Map of per-key lifecycle counters tracking nested child hydration requests. |
+| `anchorElement` | `HTMLElement \| null` | `null` | Active DOM trigger element used for positioning the root popover. |
+| `anchorRect` | `DOMRect \| null` | `null` | Cached client bounding rectangle of the active anchor element. |
+| `context` | `TContext \| null` | `null` | External global context object forwarded to all data resolvers and renderers. |
+| `closePinnedDescendants` | `boolean` | `false` | When true, closing a parent popover automatically unmounts all pinned descendant cards. |
+| `collisionConfig` | `CollisionConfig \| null` | `null` | Boundary collision settings (boundary, padding, flip, shift, size constraints). |
+| `cache` | `PopoverCache<TData> \| null` | `null` | In-memory resolver cache provider. |
+| `resolveData` | `PopoverResolver<TData, TContext>` | `noopResolver` | Async or sync data resolver function executed during card hydration. |
+| `enableArrowNavigation` | `boolean` | `true` | When true, ArrowUp/ArrowDown/ArrowLeft/ArrowRight keys move focus across active cards. |
+| `debug` | `boolean` | `false` | When true, logs Zustand state mutations, transitions, and FSM events to the console. |
+| `cascadeOffsetStep` | `number` | `8` | Pixel offset shift added per cascading nesting level. |
+| `exitTransitionDuration` | `number` | `0` | Unmount delay duration in milliseconds for CSS exit animations. |
+| `defaultOffset` | `number` | `8` | Default gap offset in pixels between trigger and popover card. |
+| `baseZIndex` | `number` | `1000` | Base z-index depth value for the popover layer stack. |
+| `mountingClassName` | `string` | `'mounting'` | CSS class applied to card element during mounting animation. |
+| `unmountingClassName` | `string` | `'unmounting'` | CSS class applied to card element during exit animation. |
+| `mountedClassName` | `string` | `'mounted'` | CSS class applied to card element once fully mounted. |
+| `activeStackGroup` | `StackGroupId \| string \| null` | `null` | Active stack group zone filter restricting visible popover cards. |
+| `responsiveMode` | `PopoverResponsiveMode` | `'auto'` | Responsive layout strategy: `'auto'`, `'popover'`, `'bottom-sheet'`, or `'modal'`. |
+| `mobileBreakpoint` | `number` | `640` | Viewport width threshold in pixels for mobile responsive transformation. |
+| `components` | `PopoverSlotComponents \| null` | `null` | Custom UI slot component overrides (PinButton, CloseButton, Spinner, Fallback). |
+| `zIndexBaseMap` | `ZIndexBaseMap \| null` | `null` | Base z-index mapping dictionary keyed by stack group ID. |
+| `allowDragWhenPinned` | `boolean` | `true` | Allows pointer dragging when card is pinned floating. |
+| `allowDragWhenUnpinned` | `boolean` | `true` | Allows pointer dragging when card is in trailing stack. |
+| `focusLockOptions` | `FocusLockOptions \| null` | `null` | WAI-ARIA Focus Lock configuration options. |
+
+---
+
+### `CollisionConfig` specification
+
+Boundary collision avoidance configuration:
+
+```typescript
+export interface CollisionConfig {
+  enabled: boolean;
+  boundary?: Boundary | (() => Element | null);
+  padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
+  flip?: boolean;
+  shift?: boolean;
+  size?: boolean;
+}
+```
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `enabled` | `boolean` | Required | Enable or disable boundary collision calculation. |
+| `boundary` | `Boundary \| (() => Element \| null)` | `'clippingAncestors'` | Clipping boundary container (`'viewport'`, `'document'`, or DOM element). |
+| `padding` | `number \| Padding` | `8` | Minimum safety margin in pixels from boundary edges. |
+| `flip` | `boolean` | `true` | Automatically flips placement axis when clipping against boundary edges. |
+| `shift` | `boolean` | `true` | Automatically shifts along cross-axis to stay fully inside the viewport. |
+| `size` | `boolean` | `false` | Dynamically clamps card max-width and max-height to remaining boundary space. |
+
+---
+
+### `FocusLockOptions` specification
+
+WAI-ARIA compliant keyboard focus trap configuration:
+
+```typescript
+export interface FocusLockOptions {
+  enabled?: boolean;
+  autoFocusElement?: string | (() => HTMLElement | null);
+  returnFocus?: boolean;
+  lockScroll?: boolean;
+}
+```
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `enabled` | `boolean` | `false` | Traps keyboard `Tab` / `Shift+Tab` cycles inside the active popover card. |
+| `autoFocusElement` | `string \| (() => HTMLElement \| null)` | First focusable | Custom selector or element function to receive immediate focus on open. |
+| `returnFocus` | `boolean` | `true` | Automatically restores keyboard focus to initiating trigger upon closing. |
+| `lockScroll` | `boolean` | `false` | Prevents document body scroll while dialog is open. |
+
+---
+
+### `PopoverPersistConfig` specification
+
+Cross-tab state persistence configuration options:
+
+```typescript
+export interface PopoverPersistConfig {
+  key?: string;
+  storageKey?: string;
+  storage?: Storage | StateStorageEngine;
+  autoRehydrate?: boolean;
+  filter?: (keyOrEntry: unknown, key?: string) => boolean;
+  serialize?: (data: unknown) => string;
+  deserialize?: (raw: string) => unknown;
+}
+```
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `storageKey` | `string` | `'popover-trail-state'` | Storage key under `localStorage` or custom storage provider. |
+| `storage` | `Storage \| StateStorageEngine` | `localStorage` | Custom synchronous or asynchronous key-value storage engine. |
+| `autoRehydrate` | `boolean` | `true` | Automatically rehydrates saved state snapshot upon store instantiation. |
+| `filter` | `(entry, key) => boolean` | Persist all | Predicate filtering which popover cards should be persisted. |
+| `serialize` | `(data) => string` | `JSON.stringify` | Custom serializer converting state snapshot to string. |
+| `deserialize` | `(raw) => unknown` | `safeJsonParse` | Custom deserializer converting string back to snapshot with prototype immunity. |
+
+---
+
+---
+
+### `TrailEntry<TData, TPopoverKey>` and state subtypes
+
+```typescript
+export interface TrailEntry<
+  TData = unknown,
+  TPopoverKey extends string = string,
+> extends PopoverDisplayOptions {
+  key: TPopoverKey;
+  parentKey?: TPopoverKey;
   rect?: DOMRect;
   pinnedLayoutPos?: { top: number; left: number };
+  originalParentKey?: TPopoverKey;
+  originalRect?: DOMRect;
   transitionStatus?: 'mounting' | 'mounted' | 'unmounting';
   status?: 'loading' | 'error' | 'success';
   isLoading?: boolean;
   error?: Error | null;
   data?: TData | null;
   dataPromise?: Promise<TData>;
-  placement?: PopoverPlacement;
-  offset?: number;
-  hover?: HoverConfig;
-  collision?: CollisionConfig;
-  responsiveMode?: 'auto' | 'popover' | 'bottom-sheet' | 'modal';
-  layoutStrategy?: 'floating-ui' | 'fixed-center' | 'docked-bottom' | 'docked-top' | 'custom';
-  exitTransitionDuration?: number;
-  baseZIndex?: number;
-  cascadeOffsetStep?: number;
-  cascadeOffsetDirection?: 'left' | 'right' | 'top' | 'bottom' | 'none';
-  ariaDescribedby?: string;
 }
 
 export interface LoadingTrailEntry<TData = unknown> extends TrailEntry<TData> {
@@ -1058,38 +1719,278 @@ export interface SuccessTrailEntry<TData = unknown> extends TrailEntry<TData> {
 }
 ```
 
----
-
-### `PopoverTimelineStep<TData>`
-
-Discriminated union type representing navigation steps in popover timeline history:
+`NarrowTrailEntry<TData, S, TPopoverKey>` conditionally narrows `TrailEntry` by its `status` field:
 
 ```typescript
-export type PopoverTimelineStep<TData = unknown> =
-  ActiveTimelineStep<TData> | UndoneTimelineStep<TData>;
+type ActiveSuccess = NarrowTrailEntry<UserData, 'success', 'userProfile'>;
+```
 
+---
+
+### `StoreActionPayload`
+
+Discriminated union of all 21 state-modifying actions processed by the popover store. Useful for writing custom middleware, debug loggers, and test action spies:
+
+```typescript
+export type StoreActionPayload<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> =
+  | { type: 'OPEN_ROOT'; key: TPopoverKey; rect?: DOMRect | null; options?: OpenRootOptions }
+  | { type: 'PUSH_NESTED'; key: TPopoverKey; parentKey: TPopoverKey; options?: OpenNestedOptions }
+  | { type: 'CLOSE_BY_KEY'; key: TPopoverKey; options?: { transition?: boolean } }
+  | { type: 'CLOSE_FROM'; index: number; options?: { transition?: boolean } }
+  | { type: 'CLOSE_TOPMOST'; options?: { transition?: boolean } }
+  | { type: 'CLOSE_ALL' }
+  | { type: 'CLEAR_TRAIL' }
+  | { type: 'TOGGLE_PIN'; key: TPopoverKey; rect?: DOMRect }
+  | { type: 'BRING_TO_FRONT'; key: TPopoverKey }
+  | { type: 'UPDATE_OFFSET'; key: TPopoverKey; offset: DragOffset }
+  | { type: 'RESOLVE_START'; key: TPopoverKey }
+  | { type: 'RESOLVE_SUCCESS'; key: TPopoverKey; data: TData }
+  | { type: 'RESOLVE_ERROR'; key: TPopoverKey; error: Error }
+  | { type: 'SET_CONTEXT'; context: TContext }
+  | { type: 'SET_TRANSITION_STATUS'; key: TPopoverKey; status: PopoverTransitionStatus }
+  | { type: 'SET_DEBUG'; debug: boolean }
+  | { type: 'SET_BASE_Z_INDEX'; baseZIndex: number }
+  | { type: 'SET_CASCADE_OFFSET_STEP'; step: number }
+  | { type: 'SET_STACK_GROUP_FILTER'; stackGroup: StackGroupId | string | null }
+  | { type: 'SET_RESPONSIVE_MODE'; mode: PopoverResponsiveMode }
+  | { type: 'RESET' };
+
+// Utility helper extracting a specific action payload by type string:
+export type OpenRootPayload = ExtractActionPayload<'OPEN_ROOT'>;
+```
+
+---
+
+### `PopoverStoreEvent`
+
+Event objects emitted through `store.subscribeEvent(listener)` and `deps.eventBus`. Supports both raw action names and namespaced `'popover:<action>'` strings:
+
+```typescript
+export type PopoverEventAction =
+  | 'open_root'
+  | 'push_nested'
+  | 'close'
+  | 'pin'
+  | 'unpin'
+  | 'resolve_start'
+  | 'resolve_success'
+  | 'resolve_error'
+  | 'resolve_perf'
+  | 'clear'
+  | 'drag_start'
+  | 'drag_end';
+
+export type PopoverStoreEvent<TData = unknown> =
+  | { type: 'open_root' | 'popover:open_root'; key: string; ownerId: string }
+  | { type: 'push_nested' | 'popover:push_nested'; key: string; parentKey?: string }
+  | { type: 'close' | 'popover:close'; keys: string[]; key?: string }
+  | { type: 'pin' | 'popover:pin'; key: string }
+  | { type: 'unpin' | 'popover:unpin'; key: string }
+  | { type: 'resolve_start' | 'popover:resolve_start'; key: string }
+  | { type: 'resolve_success' | 'popover:resolve_success'; key: string; data: TData }
+  | { type: 'resolve_error' | 'popover:resolve_error'; key: string; error: Error }
+  | { type: 'resolve_perf' | 'popover:resolve_perf'; metric: ResolutionMetric<string> }
+  | { type: 'clear' | 'popover:clear' }
+  | { type: 'drag_start' | 'popover:drag_start'; key: string; x: number; y: number }
+  | { type: 'drag_end' | 'popover:drag_end'; key: string; x: number; y: number };
+```
+
+#### Performance telemetry metric (`ResolutionMetric`)
+
+Emitted with `resolve_perf` events for monitoring telemetry and caching efficiency:
+
+```typescript
+export type ResolutionSource = 'cache' | 'in-flight' | 'sync' | 'async' | 'deduped';
+
+export interface ResolutionMetric<TPopoverKey extends string = string> {
+  readonly key: TPopoverKey;
+  readonly source: ResolutionSource;
+  readonly durationMs: number;
+  readonly timestamp: number;
+  readonly success: boolean;
+  readonly error?: Error;
+}
+```
+
+---
+
+### `StoreSliceDescriptor` and `SliceContext`
+
+Contract for authoring custom Open/Closed Principle (OCP) domain slices attached to the store:
+
+```typescript
+export interface StoreSliceDescriptor<
+  TSliceActions extends object = object,
+  TSliceState extends object = object,
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
+  /** Unique domain identifier (e.g., 'analytics', 'minimap'). */
+  readonly name: string;
+  /** Optional initial state merged immutably into the store on startup. */
+  readonly initialState?: Readonly<TSliceState>;
+  /** Factory function receiving the dependency injection context. */
+  readonly create: (
+    ctx: SliceContext<TData, TContext, TPopoverKey, TSliceState>,
+  ) => TSliceActions;
+  /** Optional local middleware interceptor attached to the SafeSet pipeline. */
+  readonly middleware?: PopoverMiddleware<TData, TContext, TPopoverKey>;
+  /** Optional cleanup hook executed when store is disposed. */
+  readonly dispose?: (
+    ctx: SliceContext<TData, TContext, TPopoverKey, TSliceState>,
+  ) => void;
+}
+```
+
+#### `SliceContext` details
+
+The `ctx` object passed to `create(ctx)` and `dispose(ctx)` exposes:
+
+- `ctx.set(patch | updater, replace?)`: Type-safe state updater function.
+- `ctx.get()`: Returns current state snapshot (including custom slice state).
+- `ctx.deps`: Internal infrastructure dependencies container:
+  - `deps.asyncPipeline`: In-flight promise deduplication and AbortController registry (`abortControllersForKeys`, `resolvePopoverEntry`).
+  - `deps.timerService`: Transition and unmounting timer scheduler (`transitionScheduler`).
+  - `deps.historyService`: Undo/redo history manager (`historyManager`).
+  - `deps.eventBus`: Decoupled pub/sub event bus (`eventBus.emit`, `eventBus.on`).
+  - `deps.dag`: Topological cascading directed acyclic graph (`getDescendantKeys`, `addNode`).
+
+```typescript
+import { defineStoreSlice } from 'popover-trail';
+
+export interface AnalyticsSliceState {
+  openCount: number;
+}
+
+export interface AnalyticsSliceActions {
+  trackOpen: (key: string) => void;
+}
+
+export const analyticsSlice = defineStoreSlice<
+  AnalyticsSliceActions,
+  AnalyticsSliceState
+>({
+  name: 'analytics',
+  initialState: { openCount: 0 },
+  create: (ctx) => ({
+    trackOpen: (key) => {
+      ctx.set((state) => ({ openCount: state.openCount + 1 }));
+      ctx.deps.eventBus.emit('popover:open_root', { type: 'open_root', key, ownerId: 'manual' });
+    },
+  }),
+});
+```
+
+---
+
+### Timeline step types
+
+```typescript
 export interface ActiveTimelineStep<TData = unknown> {
-  status: 'active';
-  stepIndex: number;
-  trailKeys: string[];
-  pinnedKeys: string[];
-  primaryKey: string;
-  timestamp?: number;
-  payload?: TData;
-  canUndo: boolean;
-  canRedo: boolean;
+  stepKey: string;
+  entry: TrailEntry<TData>;
+  timestamp: number;
 }
 
 export interface UndoneTimelineStep<TData = unknown> {
-  status: 'undone';
+  stepKey: string;
+  entry: TrailEntry<TData>;
+  timestamp: number;
+}
+
+export interface PopoverTimelineItem<TData = unknown> {
   stepIndex: number;
   trailKeys: string[];
   pinnedKeys: string[];
   primaryKey: string;
   timestamp?: number;
   payload?: TData;
-  canUndo: false;
-  canRedo: true;
+}
+```
+
+---
+
+### Anchor and resolver types
+
+```typescript
+export type AnchorEventLike =
+  | VirtualElement
+  | { currentTarget: HTMLElement; stopPropagation?: () => void }
+  | { getBoundingClientRect: () => DOMRect; stopPropagation?: () => void };
+
+export interface ValidatedAnchorRef {
+  readonly getBoundingClientRect: () => DOMRect;
+  readonly currentTarget?: HTMLElement;
+}
+
+export interface ResolverParams<TParentData = unknown, TContext = unknown> {
+  key: string;
+  parentData?: TParentData;
+  context?: TContext;
+  signal: AbortSignal;
+}
+
+export type CancellablePopoverResolver<
+  TData = unknown,
+  TParentData = unknown,
+  TContext = unknown,
+> = (params: ResolverParams<TParentData, TContext>) => Promise<TData> | TData;
+```
+
+---
+
+### Responsive modes and layout strategies
+
+#### `PopoverResponsiveMode`
+
+| Mode | Desktop Behavior | Mobile Behavior (`width <= mobileBreakpoint`) |
+| :--- | :--- | :--- |
+| `'auto'` | Floating cascade popover anchored to trigger. | Automatically morphs into bottom sheet overlay. |
+| `'popover'` | Anchored cascade popover. | Keeps standard floating popover layout. |
+| `'bottom-sheet'` | Anchored cascade popover. | Docked bottom sheet pinned to viewport bottom edge. |
+| `'modal'` | Centered modal dialog overlay. | Centered modal dialog overlay. |
+
+#### `PopoverLayoutStrategy` and engine classes
+
+| Strategy Key | Engine Class | Positioning Formula |
+| :--- | :--- | :--- |
+| `'floating-ui'` | `RelativeFloatingLayoutStrategy` | Floating UI anchor-relative positioning with collision flip/shift. |
+| `'fixed-center'` | `FixedCenterLayoutStrategy` | `(viewportWidth - cardWidth) / 2, (viewportHeight - cardHeight) / 2` |
+| `'docked-bottom'` | `DockedBottomLayoutStrategy` | Bottom edge docked layout (`top = viewportHeight - cardHeight`). |
+| `'docked-top'` | `DockedTopLayoutStrategy` | Top edge docked layout (`top = 0`). |
+| `'custom'` | Implement `PopoverLayoutStrategyEngine` | Custom user-supplied `computePosition(params)` algorithm. |
+
+---
+
+### `PopoverStoreDiscriminatedState`
+
+Three-way discriminated union for the global store status:
+
+```typescript
+export type PopoverStoreDiscriminatedState<TData, TContext, TPopoverKey extends string> =
+  | IdleStoreState<TData, TContext, TPopoverKey>        // status: 'idle'
+  | ActiveTrailStoreState<TData, TContext, TPopoverKey> // status: 'active-trail'
+  | PinnedOnlyStoreState<TData, TContext, TPopoverKey>; // status: 'pinned-only'
+```
+
+Type predicates: `isStoreIdle(state)`, `isStoreActive(state)`, `isStorePinnedOnly(state)`.
+
+---
+
+### `PopoverFSMState`
+
+```typescript
+export interface PopoverFSMState<TData = unknown, TPopoverKey extends string = string> {
+  readonly value:
+    | 'Idle' | 'Hydrating'
+    | 'Resolved.Trailing' | 'Resolved.Pinned'
+    | 'Error' | 'Unmounting';
+  readonly context: Readonly<PopoverFSMContext<TData, TPopoverKey>>;
 }
 ```
 
@@ -1101,9 +2002,9 @@ Discriminated union for asynchronous resolution state pattern matching:
 
 ```typescript
 export type PopoverEntryDiscriminatedState<TData = unknown> =
-  | { status: 'loading'; isLoading: true; data: undefined; error: null }
-  | { status: 'error'; isLoading: false; data: undefined; error: Error }
-  | { status: 'success'; isLoading: false; data: TData; error: null };
+  | { status: 'loading'; isLoading: true;  data: undefined; error: null }
+  | { status: 'error';   isLoading: false; data: undefined; error: Error }
+  | { status: 'success'; isLoading: false; data: TData;     error: null };
 ```
 
 ---
@@ -1113,14 +2014,13 @@ export type PopoverEntryDiscriminatedState<TData = unknown> =
 Helper utility for building custom polymorphic popover card components with element ref inference:
 
 ```typescript
-export type PolymorphicRef<E extends React.ElementType> = React.ComponentPropsWithRef<E>['ref'];
+export type PolymorphicRef<E extends React.ElementType> =
+  React.ComponentPropsWithRef<E>['ref'];
 
-export type PolymorphicPropsWithRef<E extends React.ElementType, P = {}> = P & { as?: E } & Omit<
-    React.ComponentPropsWithoutRef<E>,
-    keyof P | 'as'
-  > & {
-    ref?: PolymorphicRef<E>;
-  };
+export type PolymorphicPropsWithRef<E extends React.ElementType, P = {}> =
+  P & { as?: E } &
+  Omit<React.ComponentPropsWithoutRef<E>, keyof P | 'as'> &
+  { ref?: PolymorphicRef<E> };
 ```
 
 ---
@@ -1134,22 +2034,29 @@ export type TypedMiddlewarePatch<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
-> = Partial<PopoverStateData<TData, TContext>>;
+> = Partial<PopoverStateData<TData, TContext>> & { targetKey?: TPopoverKey };
 ```
 
 ---
 
 ### Branded primitive types
 
-Nominal branding prevents passing arbitrary strings or numbers into coordinate and identifier parameters:
+Nominal branding prevents passing raw strings or numbers where domain identifiers are required:
 
-- `PopoverKey<T>`
-- `ViewportX` / `ViewportY`
-- `OwnerId`
-- `StackGroupId`
-- `TabId`
-- `ZIndexDepth`
-- `ParentKey`
+| Type             | Brand tag        | Description                                      |
+| :--------------- | :--------------- | :----------------------------------------------- |
+| `PopoverKey<T>`  | `'PopoverKey'`   | Unique popover string key.                       |
+| `ParentKey<T>`   | `'ParentKey'`    | Parent popover string key.                       |
+| `OwnerId<T>`     | `'OwnerId'`      | Trigger element owner identifier.                |
+| `StackGroupId<T>`| `'StackGroupId'` | Stack group zone identifier.                     |
+| `TabId<T>`       | `'TabId'`        | Cross-tab synchronizer tab identifier.           |
+| `ZIndexDepth`    | `'ZIndexDepth'`  | z-index integer depth level.                     |
+| `DurationMs`     | `'DurationMs'`   | Duration value in milliseconds.                  |
+| `TimestampMs`    | `'TimestampMs'`  | Unix epoch timestamp in milliseconds.            |
+| `ViewportX`      | `'ViewportX'`    | Horizontal viewport coordinate.                  |
+| `ViewportY`      | `'ViewportY'`    | Vertical viewport coordinate.                    |
+
+Constants: `EMPTY_READONLY_ARRAY`, `EMPTY_READONLY_OBJECT`: frozen zero-allocation singletons.
 
 ---
 
@@ -1171,13 +2078,6 @@ export type PopoverServerAction<TArgs extends unknown[] = unknown[], TResult = u
   ...args: TArgs
 ) => Promise<TResult> | TResult;
 
-export interface UsePopoverActionOptions<TResult> {
-  entryKey?: string;
-  autoReload?: boolean;
-  onSuccess?: (data: TResult) => void;
-  onError?: (error: Error) => void;
-}
-
 export interface UsePopoverActionResult<
   TArgs extends unknown[] = unknown[],
   TResult = unknown,
@@ -1189,7 +2089,7 @@ export interface UsePopoverActionResult<
 
 ---
 
-## 7. Type guards and helper utilities
+## 11. Type guards and helper utilities
 
 All executable type guards and helper converters are exported from `popover-trail`:
 
@@ -1200,6 +2100,7 @@ All executable type guards and helper converters are exported from `popover-trai
 - `isErrorEntry(entry)`: Narrows `entry.error` to `Error`.
 - `getEntryState(entry)`: Extracts `PopoverEntryDiscriminatedState<TData>`.
 - `matchEntryState(state, matchers)`: Exhaustive compile-time pattern matcher.
+- `assertIsTrailEntry(val)`: Assertion guard throwing if value is not a `TrailEntry`.
 
 ### Anchor type guards
 
@@ -1207,6 +2108,7 @@ All executable type guards and helper converters are exported from `popover-trai
 - `isEventAnchor(source)`: Narrows `AnchorEventLike` to DOM event with `currentTarget`.
 - `toValidatedAnchorRef(source)`: Converts event source into guaranteed `ValidatedAnchorRef`.
 - `createVirtualElement(x, y, w, h)`: Creates a `VirtualElement` positioning anchor from coordinates.
+- `assertIsDOMRect(val)`: Assertion guard throwing if value is not a `DOMRect`.
 
 ### Store event type guards
 
@@ -1215,25 +2117,124 @@ All executable type guards and helper converters are exported from `popover-trai
 
 ### Type-safe builder helpers
 
-- `createPopoverKey(key)`: Returns branded `PopoverKey<T>` instance.
+- `createPopoverKey(key)`: Returns branded `PopoverKey<T>`.
+- `toPopoverKey(key)` / `toParentKey(key)` / `toOwnerId(id)` / `toStackGroupId(id)`: Brand constructors.
+- `isPopoverKey(val)`: Type guard for `PopoverKey`.
+- `isPopoverPlacement(val)`: Type guard for `PopoverPlacement`.
 - `definePopoverResolver(resolver)` / `createPopoverResolver(resolver)`: Infers typed `PopoverResolver<TData, TContext>`.
 - `definePopoverConfig(config)`: Type-safe display configuration builder.
 - `definePopoverMiddleware(mw)`: Type-safe middleware definition builder.
-- `defineStoreSlice(creator)`: Modular store slice builder.
-- `toViewportX(x)` / `toViewportY(y)`: Converts number into branded `ViewportX` / `ViewportY` coordinate.
+- `defineStoreSlice(descriptor)`: Creates a frozen `StoreSliceDescriptor` for OCP domain slices.
+- `toViewportX(x)` / `toViewportY(y)`: Converts number into branded `ViewportX` / `ViewportY`.
 
 ---
 
-## 8. Utilities, caching, and controllers
+## 12. Utilities, caching, and controllers
 
-### `SimplePopoverCache`
+### `createPopoverStore`
 
-In-memory cache implementation with TTL record expiration, maximum size eviction, background garbage collection, and hit/miss statistics.
+Direct factory for instantiating the Zustand vanilla store engine without React. Supports custom OCP domain slices, initial context injection, and cache providers. Implements the Explicit Resource Management pattern (`dispose()` and `[Symbol.dispose]` / `[DISPOSE_SYMBOL]`).
+
+```typescript
+import { createPopoverStore } from 'popover-trail';
+
+// 1. Simple signature:
+const store = createPopoverStore(
+  async (key) => fetchUserData(key),
+  { theme: 'dark' }, // initialContext
+  customCache,       // optional cache instance
+);
+
+// 2. Options signature with custom domain slices:
+const store = createPopoverStore(
+  async (key, parentData, ctx, signal) => fetchCardData(key, signal),
+  {
+    initialContext: { tenantId: 'org_123' },
+    cache: new SimplePopoverCache(60000, 100),
+    customSlices: [analyticsSlice, minimapSlice] as const,
+  },
+);
+
+// Inspect state directly
+console.log('Revision:', store.getState().stateRevision);
+
+// Dispatch actions outside React
+await store.getState().actions.openRootWithResolver('userProfile');
+
+// Teardown and cancel pending timers / requests
+store.dispose();
+```
+
+#### Options container (`PopoverStoreOptions<TData, TContext, TPopoverKey, TSlices>`)
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `cache` | `PopoverCache<TData>` | `undefined` | Custom data cache implementation. |
+| `initialContext` | `TContext` | `undefined` | Initial global shared context value. |
+| `customSlices` | `TSlices` | `undefined` | Array tuple of `StoreSliceDescriptor` instances. |
+
+---
+
+### `PopoverCache` and `SimplePopoverCache`
+
+#### `PopoverCache<TData>` interface contract
+
+Implement this interface to plug in external cache adapters (for example Redis, IndexedDB, or LRU caches):
+
+```typescript
+export interface PopoverCache<TData = unknown> {
+  get: (key: string) => TData | Promise<TData> | undefined;
+  set: (key: string, value: TData, ttlMs?: number) => void;
+  has: (key: string) => boolean;
+  delete: (key: string) => boolean | void;
+  clear: () => void;
+  destroy?: () => void;
+}
+```
+
+#### Custom cache implementation example
+
+```typescript
+import type { PopoverCache } from 'popover-trail';
+
+export class SessionStoragePopoverCache<TData = unknown> implements PopoverCache<TData> {
+  private prefix = 'pt_cache_';
+
+  get(key: string): TData | undefined {
+    const raw = sessionStorage.getItem(this.prefix + key);
+    return raw ? JSON.parse(raw) : undefined;
+  }
+
+  set(key: string, value: TData): void {
+    sessionStorage.setItem(this.prefix + key, JSON.stringify(value));
+  }
+
+  has(key: string): boolean {
+    return sessionStorage.getItem(this.prefix + key) !== null;
+  }
+
+  delete(key: string): boolean {
+    const exists = this.has(key);
+    sessionStorage.removeItem(this.prefix + key);
+    return exists;
+  }
+
+  clear(): void {
+    Object.keys(sessionStorage)
+      .filter((k) => k.startsWith(this.prefix))
+      .forEach((k) => sessionStorage.removeItem(k));
+  }
+}
+```
+
+#### Built-in `SimplePopoverCache`
+
+In-memory cache with TTL record expiration, maximum size eviction, background garbage collection, and hit/miss statistics:
 
 ```typescript
 import { SimplePopoverCache } from 'popover-trail';
 
-const cache = new SimplePopoverCache(300000, 50); // 5-minute TTL, max 50 items
+const cache = new SimplePopoverCache(300000, 50); // 5-min TTL, max 50 items
 cache.set('userProfile', userData);
 const data = cache.get('userProfile');
 ```
@@ -1242,10 +2243,10 @@ const data = cache.get('userProfile');
 
 ### `createWorkerResolver` and `definePopoverWorkerRPC`
 
-Offloads data resolution tasks to a background Web Worker thread. Supports inline resolver functions, worker script URLs, zero-copy Transferables, and auto-restarts on failure.
+Offloads data resolution to a background Web Worker thread. Supports inline resolver functions, worker script URLs, zero-copy Transferables, and auto-restarts on failure.
 
 ```typescript
-// Main thread setup
+// Main thread
 import { createWorkerResolver } from 'popover-trail';
 
 const workerResolver = createWorkerResolver(
@@ -1256,19 +2257,16 @@ const workerResolver = createWorkerResolver(
   { timeoutMs: 10000, autoRestart: true },
 );
 
-// Worker file setup (for dedicated worker scripts)
+// Worker file
 import { definePopoverWorkerRPC } from 'popover-trail';
-
-definePopoverWorkerRPC(async (key, parentData, context) => {
-  return computeHeavyTask(key);
-});
+definePopoverWorkerRPC(async (key, parentData, context) => computeHeavyTask(key));
 ```
 
 ---
 
 ### `createPopoverController`
 
-Imperative controller for inspecting and dispatching popover actions outside of React component trees (e.g. Redux actions, WebSocket handlers, or Vanilla JS modules).
+Imperative controller for inspecting and dispatching popover actions outside React component trees (e.g. WebSocket handlers, Redux thunks, Vanilla JS modules).
 
 ```typescript
 import { createPopoverStore, createPopoverController } from 'popover-trail';
@@ -1308,65 +2306,432 @@ try {
 
 ---
 
-## 9. Guardrail warnings registry
+## 13. Recipes and common patterns
 
-In development mode (`NODE_ENV !== 'production'`), `popover-trail` logs structured diagnostic warnings formatted as `[popover-trail warning PT-XXX]: <message>`.
+### Recipe: Skeleton UI during resolution
 
-| Code       | Validator function                  | Trigger condition                                                                                   |
-| :--------- | :---------------------------------- | :-------------------------------------------------------------------------------------------------- |
-| **PT-101** | `validatePopoverKey`                | Popover key is missing, empty, or uses reserved JS names (`__proto__`, `constructor`, `prototype`). |
-| **PT-102** | `validatePlacement`                 | Invalid layout placement string provided.                                                           |
-| **PT-103** | `validateHoverDelays`               | Open hover delay is outside valid range (0ms to 30000ms).                                           |
-| **PT-104** | `validateHoverDelays`               | Close hover delay is outside valid range (0ms to 30000ms).                                          |
-| **PT-105** | `validateCascadeAncestry`           | Circular cascade loop detected (popoverKey equals parentKey).                                       |
-| **PT-106** | `validateCardSubComponentScope`     | `<PopoverCard>` subcomponent rendered outside `<PopoverCard>` container.                            |
-| **PT-107** | `validateTimelineSubComponentScope` | `<PopoverTimeline>` subcomponent rendered outside `<PopoverTimeline>` container.                    |
-| **PT-108** | `validateSchemaKey`                 | Key requested is not defined in the schema.                                                         |
-| **PT-109** | `validateCascadeStep`               | Cascade offset step is outside valid range (0px to 200px).                                          |
-| **PT-110** | `validateDefaultOffset`             | Default gap offset is outside valid range (0px to 500px).                                           |
-| **PT-111** | `validateBaseZIndex`                | Base z-index is invalid or negative.                                                                |
-| **PT-112** | `validateExitDuration`              | Exit duration is outside valid range (0ms to 10000ms).                                              |
-| **PT-113** | `validateProviderResolver`          | `<PopoverProvider>` initialized without resolver callback or schema.                                |
-| **PT-114** | `validateDragOffset`                | Drag offset coordinates are NaN or exceed bounds ([-10000, 10000]).                                 |
-| **PT-115** | `validateCascadeDepth`              | Deep cascade stack detected (depth > 10).                                                           |
-| **PT-116** | `validateStackGroup`                | Stack group ID filter is an empty string.                                                           |
-| **PT-117** | `validateHistoryCapacity`           | Max history capacity is outside valid range (1 to 500).                                             |
-| **PT-118** | `validateTriggerEvent`              | Trigger action dispatch called without valid anchor event.                                          |
-| **PT-119** | `validateSharedMemorySupport`       | `useSharedMemory` requested but `SharedArrayBuffer` is unsupported.                                 |
-| **PT-120** | `validateHydrationError`            | Data resolution promise rejected with error.                                                        |
-| **PT-121** | `validatePinDragState`              | Drag attempted on unpinned card that disables unpinned dragging.                                    |
-| **PT-122** | `validateStorageKey`                | Storage key is empty or invalid.                                                                    |
-| **PT-123** | `validateQuadTreeBounds`            | QuadTree dimensions non-positive or NaN.                                                            |
-| **PT-124** | `validateFSMTransitionEvent`        | FSM reducer received invalid transition event type.                                                 |
-| **PT-125** | `validatePortalContainer`           | `<PopoverPortal>` container DOM node is null or unmounted.                                          |
-| **PT-126** | `validateFactoryPlacement`          | `createPopoverTrail()` invoked inside React render pass instead of top-level scope.                 |
-| **PT-127** | `validateStoreControllerInstance`   | `createPopoverController()` received invalid Zustand store instance.                                |
-| **PT-128** | `validateSchemaCircularChild`       | Schema node declares itself as its direct child, creating a circular loop.                          |
-| **PT-129** | `validateResolverTimeout`           | Resolver has taken longer than 5000ms to resolve.                                                   |
-| **PT-130** | `validatePortalExclusion`           | Element marked with `data-popover-portal` is excluded from click-outside teardown.                  |
+```tsx
+import React from 'react';
+import { usePopover } from 'popover-trail';
+
+export function UserProfileCard({ popoverKey }: { popoverKey: string }) {
+  const { isLoading, error, data, close } = usePopover(popoverKey);
+
+  if (isLoading) {
+    return (
+      <div className="card-skeleton" aria-busy="true">
+        <div className="skeleton-avatar" />
+        <div className="skeleton-line" />
+        <div className="skeleton-line short" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card-error">
+        <p>Failed to load profile: {error.message}</p>
+        <button onClick={close}>Dismiss</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-body">
+      <h3>{data?.name}</h3>
+      <p>{data?.role}</p>
+    </div>
+  );
+}
+```
 
 ---
 
-## 10. CSS custom variables and theme tokens
+### Recipe: Retry with backoff
 
-`<PopoverCard>` dynamically exposes hardware-accelerated CSS custom variables on the element root style object for external CSS animations, custom transforms, and tailwind/vanilla CSS overrides:
+```tsx
+import React, { useState } from 'react';
+import { usePopoverActions, usePopover } from 'popover-trail';
+
+export function ResilientCard({ popoverKey }: { popoverKey: string }) {
+  const { error, isLoading } = usePopover(popoverKey);
+  const actions = usePopoverActions();
+  const [retrying, setRetrying] = useState(false);
+
+  const handleRetryWithBackoff = async () => {
+    setRetrying(true);
+    const delays = [500, 1000, 2000];
+    for (const delay of delays) {
+      try {
+        await new Promise((res) => setTimeout(res, delay));
+        await actions.retryPopover(popoverKey, { forceRefresh: true });
+        break;
+      } catch {
+        // Continue to next backoff step
+      }
+    }
+    setRetrying(false);
+  };
+
+  if (!error) return null;
+
+  return (
+    <div className="retry-banner">
+      <span>Connection error.</span>
+      <button onClick={handleRetryWithBackoff} disabled={retrying || isLoading}>
+        {retrying ? 'Retrying...' : 'Retry Now'}
+      </button>
+    </div>
+  );
+}
+```
+
+---
+
+### Recipe: Prefetch on hover
+
+```tsx
+import React from 'react';
+import { usePopoverActions } from 'popover-trail';
+
+export function MemberListItem({ userId, name }: { userId: string; name: string }) {
+  const actions = usePopoverActions();
+
+  return (
+    <li
+      onMouseEnter={() => actions.prefetchPopover(userId)}
+      onClick={(e) => actions.openRootWithResolver(userId, e.currentTarget)}>
+      {name}
+    </li>
+  );
+}
+```
+
+---
+
+### Recipe: Nested cascade
+
+Drill down three hierarchical levels (Organization -> Team -> Member) with compile-time child validation:
+
+```tsx
+import React from 'react';
+import { createPopoverSchema, PopoverProvider, PopoverTrail, PopoverCard, usePopoverActions } from 'popover-trail';
+
+const cascadeSchema = createPopoverSchema({
+  orgCard: {
+    resolver: async (key) => fetchOrg(key),
+    children: ['teamCard'] as const,
+    placement: 'right',
+  },
+  teamCard: {
+    resolver: async (key, parentData: { id: string }) => fetchTeam(parentData.id, key),
+    children: ['memberCard'] as const,
+    placement: 'right',
+  },
+  memberCard: {
+    resolver: async (key) => fetchMember(key),
+    placement: 'bottom',
+  },
+});
+
+export function OrgDrilldown() {
+  const actions = usePopoverActions();
+
+  return (
+    <div>
+      <button onClick={(e) => actions.openRootWithResolver('orgCard', e.currentTarget)}>
+        Browse Organizations
+      </button>
+
+      <PopoverTrail
+        renderCard={(entry, index, isPinned) => (
+          <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
+            <h3>{entry.key}</h3>
+            {entry.key === 'orgCard' && (
+              <button onClick={() => actions.openNestedWithResolver('teamCard', 'orgCard')}>
+                View Teams &rarr;
+              </button>
+            )}
+            {entry.key === 'teamCard' && (
+              <button onClick={() => actions.openNestedWithResolver('memberCard', 'teamCard')}>
+                View Member &rarr;
+              </button>
+            )}
+          </PopoverCard>
+        )}
+      />
+    </div>
+  );
+}
+```
+
+---
+
+### Recipe: Pinning with drag onto canvas
+
+```tsx
+import React from 'react';
+import { PopoverCanvas, PopoverCard } from 'popover-trail/dnd';
+import { usePopoverActions } from 'popover-trail';
+
+export function PinnedCanvasWorkspace() {
+  const actions = usePopoverActions();
+
+  return (
+    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+      <button onClick={(e) => actions.openRootWithResolver('userProfile', e.currentTarget)}>
+        Open Profile
+      </button>
+
+      <PopoverCanvas restrictToWindow={true}>
+        {({ entry, index, isPinned }) => (
+          <PopoverCard entry={entry} index={index} isPinned={isPinned}>
+            <div className="card-header">
+              <span>{entry.key}</span>
+              <button onClick={() => actions.togglePin(entry.key)}>
+                {isPinned ? 'Unpin' : 'Pin to Canvas'}
+              </button>
+            </div>
+            <div className="card-body">
+              <p>Drag me freely anywhere across the canvas viewport.</p>
+            </div>
+          </PopoverCard>
+        )}
+      </PopoverCanvas>
+    </div>
+  );
+}
+```
+
+---
+
+## 14. Server-Side Rendering (SSR) and Next.js / Remix guide
+
+`popover-trail` is fully compatible with Next.js (App Router and Pages Router), Remix, and Gatsby. Because popover positioning relies on DOM measurements (`window`, `DOMRect`, `Floating UI`), client boundaries must be respected:
+
+### 1. Client Component boundary (`'use client'`)
+
+Mark any component rendering `<PopoverProvider>`, `<PopoverTrail>`, or `<PopoverTrigger>` with `'use client'`:
+
+```tsx
+// app/components/PopoverShell.tsx
+'use client';
+
+import React from 'react';
+import { PopoverProvider, PopoverTrail, PopoverCard } from 'popover-trail';
+
+export function PopoverShell({ children }: { children: React.ReactNode }) {
+  return (
+    <PopoverProvider resolveData={async (key) => fetchCard(key)}>
+      {children}
+      <PopoverTrail
+        renderCard={(entry, index, isPinned) => (
+          <PopoverCard entry={entry} index={index} isPinned={isPinned}>
+            {entry.data && <div>{entry.data.title}</div>}
+          </PopoverCard>
+        )}
+      />
+    </PopoverProvider>
+  );
+}
+```
+
+### 2. Dynamic import for Drag and Drop (`popover-trail/dnd`)
+
+When using `@dnd-kit` canvas dragging in Next.js App Router, load canvas components dynamically with SSR disabled to prevent hydration mismatches:
+
+```tsx
+import dynamic from 'next/dynamic';
+
+const DynamicPopoverCanvas = dynamic(
+  () => import('popover-trail/dnd').then((mod) => mod.PopoverCanvas),
+  { ssr: false },
+);
+```
+
+### 3. Hydration mismatch prevention
+
+During initial server render, popover cascades render `null` on the server until mounted in the client DOM. Use `usePopoverHydration` if you need custom skeleton fallbacks during initial hydration:
+
+```tsx
+'use client';
+
+import { usePopoverHydration } from 'popover-trail';
+
+export function HydrationAwareCard({ popoverKey }: { popoverKey: string }) {
+  const { isLoading, data } = usePopoverHydration(popoverKey);
+
+  if (isLoading) return <div className="card-skeleton" />;
+  return <div>{data?.title}</div>;
+}
+```
+
+---
+
+## 15. Performance optimization and zero-GC memory hygiene
+
+`popover-trail` is engineered to produce zero garbage collection churn during high-frequency interaction loops (pointer dragging, scrolling, and spring physics calculations):
+
+### 1. Use fine-grained atomic selectors
+
+Avoid subscribing whole components to `usePopoverStore(state => state)`. Use dedicated atomic selectors to prevent unnecessary re-render passes:
+
+```tsx
+// Anti-pattern (re-renders on any offset, timer, or revision tick):
+const state = usePopoverStore((s) => s);
+
+// Recommended (re-renders only when this specific card's open state changes):
+const isOpen = useIsPopoverOpen('userProfile');
+const isPinned = useIsPopoverPinned('userProfile');
+```
+
+### 2. Zero-allocation drag paths with `ObjectPool`
+
+Drag physics utilize pre-allocated object pools (`ObjectPool<Point2D>`) and static singletons (`EMPTY_READONLY_ARRAY`, `EMPTY_READONLY_OBJECT`) so pointer movements allocate 0 bytes on the heap per frame:
+
+```typescript
+import { ObjectPool, Point2D } from 'popover-trail';
+
+const pointPool = new ObjectPool<Point2D>(() => new Point2D(0, 0), (p) => p.reset(0, 0), 20);
+
+// Acquire pooled instance:
+const point = pointPool.acquire();
+point.reset(e.clientX, e.clientY);
+
+// Release back to pool when done:
+pointPool.release(point);
+```
+
+### 3. Memory leak detection with `MemorySentinel`
+
+In development mode (`process.env.NODE_ENV !== 'production'`), `MemorySentinel` uses `FinalizationRegistry` to detect uncollected DOM nodes and warn developers before deployment:
+
+```typescript
+import { trackMemoryCleanup, untrackMemoryCleanup } from 'popover-trail';
+
+trackMemoryCleanup(cardElement, 'userProfile');
+
+// When unmounted cleanly:
+untrackMemoryCleanup(cardElement);
+```
+
+---
+
+## 16. Testing guide
+
+### Testing components with `PopoverProvider`
+
+When testing components in Vitest or Jest with React Testing Library, wrap the rendered component inside `<PopoverProvider>` and pass mocked resolvers:
+
+```tsx
+// MyComponent.test.tsx
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { PopoverProvider, PopoverTrail, PopoverCard, PopoverTrigger } from 'popover-trail';
+
+function renderWithPopover(ui: React.ReactElement, resolverMock = vi.fn()) {
+  return render(
+    <PopoverProvider resolveData={resolverMock}>
+      {ui}
+      <PopoverTrail
+        renderCard={(entry, index, isPinned) => (
+          <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
+            <div data-testid={`card-${entry.key}`}>
+              {entry.isLoading && <span>Loading...</span>}
+              {entry.data && <span>{entry.data.title}</span>}
+            </div>
+          </PopoverCard>
+        )}
+      />
+    </PopoverProvider>,
+  );
+}
+
+describe('Popover User Flow', () => {
+  it('opens root popover and displays resolved data', async () => {
+    const mockResolver = vi.fn().mockResolvedValue({ title: 'Engineer Profile' });
+
+    renderWithPopover(
+      <PopoverTrigger popoverKey="profileCard">
+        <button type="button">Open Card</button>
+      </PopoverTrigger>,
+      mockResolver,
+    );
+
+    // Open popover
+    fireEvent.click(screen.getByRole('button', { name: /open card/i }));
+
+    // Verify loading state
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+
+    // Verify resolved payload
+    await waitFor(() => {
+      expect(screen.getByText('Engineer Profile')).toBeInTheDocument();
+    });
+
+    expect(mockResolver).toHaveBeenCalledWith(
+      'profileCard',
+      undefined,
+      undefined,
+      expect.any(AbortSignal),
+    );
+  });
+});
+```
+
+---
+
+## 17. Guardrail warnings registry
+
+In development mode (`NODE_ENV !== 'production'`), `popover-trail` logs structured diagnostic warnings formatted as `[popover-trail warning PT-XXX]: <message>`.
+
+| Code       | Validator function                | Trigger condition                                                                                |
+| :--------- | :-------------------------------- | :----------------------------------------------------------------------------------------------- |
+| **PT-108** | `validateSchemaKey`               | Key requested is not defined in the schema.                                                      |
+| **PT-109** | `validateCascadeStep`             | Cascade offset step is outside valid range (0px to 200px).                                       |
+| **PT-110** | `validateDefaultOffset`           | Default gap offset is outside valid range (0px to 500px).                                        |
+| **PT-111** | `validateBaseZIndex`              | Base z-index is invalid or negative.                                                             |
+| **PT-112** | `validateExitDuration`            | Exit duration is outside valid range (0ms to 10000ms).                                           |
+| **PT-113** | `validateProviderResolver`        | `<PopoverProvider>` initialized without resolver callback or schema.                             |
+| **PT-114** | `validateDragOffset`              | Drag offset coordinates are NaN or exceed bounds ([-10000, 10000]).                              |
+| **PT-115** | `validateCascadeDepth`            | Deep cascade stack detected (depth > 10).                                                        |
+| **PT-116** | `validateStackGroup`              | Stack group ID filter is an empty string or whitespace.                                          |
+| **PT-117** | `validateHistoryCapacity`         | Max history capacity is outside valid range (1 to 500).                                          |
+| **PT-118** | `validateTriggerEvent`            | Trigger action dispatch called without valid anchor event.                                       |
+| **PT-119** | `validateSharedMemorySupport`     | `useSharedMemory` requested but `SharedArrayBuffer` is unsupported or not cross-origin isolated. |
+| **PT-120** | `validateHydrationError`          | Data resolution promise rejected with error.                                                     |
+| **PT-121** | `validatePinDragState`            | Drag attempted on unpinned card that disables unpinned dragging.                                 |
+| **PT-122** | `validateStorageKey`              | Storage key is empty or invalid.                                                                 |
+| **PT-123** | `validateQuadTreeBounds`          | QuadTree dimensions non-positive or NaN.                                                         |
+| **PT-124** | `validateFSMTransitionEvent`      | FSM reducer received invalid or undefined transition event type.                                 |
+| **PT-125** | `validatePortalContainer`         | `<PopoverPortal>` container DOM node is null or unmounted.                                       |
+| **PT-126** | `validateFactoryPlacement`        | `createPopoverTrail()` invoked inside React render pass instead of module scope.                 |
+| **PT-127** | `validateStoreControllerInstance` | `createPopoverController()` received invalid Zustand store instance.                             |
+| **PT-128** | `validateSchemaCircularChild`     | Schema node declares itself as a direct child, creating a circular render loop.                  |
+| **PT-129** | `validateResolverTimeout`         | Resolver has taken longer than 5000ms to resolve. Ensure `AbortSignal` is handled.              |
+| **PT-130** | `validatePortalExclusion`         | Element marked with `data-popover-portal` excluded from click-outside teardown.                  |
+
+---
+
+## 18. CSS custom variables and theme tokens
+
+`<PopoverCard>` dynamically exposes hardware-accelerated CSS custom variables on the element root style for external CSS animations, custom transforms, and Tailwind/vanilla CSS overrides:
 
 ### Card layout and physics variables
 
-| Variable                                                 | Type              | Description                                              |
-| :------------------------------------------------------- | :---------------- | :------------------------------------------------------- |
-| `--popover-translate-x` / `--pt-drag-x`                  | `string` (px)     | Cumulative drag offset distance along horizontal X-axis. |
-| `--popover-translate-y` / `--pt-drag-y`                  | `string` (px)     | Cumulative drag offset distance along vertical Y-axis.   |
-| `--popover-rotate-x` / `--pt-rotate-x`                   | `string` (deg)    | Spring physics tilt angle around horizontal X-axis.      |
-| `--popover-rotate-y` / `--pt-rotate-y`                   | `string` (deg)    | Spring physics tilt angle around vertical Y-axis.        |
-| `--popover-rotate-z` / `--pt-rotate-z` / `--pt-tilt-deg` | `string` (deg)    | Spring physics tilt angle around Z-axis.                 |
-| `--popover-z-index` / `--pt-z-index`                     | `string` (number) | Calculated z-index stacking depth layer.                 |
-| `--pt-top`                                               | `string` (px)     | Absolute top layout position relative to viewport.       |
-| `--pt-left`                                              | `string` (px)     | Absolute left layout position relative to viewport.      |
+| Variable                                                 | Type           | Description                                              |
+| :------------------------------------------------------- | :------------- | :------------------------------------------------------- |
+| `--popover-translate-x` / `--pt-drag-x`                  | `string` (px)  | Cumulative drag offset along horizontal X-axis.          |
+| `--popover-translate-y` / `--pt-drag-y`                  | `string` (px)  | Cumulative drag offset along vertical Y-axis.            |
+| `--popover-rotate-x` / `--pt-rotate-x`                   | `string` (deg) | Spring physics tilt angle around horizontal X-axis.      |
+| `--popover-rotate-y` / `--pt-rotate-y`                   | `string` (deg) | Spring physics tilt angle around vertical Y-axis.        |
+| `--popover-rotate-z` / `--pt-rotate-z` / `--pt-tilt-deg` | `string` (deg) | Spring physics tilt angle around Z-axis.                 |
+| `--popover-z-index` / `--pt-z-index`                     | `string` (int) | Calculated z-index stacking depth layer.                 |
+| `--pt-top`                                               | `string` (px)  | Absolute top layout position relative to viewport.       |
+| `--pt-left`                                              | `string` (px)  | Absolute left layout position relative to viewport.      |
 
 ### Global theme tokens (`applyThemeTokens`)
-
-Theme tokens can be applied to `document.documentElement` or any container element via `applyThemeTokens(element, tokens)`:
 
 ```typescript
 import { applyThemeTokens } from 'popover-trail';
@@ -1381,20 +2746,20 @@ const cleanup = applyThemeTokens(document.documentElement, {
 });
 ```
 
-| Token Variable             | Default Value                              | Description                            |
-| :------------------------- | :----------------------------------------- | :------------------------------------- |
-| `--pt-base-z-index`        | `1000`                                     | Base z-index depth.                    |
-| `--pt-cascade-offset`      | `24px`                                     | Step offset per cascade nesting level. |
-| `--pt-transition-duration` | `200ms`                                    | Exit transition duration.              |
-| `--pt-backdrop-blur`       | `8px`                                      | Backdrop blur filter radius.           |
+| Token Variable             | Default Value                               | Description                            |
+| :------------------------- | :------------------------------------------ | :------------------------------------- |
+| `--pt-base-z-index`        | `1000`                                      | Base z-index depth.                    |
+| `--pt-cascade-offset`      | `24px`                                      | Step offset per cascade nesting level. |
+| `--pt-transition-duration` | `200ms`                                     | Exit transition duration.              |
+| `--pt-backdrop-blur`       | `8px`                                       | Backdrop blur filter radius.           |
 | `--pt-card-shadow`         | `'0 10px 25px -5px rgba(0, 0, 0, 0.1)...'` | Box shadow token.                      |
-| `--pt-border-radius`       | `12px`                                     | Card corner border radius.             |
+| `--pt-border-radius`       | `12px`                                      | Card corner border radius.             |
 
 ---
 
-## 11. Keyboard accessibility and ARIA matrix
+## 19. Keyboard accessibility, focus fiber restoration, and ARIA matrix
 
-`popover-trail` implements WCAG 2.1 AAA accessibility compliance with automated ARIA role injection, focus trapping, and keyboard navigation:
+`popover-trail` implements WCAG 2.1 AAA compliance with automated ARIA role injection, focus trapping, and keyboard navigation:
 
 ### Keyboard shortcuts
 
@@ -1404,6 +2769,14 @@ const cleanup = applyThemeTokens(document.documentElement, {
 | `ArrowUp` / `ArrowLeft`    | Active PopoverCard    | Navigates keyboard focus to previous popover in trail.                    |
 | `ArrowDown` / `ArrowRight` | Active PopoverCard    | Navigates keyboard focus to next popover in trail.                        |
 | `Tab` / `Shift+Tab`        | Inside PopoverCard    | Traps focus within active card bounds when `focusLockOptions` is enabled. |
+
+### Focus fiber restoration stack
+
+When a popover card is closed (via `Escape`, outside click, or close button), `popover-trail` restores focus to the exact initiating trigger element in the DOM through a fiber reference map:
+
+1. Opening a popover records the triggering `HTMLElement` reference in the internal trigger fiber stack.
+2. Upon unmounting, the focus restoration hook checks `focusLockOptions.returnFocus` (defaults to `true`).
+3. If the element is still attached to the DOM, focus is restored synchronously without causing layout shifts or scroll jumping.
 
 ### ARIA and DOM attributes
 

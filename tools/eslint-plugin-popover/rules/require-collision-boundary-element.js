@@ -24,10 +24,8 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'boundary' &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.key?.name === 'boundary' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'number'
         ) {
           context.report({

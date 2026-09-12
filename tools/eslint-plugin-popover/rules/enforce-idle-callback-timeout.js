@@ -32,7 +32,7 @@ export default {
         if (
           node.callee &&
           (node.callee.name === 'requestIdleCallback' ||
-            (node.callee.property && node.callee.property.name === 'requestIdleCallback')) &&
+            (node.callee.property?.name === 'requestIdleCallback')) &&
           node.arguments.length === 1
         ) {
           context.report({

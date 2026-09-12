@@ -16,15 +16,14 @@ export default {
   create(context) {
     return {
       NewExpression(node) {
-        if (node.callee && node.callee.name === 'QuadTree' && node.arguments.length > 0) {
+        if (node.callee?.name === 'QuadTree' && node.arguments.length > 0) {
           const arg = node.arguments[0];
-          if (arg && arg.type === 'ObjectExpression') {
+          if (arg?.type === 'ObjectExpression') {
             for (const prop of arg.properties) {
               if (
                 prop.key &&
                 (prop.key.name === 'width' || prop.key.name === 'height') &&
-                prop.value &&
-                prop.value.type === 'Literal' &&
+                prop.value?.type === 'Literal' &&
                 prop.value.value <= 0
               ) {
                 context.report({ node, messageId: 'invalidBounds' });

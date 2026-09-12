@@ -23,22 +23,20 @@ export default {
     return {
       JSXElement(node) {
         if (
-          node.openingElement &&
-          node.openingElement.name &&
+          node.openingElement?.name &&
           node.openingElement.name.name === 'div'
         ) {
           const roleAttr = node.openingElement.attributes.find(
-            (a) => a.name && a.name.name === 'role',
+            (a) => a.name?.name === 'role',
           );
           const modalAttr = node.openingElement.attributes.find(
-            (a) => a.name && a.name.name === 'aria-modal',
+            (a) => a.name?.name === 'aria-modal',
           );
           const focusLockAttr = node.openingElement.attributes.find(
-            (a) => a.name && a.name.name === 'data-popover-modal',
+            (a) => a.name?.name === 'data-popover-modal',
           );
           if (
-            roleAttr &&
-            roleAttr.value &&
+            roleAttr?.value &&
             roleAttr.value.value === 'dialog' &&
             focusLockAttr &&
             !modalAttr

@@ -9,6 +9,7 @@ import {
   validateBaseZIndex,
   validateExitDuration,
 } from '../utils/devWarnings';
+import { isRecordObject, isFunction } from '../utils/typeGuards';
 import { PopoverStoreContext } from './PopoverStoreContext';
 import { usePopoverKeyboardShortcuts } from './usePopoverKeyboard';
 import { usePopoverPropSync } from './usePopoverPropSync';
@@ -17,12 +18,7 @@ import type { PopoverProviderProps } from './PopoverProviderProps';
 function isSchemaWithResolver<TData, TContext>(
   val: unknown,
 ): val is { createResolver: () => PopoverResolver<TData, TContext> } {
-  return (
-    typeof val === 'object' &&
-    val !== null &&
-    'createResolver' in val &&
-    typeof val.createResolver === 'function'
-  );
+  return isRecordObject(val) && 'createResolver' in val && isFunction(val.createResolver);
 }
 
 /**

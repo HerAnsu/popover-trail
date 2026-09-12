@@ -29,7 +29,7 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        const body = context.getSourceCode?.()?.getText?.(node) ?? '';
         if (
           body.includes("signal.addEventListener('abort'") &&
           !body.includes("signal.removeEventListener('abort'")

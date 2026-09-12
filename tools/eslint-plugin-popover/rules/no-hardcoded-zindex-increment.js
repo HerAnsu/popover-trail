@@ -25,10 +25,8 @@ export default {
       BinaryExpression(node) {
         if (
           node.operator === '+' &&
-          node.left &&
-          node.left.name === 'zIndex' &&
-          node.right &&
-          node.right.type === 'Literal' &&
+          node.left?.name === 'zIndex' &&
+          node.right?.type === 'Literal' &&
           typeof node.right.value === 'number' &&
           node.right.value > 100
         ) {

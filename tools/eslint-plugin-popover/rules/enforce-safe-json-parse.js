@@ -23,11 +23,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.object &&
+          node.callee?.object &&
           node.callee.object.name === 'JSON' &&
-          node.callee.property &&
-          node.callee.property.name === 'parse'
+          node.callee.property?.name === 'parse'
         ) {
           let parent = node.parent;
           let inTry = false;

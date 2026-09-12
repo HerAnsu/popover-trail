@@ -17,13 +17,11 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'focus' &&
-          node.callee.object &&
-          node.callee.object.name === 'cardRef'
+          node.callee.object?.name === 'cardRef'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (!src.includes('activeElement') && !src.includes('prevFocus')) {
             context.report({ node, messageId: 'untrackedAutofocus' });
           }

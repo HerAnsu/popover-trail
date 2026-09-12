@@ -23,10 +23,8 @@ export default {
     return {
       ExpressionStatement(node) {
         if (
-          node.expression &&
-          node.expression.type === 'CallExpression' &&
-          node.expression.callee &&
-          node.expression.callee.name &&
+          node.expression?.type === 'CallExpression' &&
+          node.expression.callee?.name &&
           node.expression.callee.name.startsWith('async')
         ) {
           context.report({

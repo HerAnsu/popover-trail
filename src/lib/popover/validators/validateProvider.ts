@@ -1,12 +1,11 @@
-import { isDevEnv, warnDevDetails } from './warningEngine';
+import { isNonNegativeFinite, isNumberInRange, isRecordObject } from '../utils/typeGuards';
+import { isDevEnv, warnDevDetails, PopoverWarningCode } from './warningEngine';
 
 /** PT-109: Validates cascade offset step. */
 export function validateCascadeStep(step: number | undefined): void {
-  if (!isDevEnv() || step === undefined) return;
-
-  if (typeof step !== 'number' || step < 0 || step > 200) {
+  if (isDevEnv() && step !== undefined && !isNumberInRange(step, 0, 200)) {
     warnDevDetails(true, {
-      code: 'PT-109',
+      code: PopoverWarningCode.INVALID_CASCADE_OFFSET_STEP,
       message: `Cascade offset step of ${step}px is outside valid range (0px to 200px).`,
     });
   }
@@ -14,11 +13,9 @@ export function validateCascadeStep(step: number | undefined): void {
 
 /** PT-110: Validates default offset gap. */
 export function validateDefaultOffset(offset: number | undefined): void {
-  if (!isDevEnv() || offset === undefined) return;
-
-  if (typeof offset !== 'number' || offset < 0 || offset > 500) {
+  if (isDevEnv() && offset !== undefined && !isNumberInRange(offset, 0, 500)) {
     warnDevDetails(true, {
-      code: 'PT-110',
+      code: PopoverWarningCode.INVALID_DEFAULT_OFFSET,
       message: `Default offset gap of ${offset}px is outside valid range (0px to 500px).`,
     });
   }
@@ -26,11 +23,9 @@ export function validateDefaultOffset(offset: number | undefined): void {
 
 /** PT-111: Validates base z-index. */
 export function validateBaseZIndex(zIndex: number | undefined): void {
-  if (!isDevEnv() || zIndex === undefined) return;
-
-  if (typeof zIndex !== 'number' || zIndex < 0) {
+  if (isDevEnv() && zIndex !== undefined && !isNonNegativeFinite(zIndex)) {
     warnDevDetails(true, {
-      code: 'PT-111',
+      code: PopoverWarningCode.INVALID_BASE_Z_INDEX,
       message: `Base z-index of ${zIndex} is invalid (must be a positive number).`,
     });
   }
@@ -38,11 +33,9 @@ export function validateBaseZIndex(zIndex: number | undefined): void {
 
 /** PT-112: Validates exit transition duration. */
 export function validateExitDuration(duration: number | undefined): void {
-  if (!isDevEnv() || duration === undefined) return;
-
-  if (typeof duration !== 'number' || duration < 0 || duration > 10000) {
+  if (isDevEnv() && duration !== undefined && !isNumberInRange(duration, 0, 10000)) {
     warnDevDetails(true, {
-      code: 'PT-112',
+      code: PopoverWarningCode.INVALID_EXIT_TRANSITION_DURATION,
       message: `Exit transition duration of ${duration}ms is outside valid range (0ms to 10000ms).`,
     });
   }
@@ -50,11 +43,9 @@ export function validateExitDuration(duration: number | undefined): void {
 
 /** PT-113: Validates provider resolver initialization. */
 export function validateProviderResolver(hasResolver: boolean): void {
-  if (!isDevEnv()) return;
-
-  if (!hasResolver) {
+  if (isDevEnv() && !hasResolver) {
     warnDevDetails(true, {
-      code: 'PT-113',
+      code: PopoverWarningCode.MISSING_RESOLVER_OR_SCHEMA,
       message:
         '<PopoverProvider> was instantiated without a "resolveData" callback or "schema" prop.',
     });
@@ -63,11 +54,9 @@ export function validateProviderResolver(hasResolver: boolean): void {
 
 /** PT-115: Validates maximum cascade depth. */
 export function validateCascadeDepth(depth: number): void {
-  if (!isDevEnv()) return;
-
-  if (depth > 10) {
+  if (isDevEnv() && depth > 10) {
     warnDevDetails(true, {
-      code: 'PT-115',
+      code: PopoverWarningCode.CASCADE_DEPTH_EXCEEDED,
       message: `Deep popover cascade stack detected (depth = ${depth}). High cascade depth may impair UI usability.`,
     });
   }
@@ -75,22 +64,20 @@ export function validateCascadeDepth(depth: number): void {
 
 /** PT-126: Validates createPopoverTrail factory placement. */
 export function validateFactoryPlacement(isInsideRender?: boolean): void {
-  if (!isDevEnv() || !isInsideRender) return;
-
-  warnDevDetails(true, {
-    code: 'PT-126',
-    message:
-      'createPopoverTrail() should be called at top-level module scope, not inside a React component render pass.',
-  });
+  if (isDevEnv() && isInsideRender) {
+    warnDevDetails(true, {
+      code: PopoverWarningCode.INVALID_FACTORY_PLACEMENT,
+      message:
+        'createPopoverTrail() should be called at top-level module scope, not inside a React component render pass.',
+    });
+  }
 }
 
 /** PT-127: Validates store instance provided to createPopoverController. */
 export function validateStoreControllerInstance(store: unknown): void {
-  if (!isDevEnv()) return;
-
-  if (!store || typeof (store as { getState?: unknown }).getState !== 'function') {
+  if (isDevEnv() && (!isRecordObject(store) || typeof store.getState !== 'function')) {
     warnDevDetails(true, {
-      code: 'PT-127',
+      code: PopoverWarningCode.INVALID_STORE_INSTANCE,
       message: 'createPopoverController() received an invalid or undefined Zustand store instance.',
     });
   }

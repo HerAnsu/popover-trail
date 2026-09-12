@@ -1,4 +1,4 @@
-﻿---
+---
 name: team-orchestrator
 description: High-performance multi-agent orchestration engine for popover-trail. Coordinates, dispatches, and supervises all 6 specialized subagents (arch_auditor, typescript_architect, zero_gc_profiler, a11y_keyboard_specialist, code_modularizer, property_test_engineer) across Audit, Fix, and Certification modes with autonomous self-healing loops and incremental delta-diff scoping. Trigger on "run all agents", "full audit", "проверь проект всеми агентами", "запусти команду", "оркестратор", "auto-fix all", "pr-gate".
 ---
@@ -38,7 +38,7 @@ graph TD
     end
     
     subgraph Wave3["Wave 3: Modularity Refactoring & Mathematical Proofs"]
-        CM["✂️ code_modularizer (70-90 LOC File Budget, SLAP)"]
+        CM["✂️ code_modularizer (Cohesive SRP / Rational LOC Budget, SLAP)"]
         PTE["🧪 property_test_engineer (Fast-Check, Invariants I1-I12, Vitest)"]
     end
 
@@ -148,7 +148,7 @@ $$\text{HealthScore} = \frac{6}{\sum_{i=1}^{6} \frac{1}{\text{Score}_i}} \in [0.
 | **Type Soundness** | `typescript_architect` | ✅ PASS | 0% any / 100% strict | Branded `PopoverKey`, total functions. |
 | **Performance** | `zero_gc_profiler` | ✅ PASS | $\text{Alloc}(\text{Frame}) = 0\text{ B}$ | Static singletons reused, monomorphic IC. |
 | **Accessibility** | `a11y_keyboard_specialist`| ✅ PASS | WCAG 2.1 AA/AAA | Focus fiber retraction $\pi: V \to \text{DOM}$ intact. |
-| **Modularity** | `code_modularizer` | ✅ PASS | $\le 90$ LOC / $\le 25$ LOC | SLAP preserved across all modules. |
+| **Modularity** | `code_modularizer` | ✅ PASS | High Cohesion / $\le 300$ LOC | SLAP & SRP preserved across all modules. |
 | **Invariant Tests**| `property_test_engineer` | ✅ PASS | 100% test pass rate | All Vitest & `fast-check` properties hold. |
 
 ---

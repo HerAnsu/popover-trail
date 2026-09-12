@@ -1,0 +1,79 @@
+/**
+ * Request Hydration Counter State Manager for popover-trail store.
+ * Tracks root and nested hydration counters to prevent race conditions.
+ *
+ * @module storeHydration
+ */
+
+import { omitRecordKey } from '../../utils/cleanObject';
+
+export interface HydrationState {
+  rootHydrationRequestCounter: number;
+  nestedHydrationRequestCounters: Record<string, number>;
+}
+
+export function createHydrationManager() {
+  let rootCounter = 0;
+  let epoch = 0;
+  let nestedCounters: Partial<Record<string, number>> = Object.create(null);
+
+  const getEpoch = (): number => epoch;
+  const incrementEpoch = (): number => {
+    epoch++;
+    return epoch;
+  };
+  const isEpochStale = (startedEpoch: number): boolean => startedEpoch !== epoch;
+
+  const incrementRootCounter = (): number => {
+    rootCounter++;
+    return rootCounter;
+  };
+  const isRootStale = (startedCounter: number): boolean => startedCounter !== rootCounter;
+
+  const incrementNestedCounter = (parentKey: string): number => {
+    const next = (nestedCounters[parentKey] ?? 0) + 1;
+    nestedCounters[parentKey] = next;
+    return next;
+  };
+
+  const isNestedStale = (parentKey: string, startedCounter: number): boolean =>
+    (nestedCounters[parentKey] ?? 0) !== startedCounter;
+
+  const deleteNestedCounter = (parentKey: string): void => {
+    nestedCounters = omitRecordKey(nestedCounters, parentKey);
+  };
+
+  const markAllCountersStale = (): void => {
+    rootCounter++;
+    epoch++;
+    const nextCounters: Partial<Record<string, number>> = Object.create(null);
+    for (const key of Object.keys(nestedCounters)) {
+      const val = nestedCounters[key];
+      if (val !== undefined) nextCounters[key] = val + 1;
+    }
+    nestedCounters = nextCounters;
+  };
+
+  const resetHydrationCounters = (): void => {
+    rootCounter = 0;
+    epoch = 0;
+    nestedCounters = Object.create(null);
+  };
+
+  return {
+    getRootCounter: () => rootCounter,
+    getNestedCounters: () => ({ ...nestedCounters }),
+    getEpoch,
+    incrementEpoch,
+    isEpochStale,
+    incrementRootCounter,
+    isRootStale,
+    incrementNestedCounter,
+    isNestedStale,
+    deleteNestedCounter,
+    markAllCountersStale,
+    resetHydrationCounters,
+  };
+}
+
+export type HydrationManager = ReturnType<typeof createHydrationManager>;

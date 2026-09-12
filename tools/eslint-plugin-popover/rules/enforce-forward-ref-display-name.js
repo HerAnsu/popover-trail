@@ -24,18 +24,14 @@ export default {
       CallExpression(node) {
         if (
           node.callee &&
-          ((node.callee.object &&
-            node.callee.object.name === 'React' &&
-            node.callee.property &&
-            node.callee.property.name === 'forwardRef') ||
+          ((node.callee.object?.name === 'React' &&
+            node.callee.property?.name === 'forwardRef') ||
             node.callee.name === 'forwardRef') &&
-          node.parent &&
-          node.parent.type === 'VariableDeclarator' &&
-          node.parent.id &&
-          node.parent.id.name
+          node.parent?.type === 'VariableDeclarator' &&
+          node.parent?.id?.name
         ) {
-          const compName = node.parent.id.name;
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const compName = node.parent?.id.name;
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (src && !src.includes(`${compName}.displayName =`)) {
             context.report({
               node,

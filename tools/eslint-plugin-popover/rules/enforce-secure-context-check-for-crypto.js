@@ -30,21 +30,18 @@ export default {
     return {
       MemberExpression(node) {
         if (
-          node.property &&
-          node.property.name === 'subtle' &&
-          node.object &&
-          node.object.name === 'crypto'
+          node.property?.name === 'subtle' &&
+          node.object?.name === 'crypto'
         ) {
           let parent = node.parent;
           while (
-            parent &&
-            parent.type !== 'FunctionDeclaration' &&
+            parent?.type !== 'FunctionDeclaration' &&
             parent.type !== 'MethodDefinition'
           ) {
             parent = parent.parent;
           }
           if (parent) {
-            const body = context.getSourceCode ? context.getSourceCode().getText(parent) : '';
+            const body = context.getSourceCode?.()?.getText?.(parent) ?? '';
             if (
               !body.includes('typeof crypto') &&
               !body.includes('window.crypto') &&

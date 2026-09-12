@@ -1,67 +1,37 @@
 /**
- * Focus & Scroll Locking Lifecycle Management for popover cards.
+ * Focus Lifecycle Management for popover cards.
+ * Clean Architecture Layer 3: Reactive Integration & Hooks.
  *
  * @module hooks/card/useCardFocusManagement
  */
 
 import { useEffect, useRef } from 'react';
 import type { TrailEntry } from '../../types';
+import {
+  isDOM,
+  isFunction,
+  isNonEmptyString,
+  getActiveHTMLElement,
+  canElementReceiveFocus,
+  isFocusWithin,
+} from '../../utils/typeGuards';
 import { focusParentCard } from './useCardKeyboardNav';
-
-let activeScrollLockCount = 0;
-let originalBodyOverflow: string | null = null;
-
-function acquireScrollLock(): void {
-  if (typeof document === 'undefined') return;
-  if (activeScrollLockCount === 0) {
-    originalBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-  }
-  activeScrollLockCount++;
-}
-
-function releaseScrollLock(): void {
-  if (typeof document === 'undefined') return;
-  if (activeScrollLockCount > 0) {
-    activeScrollLockCount--;
-    if (activeScrollLockCount === 0) {
-      document.body.style.overflow = originalBodyOverflow ?? '';
-      originalBodyOverflow = null;
-    }
-  }
-}
-
-function tryRestorePreviousElementFocus(
-  cardElement: HTMLElement | null,
-  previouslyFocused: HTMLElement | null,
-): boolean {
-  if (!previouslyFocused || !document.body.contains(previouslyFocused)) return false;
-  if (typeof previouslyFocused.focus !== 'function') return false;
-
-  const activeEl = document.activeElement;
-  const isFocusInside = cardElement?.contains(activeEl) || activeEl === document.body || !activeEl;
-
-  if (isFocusInside) {
-    previouslyFocused.focus();
-    return true;
-  }
-  return false;
-}
+import { useBodyScrollLock } from '../useBodyScrollLock';
 
 function restoreCardFocus(
   cardElement: HTMLElement | null,
   previouslyFocused: HTMLElement | null,
   parentKey?: string,
 ): void {
-  if (tryRestorePreviousElementFocus(cardElement, previouslyFocused)) return;
+  if (canElementReceiveFocus(previouslyFocused) && isFocusWithin(cardElement)) {
+    previouslyFocused.focus();
+    return;
+  }
   if (parentKey) {
     focusParentCard(parentKey);
   }
 }
 
-/**
- * Manages WAI-ARIA focus lifecycle and body scroll lock for a popover card.
- */
 export function useCardFocusManagement(
   entry: TrailEntry,
   cardRef: React.RefObject<HTMLElement | null>,
@@ -69,16 +39,11 @@ export function useCardFocusManagement(
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (
-      !previouslyFocusedElementRef.current &&
-      typeof document !== 'undefined' &&
-      document.activeElement instanceof HTMLElement
-    ) {
-      previouslyFocusedElementRef.current = document.activeElement;
+    if (!previouslyFocusedElementRef.current) {
+      previouslyFocusedElementRef.current = getActiveHTMLElement();
     }
 
     const cardElement = cardRef.current;
-
     return () => {
       if (entry.focusLockOptions?.returnFocus === false) return;
       restoreCardFocus(cardElement, previouslyFocusedElementRef.current, entry.parentKey);
@@ -86,26 +51,16 @@ export function useCardFocusManagement(
   }, [entry.parentKey, entry.focusLockOptions?.returnFocus, cardRef]);
 
   useEffect(() => {
-    if (!entry.focusLockOptions?.autoFocusElement || typeof document === 'undefined') return;
+    if (!entry.focusLockOptions?.autoFocusElement || !isDOM()) return;
     const autoFocus = entry.focusLockOptions.autoFocusElement;
-    const target =
-      typeof autoFocus === 'function'
-        ? autoFocus()
-        : autoFocus.trim() !== ''
-          ? document.querySelector<HTMLElement>(autoFocus)
-          : null;
+    const target = isFunction(autoFocus)
+      ? autoFocus()
+      : isNonEmptyString(autoFocus)
+        ? document.querySelector<HTMLElement>(autoFocus)
+        : null;
 
-    if (target && typeof target.focus === 'function') {
-      target.focus();
-    }
+    target?.focus?.();
   }, [entry.focusLockOptions, entry.focusLockOptions?.autoFocusElement]);
 
-  useEffect(() => {
-    if (!entry.focusLockOptions?.lockScroll || typeof document === 'undefined') return;
-
-    acquireScrollLock();
-    return () => {
-      releaseScrollLock();
-    };
-  }, [entry.focusLockOptions?.lockScroll]);
+  useBodyScrollLock(entry.focusLockOptions?.lockScroll);
 }

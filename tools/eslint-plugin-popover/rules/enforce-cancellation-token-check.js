@@ -1,4 +1,3 @@
-'use strict';
 export default {
   meta: {
     type: 'suggestion',
@@ -9,17 +8,16 @@ export default {
     },
     schema: [],
     messages: {
-      missingSignalCheck:
-        'Check `signal?.aborted` before applying async results to prevent race conditions.',
+      missingSignalCheck: 'Check `signal?.aborted` before applying async results to prevent race conditions.',
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
-    if (filename.includes('.test.')) return {};
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
     return {
       FunctionDeclaration(node) {
-        if (node.async && node.params.some((p) => p.name === 'signal')) {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.async && node.params?.some((p) => p.name === 'signal')) {
+          const src = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (!src.includes('aborted')) {
             context.report({ node, messageId: 'missingSignalCheck' });
           }

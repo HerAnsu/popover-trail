@@ -19,12 +19,12 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (!filename.includes('errors') && !filename.includes('Errors')) return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       ClassDeclaration(node) {
-        if (node.superClass && node.superClass.name === 'Error' && node.id && node.id.name) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.superClass?.name === 'Error' && node.id?.name) {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             body &&
             !body.includes('this.name =') &&

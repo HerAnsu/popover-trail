@@ -32,7 +32,7 @@ export default {
         if (
           node.callee &&
           (node.callee.name === 'flushSync' ||
-            (node.callee.property && node.callee.property.name === 'flushSync'))
+            (node.callee.property?.name === 'flushSync'))
         ) {
           let parent = node.parent;
           while (parent) {

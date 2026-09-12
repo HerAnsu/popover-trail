@@ -19,8 +19,7 @@ export default {
     return {
       JSXElement(node) {
         if (
-          node.openingElement &&
-          node.openingElement.name &&
+          node.openingElement?.name &&
           node.openingElement.name.name === 'PopoverProvider'
         ) {
           providerDepth++;
@@ -31,8 +30,7 @@ export default {
       },
       'JSXElement:exit'(node) {
         if (
-          node.openingElement &&
-          node.openingElement.name &&
+          node.openingElement?.name &&
           node.openingElement.name.name === 'PopoverProvider'
         ) {
           providerDepth--;

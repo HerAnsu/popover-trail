@@ -31,8 +31,7 @@ export default {
       UnaryExpression(node) {
         if (
           node.operator === '+' &&
-          node.argument &&
-          node.argument.type === 'Identifier' &&
+          node.argument?.type === 'Identifier' &&
           (node.argument.name.endsWith('Str') || node.argument.name.endsWith('String'))
         ) {
           context.report({

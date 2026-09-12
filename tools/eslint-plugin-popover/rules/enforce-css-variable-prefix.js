@@ -18,19 +18,13 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       Property(node) {
         if (
           node.key &&
-          typeof node.key.value === 'string' &&
+          typeof node.key?.value === 'string' &&
           node.key.value.startsWith('--') &&
           !node.key.value.startsWith('--popover-') &&
           !node.key.value.startsWith('--pt-')

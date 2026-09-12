@@ -24,18 +24,14 @@ export default {
     return {
       VariableDeclarator(node) {
         if (
-          node.id &&
-          node.id.name &&
+          node.id?.name &&
           node.id.name.startsWith('DEFAULT_') &&
-          node.init &&
-          node.init.type === 'ObjectExpression'
+          node.init?.type === 'ObjectExpression'
         ) {
           const isFrozen =
-            node.parent &&
-            node.parent.parent &&
+            node.parent?.parent &&
             node.parent.parent.type === 'CallExpression' &&
-            node.parent.parent.callee &&
-            node.parent.parent.callee.property &&
+            node.parent.parent.callee?.property &&
             node.parent.parent.callee.property.name === 'freeze';
           if (!isFrozen) {
             context.report({

@@ -25,16 +25,15 @@ export default {
         const tag = node.openingElement?.name?.name;
         if (tag === 'button' || tag === 'input' || tag === 'a' || tag === 'select') {
           const ariaHidden = node.openingElement.attributes.find(
-            (a) => a.name && a.name.name === 'aria-hidden',
+            (a) => a.name?.name === 'aria-hidden',
           );
           const tabIndex = node.openingElement.attributes.find(
             (a) => a.name && (a.name.name === 'tabIndex' || a.name.name === 'tabindex'),
           );
           if (
-            ariaHidden &&
-            ariaHidden.value &&
+            ariaHidden?.value &&
             (ariaHidden.value.value === 'true' || ariaHidden.value.value === true) &&
-            (!tabIndex || (tabIndex.value && tabIndex.value.value !== -1))
+            (!tabIndex || (tabIndex.value?.value !== -1))
           ) {
             context.report({
               node,

@@ -15,6 +15,7 @@ import type {
 import { useCrossVersionActionState } from '../utils/react19Adapters';
 import { usePopoverStoreApi } from '../context/usePopoverStore';
 import { wrapAsyncResult, isOk } from '../utils/result';
+import { toError } from '../utils/typeGuards';
 
 /**
  * Executes a React 19 Server Action or async mutation with automatic popover store synchronization.
@@ -108,8 +109,7 @@ export function usePopoverAction<TData, TInput = void>(
         updateCardData(prevState.data);
       }
 
-      const error =
-        execResult.error instanceof Error ? execResult.error : new Error(String(execResult.error));
+      const error = toError(execResult.error);
       callbacksRef.current.onError?.(error);
       return {
         status: 'error',

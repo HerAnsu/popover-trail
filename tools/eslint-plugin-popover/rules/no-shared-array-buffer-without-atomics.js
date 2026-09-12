@@ -30,10 +30,8 @@ export default {
     return {
       AssignmentExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
-          node.left.object &&
-          node.left.object.name &&
+          node.left?.type === 'MemberExpression' &&
+          node.left.object?.name &&
           node.left.object.name.toLowerCase().includes('sharedarray')
         ) {
           context.report({

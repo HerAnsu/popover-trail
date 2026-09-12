@@ -24,14 +24,10 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'map' &&
-          node.arguments &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'ArrowFunctionExpression' &&
-          node.arguments[0].body &&
-          node.arguments[0].body.type === 'BlockStatement' &&
+          node.arguments?.[0]?.type === 'ArrowFunctionExpression' &&
+          node.arguments[0].body?.type === 'BlockStatement' &&
           node.arguments[0].body.body.length > 8
         ) {
           context.report({

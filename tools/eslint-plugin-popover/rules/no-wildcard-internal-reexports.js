@@ -14,11 +14,11 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (!filename.endsWith('index.ts') && !filename.endsWith('index.tsx')) return {};
     return {
       ExportAllDeclaration(node) {
-        if (node.source && node.source.value && node.source.value.includes('internal')) {
+        if (node.source?.value && node.source.value.includes('internal')) {
           context.report({
             node,
             messageId: 'wildcardReexport',

@@ -30,8 +30,7 @@ export default {
     return {
       WhileStatement(node) {
         if (
-          node.test &&
-          node.test.type === 'Literal' &&
+          node.test?.type === 'Literal' &&
           node.test.value === true &&
           (filename.includes('worker') || filename.includes('Worker'))
         ) {

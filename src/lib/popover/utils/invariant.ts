@@ -1,13 +1,19 @@
 /**
- * Asserts a condition truthiness at runtime. If condition is falsy, throws an Error
- * with a standardized `[Popover Trail]` prefix.
+ * Fail-Fast Diagnostic Invariant Assertion Utility.
+ * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
  *
- * @param condition - The boolean condition to evaluate.
- * @param message - The error message string.
- * @throws {Error} If condition is falsy.
+ * @module utils/invariant
  */
-export function invariant(condition: unknown, message: string): asserts condition {
+
+export function invariant(
+  condition: unknown,
+  messageOrFactory: string | (() => Error | string),
+): asserts condition {
   if (!condition) {
-    throw new Error(`[Popover Trail] ${message}`);
+    if (typeof messageOrFactory === 'function') {
+      const err = messageOrFactory();
+      throw typeof err === 'string' ? new Error(`[Popover Trail] ${err}`) : err;
+    }
+    throw new Error(`[Popover Trail] ${messageOrFactory}`);
   }
 }

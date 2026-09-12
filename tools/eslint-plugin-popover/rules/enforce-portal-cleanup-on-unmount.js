@@ -23,13 +23,11 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'appendChild' &&
-          node.callee.object &&
-          node.callee.object.name === 'document'
+          node.callee.object?.name === 'document'
         ) {
-          const scope = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const scope = context.getSourceCode?.()?.getText?.() ?? '';
           if (scope && !scope.includes('removeChild') && !scope.includes('.remove()')) {
             context.report({
               node,

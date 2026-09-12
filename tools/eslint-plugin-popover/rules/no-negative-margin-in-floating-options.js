@@ -22,11 +22,8 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'offset' &&
-          node.arguments &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'UnaryExpression' &&
+          node.callee?.name === 'offset' &&
+          node.arguments?.[0]?.type === 'UnaryExpression' &&
           node.arguments[0].operator === '-'
         ) {
           context.report({

@@ -17,11 +17,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'getBoundingClientRect' &&
-          node.callee.object &&
-          node.callee.object.name === 'el' &&
+          node.callee.object?.name === 'el' &&
           !node.callee.optional
         ) {
           context.report({ node, messageId: 'safeRectAccess' });

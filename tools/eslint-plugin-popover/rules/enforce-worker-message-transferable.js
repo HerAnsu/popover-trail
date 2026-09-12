@@ -30,12 +30,10 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'postMessage' &&
           node.arguments.length === 1 &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Identifier' &&
+          node.arguments[0]?.type === 'Identifier' &&
           (node.arguments[0].name.includes('Buffer') ||
             node.arguments[0].name.includes('ArrayBuffer'))
         ) {

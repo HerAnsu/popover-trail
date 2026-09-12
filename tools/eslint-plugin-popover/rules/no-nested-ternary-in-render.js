@@ -23,8 +23,8 @@ export default {
     return {
       ConditionalExpression(node) {
         if (
-          (node.consequent && node.consequent.type === 'ConditionalExpression') ||
-          (node.alternate && node.alternate.type === 'ConditionalExpression')
+          (node.consequent?.type === 'ConditionalExpression') ||
+          (node.alternate?.type === 'ConditionalExpression')
         ) {
           let parent = node.parent;
           while (parent) {

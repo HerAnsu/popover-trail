@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { usePopoverStoreApi } from '../context/usePopoverStore';
 import { usePopoverCollisionConfig } from './usePopoverSelectors';
-import type { PopoverPlacement, TrailEntry } from '../types';
+import type { PopoverPlacement, PopoverRect, TrailEntry } from '../types';
 import {
   getViewportBounds,
   calculateResponsivePosition,
@@ -25,7 +25,7 @@ export interface UsePopoverGeometryOptions {
   /** Identifying popover key string. */
   id: string;
   /** Bounding rectangle of the trigger or anchor element. */
-  anchorRect?: DOMRect;
+  anchorRect?: DOMRect | PopoverRect;
   /** Floating UI placement preference string. */
   placement?: PopoverPlacement;
   /** Current 0-based depth index in the z-index stack. */

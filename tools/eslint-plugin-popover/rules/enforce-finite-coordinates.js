@@ -23,8 +23,8 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name === 'clampDragCoordinates' && node.params.length >= 2) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name === 'clampDragCoordinates' && node.params.length >= 2) {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (body && !body.includes('isFinite')) {
             context.report({
               node,

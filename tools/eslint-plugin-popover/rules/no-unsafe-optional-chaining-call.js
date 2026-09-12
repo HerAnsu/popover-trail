@@ -22,7 +22,7 @@ export default {
 
     return {
       CallExpression(node) {
-        if (node.callee && node.callee.type === 'ChainExpression' && !node.optional) {
+        if (node.callee?.type === 'ChainExpression' && !node.optional) {
           context.report({
             node,
             messageId: 'unsafeOptionalCall',

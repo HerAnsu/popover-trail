@@ -30,7 +30,7 @@ export default {
     return {
       MethodDefinition(node) {
         if (node.key && (node.key.name === 'addListener' || node.key.name === 'on')) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             body.includes('.push(') &&
             !body.includes('length') &&

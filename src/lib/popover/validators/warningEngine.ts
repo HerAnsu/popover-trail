@@ -1,6 +1,10 @@
+import { PopoverWarningCode } from './warningCodes';
+
+export { PopoverWarningCode };
+
 export interface DevWarningDetails {
   /** Unique error code identifier. */
-  code: string;
+  code: PopoverWarningCode;
   /** Detailed error message describing what went wrong. */
   message: string;
 }
@@ -28,10 +32,24 @@ export function warnDev(condition: boolean, message: string): void {
 }
 
 /**
+ * Type guard verifying if an unknown object is valid DevWarningDetails.
+ */
+export function isDevWarningDetails(val: unknown): val is DevWarningDetails {
+  return (
+    typeof val === 'object' &&
+    val !== null &&
+    'code' in val &&
+    typeof val.code === 'string' &&
+    'message' in val &&
+    typeof val.message === 'string'
+  );
+}
+
+/**
  * Structured error logger with code and detailed message.
  */
 export function warnDevDetails(condition: boolean, details: DevWarningDetails): void {
-  if (isDevEnv() && condition) {
+  if (isDevEnv() && condition && isDevWarningDetails(details)) {
     emitDevWarning(details.code, details.message);
   }
 }

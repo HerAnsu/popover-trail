@@ -30,32 +30,24 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'requestAnimationFrame' &&
+          node.callee?.name === 'requestAnimationFrame' &&
           node.arguments[0] &&
           (node.arguments[0].type === 'ArrowFunctionExpression' ||
             node.arguments[0].type === 'FunctionExpression')
         ) {
-          const fnBody = node.arguments[0].body;
-          if (fnBody) {
-            const src = context.getSourceCode ? context.getSourceCode().getText(fnBody) : '';
-            if (src.includes('requestAnimationFrame(') && src.includes('requestAnimationFrame(')) {
-              let parent = node.parent;
-              while (parent) {
-                if (
-                  parent.type === 'CallExpression' &&
-                  parent.callee &&
-                  parent.callee.name === 'requestAnimationFrame'
-                ) {
-                  context.report({
-                    node,
-                    messageId: 'noNestedRaf',
-                  });
-                  break;
-                }
-                parent = parent.parent;
-              }
+          let parent = node.parent;
+          while (parent) {
+            if (
+              parent.type === 'CallExpression' &&
+              parent.callee?.name === 'requestAnimationFrame'
+            ) {
+              context.report({
+                node,
+                messageId: 'noNestedRaf',
+              });
+              break;
             }
+            parent = parent.parent;
           }
         }
       },

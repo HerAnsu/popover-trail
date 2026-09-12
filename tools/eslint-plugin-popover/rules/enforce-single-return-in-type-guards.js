@@ -30,11 +30,9 @@ export default {
     return {
       FunctionDeclaration(node) {
         if (
-          node.id &&
-          node.id.name.startsWith('is') &&
+          node.id?.name.startsWith('is') &&
           node.returnType &&
-          node.body &&
-          node.body.body
+          node.body?.body
         ) {
           const returns = node.body.body.filter((s) => s.type === 'ReturnStatement');
           if (returns.length > 3) {

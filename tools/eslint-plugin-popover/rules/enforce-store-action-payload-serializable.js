@@ -30,12 +30,10 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           (node.callee.property.name === 'openPopover' ||
             node.callee.property.name === 'setEntry') &&
-          node.arguments[1] &&
-          node.arguments[1].type === 'Identifier' &&
+          node.arguments[1]?.type === 'Identifier' &&
           (node.arguments[1].name.includes('Element') || node.arguments[1].name === 'domNode')
         ) {
           context.report({

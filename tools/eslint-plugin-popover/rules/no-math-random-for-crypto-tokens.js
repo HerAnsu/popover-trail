@@ -30,11 +30,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.object &&
+          node.callee?.object &&
           node.callee.object.name === 'Math' &&
-          node.callee.property &&
-          node.callee.property.name === 'random'
+          node.callee.property?.name === 'random'
         ) {
           let parent = node.parent;
           while (parent) {

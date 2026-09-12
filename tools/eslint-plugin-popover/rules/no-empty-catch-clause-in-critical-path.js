@@ -23,8 +23,8 @@ export default {
 
     return {
       CatchClause(node) {
-        if (node.body && node.body.body && node.body.body.length === 0) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node.body) : '';
+        if (node.body?.body && node.body.body.length === 0) {
+          const body = context.getSourceCode?.()?.getText?.(node.body) ?? '';
           if (!body.includes('//') && !body.includes('/*')) {
             context.report({
               node,

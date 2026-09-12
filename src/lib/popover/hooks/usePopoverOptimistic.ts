@@ -6,7 +6,7 @@
  */
 
 import { useCrossVersionOptimistic } from '../utils/react19Adapters';
-import { usePopoverCardScope } from '../components/card/PopoverCardScopeContext';
+import { usePopoverCardScope } from '../context/PopoverCardScopeContext';
 
 /**
  * Hook providing optimistic state updates scoped to the active popover card.

@@ -17,13 +17,11 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'middleware' &&
-          node.value &&
-          node.value.type === 'ArrayExpression'
+          node.key?.name === 'middleware' &&
+          node.value?.type === 'ArrayExpression'
         ) {
           const names = node.value.elements
-            .map((el) => el.callee && el.callee.name)
+            .map((el) => el.callee?.name)
             .filter(Boolean);
           const flipIdx = names.indexOf('flip');
           const offsetIdx = names.indexOf('offset');

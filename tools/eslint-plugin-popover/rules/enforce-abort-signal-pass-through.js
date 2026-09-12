@@ -24,11 +24,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'fetch' &&
-          node.arguments.length === 1 &&
-          context.getSourceCode &&
-          context.getSourceCode().getText().includes('signal')
+          node.callee?.name === 'fetch' &&
+          node.arguments?.length === 1 &&
+          (context.getSourceCode?.()?.getText?.() ?? '').includes('signal')
         ) {
           context.report({
             node,

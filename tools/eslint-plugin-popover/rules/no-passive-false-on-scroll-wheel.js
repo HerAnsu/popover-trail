@@ -17,17 +17,16 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'addEventListener' &&
           node.arguments.length >= 3
         ) {
-          const eventType = node.arguments[0] && node.arguments[0].value;
+          const eventType = node.arguments[0]?.value;
           if (eventType === 'scroll' || eventType === 'wheel' || eventType === 'touchmove') {
             const opt = node.arguments[2];
-            if (opt && opt.type === 'ObjectExpression') {
+            if (opt?.type === 'ObjectExpression') {
               for (const p of opt.properties) {
-                if (p.key && p.key.name === 'passive' && p.value && p.value.value === false) {
+                if (p.key?.name === 'passive' && p.value?.value === false) {
                   context.report({ node, messageId: 'nonPassiveScroll' });
                 }
               }

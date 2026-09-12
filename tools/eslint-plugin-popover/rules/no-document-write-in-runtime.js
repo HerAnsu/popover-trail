@@ -23,8 +23,7 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.object &&
+          node.callee?.object &&
           node.callee.object.name === 'document' &&
           (node.callee.property.name === 'write' || node.callee.property.name === 'writeln')
         ) {

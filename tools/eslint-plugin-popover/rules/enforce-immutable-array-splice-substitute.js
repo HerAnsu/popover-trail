@@ -30,8 +30,7 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'splice' &&
           node.callee.object &&
           (node.callee.object.name === 'trail' ||

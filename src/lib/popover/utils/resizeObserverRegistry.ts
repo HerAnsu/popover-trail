@@ -1,28 +1,27 @@
 /**
- * Shared ResizeObserver Registry for popover-trail.
- * Manages a single native ResizeObserver instance with reference counting
- * to observe element size changes without memory leaks or observer proliferation.
+ * Shared ResizeObserver Registry with Reference Counting and Debounced Frames.
+ * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
  *
  * @module resizeObserverRegistry
  */
 
 import { wrapResult, isErr } from './result';
+import { logger } from './logger';
+import { isBrowser, isResizeObserverSupported } from './guards/envGuards';
 
 type ResizeCallback = (entry: ResizeObserverEntry) => void;
 
 function notifyElementResize(callbacks: Set<ResizeCallback>, entry: ResizeObserverEntry): void {
-  for (const callback of callbacks) {
-    const callbackResult = wrapResult(() => callback(entry));
-    if (isErr(callbackResult) && typeof console !== 'undefined') {
-      console.error('[popover-trail]: Exception in ResizeObserver callback:', callbackResult.error);
-    }
+  for (const cb of callbacks) {
+    const res = wrapResult(() => cb(entry));
+    if (isErr(res))
+      logger.error('[popover-trail]: Exception in ResizeObserver callback:', res.error);
   }
 }
 
 class ResizeObserverRegistryImpl {
   private observer: ResizeObserver | null = null;
   private listeners = new Map<Element, Set<ResizeCallback>>();
-
   private pendingEntries = new Map<Element, ResizeObserverEntry>();
   private frameId: number | null = null;
 
@@ -31,54 +30,34 @@ class ResizeObserverRegistryImpl {
     if (this.listeners.size === 0) return;
     const toProcess = this.pendingEntries;
     this.pendingEntries = new Map<Element, ResizeObserverEntry>();
-
     for (const entry of toProcess.values()) {
-      const callbackSet = this.listeners.get(entry.target);
-      if (callbackSet) {
-        notifyElementResize(callbackSet, entry);
-      }
+      const cbs = this.listeners.get(entry.target);
+      if (cbs) notifyElementResize(cbs, entry);
     }
   };
 
   private initObserver() {
-    if (this.observer || typeof ResizeObserver === 'undefined') return;
-
+    if (this.observer || !isResizeObserverSupported()) return;
     this.observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        this.pendingEntries.set(entry.target, entry);
-      }
-
-      if (this.frameId === null && typeof requestAnimationFrame !== 'undefined') {
-        this.frameId = requestAnimationFrame(this.flushCallbacks);
-      } else if (this.frameId === null) {
-        this.flushCallbacks();
+      for (const entry of entries) this.pendingEntries.set(entry.target, entry);
+      if (this.frameId === null) {
+        this.frameId = typeof requestAnimationFrame !== 'undefined'
+          ? requestAnimationFrame(this.flushCallbacks)
+          : (this.flushCallbacks(), null);
       }
     });
   }
 
-  /**
-   * Observe a DOM element for size changes.
-   *
-   * @param element - Target DOM element to observe.
-   * @param callback - Callback invoked whenever the element resizes.
-   * @returns Unobserve cleanup function.
-   */
   observe(element: Element | null | undefined, callback: ResizeCallback): () => void {
-    if (!element || typeof window === 'undefined') {
-      return () => {};
-    }
-
+    if (!element || !isBrowser()) return () => {};
     this.initObserver();
-
     let set = this.listeners.get(element);
     if (!set) {
       set = new Set();
       this.listeners.set(element, set);
       this.observer?.observe(element);
     }
-
     set.add(callback);
-
     return () => {
       const currentSet = this.listeners.get(element);
       if (currentSet) {
@@ -92,9 +71,6 @@ class ResizeObserverRegistryImpl {
     };
   }
 
-  /**
-   * Clear all active observed targets and disconnect the native observer instance.
-   */
   clear(): void {
     if (this.frameId !== null && typeof cancelAnimationFrame !== 'undefined') {
       cancelAnimationFrame(this.frameId);
@@ -106,12 +82,8 @@ class ResizeObserverRegistryImpl {
     this.listeners.clear();
   }
 
-  /**
-   * ScopeDisposable compliance handle clearing all registrations.
-   */
-  dispose(): void {
-    this.clear();
-  }
+  dispose(): void { this.clear(); }
 }
 
 export const ResizeObserverRegistry = new ResizeObserverRegistryImpl();
+export const resetRegistryForTesting = () => ResizeObserverRegistry.clear();

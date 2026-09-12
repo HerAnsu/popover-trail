@@ -4,12 +4,19 @@ import {
   Err,
   isOk,
   isErr,
+  isResult,
+  isOkResult,
+  isErrResult,
   mapResult,
   mapErr,
   flatMapResult,
   unwrapOr,
+  unwrapOrElse,
   unwrap,
+  andThen,
   matchResult,
+  tapResult,
+  tapErr,
   wrapResult,
   wrapAsyncResult,
 } from './result';
@@ -24,6 +31,16 @@ describe('result monad utility', () => {
     expect(isErr(okRes)).toBe(false);
     expect(isOk(errRes)).toBe(false);
     expect(isErr(errRes)).toBe(true);
+
+    expect(isResult(okRes)).toBe(true);
+    expect(isResult(errRes)).toBe(true);
+    expect(isResult(null)).toBe(false);
+    expect(isResult({ success: 'not-bool' })).toBe(false);
+
+    expect(isOkResult(okRes)).toBe(true);
+    expect(isOkResult(errRes)).toBe(false);
+    expect(isErrResult(errRes)).toBe(true);
+    expect(isErrResult(okRes)).toBe(false);
   });
 
   it('maps result data when Ok, preserves Err', () => {
@@ -98,5 +115,28 @@ describe('result monad utility', () => {
       err: (e) => `Failed ${e}`,
     });
     expect(errMatch).toBe('Failed network_failure');
+  });
+
+  it('supports unwrapOrElse, andThen, tapResult, tapErr', () => {
+    const ok = Ok(42);
+    const err = Err('boom');
+
+    expect(unwrapOrElse(ok, () => 99)).toBe(42);
+    expect(unwrapOrElse(err, (e) => (e === 'boom' ? 100 : 0))).toBe(100);
+
+    expect(andThen(ok, (x) => Ok(x * 2))).toEqual(Ok(84));
+    expect(andThen(err, (x: number) => Ok(x * 2))).toEqual(err);
+
+    let tappedVal = 0;
+    tapResult(ok, (v) => {
+      tappedVal = v;
+    });
+    expect(tappedVal).toBe(42);
+
+    let tappedErr = '';
+    tapErr(err, (e) => {
+      tappedErr = e;
+    });
+    expect(tappedErr).toBe('boom');
   });
 });

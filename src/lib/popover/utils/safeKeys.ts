@@ -6,6 +6,8 @@
  * @module utils/safeKeys
  */
 
+import { isRecordObject, isNonEmptyString } from './guards/stringGuards';
+
 /** Keys rejected unconditionally to prevent prototype pollution vulnerability attacks. */
 export const UNSAFE_KEYS: ReadonlySet<string> = Object.freeze(
   new Set(['__proto__', 'constructor', 'prototype']),
@@ -13,7 +15,7 @@ export const UNSAFE_KEYS: ReadonlySet<string> = Object.freeze(
 
 /** Type guard verifying an unknown value is a non-null, non-array object record. */
 export function isRecord(val: unknown): val is Record<string, unknown> {
-  return typeof val === 'object' && val !== null && !Array.isArray(val);
+  return isRecordObject(val);
 }
 
 /** Checks whether a key string carries a prototype-pollution vector. */
@@ -24,7 +26,7 @@ export function isUnsafeKey(key: string): boolean {
 /** Validates that every iterable member is a safe string key. */
 export function areKeysSafe(keys: Iterable<unknown>): boolean {
   for (const key of keys) {
-    if (typeof key !== 'string' || UNSAFE_KEYS.has(key)) return false;
+    if (!isNonEmptyString(key) || isUnsafeKey(key)) return false;
   }
   return true;
 }
@@ -34,5 +36,5 @@ export function areKeysSafe(keys: Iterable<unknown>): boolean {
  * must be non-blank and free of pollution vectors.
  */
 export function isValidStorageKey(key: string): boolean {
-  return key.trim().length > 0 && !UNSAFE_KEYS.has(key);
+  return isNonEmptyString(key) && !isUnsafeKey(key);
 }

@@ -30,19 +30,17 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'addEventListener' &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Literal' &&
-          (node.arguments[0].value === 'scroll' || node.arguments[0].value === 'touchstart')
+          node.arguments[0]?.type === 'Literal' &&
+          (node.arguments[0]?.value === 'scroll' || node.arguments[0]?.value === 'touchstart')
         ) {
           const opts = node.arguments[2];
           if (!opts) {
             context.report({
               node,
               messageId: 'requirePassiveListener',
-              data: { event: String(node.arguments[0].value) },
+              data: { event: String(node.arguments[0]?.value) },
             });
           }
         }

@@ -23,17 +23,14 @@ export default {
     return {
       FunctionDeclaration(node) {
         if (
-          node.id &&
-          node.id.name &&
+          node.id?.name &&
           node.id.name.startsWith('usePopover') &&
-          node.body &&
-          node.body.body
+          node.body?.body
         ) {
           const returnStatements = node.body.body.filter((stmt) => stmt.type === 'ReturnStatement');
           for (const ret of returnStatements) {
             if (
-              ret.argument &&
-              ret.argument.type === 'ArrayExpression' &&
+              ret.argument?.type === 'ArrayExpression' &&
               !ret.argument.typeAnnotation
             ) {
               context.report({

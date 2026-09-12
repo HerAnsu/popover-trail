@@ -19,18 +19,12 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.params.some((p) => p.name === 'buffer')) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id && node.params?.some((p) => p.name === 'buffer')) {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             body.includes('new Uint8Array(buffer)') &&
             !body.includes('byteLength') &&
@@ -39,7 +33,7 @@ export default {
             context.report({
               node,
               messageId: 'checkByteLength',
-              data: { name: node.id.name },
+              data: { name: node.id?.name },
             });
           }
         }

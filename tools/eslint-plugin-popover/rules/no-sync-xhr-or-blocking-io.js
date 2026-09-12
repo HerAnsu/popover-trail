@@ -22,12 +22,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'open' &&
-          node.arguments &&
-          node.arguments[2] &&
-          node.arguments[2].type === 'Literal' &&
+          node.arguments?.[2]?.type === 'Literal' &&
           node.arguments[2].value === false
         ) {
           context.report({

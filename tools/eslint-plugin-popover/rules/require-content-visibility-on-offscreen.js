@@ -28,13 +28,10 @@ export default {
     return {
       JSXElement(node) {
         if (
-          node.openingElement &&
-          node.openingElement.name &&
+          node.openingElement?.name &&
           node.openingElement.name.name === 'div'
         ) {
-          const src = context.getSourceCode
-            ? context.getSourceCode().getText(node.openingElement)
-            : '';
+          const src = context.getSourceCode?.()?.getText?.(node.openingElement) ?? '';
           if (src.includes('popover-trail-container') && !src.includes('contentVisibility')) {
             context.report({
               node,

@@ -24,11 +24,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           (node.callee.property.name === 'reverse' || node.callee.property.name === 'sort') &&
-          node.callee.object &&
-          node.callee.object.type === 'Identifier' &&
+          node.callee.object?.type === 'Identifier' &&
           (node.callee.object.name === 'trail' ||
             node.callee.object.name === 'floating' ||
             node.callee.object.name === 'zIndexOrder')

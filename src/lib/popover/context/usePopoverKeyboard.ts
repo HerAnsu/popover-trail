@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore } from '../types';
 import { useEventListener } from '../hooks/useEventListener';
+import { isEscapeKey } from '../utils/typeGuards';
 
 /**
  * Internal hook managing global keyboard shortcuts (Escape key dismissal) for the popover provider.
@@ -18,7 +19,7 @@ export function usePopoverKeyboardShortcuts<TData, TContext>(
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!enableKeyboardClose || e.defaultPrevented) return;
-      if (e.key === 'Escape') {
+      if (isEscapeKey(e)) {
         const state = store.getState();
         const hasActive = state.trail.length > 0 || state.floating.length > 0;
         if (hasActive) {
