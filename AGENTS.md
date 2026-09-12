@@ -391,3 +391,29 @@ Every code modification must pass an exhaustive verification battery before merg
 * **Architectural Boundaries**: Automated dependency structure analysis must confirm zero layer violations, zero backward imports, and zero circular dependencies.
 * **Payload Budgets**: Output bundle sizes must comply with strict gzip thresholds, accompanied by continuous dead-code elimination verification.
 * **API Stability**: Public contracts must remain backward-compatible across minor iterations, with deprecation pathways clearly designated ahead of major milestones.
+* **API Documentation Synchronization**: Any newly added, renamed, or modified public API (components, compound slots, hooks, stores, types, utilities, combinators, configuration options, error models) must be immediately documented in `docs/API.md` in its corresponding section following implementation. No pull request or commit introducing public API modifications may be accepted without updating `docs/API.md`.
+
+---
+
+## 23. Public API Documentation Synchronization & SSOT (`docs/API.md`)
+
+`docs/API.md` is the canonical Single Source of Truth (SSOT) for the public interface and developer reference of `popover-trail`.
+
+* **Immediate Documentation Invariant**:
+  * Any autonomous agent or software engineer introducing a new exported symbol (component, compound subcomponent, hook, action dispatcher, selector, type/interface, type guard, branded constructor, utility function, error type) or modifying the signature, parameters, or return contract of an existing public API must immediately document it in `docs/API.md`.
+* **Topological Placement Discipline**:
+  * Updates must be placed in the appropriate section matching the Clean Architecture layer and domain responsibility:
+    - Layer 4 (Presentation & UI Components, compound subcomponents, DOM slots, portals): Section 5 & Section 7 (DnD).
+    - Layer 3 (React hooks, selectors, React 19 concurrency adapters): Section 6.
+    - Layer 2 & Layer 1 Core Engines (Transactions, CQRS, FSM, DAG, Spatial, Result, Disposable, RingBuffer): Section 8.
+    - Multi-stack zones and micro-frontends: Section 9.
+    - Types, interfaces, discriminated unions, branded types: Section 10.
+    - Type guards, pattern matchers (`matchEntryState`, `matchActionState`): Section 11.
+    - Utilities, caching, controllers, error models: Section 12.
+* **Accuracy and Completeness Contract**:
+  * Every documented API entry must state:
+    1. Signature and generic type parameters.
+    2. Input options and default values.
+    3. Return contract (including `Result<T, E>` failure modes where applicable).
+    4. Practical, idiomatic TypeScript code example demonstrating usage without academic jargon.
+

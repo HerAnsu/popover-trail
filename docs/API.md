@@ -19,10 +19,13 @@ Complete technical specification for components, hooks, schema builders, core en
 5. [Components and compound layouts](#5-components-and-compound-layouts)
    - [PopoverProvider](#popoverprovider)
    - [PopoverCard and compound subcomponents](#popovercard-and-compound-subcomponents)
+   - [PopoverCardHeader](#popovercardheader)
    - [PopoverTrail](#popovertrail)
    - [PopoverTimeline and subcomponents](#popovertimeline-and-subcomponents)
    - [PopoverPortal](#popoverportal)
    - [PopoverTrigger](#popovertrigger)
+   - [FocusTrap](#focustrap)
+   - [Slot and mergeProps (Polymorphism)](#slot-and-mergeprops)
 6. [Hooks, selectors, and React 19 concurrency](#6-hooks-selectors-and-react-19-concurrency)
    - [usePopover](#usepopover)
    - [usePopoverData and Suspense](#usepopoverdata-and-suspense)
@@ -44,16 +47,17 @@ Complete technical specification for components, hooks, schema builders, core en
    - [Transactions and atomic batching](#transactions-and-atomic-batching)
    - [Persistence and cross-tab synchronization](#persistence-and-cross-tab-synchronization)
    - [Middleware pipeline and telemetry interceptors](#middleware-pipeline-and-telemetry-interceptors)
-   - [FSM statechart engine](#fsm-statechart-engine)
-   - [DAG cascading graph](#dag-cascading-graph)
-   - [QuadTree 2D spatial partitioning index](#quadtree-2d-spatial-partitioning-index)
+   - [FSM statechart engine and bitmask transition algebra](#fsm-statechart-engine)
+   - [DAG cascading graph and topological order](#dag-cascading-graph)
+   - [QuadTree 2D spatial partitioning and affine geometry](#quadtree-2d-spatial-partitioning-index)
    - [PopoverTransitionScheduler](#popovertransitionscheduler)
    - [CQRS query and command buses](#cqrs-query-and-command-buses)
    - [EventBus and CustomEvent engine](#eventbus-and-customevent-engine)
    - [Pluggable layout strategies](#pluggable-layout-strategies)
    - [Theme tokens and CSS custom variables](#theme-tokens-and-css-custom-variables)
-   - [Monadic Result pattern](#monadic-result-pattern)
-   - [Disposable pattern (TS 5.2 using)](#disposable-pattern-ts-52-using)
+   - [Result pattern (Result<T, E>)](#result-pattern)
+   - [Disposable pattern and RAII scopes (using, usingResult)](#disposable-pattern)
+   - [Bounded ring buffer and result operations](#bounded-ring-buffer)
    - [Geometry value objects](#geometry-value-objects)
    - [ObjectPool and MemorySentinel](#objectpool-and-memorysentinel)
 9. [Multi-stack zones and micro-frontends](#9-multi-stack-zones-and-micro-frontends)
@@ -76,18 +80,23 @@ Complete technical specification for components, hooks, schema builders, core en
    - [PopoverEntryDiscriminatedState](#popoverentrydiscriminatedstate)
    - [PolymorphicPropsWithRef](#polymorphicpropswithref)
    - [TypedMiddlewarePatch](#typedmiddlewarepatch)
-   - [Branded primitive types](#branded-primitive-types)
+   - [Branded primitive types and constructors](#branded-primitive-types-and-constructors)
+   - [Store slices and defineStoreSlice](#store-slices-and-definestoreslice)
+   - [Domain error models](#domain-error-models)
    - [React 19 Action and Optimistic types](#react-19-action-and-optimistic-types)
-11. [Type guards and helper utilities](#11-type-guards-and-helper-utilities)
+11. [Type guards and pattern matchers](#11-type-guards-and-pattern-matchers)
    - [Entry type guards](#entry-type-guards)
    - [Anchor type guards](#anchor-type-guards)
    - [Store event type guards](#store-event-type-guards)
    - [Type-safe builder helpers](#type-safe-builder-helpers)
+   - [matchEntryState pattern matching](#matchentrystate)
+   - [matchActionState pattern matching](#matchactionstate)
 12. [Utilities, caching, and controllers](#12-utilities-caching-and-controllers)
    - [createPopoverStore direct API](#createpopoverstore)
-   - [PopoverCache interface and SimplePopoverCache](#popovercache-and-simplepopovercache)
+   - [PopoverCache, SimplePopoverCache, and storage adapters](#popovercache-simplepopovercache-and-storage-adapters)
    - [createWorkerResolver and definePopoverWorkerRPC](#createworkerresolver-and-definepopoverworkerrpc)
-   - [createPopoverController](#createpopovercontroller)
+   - [createPopoverController and PopoverCardFluentBuilder](#createpopovercontroller-and-popovercardfluentbuilder)
+   - [Display options extraction and comparison helpers](#display-options-extraction-and-comparison-helpers)
    - [PopoverError and error codes](#popovererror-and-error-codes)
 13. [Recipes and common patterns](#13-recipes-and-common-patterns)
    - [Skeleton UI during resolution](#recipe-skeleton-ui-during-resolution)
@@ -637,6 +646,38 @@ export function StyledPopoverCard({
 
 ---
 
+### `<PopoverCardHeader>`
+
+Pre-composed header subcomponent for popover cards. Combines the card title, drag handle, pinning button, and close button in a flexible layout with zero boilerplate.
+
+```tsx
+import { PopoverCard, PopoverCardHeader } from 'popover-trail';
+
+<PopoverCard entry={entry} index={index}>
+  <PopoverCardHeader
+    title={entry.key}
+    showPin={true}
+    showClose={true}
+  />
+  <PopoverCard.Content>
+    <p>Card body content</p>
+  </PopoverCard.Content>
+</PopoverCard>
+```
+
+#### Properties (`PopoverCardHeaderProps`)
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `title` | `ReactNode` | `undefined` | Optional title element or text displayed in the header. |
+| `showPin` | `boolean` | `true` | When true, renders `<PopoverCardPinButton />` in the action slot. |
+| `showClose` | `boolean` | `true` | When true, renders `<PopoverCardCloseButton />` in the action slot. |
+| `children` | `ReactNode` | `undefined` | Custom elements rendered between the title and action buttons. |
+| `className` | `string` | `undefined` | Optional CSS class name attached to the header handle container. |
+| `style` | `CSSProperties` | `undefined` | Optional inline styles merged with default flex layout styles. |
+
+---
+
 ### `<PopoverTrail>`
 
 Headless list renderer iterating through active popover cards in sequence.
@@ -755,6 +796,60 @@ Anchor component attaching click and hover event listeners to open popovers. Clo
 | `activeClassName` | `string`                               | `undefined` | CSS class applied when target popover is open.                    |
 | `asChild`         | `boolean`                              | `false`     | If true, passes props without wrapping element.                   |
 | `parentKey`       | `string`                               | `undefined` | Optional parent popover key for nested triggers.                  |
+
+---
+
+### `<FocusTrap>`
+
+Accessible focus containment container. Traps keyboard focus (`Tab` and `Shift+Tab`) inside its boundaries with circular loop behavior, auto-focuses the first focusable element on mount, and restores focus to the initiating element on unmount.
+
+```tsx
+import { FocusTrap } from 'popover-trail';
+
+<FocusTrap disabled={false} autoFocus={true} returnFocus={true}>
+  <div role="dialog" aria-modal="true">
+    <h3>Modal Dialog</h3>
+    <input type="text" placeholder="First focusable input" />
+    <button type="button">Confirm</button>
+  </div>
+</FocusTrap>
+```
+
+#### Properties (`FocusTrapProps`)
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `children` | `ReactNode` | Required | Content contained within the focus trap boundary. |
+| `disabled` | `boolean` | `false` | When true, deactivates focus trapping and allows Tab to exit. |
+| `autoFocus` | `boolean` | `true` | When true, moves focus to the first focusable child upon mounting. |
+| `returnFocus` | `boolean` | `true` | When true, restores focus to the previously active element on unmount. |
+| `className` | `string` | `undefined` | Optional CSS class applied to the trap container `div`. |
+| `style` | `CSSProperties` | `undefined` | Optional inline styles applied to the trap container `div`. |
+
+---
+
+### `<Slot>` and `mergeProps` (Headless Polymorphism)
+
+Primitive component and utility function for headless composition (`asChild` pattern).
+
+- `<Slot>`: Renders its children without adding an extra wrapper DOM element, forwarding its own props, classes, styles, and event handlers to the direct child.
+- `mergeProps`: Merges multiple prop dictionaries, concatenating CSS classes, merging inline styles, and chaining event handlers in sequence without overriding them.
+
+```tsx
+import { Slot, mergeProps } from 'popover-trail';
+
+// 1. Polymorphic Slot rendering
+<Slot className="text-white hover:bg-slate-700" onClick={handleClick}>
+  <button type="button">Custom Button</button>
+</Slot>
+
+// 2. Programmatic prop merging
+const combinedProps = mergeProps(
+  { className: 'btn', onClick: handleFirstClick },
+  { className: 'btn-primary', onClick: handleSecondClick },
+);
+// Result: className is 'btn btn-primary', onClick runs both handlers
+```
 
 ---
 
@@ -1280,9 +1375,9 @@ export const analyticsMiddleware = definePopoverMiddleware((patch, state) => {
 
 ---
 
-### FSM statechart engine
+### FSM statechart engine and bitmask transition algebra
 
-Deterministic finite state machine reducer with static O(1) transition lookup table (`popoverFSMReducer` & `createPopoverFSM`). `PopoverFSMState<TData>` is a 6-state discriminated union:
+Deterministic finite state machine reducer with static O(1) bitwise transition lookup table (`popoverFSMReducer` & `createPopoverFSM`). `PopoverFSMState<TData>` is a 6-state discriminated union:
 
 - `IdleFSMState` (`value: 'Idle'`)
 - `HydratingFSMState` (`value: 'Hydrating'`)
@@ -1292,8 +1387,19 @@ Deterministic finite state machine reducer with static O(1) transition lookup ta
 - `UnmountingFSMState` (`value: 'Unmounting'`)
 
 ```typescript
-import { createPopoverFSM } from 'popover-trail';
+import {
+  createPopoverFSM,
+  canTransition,
+  FSMStatusBit,
+  STATE_VALUE_TO_BIT_MAP,
+  assertPopoverFSMState,
+} from 'popover-trail';
 
+// 1. O(1) transition validation via bitmask matrix
+const allowed = canTransition('Hydrating', 'Resolved.Trailing'); // true
+const illegal = canTransition('Idle', 'Unmounting'); // false
+
+// 2. State machine interpreter
 const fsm = createPopoverFSM({ key: 'userProfile' });
 fsm.send({ type: 'RESOLVE_SUCCESS', data: { id: '1', name: 'Alice' } });
 
@@ -1301,40 +1407,111 @@ const state = fsm.getState();
 if (state.value === 'Resolved.Trailing') {
   console.log(state.context.data.name); // type-safe TData narrowing
 }
+
+// 3. Runtime invariant assertion
+assertPopoverFSMState(state, 'Resolved.Trailing');
 ```
 
 FSM events: `OPEN_ROOT`, `PUSH_NESTED`, `RESOLVE_SUCCESS`, `RESOLVE_FAILURE`, `TOGGLE_PIN`, `CLOSE`, `RETRY`, `TRANSITION_END`.
 
-Bitmask adjacency matrix `FSMStatusBit` enables O(1) transition validation via bitwise conjunction.
+Bitmask constants (`FSMStatusBit`) and type mapping `ValidNextFSMState<S>` guarantee compile-time exhaustiveness.
 
 ---
 
-### DAG cascading graph
+### DAG cascading graph and topological order
 
-`PopoverDAG` class manages parent-child node relationships and topological ancestor/descendant paths. Includes recursion guards capped at 500 traversal steps.
+The `PopoverDAG` class tracks parent-child relationships, prevents circular rendering loops, and computes deterministic teardown and z-index ordering for cascading popover stacks.
 
 ```typescript
-import { PopoverDAG } from 'popover-trail';
+import {
+  PopoverDAG,
+  computeTeardownPlan,
+  computeTopologicalZIndex,
+  isOk,
+} from 'popover-trail';
 
 const dag = new PopoverDAG();
-dag.addNode('parentCard');
-dag.addNode('childCard', 'parentCard');
-const descendants = dag.getDescendantKeys('parentCard'); // ['childCard']
+dag.addNode('orgCard');
+dag.addNode('teamCard', 'orgCard');
+dag.addNode('memberCard', 'teamCard');
+
+// 1. Cycle-safe topological sort returning a Result without throwing:
+const sortResult = dag.safeComputeLinearExtension();
+if (isOk(sortResult)) {
+  console.log('Ordered keys (parents before children):', sortResult.data);
+  // ['orgCard', 'teamCard', 'memberCard']
+}
+
+// 2. Reverse topological teardown plan when closing a parent card:
+const teardown = dag.getTeardownPlan('orgCard');
+// ['memberCard', 'teamCard', 'orgCard'] (children unmount before parents)
+
+// 3. Geodesic breadcrumb path from root anchor:
+const breadcrumbs = dag.getBreadcrumbKeys('memberCard');
+// ['orgCard', 'teamCard', 'memberCard']
+```
+
+#### DAG Error Handling (`DAGCycleError`)
+
+When a cycle is detected during resolution, `safeComputeLinearExtension` returns an `Err(DAGCycleError)`:
+
+```typescript
+export interface DAGCycleError<TPopoverKey extends string = string> {
+  readonly type: 'DAG_CYCLE_ERROR';
+  readonly message: string;
+  readonly cycleKeys: readonly TPopoverKey[];
+}
 ```
 
 ---
 
-### QuadTree 2D spatial partitioning index
+### QuadTree 2D spatial partitioning and affine geometry
 
-2D spatial index for querying bounding box overlaps and collision avoidance in O(log N) time.
+High-performance 2D QuadTree spatial index for fast rectangular bounding box queries, collision detection, and nearest-neighbor lookups. Implements the RAII `Symbol.dispose` contract for automatic resource release.
 
 ```typescript
-import { QuadTree } from 'popover-trail';
+import { QuadTree, isOk } from 'popover-trail';
 
 const tree = new QuadTree({ x: 0, y: 0, width: 1920, height: 1080 });
 tree.insert({ id: 'card1', bounds: { x: 100, y: 100, width: 300, height: 200 } });
-const collisions = tree.retrieve([], { x: 120, y: 120, width: 300, height: 200 });
+
+// 1. Fast bounding box query returning the first match as a Result:
+const firstMatch = tree.findFirstResult({ x: 120, y: 120, width: 50, height: 50 });
+if (isOk(firstMatch)) {
+  console.log('Overlapping item found:', firstMatch.data.id);
+}
+
+// 2. Nearest neighbor search within Euclidean radius:
+const nearest = tree.nearestResult({ x: 150, y: 150 }, 100);
+
+// 3. Clean memory release:
+tree.dispose();
 ```
+
+#### 2D Affine Matrix Transformations
+
+Safe matrix inversion and coordinate transformation for CSS-transformed or scaled containers:
+
+```typescript
+import {
+  invertMatrix2DResult,
+  transformPoint2D,
+  isOk,
+  type Matrix2D,
+} from 'popover-trail';
+
+// Container transform matrix: [a, b, c, d, tx, ty]
+const containerMatrix: Matrix2D = [1.5, 0, 0, 1.5, 50, 50];
+
+// Safe matrix inversion returning Result:
+const invResult = invertMatrix2DResult(containerMatrix);
+if (isOk(invResult)) {
+  const localPoint = transformPoint2D({ x: 200, y: 200 }, invResult.data);
+  console.log('Local coordinates inside transformed container:', localPoint);
+}
+```
+
+If the matrix is collapsed or singular (determinant $|det| < 10^{-12}$), `invertMatrix2DResult` returns `Err(SingularMatrixError)`.
 
 ---
 
@@ -1357,21 +1534,42 @@ const disposable = scheduler.scheduleUnmount(
 disposable.dispose(); // cancel timers immediately
 ```
 
+---
+
 ### CQRS query and command buses
 
-Explicitly separates read-only queries from state-mutating command dispatches:
+Explicitly separates pure read-only state inspections from state-mutating command dispatches:
 
 ```typescript
-import { createCQRSBuses } from 'popover-trail';
+import { createCQRSBuses, isOk } from 'popover-trail';
 
 const { queryBus, commandBus } = createCQRSBuses(storeApi);
 
-// Read-only queries (zero side-effects)
-console.log(queryBus.activeCount, queryBus.isIdle, queryBus.topmost);
+// 1. Read-only queries (pure, zero side-effects)
+console.log('Active cards count:', queryBus.activeCount);
+console.log('Topmost popover key:', queryBus.topmost);
 
-// Command dispatchers
+// Safe query returning Result instead of null/undefined:
+const entryResult = queryBus.getEntryResult('userProfile');
+if (isOk(entryResult)) {
+  console.log('Card data:', entryResult.data.data);
+}
+
+// 2. Command dispatchers
 commandBus.closeByKey('userProfile');
 commandBus.pushNested(index, entry);
+
+// Atomic command batching with single revision increment:
+commandBus.batch((bus) => {
+  bus.closeByKey('oldCard');
+  bus.bringToFront('newCard');
+});
+
+// Batch returning a typed Result:
+const batchRes = commandBus.batchResult((bus) => {
+  bus.bringToFront('mainCard');
+  return Ok(true);
+});
 ```
 
 ---
@@ -1448,33 +1646,139 @@ removeThemeTokens(['--pt-z-index-base', '--pt-cascade-offset']);
 
 ---
 
-### Monadic Result pattern
+### Result pattern (Result<T, E>)
 
-Railway-oriented error handling with `Result<T, E>`:
+Clean, explicit error handling using `Result<T, E>` without try/catch boilerplate or unhandled promise rejections:
 
 ```typescript
-import { Ok, Err, isOk, matchResult, wrapResult, wrapAsyncResult } from 'popover-trail';
+import {
+  Ok,
+  Err,
+  isOk,
+  isErr,
+  mapResult,
+  mapErr,
+  flatMapResult,
+  andThen,
+  unwrapOr,
+  unwrapOrElse,
+  unwrap,
+  matchResult,
+  tapResult,
+  wrapResult,
+  wrapAsyncResult,
+  fromPromise,
+  collectResults,
+  partitionResults,
+  combineResults,
+  type Result,
+} from 'popover-trail';
 
-const result = wrapResult(() => JSON.parse(rawText));
-matchResult(result, {
-  ok: (data) => console.log('Parsed:', data),
-  err: (error) => console.error('Failed:', error.message),
+// 1. Creation & Type Guards
+const success = Ok({ name: 'Alex' });
+const failure = Err(new Error('Fetch failed'));
+if (isOk(success)) console.log(success.data.name);
+
+// 2. Safe Execution Wrappers
+const parsed = wrapResult(() => JSON.parse(rawJson));
+const fetched = await fromPromise(fetch('/api/user').then((r) => r.json()));
+
+// 3. Transformation & Chaining
+const upper = mapResult(success, (u) => u.name.toUpperCase());
+const chained = andThen(parsed, (data) => validateUser(data));
+
+// 4. Pattern Matching
+matchResult(chained, {
+  ok: (val) => console.log('Success:', val),
+  err: (err) => console.error('Error:', err.message),
 });
+
+// 5. Fallback unwrapping
+const safeValue = unwrapOr(failure, { name: 'Anonymous' });
+
+// 6. Array Combinators
+const allResults = collectResults([res1, res2, res3]); // Ok with array or first Err
+const { ok, err } = partitionResults([res1, res2, res3]); // { ok: [...], err: [...] }
+const pair = combineResults(res1, res2); // Ok with 2-tuple [val1, val2]
 ```
 
 ---
 
-### Disposable pattern (TS 5.2 using)
+### Disposable pattern and RAII scopes (using, usingResult)
 
-Resource management pattern supporting TypeScript 5.2+ `using` declarations:
+Explicit Resource Management supporting TypeScript 5.2+ `using` and `await using` keywords, alongside functional scoped runners with guaranteed teardown:
 
 ```typescript
-import { CompositeDisposable, createDisposable } from 'popover-trail';
+import {
+  CompositeDisposable,
+  AsyncCompositeDisposable,
+  FixedCompositeDisposable,
+  createDisposable,
+  createTimerDisposable,
+  createEventListenerDisposable,
+  using,
+  usingResult,
+  usingAsyncResult,
+  Ok,
+} from 'popover-trail';
 
+// 1. Language-level `using` syntax (TS 5.2+)
 {
   using disposables = new CompositeDisposable();
   disposables.add(createDisposable(() => console.log('Cleaned up')));
-} // automatically cleaned up on scope exit
+} // Cleaned up immediately when leaving block scope
+
+// 2. Functional scoped runner: guarantees cleanup in a finally block
+const value = using(new CompositeDisposable(), (scope) => {
+  scope.add(createTimerDisposable(setTimeout(() => {}, 1000)));
+  return computeComputation();
+});
+
+// 3. Functional scoped runner returning a Result:
+const res = usingResult(new CompositeDisposable(), (scope) => {
+  scope.add(createEventListenerDisposable(window, 'resize', onResize));
+  return Ok(true);
+});
+
+// 4. Fixed-capacity composite disposable for zero-allocation hot paths:
+const fixedScope = new FixedCompositeDisposable(8);
+fixedScope.add(createDisposable(() => {}));
+fixedScope.dispose();
+```
+
+---
+
+### Bounded ring buffer and result operations
+
+High-performance ring buffer data structure (`RingBufferState`) preventing unbounded memory growth during high-frequency interaction logging or history journals. Provides safe Result-returning operations:
+
+```typescript
+import {
+  createRingBufferState,
+  peekRingResult,
+  peekFirstRingResult,
+  itemAtRingResult,
+  popRingResult,
+  shiftRingResult,
+  tryPushRing,
+  tryUnshiftRing,
+  isOk,
+} from 'popover-trail';
+
+const buffer = createRingBufferState<string>(10);
+
+// 1. Try push returning a Result (fails if capacity is exhausted):
+const pushRes = tryPushRing(buffer, 'card-1');
+if (isOk(pushRes)) {
+  console.log('Pushed at index:', pushRes.data);
+}
+
+// 2. Peek newest and oldest items safely:
+const newest = peekRingResult(buffer); // Ok(item) or Err(BufferEmptyError)
+const oldest = peekFirstRingResult(buffer);
+
+// 3. Relative index lookup:
+const item = itemAtRingResult(buffer, -1); // last item
 ```
 
 ---
@@ -1818,7 +2122,7 @@ export interface ResolutionMetric<TPopoverKey extends string = string> {
 
 ---
 
-### `StoreSliceDescriptor` and `SliceContext`
+### Store slices and `defineStoreSlice`
 
 Contract for authoring custom Open/Closed Principle (OCP) domain slices attached to the store:
 
@@ -2039,24 +2343,162 @@ export type TypedMiddlewarePatch<
 
 ---
 
-### Branded primitive types
+### Branded primitive types and constructors
 
-Nominal branding prevents passing raw strings or numbers where domain identifiers are required:
+Nominal branding attaches phantom brand tags to primitives, preventing developers from accidentally interchanging domain identifiers (e.g., passing an `OwnerId` where a `PopoverKey` is required).
 
-| Type             | Brand tag        | Description                                      |
-| :--------------- | :--------------- | :----------------------------------------------- |
-| `PopoverKey<T>`  | `'PopoverKey'`   | Unique popover string key.                       |
-| `ParentKey<T>`   | `'ParentKey'`    | Parent popover string key.                       |
-| `OwnerId<T>`     | `'OwnerId'`      | Trigger element owner identifier.                |
-| `StackGroupId<T>`| `'StackGroupId'` | Stack group zone identifier.                     |
-| `TabId<T>`       | `'TabId'`        | Cross-tab synchronizer tab identifier.           |
-| `ZIndexDepth`    | `'ZIndexDepth'`  | z-index integer depth level.                     |
-| `DurationMs`     | `'DurationMs'`   | Duration value in milliseconds.                  |
-| `TimestampMs`    | `'TimestampMs'`  | Unix epoch timestamp in milliseconds.            |
-| `ViewportX`      | `'ViewportX'`    | Horizontal viewport coordinate.                  |
-| `ViewportY`      | `'ViewportY'`    | Vertical viewport coordinate.                    |
+#### Branded type definitions
 
-Constants: `EMPTY_READONLY_ARRAY`, `EMPTY_READONLY_OBJECT`: frozen zero-allocation singletons.
+| Type | Brand Tag | Description |
+| :--- | :--- | :--- |
+| `PopoverKey<T>` | `'PopoverKey'` | Unique popover string key. |
+| `ParentKey<T>` | `'ParentKey'` | Parent popover string key in cascade relationships. |
+| `OwnerId<T>` | `'OwnerId'` | Trigger element owner identifier. |
+| `StackGroupId<T>` | `'StackGroupId'` | Stack group zone identifier. |
+| `TriggerId<T>` | `'TriggerId'` | DOM trigger element identifier. |
+| `ScopeId<T>` | `'ScopeId'` | Card scope instance identifier. |
+| `SubscriptionId<T>` | `'SubscriptionId'` | Event listener subscription token. |
+| `StorageKey<T>` | `'StorageKey'` | Persistence key-value storage key. |
+| `ChannelId<T>` | `'ChannelId'` | Cross-tab broadcast channel name. |
+| `CacheKey<T>` | `'CacheKey'` | Memory and storage cache lookup key. |
+| `TabId<T>` | `'TabId'` | Cross-tab synchronizer tab identifier. |
+| `WorkerTaskId` | `'WorkerTaskId'` | Web Worker message correlation ID (positive safe integer). |
+| `CausalSequence` | `'CausalSequence'` | Monotonically increasing causal logical clock counter. |
+| `HistoryCapacity` | `'HistoryCapacity'` | History journal ring buffer capacity (integer >= 1). |
+| `ZIndexDepth` | `'ZIndexDepth'` | Visual stacking z-index depth integer. |
+| `DurationMs` | `'DurationMs'` | Duration value in milliseconds (finite non-negative). |
+| `TimestampMs` | `'TimestampMs'` | Unix epoch timestamp in milliseconds. |
+| `ViewportX` | `'ViewportX'` | Horizontal viewport coordinate (finite number). |
+| `ViewportY` | `'ViewportY'` | Vertical viewport coordinate (finite number). |
+
+#### Zero-allocation singletons
+
+- `EMPTY_READONLY_ARRAY`: Frozen empty array (`Object.freeze([])`).
+- `EMPTY_READONLY_OBJECT`: Frozen empty dictionary (`Object.freeze({})`).
+- `emptyRecord<K, V>()`: Type-safe accessor for the frozen empty record singleton.
+
+#### Smart constructors and type guards
+
+All smart constructors validate invariants at runtime and return the branded type without requiring double type assertions:
+
+| Constructor | Input Type | Invariant & Sanitization | Type Guard |
+| :--- | :--- | :--- | :--- |
+| `toPopoverKey(key)` | `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isPopoverKey(val)` |
+| `toParentKey(key)` | `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isParentKey(val)` |
+| `toOwnerId(id)` | `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isOwnerId(val)` |
+| `toStackGroupId(id)` | `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isStackGroupId(val)` |
+| `toTriggerId(id)` | `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isTriggerId(val)` |
+| `toScopeId(id)` | `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isScopeId(val)` |
+| `toSubscriptionId(id)`| `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isSubscriptionId(val)` |
+| `toStorageKey(key)` | `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isStorageKey(val)` |
+| `toChannelId(id)` | `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isChannelId(val)` |
+| `toCacheKey(key)` | `string` | Non-empty trimmed string (throws `TypeError` if empty) | `isCacheKey(val)` |
+| `toWorkerTaskId(id)` | `number` | Positive safe integer (defaults to `1` if invalid) | `isWorkerTaskId(val)` |
+| `toCausalSequence(seq)`| `number`| Non-negative safe integer (defaults to `0` if invalid) | `isCausalSequence(val)` |
+| `toHistoryCapacity(c)`| `number` | Safe integer >= 1 (defaults to `30` if invalid) | `isHistoryCapacity(val)` |
+| `toZIndexDepth(d)` | `number` | Non-negative integer (sanitizes NaN / decimals) | — |
+| `toDurationMs(ms)` | `number` | Finite non-negative number (defaults to `0` if negative/NaN) | — |
+| `toTimestampMs(ts)` | `number?` | Finite number (defaults to `Date.now()`) | — |
+| `toViewportX(x)` | `number` | Finite number (sanitizes NaN / Inf to `0`) | — |
+| `toViewportY(y)` | `number` | Finite number (sanitizes NaN / Inf to `0`) | — |
+
+```typescript
+import {
+  toPopoverKey,
+  isPopoverKey,
+  toDurationMs,
+  toZIndexDepth,
+} from 'popover-trail';
+
+// 1. Safe creation of branded keys
+const userKey = toPopoverKey('user-card'); // Type: PopoverKey<'user-card'>
+
+// 2. Runtime validation
+if (isPopoverKey(userInput)) {
+  // userInput narrowed to PopoverKey<string>
+  store.getState().actions.bringToFront(userInput);
+}
+
+// 3. Sanitized numbers
+const safeDelay = toDurationMs(-50); // Returns 0ms branded DurationMs
+const zIndex = toZIndexDepth(100.7); // Returns 100 branded ZIndexDepth
+```
+
+---
+
+### Domain error models
+
+Instead of throwing untyped runtime exceptions across asynchronous pipelines, `popover-trail` models domain failures as explicit discriminated unions wrapped in `Result<T, E>` (`Err(error)`):
+
+#### 1. `HistoryError`
+
+Emitted during undo/redo operations when attempting to navigate past journal bounds:
+
+```typescript
+export type HistoryError =
+  | { readonly type: 'undo_underflow'; readonly message: string }
+  | { readonly type: 'redo_underflow'; readonly message: string };
+```
+
+#### 2. `SingularMatrixError`
+
+Emitted during 2D affine matrix inversion (`invertMatrix2DResult`) when the determinant $\det(M) = ad - bc$ is zero or non-finite (e.g. collapsed dimensions, zero scale):
+
+```typescript
+export interface SingularMatrixError {
+  readonly type: 'singular_matrix';
+  readonly message: string;
+  readonly determinant: number;
+}
+```
+
+#### 3. `SpatialNotFoundError`
+
+Emitted during QuadTree spatial range queries or KNN searches when no popover bounding boxes fall within the requested perimeter:
+
+```typescript
+export interface SpatialNotFoundError {
+  readonly type: 'spatial_not_found';
+  readonly message: string;
+}
+```
+
+#### 4. `PopoverNotFoundError<K>`
+
+Emitted by CQRS query buses (`getEntryResult`, `getDataResult`) when requesting an entry that does not exist in the active store state:
+
+```typescript
+export interface PopoverNotFoundError<K extends string = string> {
+  readonly type: 'popover_not_found';
+  readonly key: K;
+  readonly message: string;
+}
+```
+
+#### 5. `DAGCycleError<TPopoverKey>`
+
+Emitted by `safeComputeLinearExtension` when a parent-child edge would introduce a cycle into the cascading popover hierarchy:
+
+```typescript
+export interface DAGCycleError<TPopoverKey extends string = string> {
+  readonly type: 'DAG_CYCLE_ERROR';
+  readonly message: string;
+  readonly cycleKeys: readonly TPopoverKey[];
+}
+```
+
+```typescript
+import { safeComputeLinearExtension } from 'popover-trail';
+
+const sortResult = safeComputeLinearExtension(activeNodes, adjacencyMap);
+
+if (sortResult.ok) {
+  console.log('Topological order:', sortResult.value);
+} else {
+  // sortResult.error is DAGCycleError
+  console.error(`Cycle detected in popovers: ${sortResult.error.cycleKeys.join(' -> ')}`);
+}
+```
 
 ---
 
@@ -2089,17 +2531,16 @@ export interface UsePopoverActionResult<
 
 ---
 
-## 11. Type guards and helper utilities
+## 11. Type guards and pattern matchers
 
-All executable type guards and helper converters are exported from `popover-trail`:
+All executable type guards, assertion helpers, and pattern matchers are exported from `popover-trail`:
 
 ### Entry type guards
 
-- `isResolvedEntry(entry)`: Narrows `entry.data` to `TData`.
-- `isLoadingEntry(entry)`: Narrows `entry.isLoading` to `true`.
-- `isErrorEntry(entry)`: Narrows `entry.error` to `Error`.
+- `isResolvedEntry(entry)`: Narrows `entry.data` to `TData` and `entry.status` to `'success'`.
+- `isLoadingEntry(entry)`: Narrows `entry.isLoading` to `true` and `entry.status` to `'loading'`.
+- `isErrorEntry(entry)`: Narrows `entry.error` to `Error` and `entry.status` to `'error'`.
 - `getEntryState(entry)`: Extracts `PopoverEntryDiscriminatedState<TData>`.
-- `matchEntryState(state, matchers)`: Exhaustive compile-time pattern matcher.
 - `assertIsTrailEntry(val)`: Assertion guard throwing if value is not a `TrailEntry`.
 
 ### Anchor type guards
@@ -2113,19 +2554,129 @@ All executable type guards and helper converters are exported from `popover-trai
 ### Store event type guards
 
 - `isStoreEvent(event, type)`: Generic discriminator guard for `PopoverStoreEvent<TData>`.
-- `isOpenRootEvent(event)`, `isPushNestedEvent(event)`, `isCloseEvent(event)`, `isPinEvent(event)`, `isUnpinEvent(event)`, `isResolveStartEvent(event)`, `isResolveSuccessEvent(event)`, `isResolveErrorEvent(event)`, `isClearEvent(event)`.
+- `isOpenRootEvent(event)`: Type guard for `open_root` / `popover:open_root`.
+- `isPushNestedEvent(event)`: Type guard for `push_nested` / `popover:push_nested`.
+- `isCloseEvent(event)`: Type guard for `close` / `popover:close`.
+- `isPinEvent(event)`: Type guard for `pin` / `popover:pin`.
+- `isUnpinEvent(event)`: Type guard for `unpin` / `popover:unpin`.
+- `isResolveStartEvent(event)`: Type guard for `resolve_start` / `popover:resolve_start`.
+- `isResolveSuccessEvent(event)`: Type guard for `resolve_success` / `popover:resolve_success`.
+- `isResolveErrorEvent(event)`: Type guard for `resolve_error` / `popover:resolve_error`.
+- `isClearEvent(event)`: Type guard for `clear` / `popover:clear`.
 
 ### Type-safe builder helpers
 
 - `createPopoverKey(key)`: Returns branded `PopoverKey<T>`.
-- `toPopoverKey(key)` / `toParentKey(key)` / `toOwnerId(id)` / `toStackGroupId(id)`: Brand constructors.
-- `isPopoverKey(val)`: Type guard for `PopoverKey`.
+- `toPopoverKey(key)` / `toParentKey(key)` / `toOwnerId(id)` / `toStackGroupId(id)` / `toTriggerId(id)` / `toScopeId(id)` / `toSubscriptionId(id)` / `toStorageKey(key)` / `toChannelId(id)` / `toCacheKey(key)`: Smart string brand constructors.
+- `toWorkerTaskId(id)` / `toCausalSequence(seq)` / `toHistoryCapacity(cap)` / `toDurationMs(ms)` / `toTimestampMs(ts)` / `toZIndexDepth(d)` / `toViewportX(x)` / `toViewportY(y)`: Smart number brand constructors.
+- `isPopoverKey(val)` / `isParentKey(val)` / `isOwnerId(val)` / `isStackGroupId(val)` / `isTriggerId(val)` / `isScopeId(val)` / `isSubscriptionId(val)` / `isStorageKey(val)` / `isChannelId(val)` / `isCacheKey(val)` / `isWorkerTaskId(val)` / `isCausalSequence(val)` / `isHistoryCapacity(val)`: Runtime type guards.
 - `isPopoverPlacement(val)`: Type guard for `PopoverPlacement`.
 - `definePopoverResolver(resolver)` / `createPopoverResolver(resolver)`: Infers typed `PopoverResolver<TData, TContext>`.
 - `definePopoverConfig(config)`: Type-safe display configuration builder.
 - `definePopoverMiddleware(mw)`: Type-safe middleware definition builder.
 - `defineStoreSlice(descriptor)`: Creates a frozen `StoreSliceDescriptor` for OCP domain slices.
-- `toViewportX(x)` / `toViewportY(y)`: Converts number into branded `ViewportX` / `ViewportY`.
+
+---
+
+### `matchEntryState`
+
+Exhaustive pattern matcher for popover entry lifecycle states. Evaluates the corresponding callback based on the card's asynchronous resolution status.
+
+```typescript
+export function matchEntryState<TData, R, TPopoverKey extends string = string>(
+  target: TrailEntry<TData, TPopoverKey> | PopoverEntryDiscriminatedState<TData>,
+  matchers: EntryStateMatchers<TData, R, TPopoverKey> | DiscriminatedStateMatchers<TData, R>,
+): R;
+```
+
+#### Matcher callbacks
+
+| Callback | Parameter | Description |
+| :--- | :--- | :--- |
+| `idle?` | `IdleTrailEntry<TData>` | Card is registered or unmounted before hydration begins. Optional; defaults to `loading` handler. |
+| `loading` | `LoadingTrailEntry<TData>` | Card data is actively fetching (`isLoading: true`). |
+| `error` | `ErrorTrailEntry<TData>` | Card data resolution failed (`error: Error`). |
+| `success` | `SuccessTrailEntry<TData>` | Card data resolved successfully (`data: TData`). |
+
+```tsx
+import { usePopoverCard, matchEntryState } from 'popover-trail';
+
+export function UserProfileCard({ popoverKey }: { popoverKey: string }) {
+  const { entry } = usePopoverCard<UserData>(popoverKey);
+
+  if (!entry) return null;
+
+  return (
+    <div className="card-container">
+      {matchEntryState(entry, {
+        idle: () => <SkeletonLoader />,
+        loading: () => <Spinner label="Loading profile..." />,
+        error: (errEntry) => (
+          <div className="error-banner">
+            <p>Failed to load user: {errEntry.error.message}</p>
+            <button onClick={() => errEntry.retry?.()}>Retry</button>
+          </div>
+        ),
+        success: (successEntry) => (
+          <div className="profile-view">
+            <h3>{successEntry.data.name}</h3>
+            <p>{successEntry.data.email}</p>
+          </div>
+        ),
+      })}
+    </div>
+  );
+}
+```
+
+---
+
+### `matchActionState`
+
+Exhaustive pattern matcher for React 19 Concurrent Actions and optimistic reconciliation states. Guarantees compile-time exhaustiveness via internal `assertNever`.
+
+```typescript
+export function matchActionState<TData, TError, R>(
+  state: PopoverActionState<TData, TError>,
+  matchers: ActionStateMatchers<TData, TError, R>,
+): R;
+```
+
+#### Matcher callbacks
+
+| Callback | Parameters | Description |
+| :--- | :--- | :--- |
+| `idle` | `(data?: TData)` | Action has not been triggered yet. |
+| `pending` | `(data?: TData, isOptimistic?: boolean)` | Action is in-flight (inspect `isOptimistic` for speculative UI). |
+| `success` | `(data: TData)` | Server action resolved with non-null result. |
+| `error` | `(error: TError, data?: TData)` | Server action threw or rejected. |
+
+```tsx
+import { usePopoverAction, matchActionState } from 'popover-trail';
+
+export function SaveSettingsButton({ popoverKey }: { popoverKey: string }) {
+  const action = usePopoverAction(async (settings: Settings) => {
+    return api.updateSettings(settings);
+  });
+
+  return (
+    <div>
+      <button
+        disabled={action.isPending}
+        onClick={() => action.execute({ notifications: true })}
+      >
+        {matchActionState(action, {
+          idle: () => 'Save Settings',
+          pending: (_, isOptimistic) =>
+            isOptimistic ? 'Saving optimistically...' : 'Saving to cloud...',
+          success: () => 'Settings Saved!',
+          error: (err) => `Failed: ${err.message}`,
+        })}
+      </button>
+    </div>
+  );
+}
+```
 
 ---
 
@@ -2175,11 +2726,11 @@ store.dispose();
 
 ---
 
-### `PopoverCache` and `SimplePopoverCache`
+### PopoverCache, SimplePopoverCache, and storage adapters
 
 #### `PopoverCache<TData>` interface contract
 
-Implement this interface to plug in external cache adapters (for example Redis, IndexedDB, or LRU caches):
+Implement this interface to plug in external cache adapters (for example Redis, IndexedDB, or custom storage engines):
 
 ```typescript
 export interface PopoverCache<TData = unknown> {
@@ -2192,44 +2743,9 @@ export interface PopoverCache<TData = unknown> {
 }
 ```
 
-#### Custom cache implementation example
-
-```typescript
-import type { PopoverCache } from 'popover-trail';
-
-export class SessionStoragePopoverCache<TData = unknown> implements PopoverCache<TData> {
-  private prefix = 'pt_cache_';
-
-  get(key: string): TData | undefined {
-    const raw = sessionStorage.getItem(this.prefix + key);
-    return raw ? JSON.parse(raw) : undefined;
-  }
-
-  set(key: string, value: TData): void {
-    sessionStorage.setItem(this.prefix + key, JSON.stringify(value));
-  }
-
-  has(key: string): boolean {
-    return sessionStorage.getItem(this.prefix + key) !== null;
-  }
-
-  delete(key: string): boolean {
-    const exists = this.has(key);
-    sessionStorage.removeItem(this.prefix + key);
-    return exists;
-  }
-
-  clear(): void {
-    Object.keys(sessionStorage)
-      .filter((k) => k.startsWith(this.prefix))
-      .forEach((k) => sessionStorage.removeItem(k));
-  }
-}
-```
-
 #### Built-in `SimplePopoverCache`
 
-In-memory cache with TTL record expiration, maximum size eviction, background garbage collection, and hit/miss statistics:
+In-memory cache with TTL record expiration, maximum size eviction, background cleanup timers, and hit/miss statistics:
 
 ```typescript
 import { SimplePopoverCache } from 'popover-trail';
@@ -2237,6 +2753,72 @@ import { SimplePopoverCache } from 'popover-trail';
 const cache = new SimplePopoverCache(300000, 50); // 5-min TTL, max 50 items
 cache.set('userProfile', userData);
 const data = cache.get('userProfile');
+```
+
+#### `BasePopoverCache` and storage adapters
+
+`BasePopoverCache` provides a modular foundation for building specialized caching architectures with pluggable storage backends:
+
+- `MemoryStorageAdapter<T>`: In-memory `Map` storage adapter with $O(1)$ operations and zero serialization overhead.
+- `WebStorageAdapter<T>`: Web storage adapter writing to `localStorage` or `sessionStorage` with safe prefixing and quota handling.
+
+```typescript
+import {
+  BasePopoverCache,
+  WebStorageAdapter,
+  MemoryStorageAdapter,
+} from 'popover-trail';
+
+// Persistent browser storage cache
+const localCache = new BasePopoverCache({
+  ttl: 600_000, // 10 minutes
+  maxSize: 100,
+  storage: new WebStorageAdapter(window.localStorage, 'myapp_popovers:'),
+});
+
+// Fast in-memory cache
+const memCache = new BasePopoverCache({
+  ttl: 60_000,
+  maxSize: 500,
+  storage: new MemoryStorageAdapter(),
+});
+```
+
+#### SWR cache state evaluation (`getCacheEntryState`)
+
+`getCacheEntryState(entry, now?)` inspects a cache entry against current time and returns a discriminated union `CacheEntryState<T>` for stale-while-revalidate pipelines:
+
+```typescript
+export function getCacheEntryState<T>(
+  entry: CacheEntry<T>,
+  now?: number,
+): CacheEntryState<T>;
+```
+
+| Return Status | Condition | Recommended Consumer Action |
+| :--- | :--- | :--- |
+| `'fresh'` | `now < entry.staleAt` (or `now < entry.expiry`) | Serve `state.data` immediately with zero network overhead. |
+| `'stale'` | `now >= entry.staleAt && now < entry.expiry` | Serve `state.data` immediately and trigger asynchronous background revalidation. |
+| `'expired'`| `now >= entry.expiry` | Invalidate entry; block or show loading skeleton until fresh data resolves. |
+
+```typescript
+import { getCacheEntryState } from 'popover-trail';
+
+const state = getCacheEntryState(cacheEntry);
+
+switch (state.status) {
+  case 'fresh':
+    render(state.data);
+    break;
+  case 'stale':
+    render(state.data);
+    revalidateInBackground(key);
+    break;
+  case 'expired':
+    showLoadingSpinner();
+    fetchFreshData(key);
+    break;
+}
 ```
 
 ---
@@ -2264,9 +2846,87 @@ definePopoverWorkerRPC(async (key, parentData, context) => computeHeavyTask(key)
 
 ---
 
-### `createPopoverController`
+### createPopoverController and PopoverCardFluentBuilder
 
-Imperative controller for inspecting and dispatching popover actions outside React component trees (e.g. WebSocket handlers, Redux thunks, Vanilla JS modules).
+`createPopoverController(store)` wraps a `PopoverStore` in an imperative facade, allowing developers to orchestrate popovers outside React component lifecycles (such as inside WebSocket handlers, background polling routines, or custom keyboard managers).
+
+Calling `controller.focus(key)` returns a fluent builder (`PopoverCardFluentBuilder`) providing chainable mutation operations and localized state queries scoped to that specific card.
+
+```typescript
+export interface PopoverController<
+  TData = unknown,
+  TContext = unknown,
+  TPopoverKey extends string = string,
+> {
+  /** Creates a fluent builder scoped to a specific card key. */
+  focus: (key: TPopoverKey) => PopoverCardFluentBuilder<TData, TPopoverKey>;
+  openRoot: (ownerId: string, entry: TrailEntry<TData, TPopoverKey>) => void;
+  openNested: (index: number, entry: TrailEntry<TData, TPopoverKey>) => void;
+  openRootWithResolver: (
+    key: TPopoverKey,
+    evt?: AnchorEventLike,
+    opts?: OpenRootOptions,
+  ) => Promise<void>;
+  openNestedWithResolver: (
+    key: TPopoverKey,
+    src: TPopoverKey,
+    opts?: OpenNestedOptions,
+  ) => Promise<void>;
+  closeByKey: (key: TPopoverKey, options?: { transition?: boolean }) => void;
+  togglePin: (key: TPopoverKey, rect?: DOMRect) => void;
+  bringToFront: (key: TPopoverKey) => void;
+  updateOffset: (key: TPopoverKey, x: number, y: number) => void;
+  hoverEnter: (key: TPopoverKey) => void;
+  hoverLeave: (key: TPopoverKey, delay?: number) => void;
+  closeTopmost: (options?: { transition?: boolean }) => void;
+  clear: () => void;
+  clearTrail: () => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  retryPopover: (key: TPopoverKey) => Promise<void>;
+  addParent: (childKey: TPopoverKey, parentKey: TPopoverKey) => boolean;
+  removeParent: (childKey: TPopoverKey, parentKey: TPopoverKey) => void;
+  getParents: (key: TPopoverKey) => readonly TPopoverKey[];
+  getChildren: (key: TPopoverKey) => readonly TPopoverKey[];
+  getState: () => PopoverStore<TData, TContext, TPopoverKey>;
+  dispose: () => void;
+}
+```
+
+#### `PopoverCardFluentBuilder` methods
+
+| Method Category | Method Signature | Description |
+| :--- | :--- | :--- |
+| **State Inspection** | `get(): TrailEntry \| undefined` | Returns the raw entry object or `undefined` if closed. |
+| | `isOpen(): boolean` | Returns `true` if the card is currently open. |
+| | `isPinned(): boolean` | Returns `true` if the card is currently pinned. |
+| | `isLoading(): boolean` | Returns `true` if data is actively hydrating. |
+| | `data(): TData \| null \| undefined` | Returns the resolved card data model. |
+| | `error(): PopoverError \| Error \| null` | Returns the active resolution error. |
+| | `offset(): DragOffset` | Returns current manual drag offset `{ x, y }`. |
+| | `breadcrumbs(): readonly TPopoverKey[]` | Returns active cascade ancestor path from root. |
+| | `depth(): number` | Returns the nesting depth level in the cascade. |
+| | `parents(): readonly TPopoverKey[]` | Returns direct DAG parent keys. |
+| | `children(): readonly TPopoverKey[]` | Returns direct DAG child keys. |
+| **Chained Mutations** | `open(options?): this` | Opens card as root or appends to active trail. |
+| | `openWithResolver(anchor?, options?): Promise<this>` | Triggers data resolution and opens card. |
+| | `atPlacement(placement): this` | Updates preferred placement (`'top'`, `'bottom'`, etc.). |
+| | `withOffset(x, y): this` | Sets initial or manual coordinate offset. |
+| | `withData(data): this` | Injects synchronous data payload directly. |
+| | `pin(rect?): this` | Pins card into modeless floating state. |
+| | `unpin(): this` | Unpins card back into cascading trail stack. |
+| | `togglePin(rect?): this` | Toggles pinned status. |
+| | `bringToFront(): this` | Elevates card to topmost z-index layer. |
+| | `close(options?): this` | Dismisses card (with optional exit animation). |
+| | `retry(): Promise<this>` | Retries data resolution on failed card. |
+| | `prefetch(parentData?): Promise<TData \| undefined>` | Prefetches data into cache without opening. |
+| | `addParent(parentKey): this` | Links parent popover in DAG cascading hierarchy. |
+| | `removeParent(parentKey): this` | Unlinks parent popover in DAG cascading hierarchy. |
+| | `when(condition, mutate): this` | Conditionally executes mutation callback on the builder. |
+
+#### Chained fluent builder example
 
 ```typescript
 import { createPopoverStore, createPopoverController } from 'popover-trail';
@@ -2274,7 +2934,67 @@ import { createPopoverStore, createPopoverController } from 'popover-trail';
 const store = createPopoverStore(async (key) => fetchCardData(key));
 const controller = createPopoverController(store);
 
-controller.closeByKey('userProfile');
+// Imperatively configure and open a popover using method chaining
+controller
+  .focus('userSettings')
+  .atPlacement('right-start')
+  .withOffset(12, 0)
+  .withData({ initialTab: 'security' })
+  .open();
+
+// Inspect state and conditionally pin
+const card = controller.focus('userSettings');
+if (card.isOpen()) {
+  card
+    .bringToFront()
+    .when(!card.isPinned(), (builder) => builder.pin());
+}
+
+// Clean up when done
+controller.dispose();
+```
+
+---
+
+### Display options extraction and comparison helpers
+
+`popover-trail` isolates 30 display and interaction configuration keys (`DISPLAY_OPTION_KEYS`) from raw domain models, providing pure utility functions for option extraction, merging, and zero-allocation equality checks.
+
+```typescript
+export const DISPLAY_OPTION_KEYS: readonly [
+  'collision', 'hover', 'ariaDescribedby', 'allowDragWhenUnpinned', 'allowDragWhenPinned',
+  'placement', 'offset', 'exitTransitionDuration', 'baseZIndex', 'cascadeOffsetStep',
+  'cascadeOffsetDirection', 'enableTilt', 'maxTiltAngle', 'tiltSensitivity', 'dragAxis',
+  'tiltFriction', 'tiltDecay', 'mountingClassName', 'unmountingClassName', 'mountedClassName',
+  'stackGroup', 'layoutStrategy', 'keyboardShortcuts', 'focusLockOptions', 'buttonControls',
+  'responsiveMode', 'onOpen', 'onClose', 'onPin', 'onError'
+];
+```
+
+#### Helper functions
+
+- `isDisplayOptionKey(key: string): key is DisplayOptionKey`: Type guard verifying if a string is a recognized display option property.
+- `extractDisplayOptions(entry)`: Pure extractor picking only display options from an entry, returning clean `OpenRootOptions & OpenNestedOptions`.
+- `mergeDisplayOptions(base, overrides)`: Pure merger combining base options with overrides.
+- `areDisplayOptionsEqual(a, b)`: $O(1)$ shallow value comparator checking if two option sets are equal without JSON serialization or heap allocation.
+
+```typescript
+import {
+  extractDisplayOptions,
+  mergeDisplayOptions,
+  areDisplayOptionsEqual,
+} from 'popover-trail';
+
+// 1. Extract only display options from an entry object:
+const displayProps = extractDisplayOptions(entry);
+
+// 2. Merge options with defaults:
+const merged = mergeDisplayOptions(defaultOptions, cardOverrides);
+
+// 3. Fast equality check avoiding React re-renders:
+if (!areDisplayOptionsEqual(prevOptions, nextOptions)) {
+  updateCardGeometry(nextOptions);
+}
 ```
 
 ---
