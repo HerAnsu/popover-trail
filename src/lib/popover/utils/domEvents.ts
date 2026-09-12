@@ -46,8 +46,7 @@ export function isPortalOrExcludedTarget(e: Event): boolean {
   for (const target of path) {
     if (
       isElementLike(target) &&
-      (target.hasAttribute(DATA_POPOVER_PORTAL) ||
-        target.hasAttribute(DATA_POPOVER_IGNORE_OUTSIDE))
+      (target.hasAttribute(DATA_POPOVER_PORTAL) || target.hasAttribute(DATA_POPOVER_IGNORE_OUTSIDE))
     ) {
       return true;
     }

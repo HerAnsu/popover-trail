@@ -159,7 +159,6 @@ export type {
   EventPayload,
 } from './types/utilityTypes';
 
-
 export type {
   PolymorphicRef,
   PolymorphicPropsWithRef,
@@ -259,10 +258,30 @@ export {
   collectResults,
   partitionResults,
   combineResults,
+  mapAsyncResult,
+  flatMapAsyncResult,
   type Result,
   type OkResult,
   type ErrResult,
 } from './utils/result';
+
+// Utilities: Async & Concurrency
+export {
+  sleep,
+  deferMicrotask,
+  withTimeout,
+  deferred,
+  debounce,
+  throttle,
+  type Deferred,
+  type DebouncedFunction,
+  type ThrottledFunction,
+} from './utils/asyncUtils';
+
+// Utilities: Collections & Objects
+export { unique, partition, groupBy, keyBy, chunk } from './utils/collections';
+export { omitRecordKey, pickRecordKeys, safeAssign } from './utils/cleanObject';
+
 export {
   createDisposable,
   CompositeDisposable,
@@ -485,4 +504,3 @@ export * from './utils/cache';
 export * from './utils/buffer';
 export * from './utils/resource';
 export { ResolverTelemetryLog } from './store/resolver';
-

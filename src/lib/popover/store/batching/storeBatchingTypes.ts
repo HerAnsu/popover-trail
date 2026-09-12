@@ -78,4 +78,3 @@ export interface BatchingManager extends ScopeDisposable {
   /** Standard explicit resource management disposal symbol. */
   [Symbol.dispose]?: () => void;
 }
-

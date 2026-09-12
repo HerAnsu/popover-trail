@@ -7,8 +7,11 @@
 
 import { getBufferItem, validateCapacity, isPowerOfTwo } from './bufferIndex';
 import {
-  toPhysicalIndex, toLogicalIndex, nextRevision,
-  type BufferCapacity, type BufferRelativeIndex,
+  toPhysicalIndex,
+  toLogicalIndex,
+  nextRevision,
+  type BufferCapacity,
+  type BufferRelativeIndex,
 } from './bufferBranded';
 import { isArray } from './bufferGuards';
 import { forEachItem } from './bufferIteration';
@@ -59,7 +62,10 @@ export function cloneRing<T>(
   return c;
 }
 
-export function resizeRing<T>(state: RingBufferState<T>, newCapacity: BufferCapacity | number): void {
+export function resizeRing<T>(
+  state: RingBufferState<T>,
+  newCapacity: BufferCapacity | number,
+): void {
   const newCap = validateCapacity(newCapacity);
   const newBuf = Array.from<T | undefined>({ length: newCap });
   let copyCount = state.count;

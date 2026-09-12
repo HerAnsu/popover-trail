@@ -21,8 +21,6 @@ export interface PersistedEnvelope<TData = unknown, TPopoverKey extends string =
   readonly ownerId: Unbrand<OwnerId> | null;
 }
 
-
-
 export interface CrossTabBroadcaster {
   postMessage(message: unknown): void;
   onMessage(listener: (message: unknown) => void): () => void;

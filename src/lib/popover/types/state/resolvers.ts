@@ -38,4 +38,3 @@ export interface PopoverCache<TData = unknown> {
   readonly clear: () => void;
   readonly destroy?: () => void;
 }
-

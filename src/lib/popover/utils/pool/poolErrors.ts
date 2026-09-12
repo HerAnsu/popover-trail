@@ -24,10 +24,7 @@ export interface PoolDisposedError {
   readonly message: string;
 }
 
-export type PoolDomainError =
-  | InvalidPoolOptionsError
-  | PoolExhaustedError
-  | PoolDisposedError;
+export type PoolDomainError = InvalidPoolOptionsError | PoolExhaustedError | PoolDisposedError;
 
 export type PoolDomainErrorCode = PoolDomainError['code'];
 
@@ -38,7 +35,9 @@ export function isPoolDomainError(val: unknown): val is PoolDomainError {
 }
 
 export function isInvalidPoolOptionsError(val: unknown): val is InvalidPoolOptionsError {
-  return typeof val === 'object' && val !== null && 'code' in val && val.code === 'INVALID_POOL_OPTIONS';
+  return (
+    typeof val === 'object' && val !== null && 'code' in val && val.code === 'INVALID_POOL_OPTIONS'
+  );
 }
 
 export function isPoolExhaustedError(val: unknown): val is PoolExhaustedError {
@@ -58,19 +57,30 @@ export function matchPoolError<R>(
   },
 ): R {
   switch (err.code) {
-    case 'INVALID_POOL_OPTIONS': return cases.INVALID_POOL_OPTIONS(err);
-    case 'POOL_EXHAUSTED': return cases.POOL_EXHAUSTED(err);
-    case 'POOL_DISPOSED': return cases.POOL_DISPOSED(err);
-    default: return assertNever(err);
+    case 'INVALID_POOL_OPTIONS':
+      return cases.INVALID_POOL_OPTIONS(err);
+    case 'POOL_EXHAUSTED':
+      return cases.POOL_EXHAUSTED(err);
+    case 'POOL_DISPOSED':
+      return cases.POOL_DISPOSED(err);
+    default:
+      return assertNever(err);
   }
 }
 
-export function createInvalidPoolOptionsError(msg: string, options?: unknown): InvalidPoolOptionsError {
+export function createInvalidPoolOptionsError(
+  msg: string,
+  options?: unknown,
+): InvalidPoolOptionsError {
   return { code: 'INVALID_POOL_OPTIONS', message: msg, options };
 }
 
 export function createPoolExhaustedError(cap: number, msg?: string): PoolExhaustedError {
-  return { code: 'POOL_EXHAUSTED', message: msg ?? `Object pool capacity (${cap}) exhausted`, capacity: cap };
+  return {
+    code: 'POOL_EXHAUSTED',
+    message: msg ?? `Object pool capacity (${cap}) exhausted`,
+    capacity: cap,
+  };
 }
 
 export function createPoolDisposedError(msg?: string): PoolDisposedError {

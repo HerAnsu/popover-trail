@@ -41,7 +41,10 @@ export function pushItem<T>(
   metrics.recordPush(false, state.count);
 }
 
-export function popItem<T>(state: RingBufferState<T>, metrics: BufferMetricsTracker): T | undefined {
+export function popItem<T>(
+  state: RingBufferState<T>,
+  metrics: BufferMetricsTracker,
+): T | undefined {
   if (state.count === 0) return undefined;
   state.revision = nextRevision(state.revision);
   const idx = getPhysicalIndex(state, --state.count);
@@ -51,7 +54,10 @@ export function popItem<T>(state: RingBufferState<T>, metrics: BufferMetricsTrac
   return item;
 }
 
-export function shiftItem<T>(state: RingBufferState<T>, metrics: BufferMetricsTracker): T | undefined {
+export function shiftItem<T>(
+  state: RingBufferState<T>,
+  metrics: BufferMetricsTracker,
+): T | undefined {
   if (state.count === 0) return undefined;
   state.revision = nextRevision(state.revision);
   const item = state.buffer[state.head];

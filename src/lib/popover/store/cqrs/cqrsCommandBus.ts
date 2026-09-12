@@ -15,10 +15,7 @@ import type {
 import type { RegisteredKeys, RegisteredDataMap } from '../../types/registerTypes';
 import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { err, type Result } from '../../utils/result';
-import {
-  type CommandBusTarget,
-  resolveCommandActions,
-} from './cqrsCommandTarget';
+import { type CommandBusTarget, resolveCommandActions } from './cqrsCommandTarget';
 
 export type { CommandBusTarget };
 
@@ -52,9 +49,13 @@ export class PopoverCommandBus<
     this.getActions().openRoot(ownerId, entry);
   }
   /** Pushes a nested child popover card at a specific cascade depth tier. */
-  openNested(i: number, e: TrailEntry<TData, TPopoverKey>): void { this.getActions().pushNested(i, e); }
+  openNested(i: number, e: TrailEntry<TData, TPopoverKey>): void {
+    this.getActions().pushNested(i, e);
+  }
   /** Alias for `openNested`. */
-  pushNested(i: number, e: TrailEntry<TData, TPopoverKey>): void { this.getActions().pushNested(i, e); }
+  pushNested(i: number, e: TrailEntry<TData, TPopoverKey>): void {
+    this.getActions().pushNested(i, e);
+  }
 
   /** Opens root popover card resolving payload asynchronously via registered data resolver. */
   async openRootWithResolver(
@@ -75,23 +76,37 @@ export class PopoverCommandBus<
   }
 
   /** Closes a specific popover and automatically tears down its reachable descendant subgraph. */
-  close(k: TPopoverKey, opts?: { transition?: boolean }): void { this.getActions().closeByKey(k, opts); }
+  close(k: TPopoverKey, opts?: { transition?: boolean }): void {
+    this.getActions().closeByKey(k, opts);
+  }
   /** Closes a popover by key with optional exit transition scheduling. */
   closeByKey(k: TPopoverKey, opts?: { transition?: boolean }): void {
     this.getActions().closeByKey(k, opts);
   }
   /** Dismisses the topmost focused popover. */
-  closeTopmost(opts?: { transition?: boolean }): void { this.getActions().closeTopmost(opts); }
+  closeTopmost(opts?: { transition?: boolean }): void {
+    this.getActions().closeTopmost(opts);
+  }
   /** Closes all active trail popovers, leaving pinned floating cards intact. */
-  clearTrail(opts?: { transition?: boolean }): void { this.getActions().clearTrail(opts); }
+  clearTrail(opts?: { transition?: boolean }): void {
+    this.getActions().clearTrail(opts);
+  }
   /** Closes all active popovers (both trail and pinned floating cards). */
-  clearAll(): void { this.getActions().closeAll(); }
+  clearAll(): void {
+    this.getActions().closeAll();
+  }
   /** Purges all popovers and resets store to initial blank state. */
-  clear(): void { this.getActions().clear(); }
+  clear(): void {
+    this.getActions().clear();
+  }
   /** Pins or unpins a popover, transitioning between trail cascade and floating modes. */
-  togglePin(key: TPopoverKey, rect?: DOMRect): void { this.getActions().togglePin(key, rect); }
+  togglePin(key: TPopoverKey, rect?: DOMRect): void {
+    this.getActions().togglePin(key, rect);
+  }
   /** Elevates a popover to the top of visual stacking and focus order. */
-  bringToFront(key: TPopoverKey): void { this.getActions().bringToFront(key); }
+  bringToFront(key: TPopoverKey): void {
+    this.getActions().bringToFront(key);
+  }
   /** Updates custom drag/docking coordinate offset. */
   updateOffset(key: TPopoverKey, x: number, y: number): void {
     this.getActions().updateOffset(key, x, y);
@@ -111,9 +126,13 @@ export class PopoverCommandBus<
     this.getActions().updateConfig(patch);
   }
   /** Restores previous state snapshot from undo journal ring buffer. */
-  undo(): void { this.getActions().undo(); }
+  undo(): void {
+    this.getActions().undo();
+  }
   /** Re-applies subsequent state snapshot from redo journal ring buffer. */
-  redo(): void { this.getActions().redo(); }
+  redo(): void {
+    this.getActions().redo();
+  }
 
   /**
    * Batches multiple commands together so subscribers only receive a single update.
@@ -141,14 +160,17 @@ export class PopoverCommandBus<
     this.batch(() => {
       result = fn(this);
     });
-    return (
-      result ??
-      err(new Error('Batch execution did not produce a result.') as unknown as E)
-    );
+    return result ?? err(new Error('Batch execution did not produce a result.') as unknown as E);
   }
 
   /** Releases store resources and detaches listeners. */
-  dispose(): void { this.getActions().destroy?.(); }
-  [DISPOSE_SYMBOL](): void { this.dispose(); }
-  [Symbol.dispose](): void { this.dispose(); }
+  dispose(): void {
+    this.getActions().destroy?.();
+  }
+  [DISPOSE_SYMBOL](): void {
+    this.dispose();
+  }
+  [Symbol.dispose](): void {
+    this.dispose();
+  }
 }

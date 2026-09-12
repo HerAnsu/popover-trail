@@ -51,7 +51,6 @@ describe('Utility Types & Brand Application Integration', () => {
     const brandedKey = toPopoverKey('card-alpha');
     const rawKey = 'card-beta';
 
-
     TriggerRegistry.register(brandedKey, el1);
     TriggerRegistry.register(rawKey, el2);
 

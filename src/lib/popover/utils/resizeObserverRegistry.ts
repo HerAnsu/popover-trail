@@ -41,9 +41,10 @@ class ResizeObserverRegistryImpl {
     this.observer = new ResizeObserver((entries) => {
       for (const entry of entries) this.pendingEntries.set(entry.target, entry);
       if (this.frameId === null) {
-        this.frameId = typeof requestAnimationFrame !== 'undefined'
-          ? requestAnimationFrame(this.flushCallbacks)
-          : (this.flushCallbacks(), null);
+        this.frameId =
+          typeof requestAnimationFrame !== 'undefined'
+            ? requestAnimationFrame(this.flushCallbacks)
+            : (this.flushCallbacks(), null);
       }
     });
   }
@@ -82,7 +83,9 @@ class ResizeObserverRegistryImpl {
     this.listeners.clear();
   }
 
-  dispose(): void { this.clear(); }
+  dispose(): void {
+    this.clear();
+  }
 }
 
 export const ResizeObserverRegistry = new ResizeObserverRegistryImpl();

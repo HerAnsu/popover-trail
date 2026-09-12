@@ -22,10 +22,10 @@ export type KeyboardNavEvent =
   | React.KeyboardEvent<HTMLElement>
   | Pick<React.KeyboardEvent<HTMLElement>, 'key' | 'preventDefault'>;
 
-export function handleCustomShortcuts<
-  TData = unknown,
-  TPopoverKey extends string = string,
->(e: KeyboardNavEvent, cardEntry: TrailEntry<TData, TPopoverKey>): boolean {
+export function handleCustomShortcuts<TData = unknown, TPopoverKey extends string = string>(
+  e: KeyboardNavEvent,
+  cardEntry: TrailEntry<TData, TPopoverKey>,
+): boolean {
   if (!cardEntry.keyboardShortcuts) return false;
   const keyName = e.key;
   const modKey =

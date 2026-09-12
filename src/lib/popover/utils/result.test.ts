@@ -19,7 +19,10 @@ import {
   tapErr,
   wrapResult,
   wrapAsyncResult,
+  mapAsyncResult,
+  flatMapAsyncResult,
 } from './result';
+
 import { PopoverErrorCode } from './errors';
 
 describe('result monad utility', () => {
@@ -138,5 +141,22 @@ describe('result monad utility', () => {
       tappedErr = e;
     });
     expect(tappedErr).toBe('boom');
+  });
+
+  it('mapAsyncResult and flatMapAsyncResult chain asynchronous operations', async () => {
+    const okRes = Ok(10);
+    const errRes = Err('network_err');
+
+    const mappedOk = await mapAsyncResult(okRes, async (x) => x * 3);
+    expect(mappedOk).toEqual(Ok(30));
+
+    const mappedErr = await mapAsyncResult(errRes, async (x: number) => x * 3);
+    expect(mappedErr).toEqual(errRes);
+
+    const chainedOk = await flatMapAsyncResult(okRes, async (x) => Ok(`val-${x}`));
+    expect(chainedOk).toEqual(Ok('val-10'));
+
+    const chainedErr = await flatMapAsyncResult(errRes, async (x: number) => Ok(`val-${x}`));
+    expect(chainedErr).toEqual(errRes);
   });
 });

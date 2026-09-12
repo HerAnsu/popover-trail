@@ -11,18 +11,25 @@ let nodeRefHolder = { current: null as HTMLElement | null };
 vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>();
   const mockedRef = <T,>(_init: T) => nodeRefHolder as unknown as { current: T };
-  const mockedEff = (fn: EffectCallback) => { capturedEffects.push(fn); };
+  const mockedEff = (fn: EffectCallback) => {
+    capturedEffects.push(fn);
+  };
   const mockedCb = <T extends (...args: readonly unknown[]) => unknown>(fn: T): T => fn;
   const mockOverrides = { useRef: mockedRef, useEffect: mockedEff, useCallback: mockedCb };
   return { ...actual, ...mockOverrides, default: { ...actual, ...mockOverrides } };
 });
 
 vi.mock('../../hooks/useHookUtils', () => ({
-  useMergedRef: (nodeRef: React.RefObject<HTMLElement | null>, childRef?: React.Ref<HTMLElement>) => {
+  useMergedRef: (
+    nodeRef: React.RefObject<HTMLElement | null>,
+    childRef?: React.Ref<HTMLElement>,
+  ) => {
     return (node: HTMLElement | null) => {
-      if (nodeRef && 'current' in nodeRef) (nodeRef as { current: HTMLElement | null }).current = node;
+      if (nodeRef && 'current' in nodeRef)
+        (nodeRef as { current: HTMLElement | null }).current = node;
       if (typeof childRef === 'function') childRef(node);
-      else if (childRef && 'current' in childRef) (childRef as { current: HTMLElement | null }).current = node;
+      else if (childRef && 'current' in childRef)
+        (childRef as { current: HTMLElement | null }).current = node;
     };
   },
 }));
@@ -48,7 +55,11 @@ describe('TriggerRenderer component', () => {
     let capturedProps: PopoverTriggerChildProps | null = null;
     const renderProp = (props: PopoverTriggerChildProps) => {
       capturedProps = props;
-      return <button type="button" {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}>Trigger</button>;
+      return (
+        <button type="button" {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}>
+          Trigger
+        </button>
+      );
     };
 
     TriggerRenderer({
@@ -72,7 +83,11 @@ describe('TriggerRenderer component', () => {
     const childClick = vi.fn();
     const mockEvent = {} as React.MouseEvent<HTMLElement>;
 
-    const child = <button className="base-class" onClick={childClick}>Child Button</button>;
+    const child = (
+      <button className="base-class" onClick={childClick}>
+        Child Button
+      </button>
+    );
     const vnode = TriggerRenderer({
       popoverKey: 'card-2',
       triggerProps: { onClick: triggerClick },
@@ -82,7 +97,13 @@ describe('TriggerRenderer component', () => {
     });
 
     expect(React.isValidElement(vnode)).toBe(true);
-    if (React.isValidElement<{ className?: string; onClick?: (e: unknown) => void; 'aria-expanded'?: boolean }>(vnode)) {
+    if (
+      React.isValidElement<{
+        className?: string;
+        onClick?: (e: unknown) => void;
+        'aria-expanded'?: boolean;
+      }>(vnode)
+    ) {
       expect(vnode.props['aria-expanded']).toBe(false);
       expect(vnode.props.className).toBe('base-class');
       vnode.props.onClick?.(mockEvent);

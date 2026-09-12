@@ -38,13 +38,7 @@ export type {
   TimestampMs,
 } from './branded';
 
-export {
-  EMPTY_READONLY_ARRAY,
-  EMPTY_READONLY_OBJECT,
-  emptyRecord,
-  unbrand,
-} from './branded';
+export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT, emptyRecord, unbrand } from './branded';
 
 export type { DeepReadonly } from './configTypes';
 export * from './utilityTypes';
-

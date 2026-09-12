@@ -70,11 +70,22 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
     return createScopedCache(this, namespace);
   }
 
-  public override clear(): void { super.clear(); }
-  public dump(): Array<[string, CacheEntry<TData>]> { return exportCacheSnapshot(this.storage); }
-  public restore(snapshot: Iterable<unknown>): number { return restoreCacheSnapshot(this.storage, snapshot, this.maxSize, this.events); }
-  public subscribe(key: string, listener: (value: TData | undefined) => void): () => void { return this.events.subscribe(key, listener); }
-  public on<E extends CacheEventType>(event: E, listener: (payload: CacheEventMap<TData>[E]) => void): () => void {
+  public override clear(): void {
+    super.clear();
+  }
+  public dump(): Array<[string, CacheEntry<TData>]> {
+    return exportCacheSnapshot(this.storage);
+  }
+  public restore(snapshot: Iterable<unknown>): number {
+    return restoreCacheSnapshot(this.storage, snapshot, this.maxSize, this.events);
+  }
+  public subscribe(key: string, listener: (value: TData | undefined) => void): () => void {
+    return this.events.subscribe(key, listener);
+  }
+  public on<E extends CacheEventType>(
+    event: E,
+    listener: (payload: CacheEventMap<TData>[E]) => void,
+  ): () => void {
     return this.events.on(event, listener);
   }
 }

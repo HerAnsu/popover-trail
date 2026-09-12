@@ -63,7 +63,10 @@ export function computeLinearExtension<TPopoverKey extends string>(
   for (const [key, node] of nodes.entries()) inDegree.set(key, node.parentKeys.size);
 
   // Step 2: Seed queue with all source nodes (in-degree == 0)
-  const queue = new RingBuffer<TPopoverKey>({ capacity: Math.max(16, nodes.size), autoExpand: true });
+  const queue = new RingBuffer<TPopoverKey>({
+    capacity: Math.max(16, nodes.size),
+    autoExpand: true,
+  });
   for (const [key, deg] of inDegree.entries()) if (deg === 0) queue.push(key);
 
   const order: TPopoverKey[] = [];

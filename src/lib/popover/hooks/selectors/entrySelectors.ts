@@ -6,13 +6,14 @@
  */
 
 import * as React from 'react';
-import {
-  isEntryWithStatus,
-  type TrailEntry,
-  type NarrowTrailEntry,
-} from '../../types';
+import { isEntryWithStatus, type TrailEntry, type NarrowTrailEntry } from '../../types';
 import { usePopoverStore } from '../../context/usePopoverStore';
-import { selectEntryByKey, selectOffset, selectIsLoading, selectError } from '../../store/selectors';
+import {
+  selectEntryByKey,
+  selectOffset,
+  selectIsLoading,
+  selectError,
+} from '../../store/selectors';
 import type {
   RegisteredKeys,
   RegisteredDataMap,
@@ -77,4 +78,3 @@ export const usePopoverError = <TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
 ): Error | null => usePopoverStore(selectError(key));
 export const useIsPopoverError = usePopoverError;
-

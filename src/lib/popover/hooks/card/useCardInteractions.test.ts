@@ -106,7 +106,10 @@ describe('useCardInteractions', () => {
       floatingCount: 1,
     });
 
-    const mockEvent = { key: 'Escape', preventDefault: vi.fn() } as unknown as KeyboardEvent<HTMLElement>;
+    const mockEvent = {
+      key: 'Escape',
+      preventDefault: vi.fn(),
+    } as unknown as KeyboardEvent<HTMLElement>;
     onKeyDown(mockEvent);
 
     expect(handleCardKeyboardNavigation).toHaveBeenCalledWith({

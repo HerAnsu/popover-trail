@@ -7,11 +7,7 @@
 
 import { isPortalOrExcludedTarget, getEventPath, getEventTarget } from '../utils/domEvents';
 import { TriggerRegistry } from '../utils/triggerRegistry';
-import {
-  isElement,
-  isPointerOrMouseEvent,
-  isContainedInPath,
-} from '../utils/typeGuards';
+import { isElement, isPointerOrMouseEvent, isContainedInPath } from '../utils/typeGuards';
 
 export function isInsidePopover(el: Element, selector: string, ignoreClass?: string): boolean {
   try {

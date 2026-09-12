@@ -6,7 +6,12 @@
  */
 
 import { wrapResult } from '../result';
-import { DISPOSE_SYMBOL, getDisposeMethod, type ScopeDisposable, type CleanupItem } from './disposableTypes';
+import {
+  DISPOSE_SYMBOL,
+  getDisposeMethod,
+  type ScopeDisposable,
+  type CleanupItem,
+} from './disposableTypes';
 
 function safelyDisposeItem(d: CleanupItem): void {
   if (!d) return;
@@ -65,7 +70,6 @@ export class CompositeDisposable implements ScopeDisposable {
     }
     return false;
   }
-
 
   dispose(): void {
     if (this.disposed) return;

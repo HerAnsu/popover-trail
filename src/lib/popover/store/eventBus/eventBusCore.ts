@@ -77,7 +77,13 @@ export class PopoverEventBus<
     this.router.clear();
   }
 
-  public dispose(): void { this.clear(); }
-  public [DISPOSE_SYMBOL](): void { this.dispose(); }
-  public [Symbol.dispose](): void { this.dispose(); }
+  public dispose(): void {
+    this.clear();
+  }
+  public [DISPOSE_SYMBOL](): void {
+    this.dispose();
+  }
+  public [Symbol.dispose](): void {
+    this.dispose();
+  }
 }

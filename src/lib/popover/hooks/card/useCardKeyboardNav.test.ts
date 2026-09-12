@@ -7,10 +7,13 @@ import {
 } from './useCardKeyboardNav';
 
 class MockHTMLElement {
-  focus = vi.fn(); click = vi.fn();
-  offsetWidth = 10; offsetHeight = 10;
+  focus = vi.fn();
+  click = vi.fn();
+  offsetWidth = 10;
+  offsetHeight = 10;
   getClientRects = () => [{} as DOMRect];
-  tagName = 'BUTTON'; isContentEditable = false;
+  tagName = 'BUTTON';
+  isContentEditable = false;
 }
 
 describe('useCardKeyboardNav', () => {
@@ -18,7 +21,9 @@ describe('useCardKeyboardNav', () => {
   const origDoc = globalThis.document;
   const origEl = globalThis.HTMLElement;
 
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
   afterEach(() => {
     globalThis.window = origWin;
     globalThis.document = origDoc;
@@ -84,8 +89,14 @@ describe('useCardKeyboardNav', () => {
     const closeByKey = vi.fn();
 
     handleCardKeyboardNavigation(
-      { key: 'ArrowLeft', preventDefault: vi.fn() }, null, childEntry, true, false,
-      [parentEntry, childEntry], 0, { closeFrom: vi.fn(), closeByKey },
+      { key: 'ArrowLeft', preventDefault: vi.fn() },
+      null,
+      childEntry,
+      true,
+      false,
+      [parentEntry, childEntry],
+      0,
+      { closeFrom: vi.fn(), closeByKey },
     );
     expect(closeByKey).toHaveBeenCalledWith('sub');
 
@@ -98,7 +109,12 @@ describe('useCardKeyboardNav', () => {
     globalThis.document = { activeElement: clickable } as unknown as Document;
 
     handleCardKeyboardNavigation(
-      { key: 'ArrowRight', preventDefault: vi.fn() }, null, childEntry, true, false, [childEntry],
+      { key: 'ArrowRight', preventDefault: vi.fn() },
+      null,
+      childEntry,
+      true,
+      false,
+      [childEntry],
     );
     expect(clickable.click).toHaveBeenCalled();
   });

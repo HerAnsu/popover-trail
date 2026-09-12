@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { omitRecordKey, safeAssign } from './cleanObject';
+import { omitRecordKey, pickRecordKeys, safeAssign } from './cleanObject';
 
 describe('cleanObject', () => {
   it('omits key from record without mutation', () => {
@@ -24,5 +24,19 @@ describe('cleanObject', () => {
     expect(result.x).toBe(1);
     expect(result.y).toBe(2);
     expect('polluted' in Object.prototype).toBe(false);
+  });
+
+  it('picks only specified keys safely ignoring missing or polluted keys', () => {
+    const original = { a: 1, b: 2, c: 3 };
+    const picked = pickRecordKeys(original, ['a', 'c']);
+    expect(picked).toEqual({ a: 1, c: 3 });
+
+    const withPollution = JSON.parse('{"valid": 42, "__proto__": {"bad": true}}') as Record<
+      string,
+      unknown
+    >;
+    const pickedSafe = pickRecordKeys(withPollution, ['valid', '__proto__']);
+    expect(pickedSafe).toEqual({ valid: 42 });
+    expect('bad' in Object.prototype).toBe(false);
   });
 });

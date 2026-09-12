@@ -68,9 +68,12 @@ export function createPopoverSchema<
     keys,
     createResolver,
     Trigger: createSchemaTrigger(definition),
-    useData: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverData<K, SchemaData<TSchema, K>>(key),
-    useEntry: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverEntry<K, SchemaData<TSchema, K>>(key),
-    usePopover: <K extends SchemaKeys<TSchema>>(key: K) => usePopover<K, SchemaData<TSchema, K>>(key),
+    useData: <K extends SchemaKeys<TSchema>>(key: K) =>
+      usePopoverData<K, SchemaData<TSchema, K>>(key),
+    useEntry: <K extends SchemaKeys<TSchema>>(key: K) =>
+      usePopoverEntry<K, SchemaData<TSchema, K>>(key),
+    usePopover: <K extends SchemaKeys<TSchema>>(key: K) =>
+      usePopover<K, SchemaData<TSchema, K>>(key),
     useBreadcrumbs: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverBreadcrumbs(key),
     useChildren: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverChildrenKeys(key),
     useParent: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverParentKey(key),

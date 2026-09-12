@@ -8,7 +8,7 @@ vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>();
   return {
     ...actual,
-    useMemo: <T,>(fn: () => T): T => fn(),
+    useMemo: <T>(fn: () => T): T => fn(),
     useCallback: <T extends (...args: readonly unknown[]) => unknown>(fn: T): T => fn,
   };
 });
@@ -18,7 +18,8 @@ describe('useCanvasModifiers', () => {
   const origDoc = globalThis.document;
 
   beforeEach(() => {
-    globalThis.window = { innerWidth: 1000, innerHeight: 800 } as unknown as Window & typeof globalThis;
+    globalThis.window = { innerWidth: 1000, innerHeight: 800 } as unknown as Window &
+      typeof globalThis;
     globalThis.document = {} as unknown as Document;
   });
 

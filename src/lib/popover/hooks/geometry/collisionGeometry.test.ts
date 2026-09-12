@@ -42,15 +42,7 @@ describe('collisionGeometry', () => {
       pinnedLayoutPos: { top: 100, left: 150 },
     };
 
-    const result = applySpatialCollisionNudge(
-      'card-current',
-      100,
-      150,
-      1920,
-      1080,
-      [sibling],
-      {},
-    );
+    const result = applySpatialCollisionNudge('card-current', 100, 150, 1920, 1080, [sibling], {});
 
     expect(result).not.toEqual({ top: 100, left: 150 });
     expect(typeof result.top).toBe('number');

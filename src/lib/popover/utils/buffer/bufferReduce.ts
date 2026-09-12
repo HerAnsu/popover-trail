@@ -11,11 +11,17 @@ import { findIndexInRing } from './bufferFind';
 import { forEachItem, forEachReversedItem } from './bufferIteration';
 import type { BufferPredicate, BufferReducer, ReadonlyRingBufferState } from './bufferTypes';
 
-export function someInRing<T>(state: ReadonlyRingBufferState<T>, pred: BufferPredicate<T>): boolean {
+export function someInRing<T>(
+  state: ReadonlyRingBufferState<T>,
+  pred: BufferPredicate<T>,
+): boolean {
   return findIndexInRing(state, pred) !== -1;
 }
 
-export function everyInRing<T>(state: ReadonlyRingBufferState<T>, pred: BufferPredicate<T>): boolean {
+export function everyInRing<T>(
+  state: ReadonlyRingBufferState<T>,
+  pred: BufferPredicate<T>,
+): boolean {
   for (let i = 0; i < state.count; i++) {
     const idx = toLogicalIndex(i);
     const item = getBufferItem(state, idx);

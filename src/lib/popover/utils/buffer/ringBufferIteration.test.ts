@@ -47,7 +47,11 @@ describe('RingBuffer Iteration & Traversal', () => {
     expect([...ring]).toEqual([1, 2, 3]);
     expect([...ring.values()]).toEqual([1, 2, 3]);
     expect([...ring.keys()]).toEqual([0, 1, 2]);
-    expect([...ring.entries()]).toEqual([[0, 1], [1, 2], [2, 3]]);
+    expect([...ring.entries()]).toEqual([
+      [0, 1],
+      [1, 2],
+      [2, 3],
+    ]);
     expect(Array.from(ring, (x) => x * 2)).toEqual([2, 4, 6]);
   });
 

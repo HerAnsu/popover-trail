@@ -17,11 +17,7 @@ export class FixedPool<T> {
   private readonly factory: () => T;
   private readonly reset?: (item: T) => void;
 
-  constructor(
-    factory: () => T,
-    capacity: number | PoolCapacity = 32,
-    reset?: (item: T) => void,
-  ) {
+  constructor(factory: () => T, capacity: number | PoolCapacity = 32, reset?: (item: T) => void) {
     this.factory = factory;
     this.reset = reset;
     this.capacity = toPoolCapacity(capacity);
@@ -47,7 +43,11 @@ export class FixedPool<T> {
   }
 
   runWith<R>(fn: (item: T) => R): R {
-    return runWithItem(() => this.acquire(), (i) => this.release(i), fn);
+    return runWithItem(
+      () => this.acquire(),
+      (i) => this.release(i),
+      fn,
+    );
   }
 
   get size(): number {

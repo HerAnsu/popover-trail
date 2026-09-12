@@ -49,18 +49,39 @@ export function createFluentBuilder<
       updateCardData(store, key, data);
       return builder;
     },
-    pin: (rect) => { pinCard(getState(), key, rect); return builder; },
-    unpin: () => { unpinCard(getState(), key); return builder; },
-    togglePin: (rect) => { getState().togglePin(key, rect); return builder; },
-    bringToFront: () => { getState().bringToFront(key); return builder; },
-    close: (opts) => { getState().closeByKey(key, opts); return builder; },
+    pin: (rect) => {
+      pinCard(getState(), key, rect);
+      return builder;
+    },
+    unpin: () => {
+      unpinCard(getState(), key);
+      return builder;
+    },
+    togglePin: (rect) => {
+      getState().togglePin(key, rect);
+      return builder;
+    },
+    bringToFront: () => {
+      getState().bringToFront(key);
+      return builder;
+    },
+    close: (opts) => {
+      getState().closeByKey(key, opts);
+      return builder;
+    },
     retry: async () => {
       await getState().retryPopover(key);
       return builder;
     },
     prefetch: async (pData) => getState().prefetchPopover(key, pData),
-    addParent: (pKey) => { addCardParent(getState(), key, pKey); return builder; },
-    removeParent: (pKey) => { removeCardParent(getState(), key, pKey); return builder; },
+    addParent: (pKey) => {
+      addCardParent(getState(), key, pKey);
+      return builder;
+    },
+    removeParent: (pKey) => {
+      removeCardParent(getState(), key, pKey);
+      return builder;
+    },
     when: (cond, fn) => {
       if (cond) fn(builder);
       return builder;

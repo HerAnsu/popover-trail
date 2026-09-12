@@ -62,10 +62,17 @@ export interface PopoverSchemaInstance<
 > {
   readonly definition: TSchema;
   readonly keys: { readonly [K in SchemaKeys<TSchema>]: K };
-  createResolver: <TC = TContext>() => PopoverResolver<SchemaData<TSchema, SchemaKeys<TSchema>>, TC>;
-  Trigger: ComponentType<Omit<PopoverTriggerProps, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }>;
+  createResolver: <TC = TContext>() => PopoverResolver<
+    SchemaData<TSchema, SchemaKeys<TSchema>>,
+    TC
+  >;
+  Trigger: ComponentType<
+    Omit<PopoverTriggerProps, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }
+  >;
   useData: <K extends SchemaKeys<TSchema>>(key: K) => SchemaData<TSchema, K> | null | undefined;
-  useEntry: <K extends SchemaKeys<TSchema>>(key: K) => TrailEntry<SchemaData<TSchema, K>> | undefined;
+  useEntry: <K extends SchemaKeys<TSchema>>(
+    key: K,
+  ) => TrailEntry<SchemaData<TSchema, K>> | undefined;
   usePopover: <K extends SchemaKeys<TSchema>>(key: K) => UsePopoverResult<SchemaData<TSchema, K>>;
   useBreadcrumbs: <K extends SchemaKeys<TSchema>>(key: K) => readonly SchemaKeys<TSchema>[];
   useChildren: <K extends SchemaKeys<TSchema>>(key: K) => readonly SchemaKeys<TSchema>[];

@@ -6,6 +6,7 @@
  */
 
 import type { TrailEntry } from '../types';
+import { isUnsafeKey } from './safeKeys';
 
 export function getEntryAtIndex<TData, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],
@@ -42,4 +43,110 @@ export function findEntryInStore<TData, TPopoverKey extends string = string>(
   key: string,
 ): TrailEntry<TData, TPopoverKey> | undefined {
   return floating.find((e) => e.key === key) ?? trail.find((e) => e.key === key);
+}
+
+/**
+ * Returns a deduplicated array preserving original order.
+
+ *
+ * @template T - Element type.
+ * @param items - Readonly array of items.
+ * @returns Frozen array of unique elements.
+ */
+export function unique<T>(items: readonly T[]): readonly T[] {
+  if (items.length <= 1) return items;
+  return Object.freeze([...new Set(items)]);
+}
+
+/**
+ * Splits an array into a 2-tuple `[truthy, falsy]` according to predicate.
+ *
+ * @template T - Element type.
+ * @param items - Source array.
+ * @param predicate - Filter condition.
+ * @returns Readonly 2-tuple `[matching, nonMatching]`.
+ */
+export function partition<T>(
+  items: readonly T[],
+  predicate: (item: T) => boolean,
+): readonly [readonly T[], readonly T[]] {
+  const matching: T[] = [];
+  const nonMatching: T[] = [];
+  for (const item of items) {
+    if (predicate(item)) {
+      matching.push(item);
+    } else {
+      nonMatching.push(item);
+    }
+  }
+  return Object.freeze([Object.freeze(matching), Object.freeze(nonMatching)]);
+}
+
+/**
+ * Groups elements of an array by key extracted via `getKey` selector.
+ * Protects against prototype pollution by discarding unsafe object keys.
+ *
+ * @template T - Item type.
+ * @template K - Group key.
+ */
+export function groupBy<T, K extends string | number>(
+  items: readonly T[],
+  getKey: (item: T) => K,
+): Record<K, readonly T[]> {
+  const result: Record<string, T[]> = {};
+  for (const item of items) {
+    const key = String(getKey(item));
+    if (isUnsafeKey(key)) continue;
+    let group = result[key];
+    if (!group) {
+      group = [];
+      result[key] = group;
+    }
+    group.push(item);
+  }
+  for (const key of Object.keys(result)) {
+    const group = result[key];
+    if (group) {
+      Object.freeze(group);
+    }
+  }
+  return result as Record<K, readonly T[]>;
+}
+
+/**
+ * Creates a dictionary mapping keys to array items using `getKey` selector.
+ * Later items overwrite earlier items with the same key.
+ *
+ * @template T - Item type.
+ * @template K - Key type.
+ */
+export function keyBy<T, K extends string | number>(
+  items: readonly T[],
+  getKey: (item: T) => K,
+): Record<K, T> {
+  const result: Record<string, T> = {};
+  for (const item of items) {
+    const key = String(getKey(item));
+    if (isUnsafeKey(key)) continue;
+    result[key] = item;
+  }
+  return result as Record<K, T>;
+}
+
+/**
+ * Splits an array into chunks of specified maximum size.
+ *
+ * @template T - Element type.
+ * @param items - Array to chunk.
+ * @param size - Chunk size (must be >= 1).
+ * @returns Array of chunks.
+ */
+export function chunk<T>(items: readonly T[], size: number): readonly (readonly T[])[] {
+  const safeSize = Math.max(1, Math.floor(size));
+  if (items.length === 0) return Object.freeze([]);
+  const result: (readonly T[])[] = [];
+  for (let i = 0; i < items.length; i += safeSize) {
+    result.push(Object.freeze(items.slice(i, i + safeSize)));
+  }
+  return Object.freeze(result);
 }

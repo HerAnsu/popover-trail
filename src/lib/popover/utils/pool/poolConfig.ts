@@ -17,10 +17,7 @@ import {
   DEFAULT_POOL_MAX,
   DEFAULT_LEAK_TIMEOUT,
 } from './poolBranded';
-import {
-  type InvalidPoolOptionsError,
-  createInvalidPoolOptionsError,
-} from './poolErrors';
+import { type InvalidPoolOptionsError, createInvalidPoolOptionsError } from './poolErrors';
 import { Ok, Err, type Result } from '../result';
 
 export interface ObjectPoolResolvedConfig<T> {
@@ -44,9 +41,10 @@ export function resolvePoolOptions<T>(
     const safeMax = toPoolCapacity(target.maxCapacity ?? DEFAULT_POOL_MAX);
     const rawInit = target.initialCapacity ?? DEFAULT_POOL_INITIAL;
     const safeInitial = toPoolSize(Math.min(toPoolSize(rawInit), safeMax));
-    const idleDrain = target.idleDrainTimeoutMs !== undefined
-      ? toPoolTimeoutMs(target.idleDrainTimeoutMs)
-      : undefined;
+    const idleDrain =
+      target.idleDrainTimeoutMs !== undefined
+        ? toPoolTimeoutMs(target.idleDrainTimeoutMs)
+        : undefined;
 
     return {
       factory: target.factory,
@@ -73,7 +71,9 @@ export function resolvePoolOptions<T>(
 }
 
 function isObjectPoolOptions<T>(val: unknown): val is ObjectPoolOptions<T> {
-  return typeof val === 'object' && val !== null && 'factory' in val && typeof val.factory === 'function';
+  return (
+    typeof val === 'object' && val !== null && 'factory' in val && typeof val.factory === 'function'
+  );
 }
 
 export function validatePoolOptions<T>(

@@ -26,11 +26,7 @@ export function isPopoverStoreEvent<TData = unknown, TPopoverKey extends string 
 }
 
 /** Internal predicate matching a PopoverStoreEvent against an action name. */
-function matchesEventAction<
-  TData,
-  TPopoverKey extends string,
-  A extends PopoverEventAction,
->(
+function matchesEventAction<TData, TPopoverKey extends string, A extends PopoverEventAction>(
   event: PopoverStoreEvent<TData, TPopoverKey>,
   action: A,
 ): event is Extract<PopoverStoreEvent<TData, TPopoverKey>, { type: A | `popover:${A}` }> {
@@ -40,14 +36,20 @@ function matchesEventAction<
 /** Type guard for 'open_root' event. */
 export function isOpenRootEvent<TData = unknown, TPopoverKey extends string = string>(
   event: PopoverStoreEvent<TData, TPopoverKey>,
-): event is Extract<PopoverStoreEvent<TData, TPopoverKey>, { type: 'open_root' | 'popover:open_root' }> {
+): event is Extract<
+  PopoverStoreEvent<TData, TPopoverKey>,
+  { type: 'open_root' | 'popover:open_root' }
+> {
   return matchesEventAction(event, 'open_root');
 }
 
 /** Type guard for 'push_nested' event. */
 export function isPushNestedEvent<TData = unknown, TPopoverKey extends string = string>(
   event: PopoverStoreEvent<TData, TPopoverKey>,
-): event is Extract<PopoverStoreEvent<TData, TPopoverKey>, { type: 'push_nested' | 'popover:push_nested' }> {
+): event is Extract<
+  PopoverStoreEvent<TData, TPopoverKey>,
+  { type: 'push_nested' | 'popover:push_nested' }
+> {
   return matchesEventAction(event, 'push_nested');
 }
 

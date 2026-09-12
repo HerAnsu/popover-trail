@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  defineSchemaNode,
-  getAllowedChildren,
-  hasAllowedChild,
-} from './schemaNode';
+import { defineSchemaNode, getAllowedChildren, hasAllowedChild } from './schemaNode';
 
 describe('schemaNode', () => {
   interface UserData {

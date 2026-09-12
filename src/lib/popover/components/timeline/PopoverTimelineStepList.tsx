@@ -53,9 +53,7 @@ function renderTimelineStepListChildren<TData>(
       timeline,
     });
   }
-  return timeline.history.map((item, idx) =>
-    children(item, idx === timeline.currentIndex, idx),
-  );
+  return timeline.history.map((item, idx) => children(item, idx === timeline.currentIndex, idx));
 }
 
 export function PopoverTimelineStepList<E extends ElementType = 'ol', TData = unknown>({

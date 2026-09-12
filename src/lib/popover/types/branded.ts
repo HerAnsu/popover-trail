@@ -162,4 +162,3 @@ export function emptyRecord<K extends string = string, V = unknown>(): Readonly<
 > {
   return EMPTY_READONLY_OBJECT as Readonly<Partial<Record<K, V>>>;
 }
-

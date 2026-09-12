@@ -9,18 +9,11 @@ import type { StorageAdapter } from './cacheTypes';
 
 function isCatchable(val: unknown): val is { catch: (onRejected: () => void) => unknown } {
   return (
-    typeof val === 'object' &&
-    val !== null &&
-    'catch' in val &&
-    typeof val.catch === 'function'
+    typeof val === 'object' && val !== null && 'catch' in val && typeof val.catch === 'function'
   );
 }
 
-export function handlePromiseRejection<T>(
-  storage: StorageAdapter<T>,
-  key: string,
-  data: T,
-): void {
+export function handlePromiseRejection<T>(storage: StorageAdapter<T>, key: string, data: T): void {
   if (isCatchable(data)) {
     data.catch(() => {
       if (storage.get(key)?.data === data) storage.delete(key);

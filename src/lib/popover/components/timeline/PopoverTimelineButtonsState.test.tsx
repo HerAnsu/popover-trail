@@ -58,9 +58,7 @@ describe('PopoverTimelineButtonsState', () => {
     activeScope = { timeline };
     const customOnClick = vi.fn();
 
-    const html = renderToStaticMarkup(
-      <PopoverTimelineUndoButton onClick={customOnClick} />,
-    );
+    const html = renderToStaticMarkup(<PopoverTimelineUndoButton onClick={customOnClick} />);
 
     expect(html).not.toContain('disabled=""');
     expect(html).toContain('Undo');
@@ -78,9 +76,7 @@ describe('PopoverTimelineButtonsState', () => {
     const customOnClick = vi.fn();
     const preventDefault = vi.fn();
 
-    const html = renderToStaticMarkup(
-      <PopoverTimelineRedoButton onClick={customOnClick} />,
-    );
+    const html = renderToStaticMarkup(<PopoverTimelineRedoButton onClick={customOnClick} />);
 
     expect(html).toContain('disabled=""');
     expect(html).toContain('aria-label="Redo Popover Action"');
@@ -99,9 +95,7 @@ describe('PopoverTimelineButtonsState', () => {
     activeScope = { timeline };
     const customOnClick = vi.fn();
 
-    const html = renderToStaticMarkup(
-      <PopoverTimelineRedoButton onClick={customOnClick} />,
-    );
+    const html = renderToStaticMarkup(<PopoverTimelineRedoButton onClick={customOnClick} />);
 
     expect(html).not.toContain('disabled=""');
 

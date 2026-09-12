@@ -9,10 +9,7 @@ import { isValidStorageKey } from '../safeKeys';
 
 function isCacheEntry<T>(val: unknown): val is CacheEntry<T> {
   return (
-    typeof val === 'object' &&
-    val !== null &&
-    'expiry' in val &&
-    typeof val.expiry === 'number'
+    typeof val === 'object' && val !== null && 'expiry' in val && typeof val.expiry === 'number'
   );
 }
 

@@ -18,10 +18,7 @@ export interface PoolHealthReport {
   readonly recommendations: readonly string[];
 }
 
-export function assessPoolHealth(
-  metrics: ObjectPoolMetrics,
-  leakedCount = 0,
-): PoolHealthReport {
+export function assessPoolHealth(metrics: ObjectPoolMetrics, leakedCount = 0): PoolHealthReport {
   const saturation = metrics.capacity > 0 ? metrics.inUse / metrics.capacity : 0;
   const recs: string[] = [];
   let score = 100;

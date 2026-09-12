@@ -84,4 +84,3 @@ export function mergePopoverSchemas<
     merged as MergedSchemaDefinition<TSchemas>,
   );
 }
-

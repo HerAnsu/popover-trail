@@ -17,9 +17,7 @@ export interface SWRHost<TData> {
 
 type UpdaterFn<TData> = (prev: TData | undefined) => TData;
 
-function isUpdaterFunction<TData>(
-  value: TData | UpdaterFn<TData>,
-): value is UpdaterFn<TData> {
+function isUpdaterFunction<TData>(value: TData | UpdaterFn<TData>): value is UpdaterFn<TData> {
   return typeof value === 'function';
 }
 

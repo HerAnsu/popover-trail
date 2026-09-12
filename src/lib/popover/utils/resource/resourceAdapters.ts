@@ -8,9 +8,7 @@
 import { createDisposable } from './singleDisposable';
 import type { ScopeDisposable } from './disposableTypes';
 
-export function createTimerDisposable(
-  timerId: ReturnType<typeof setTimeout>,
-): ScopeDisposable {
+export function createTimerDisposable(timerId: ReturnType<typeof setTimeout>): ScopeDisposable {
   return createDisposable(() => {
     clearTimeout(timerId);
   });
@@ -35,7 +33,9 @@ export function createEventListenerDisposable<K extends string>(
   });
 }
 
-export function createAbortDisposable(controller: AbortController | null | undefined): ScopeDisposable {
+export function createAbortDisposable(
+  controller: AbortController | null | undefined,
+): ScopeDisposable {
   return createDisposable(() => {
     if (controller && !controller.signal.aborted) {
       controller.abort();

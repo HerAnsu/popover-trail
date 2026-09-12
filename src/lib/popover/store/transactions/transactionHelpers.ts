@@ -1,8 +1,8 @@
 import type { HistorySnapshot } from '../history';
 import type { PopoverDAG } from '../../utils/dag';
 import type { PopoverStateData, StatePatch } from '../../types';
-import { getSnapshotStatePatch } from '../reducers/stack';
-import { restoreDAGFromState } from '../persistence/persistenceHelpers';
+import { getSnapshotStatePatch } from '../reducers';
+import { restoreDAGFromState } from '../persistence';
 
 export function applyHistorySnapshot<TData, TContext, TPopoverKey extends string = string>(
   snapshot: HistorySnapshot<TData, TPopoverKey>,

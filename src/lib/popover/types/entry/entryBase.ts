@@ -12,8 +12,10 @@ export const POPOVER_TRANSITION_STATUSES = ['mounting', 'mounted', 'unmounting']
 
 export type PopoverTransitionStatus = (typeof POPOVER_TRANSITION_STATUSES)[number];
 
-export interface TrailEntryBase<TPopoverKey extends string = string, TData = unknown>
-  extends PopoverDisplayOptions {
+export interface TrailEntryBase<
+  TPopoverKey extends string = string,
+  TData = unknown,
+> extends PopoverDisplayOptions {
   key: TPopoverKey;
   parentKey?: TPopoverKey;
   parentKeys?: ReadonlySet<TPopoverKey> | readonly TPopoverKey[];

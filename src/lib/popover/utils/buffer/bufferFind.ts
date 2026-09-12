@@ -43,8 +43,14 @@ export function findInRing<T, S extends T>(
   state: ReadonlyRingBufferState<T>,
   pred: BufferTypeGuard<T, S>,
 ): S | undefined;
-export function findInRing<T>(state: ReadonlyRingBufferState<T>, pred: BufferPredicate<T>): T | undefined;
-export function findInRing<T>(state: ReadonlyRingBufferState<T>, pred: BufferPredicate<T>): T | undefined {
+export function findInRing<T>(
+  state: ReadonlyRingBufferState<T>,
+  pred: BufferPredicate<T>,
+): T | undefined;
+export function findInRing<T>(
+  state: ReadonlyRingBufferState<T>,
+  pred: BufferPredicate<T>,
+): T | undefined {
   const idx = findIndexInRing(state, pred);
   return idx === -1 ? undefined : getBufferItem(state, idx);
 }

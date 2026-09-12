@@ -35,9 +35,7 @@ export function isPoint2DInstance(val: unknown): val is Point2D {
   if (val instanceof Point2D) return true;
   if (!isObjectRecord(val)) return false;
   return (
-    typeof val.x === 'number' &&
-    typeof val.y === 'number' &&
-    typeof val.distanceTo === 'function'
+    typeof val.x === 'number' && typeof val.y === 'number' && typeof val.distanceTo === 'function'
   );
 }
 

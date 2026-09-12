@@ -32,7 +32,10 @@ export interface StoreDependenciesConfig<
   resetStoreState: () => void;
   getStoreState: () => PopoverStateData<TData, TContext, TPopoverKey>;
   subscribeState?: (
-    listener: (s: PopoverStore<TData, TContext, TPopoverKey>, p: PopoverStore<TData, TContext, TPopoverKey>) => void,
+    listener: (
+      s: PopoverStore<TData, TContext, TPopoverKey>,
+      p: PopoverStore<TData, TContext, TPopoverKey>,
+    ) => void,
   ) => () => void;
 }
 

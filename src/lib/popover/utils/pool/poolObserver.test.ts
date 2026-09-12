@@ -46,11 +46,21 @@ describe('poolObserver', () => {
   it('isolates exceptions thrown inside observer callbacks', () => {
     const hub = new PoolObserverHub<{ v: number }>();
     const buggyObserver: PoolObserver<{ v: number }> = {
-      onAcquire: () => { throw new Error('Observer failure'); },
-      onRelease: () => { throw new Error('Observer failure'); },
-      onEvict: () => { throw new Error('Observer failure'); },
-      onPreallocate: () => { throw new Error('Observer failure'); },
-      onDrain: () => { throw new Error('Observer failure'); },
+      onAcquire: () => {
+        throw new Error('Observer failure');
+      },
+      onRelease: () => {
+        throw new Error('Observer failure');
+      },
+      onEvict: () => {
+        throw new Error('Observer failure');
+      },
+      onPreallocate: () => {
+        throw new Error('Observer failure');
+      },
+      onDrain: () => {
+        throw new Error('Observer failure');
+      },
     };
 
     hub.subscribe(buggyObserver);

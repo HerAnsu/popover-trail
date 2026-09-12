@@ -85,7 +85,11 @@ export class ResolverCacheManager<TData = unknown, TPopoverKey extends string = 
     }
   }
 
-  public clear(): void { this.invalidate(); }
+  public clear(): void {
+    this.invalidate();
+  }
 
-  public [Symbol.dispose](): void { this.invalidate(); }
+  public [Symbol.dispose](): void {
+    this.invalidate();
+  }
 }

@@ -9,11 +9,7 @@ import type { PopoverStoreEvent, PopoverEventAction } from '../../types/eventTyp
 import type { PopoverTimelineStep, ActiveTimelineStep } from '../../types/events/timelineEvents';
 import { isPlainObject } from './objectGuards';
 
-function matchesEventAction<
-  TData,
-  TPopoverKey extends string,
-  A extends PopoverEventAction,
->(
+function matchesEventAction<TData, TPopoverKey extends string, A extends PopoverEventAction>(
   event: PopoverStoreEvent<TData, TPopoverKey>,
   action: A,
 ): event is Extract<PopoverStoreEvent<TData, TPopoverKey>, { type: A | `popover:${A}` }> {
@@ -23,7 +19,10 @@ function matchesEventAction<
 /** Type guard for 'resolve_start' event. */
 export function isResolveStartEvent<TData = unknown, TPopoverKey extends string = string>(
   event: PopoverStoreEvent<TData, TPopoverKey>,
-): event is Extract<PopoverStoreEvent<TData, TPopoverKey>, { type: 'resolve_start' | 'popover:resolve_start' }> {
+): event is Extract<
+  PopoverStoreEvent<TData, TPopoverKey>,
+  { type: 'resolve_start' | 'popover:resolve_start' }
+> {
   return matchesEventAction(event, 'resolve_start');
 }
 
@@ -40,28 +39,40 @@ export function isResolveSuccessEvent<TData = unknown, TPopoverKey extends strin
 /** Type guard for 'resolve_error' event. */
 export function isResolveErrorEvent<TData = unknown, TPopoverKey extends string = string>(
   event: PopoverStoreEvent<TData, TPopoverKey>,
-): event is Extract<PopoverStoreEvent<TData, TPopoverKey>, { type: 'resolve_error' | 'popover:resolve_error' }> {
+): event is Extract<
+  PopoverStoreEvent<TData, TPopoverKey>,
+  { type: 'resolve_error' | 'popover:resolve_error' }
+> {
   return matchesEventAction(event, 'resolve_error');
 }
 
 /** Type guard for 'resolve_perf' event. */
 export function isResolvePerfEvent<TData = unknown, TPopoverKey extends string = string>(
   event: PopoverStoreEvent<TData, TPopoverKey>,
-): event is Extract<PopoverStoreEvent<TData, TPopoverKey>, { type: 'resolve_perf' | 'popover:resolve_perf' }> {
+): event is Extract<
+  PopoverStoreEvent<TData, TPopoverKey>,
+  { type: 'resolve_perf' | 'popover:resolve_perf' }
+> {
   return matchesEventAction(event, 'resolve_perf');
 }
 
 /** Type guard for 'drag_start' event. */
 export function isDragStartEvent<TData = unknown, TPopoverKey extends string = string>(
   event: PopoverStoreEvent<TData, TPopoverKey>,
-): event is Extract<PopoverStoreEvent<TData, TPopoverKey>, { type: 'drag_start' | 'popover:drag_start' }> {
+): event is Extract<
+  PopoverStoreEvent<TData, TPopoverKey>,
+  { type: 'drag_start' | 'popover:drag_start' }
+> {
   return matchesEventAction(event, 'drag_start');
 }
 
 /** Type guard for 'drag_end' event. */
 export function isDragEndEvent<TData = unknown, TPopoverKey extends string = string>(
   event: PopoverStoreEvent<TData, TPopoverKey>,
-): event is Extract<PopoverStoreEvent<TData, TPopoverKey>, { type: 'drag_end' | 'popover:drag_end' }> {
+): event is Extract<
+  PopoverStoreEvent<TData, TPopoverKey>,
+  { type: 'drag_end' | 'popover:drag_end' }
+> {
   return matchesEventAction(event, 'drag_end');
 }
 

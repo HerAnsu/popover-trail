@@ -9,10 +9,7 @@ import type { CSSProperties, HTMLAttributes, KeyboardEvent } from 'react';
 import type { TrailEntry, PopoverPlacement } from '../../types';
 import type { usePopoverActions } from '../../context/usePopoverStore';
 
-export interface UsePopoverCardOptions<
-  TData = unknown,
-  TPopoverKey extends string = string,
-> {
+export interface UsePopoverCardOptions<TData = unknown, TPopoverKey extends string = string> {
   entry: TrailEntry<TData, TPopoverKey>;
   index: number;
   isPinned: boolean;

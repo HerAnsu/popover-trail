@@ -48,11 +48,9 @@ PopoverCardScopeContext.displayName = 'PopoverCardScopeContext';
 export const PopoverCardStaticContext = createContext<CardStaticScope<unknown> | null>(null);
 PopoverCardStaticContext.displayName = 'PopoverCardStaticContext';
 
-function assertCardScope<
-  TData,
-  TContext = unknown,
-  TPopoverKey extends string = string,
->(ctx: unknown): asserts ctx is PopoverCardScope<TData, TContext, TPopoverKey> {
+function assertCardScope<TData, TContext = unknown, TPopoverKey extends string = string>(
+  ctx: unknown,
+): asserts ctx is PopoverCardScope<TData, TContext, TPopoverKey> {
   validateCardSubComponentScope(isPopoverCardScope(ctx), 'SubComponent');
   if (!isPopoverCardScope<TData, TContext, TPopoverKey>(ctx)) {
     throw new Error('<PopoverCard> sub-components must be rendered within a <PopoverCard>');

@@ -14,10 +14,7 @@ export * from './cardResolvers';
 
 const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
-export interface CardStoreSliceData<
-  TData = unknown,
-  TPopoverKey extends string = string,
-> {
+export interface CardStoreSliceData<TData = unknown, TPopoverKey extends string = string> {
   readonly offset: { readonly x: number; readonly y: number };
   readonly zIndex: number;
   readonly isTop: boolean;
@@ -31,10 +28,9 @@ export interface CardStoreSliceData<
   readonly zIndexBaseMap?: Record<string, number> | null;
 }
 
-export function useCardStoreSlice<
-  TData = unknown,
-  TPopoverKey extends string = string,
->(entryKey: TPopoverKey): CardStoreSliceData<TData, TPopoverKey> {
+export function useCardStoreSlice<TData = unknown, TPopoverKey extends string = string>(
+  entryKey: TPopoverKey,
+): CardStoreSliceData<TData, TPopoverKey> {
   return usePopoverStore<CardStoreSliceData<TData, TPopoverKey>, TData, unknown, TPopoverKey>(
     useCallback(
       (

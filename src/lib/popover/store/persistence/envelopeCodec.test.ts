@@ -46,7 +46,9 @@ describe('envelopeCodec module', () => {
     if (decodeResult.success) {
       expect(decodeResult.data.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
       expect(decodeResult.data.ownerId).toBe('owner-roundtrip');
-      expect(decodeResult.data.trail).toEqual([{ key: 'root-node', isLoading: false, error: null }]);
+      expect(decodeResult.data.trail).toEqual([
+        { key: 'root-node', isLoading: false, error: null },
+      ]);
       expect(decodeResult.data.offsets['root-node']).toEqual({ x: 5, y: 15 });
       expect(decodeResult.data.zIndexOrder).toEqual(['root-node']);
     }

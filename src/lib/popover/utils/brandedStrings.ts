@@ -39,30 +39,26 @@ export function createBrandedIdentity<B extends string>(brandName: B) {
   };
 }
 
-
 const popoverKeyIdentity = createBrandedIdentity('PopoverKey');
 /** Smart constructor for `PopoverKey`. Validates non-empty trimmed string. */
 export const toPopoverKey: <K extends string = string>(key: K) => PopoverKey<K> =
   popoverKeyIdentity.toBrand;
 /** Type guard predicate checking if a value is a valid non-empty PopoverKey. */
-export const isPopoverKey: (value: unknown) => value is PopoverKey =
-  popoverKeyIdentity.isBrand;
+export const isPopoverKey: (value: unknown) => value is PopoverKey = popoverKeyIdentity.isBrand;
 
 const parentKeyIdentity = createBrandedIdentity('ParentKey');
 /** Smart constructor for `ParentKey`. */
 export const toParentKey: <K extends string = string>(key: K) => ParentKey<K> =
   parentKeyIdentity.toBrand;
 /** Type guard predicate checking if a value is a valid non-empty ParentKey. */
-export const isParentKey: (value: unknown) => value is ParentKey =
-  parentKeyIdentity.isBrand;
+export const isParentKey: (value: unknown) => value is ParentKey = parentKeyIdentity.isBrand;
 
 const ownerIdIdentity = createBrandedIdentity('OwnerId');
 /** Smart constructor for `OwnerId`. */
 export const toOwnerId: <O extends string = string>(ownerId: O) => OwnerId<O> =
   ownerIdIdentity.toBrand;
 /** Type guard predicate checking if a value is a valid non-empty OwnerId. */
-export const isOwnerId: (value: unknown) => value is OwnerId =
-  ownerIdIdentity.isBrand;
+export const isOwnerId: (value: unknown) => value is OwnerId = ownerIdIdentity.isBrand;
 
 const stackGroupIdIdentity = createBrandedIdentity('StackGroupId');
 /** Smart constructor for `StackGroupId`. */
@@ -77,16 +73,13 @@ const triggerIdIdentity = createBrandedIdentity('TriggerId');
 export const toTriggerId: <T extends string = string>(id: T) => TriggerId<T> =
   triggerIdIdentity.toBrand;
 /** Type guard predicate checking if a value is a valid non-empty TriggerId. */
-export const isTriggerId: (value: unknown) => value is TriggerId =
-  triggerIdIdentity.isBrand;
+export const isTriggerId: (value: unknown) => value is TriggerId = triggerIdIdentity.isBrand;
 
 const scopeIdIdentity = createBrandedIdentity('ScopeId');
 /** Smart constructor for `ScopeId`. */
-export const toScopeId: <T extends string = string>(id: T) => ScopeId<T> =
-  scopeIdIdentity.toBrand;
+export const toScopeId: <T extends string = string>(id: T) => ScopeId<T> = scopeIdIdentity.toBrand;
 /** Type guard predicate checking if a value is a valid non-empty ScopeId. */
-export const isScopeId: (value: unknown) => value is ScopeId =
-  scopeIdIdentity.isBrand;
+export const isScopeId: (value: unknown) => value is ScopeId = scopeIdIdentity.isBrand;
 
 const subscriptionIdIdentity = createBrandedIdentity('SubscriptionId');
 /** Smart constructor for `SubscriptionId`. */
@@ -101,21 +94,18 @@ const storageKeyIdentity = createBrandedIdentity('StorageKey');
 export const toStorageKey: <T extends string = string>(key: T) => StorageKey<T> =
   storageKeyIdentity.toBrand;
 /** Type guard predicate checking if a value is a valid non-empty StorageKey. */
-export const isStorageKey: (value: unknown) => value is StorageKey =
-  storageKeyIdentity.isBrand;
+export const isStorageKey: (value: unknown) => value is StorageKey = storageKeyIdentity.isBrand;
 
 const channelIdIdentity = createBrandedIdentity('ChannelId');
 /** Smart constructor for `ChannelId`. */
 export const toChannelId: <T extends string = string>(id: T) => ChannelId<T> =
   channelIdIdentity.toBrand;
 /** Type guard predicate checking if a value is a valid non-empty ChannelId. */
-export const isChannelId: (value: unknown) => value is ChannelId =
-  channelIdIdentity.isBrand;
+export const isChannelId: (value: unknown) => value is ChannelId = channelIdIdentity.isBrand;
 
 const cacheKeyIdentity = createBrandedIdentity('CacheKey');
 /** Smart constructor for `CacheKey`. Validates non-empty trimmed string. */
 export const toCacheKey: <K extends string = string>(key: K) => CacheKey<K> =
   cacheKeyIdentity.toBrand;
 /** Type guard predicate checking if a value is a valid non-empty CacheKey. */
-export const isCacheKey: (value: unknown) => value is CacheKey =
-  cacheKeyIdentity.isBrand;
+export const isCacheKey: (value: unknown) => value is CacheKey = cacheKeyIdentity.isBrand;

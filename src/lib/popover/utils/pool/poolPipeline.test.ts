@@ -30,7 +30,9 @@ describe('poolPipeline', () => {
   it('iterates inputs using forEachItem with single item recycling', () => {
     const pool = new ObjectPool(
       () => ({ counter: 0 }),
-      (item) => { item.counter = 0; },
+      (item) => {
+        item.counter = 0;
+      },
       2,
       5,
     );
@@ -54,15 +56,10 @@ describe('poolPipeline', () => {
   it('reduces elements using reduceWithItem cleanly', () => {
     const pool = new ObjectPool(() => ({ sum: 0 }), undefined, 1, 2);
 
-    const total = reduceWithItem(
-      pool,
-      [1, 2, 3, 4],
-      0,
-      (acc, item, val) => {
-        item.sum = val * 10;
-        return acc + item.sum;
-      },
-    );
+    const total = reduceWithItem(pool, [1, 2, 3, 4], 0, (acc, item, val) => {
+      item.sum = val * 10;
+      return acc + item.sum;
+    });
 
     expect(total).toBe(100);
     expect(pool.size).toBe(1);

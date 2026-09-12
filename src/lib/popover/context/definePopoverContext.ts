@@ -24,14 +24,10 @@ export function definePopoverContext<
 >() {
   return {
     useContext: () => usePopoverContext<TContext>(),
-    useActions: <
-      TActionData = TData,
-      TActionKey extends string = TPopoverKey,
-    >() => usePopoverActions<TActionData, TContext, TActionKey>(),
-    useStoreApi: <
-      TStoreData = TData,
-      TStoreKey extends string = TPopoverKey,
-    >() => usePopoverStoreApi<TStoreData, TContext, TStoreKey>(),
+    useActions: <TActionData = TData, TActionKey extends string = TPopoverKey>() =>
+      usePopoverActions<TActionData, TContext, TActionKey>(),
+    useStoreApi: <TStoreData = TData, TStoreKey extends string = TPopoverKey>() =>
+      usePopoverStoreApi<TStoreData, TContext, TStoreKey>(),
     Provider: (props: PopoverProviderProps<TData, TContext>) =>
       React.createElement<PopoverProviderProps<TData, TContext>>(PopoverProvider, props),
   };

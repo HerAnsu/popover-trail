@@ -22,7 +22,8 @@ export function collectChildrenKeys<TPopoverKey extends string = string, TData =
   return children.length > 0 ? children : EMPTY_ARRAY;
 }
 
-export const selectChildrenKeys = <TPopoverKey extends string = string, TData = unknown>(key: string) =>
+export const selectChildrenKeys =
+  <TPopoverKey extends string = string, TData = unknown>(key: string) =>
   (state: HasActiveEntriesState<TData, TPopoverKey>): readonly TPopoverKey[] =>
     collectChildrenKeys<TPopoverKey, TData>(state.floating, state.trail, key);
 
@@ -55,11 +56,14 @@ export function buildBreadcrumbPath<TPopoverKey extends string = string, TData =
   return path.length > 0 ? path.toReversed() : EMPTY_ARRAY;
 }
 
-export const selectBreadcrumbs = <TPopoverKey extends string = string, TData = unknown>(key: string) =>
+export const selectBreadcrumbs =
+  <TPopoverKey extends string = string, TData = unknown>(key: string) =>
   (state: HasActiveEntriesState<TData, TPopoverKey>): readonly TPopoverKey[] =>
     buildBreadcrumbPath<TPopoverKey, TData>(state.floating, state.trail, key);
 
-export function selectPopoverDepth<TPopoverKey extends string = string, TData = unknown>(key: string) {
+export function selectPopoverDepth<TPopoverKey extends string = string, TData = unknown>(
+  key: string,
+) {
   return (state: HasActiveEntriesState<TData, TPopoverKey>): number => {
     let depth = 0;
     let currentKey: string | undefined = key;
@@ -77,8 +81,12 @@ export function selectPopoverDepth<TPopoverKey extends string = string, TData = 
   };
 }
 
-export function selectTrailBranch<TPopoverKey extends string = string, TData = unknown>(key: string) {
-  return (state: HasActiveEntriesState<TData, TPopoverKey>): readonly TrailEntry<TData, TPopoverKey>[] => {
+export function selectTrailBranch<TPopoverKey extends string = string, TData = unknown>(
+  key: string,
+) {
+  return (
+    state: HasActiveEntriesState<TData, TPopoverKey>,
+  ): readonly TrailEntry<TData, TPopoverKey>[] => {
     const keys = new Set([
       ...buildBreadcrumbPath<TPopoverKey, TData>(state.floating, state.trail, key),
       ...collectChildrenKeys<TPopoverKey, TData>(state.floating, state.trail, key),

@@ -36,10 +36,7 @@ export function saveSnapshotToPlatform<TData>(
   if (storage) {
     const res = wrapResult(() => storage.setItem(storageKey, serialized));
     if (!isOk(res)) {
-      logger.error(
-        `[popover-trail]: Failed to save snapshot to ${storageType}:`,
-        res.error,
-      );
+      logger.error(`[popover-trail]: Failed to save snapshot to ${storageType}:`, res.error);
     }
   }
   if (broadcastChannel) {

@@ -269,15 +269,20 @@ describe('Type-Level Static Assertions (test-d)', () => {
     expectTypeOf<HistoryError>().toMatchTypeOf<
       { type: 'undo_underflow'; message: string } | { type: 'redo_underflow'; message: string }
     >();
-    expectTypeOf<PopoverNotFoundError>().toMatchTypeOf<
-      { type: 'popover_not_found'; key: string; message: string }
-    >();
-    expectTypeOf<SingularMatrixError>().toMatchTypeOf<
-      { type: 'singular_matrix'; message: string; determinant: number }
-    >();
-    expectTypeOf<SpatialNotFoundError>().toMatchTypeOf<
-      { type: 'spatial_not_found'; message: string }
-    >();
+    expectTypeOf<PopoverNotFoundError>().toMatchTypeOf<{
+      type: 'popover_not_found';
+      key: string;
+      message: string;
+    }>();
+    expectTypeOf<SingularMatrixError>().toMatchTypeOf<{
+      type: 'singular_matrix';
+      message: string;
+      determinant: number;
+    }>();
+    expectTypeOf<SpatialNotFoundError>().toMatchTypeOf<{
+      type: 'spatial_not_found';
+      message: string;
+    }>();
   });
 
   it('verifies Unbrand, BrandTagOf, IsBranded, and AnyBrand utility types', () => {
@@ -353,11 +358,10 @@ describe('Type-Level Static Assertions (test-d)', () => {
       inner?: { y?: string; items?: number[] };
     }>();
 
-
     type NonEmpty = NonEmptyArray<string>;
     expectTypeOf<['hello']>().toMatchTypeOf<NonEmpty>();
 
-    type EventMap = { 'open': { key: string }; 'close': { key: string } };
+    type EventMap = { open: { key: string }; close: { key: string } };
     expectTypeOf<EventPayload<EventMap, 'open'>>().toEqualTypeOf<{ key: string }>();
   });
 
@@ -367,4 +371,3 @@ describe('Type-Level Static Assertions (test-d)', () => {
     expectTypeOf<InferErr<TestResult>>().toEqualTypeOf<{ code: number }>();
   });
 });
-

@@ -22,7 +22,6 @@ export type Result<T, E = PopoverError> = OkResult<T> | ErrResult<E>;
 
 export type { InferOk, InferErr } from '../../types/utilityTypes';
 
-
 /**
  * Creates a frozen OkResult representing successful computation with data.
  *

@@ -41,12 +41,8 @@ export interface WorkerResolverDisposables {
 /**
  * Fully typed PopoverResolver backed by a Web Worker instance with explicit disposal.
  */
-export type WorkerResolver<TData = unknown, TContext = unknown> = PopoverResolver<
-  TData,
-  TContext
-> &
+export type WorkerResolver<TData = unknown, TContext = unknown> = PopoverResolver<TData, TContext> &
   WorkerResolverDisposables;
-
 
 export interface WorkerTaskResolveMessage<TContext = unknown, TPopoverKey extends string = string> {
   readonly action?: 'resolve';

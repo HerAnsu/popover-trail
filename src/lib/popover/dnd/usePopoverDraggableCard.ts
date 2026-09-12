@@ -24,7 +24,9 @@ export function usePopoverDraggableCard(
   options: UsePopoverDraggableCardOptions,
 ): UsePopoverDraggableCardResult {
   const {
-    entry, index, isPinned,
+    entry,
+    index,
+    isPinned,
     placement = 'bottom',
     enableDrag = true,
     enableTilt = true,
@@ -53,7 +55,9 @@ export function usePopoverDraggableCard(
     enableTilt: tilt.tiltEnabled,
     maxTiltAngle: tilt.maxTilt,
     tiltSensitivity: tilt.sensitivity,
-    dragAxis: tilt.axis, tiltFriction: tilt.friction, tiltDecay: tilt.decay,
+    dragAxis: tilt.axis,
+    tiltFriction: tilt.friction,
+    tiltDecay: tilt.decay,
     cardRef: domRef,
   });
 
@@ -62,7 +66,8 @@ export function usePopoverDraggableCard(
 
   const style = getPopoverStyles({
     finalLayoutPos: {
-      top: extractNumericStyle(card.style.top), left: extractNumericStyle(card.style.left),
+      top: extractNumericStyle(card.style.top),
+      left: extractNumericStyle(card.style.left),
     },
     ...dragTransforms,
     zIndex: extractNumericStyle(card.style.zIndex),

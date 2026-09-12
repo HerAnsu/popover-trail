@@ -51,7 +51,11 @@ describe('CQRS buses module', () => {
     const queryBus = new PopoverQueryBus(() => mockState);
 
     // Command side triggers actions without exposing state reads
-    const newEntry: TrailEntry<unknown, string> = { key: 'new-entry', isLoading: false, error: null };
+    const newEntry: TrailEntry<unknown, string> = {
+      key: 'new-entry',
+      isLoading: false,
+      error: null,
+    };
     commandBus.openRoot('owner-2', newEntry);
     expect(mockActions.openRoot).toHaveBeenCalledWith('owner-2', newEntry);
 

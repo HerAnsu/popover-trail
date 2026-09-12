@@ -24,8 +24,7 @@ describe('I_ReversibleJournal: Undo/Redo Homomorphism Invariants', () => {
   ): boolean {
     const s = store.getState();
     const isAlreadyActive =
-      s.trail.some((e) => e.key === action.key) ||
-      s.floating.some((e) => e.key === action.key);
+      s.trail.some((e) => e.key === action.key) || s.floating.some((e) => e.key === action.key);
 
     switch (action.type) {
       case 'openRoot': {
@@ -56,10 +55,7 @@ describe('I_ReversibleJournal: Undo/Redo Homomorphism Invariants', () => {
     }
   }
 
-  function assertSnapshotsBitForBitEqual(
-    actual: HistorySnapshot,
-    expected: HistorySnapshot,
-  ): void {
+  function assertSnapshotsBitForBitEqual(actual: HistorySnapshot, expected: HistorySnapshot): void {
     expect(actual.ownerId).toBe(expected.ownerId);
     expect(actual.trail.map((e) => e.key)).toEqual(expected.trail.map((e) => e.key));
     expect(actual.floating.map((e) => e.key)).toEqual(expected.floating.map((e) => e.key));

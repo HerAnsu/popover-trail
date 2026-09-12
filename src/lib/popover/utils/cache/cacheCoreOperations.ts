@@ -163,10 +163,7 @@ export function hasCacheEntry<T>(storage: StorageAdapter<T>, key: string): boole
  * @param now - Reference timestamp in milliseconds (defaults to `Date.now()`).
  * @returns Discriminated union of type `CacheEntryState<T>`.
  */
-export function getCacheEntryState<T>(
-  entry: CacheEntry<T>,
-  now = Date.now(),
-): CacheEntryState<T> {
+export function getCacheEntryState<T>(entry: CacheEntry<T>, now = Date.now()): CacheEntryState<T> {
   // Phase 1: Hard expiration check takes precedence over soft staleness
   if (now > entry.expiry) {
     return {

@@ -17,7 +17,10 @@ export function forEachItem<T>(state: ReadonlyRingBufferState<T>, fn: BufferCons
   }
 }
 
-export function forEachReversedItem<T>(state: ReadonlyRingBufferState<T>, fn: BufferConsumer<T>): void {
+export function forEachReversedItem<T>(
+  state: ReadonlyRingBufferState<T>,
+  fn: BufferConsumer<T>,
+): void {
   for (let i = 0; i < state.count; i++) {
     const idx = toLogicalIndex(i);
     const item = getBufferItem(state, toLogicalIndex(state.count - 1 - i));
@@ -42,7 +45,9 @@ export function createBufferIterator<T>(state: ReadonlyRingBufferState<T>): Iter
       const val = getBufferItem(state, toLogicalIndex(cur++));
       return val !== undefined ? { done: false, value: val } : { done: true, value: undefined };
     },
-    [Symbol.iterator]() { return this; },
+    [Symbol.iterator]() {
+      return this;
+    },
   };
 }
 
@@ -55,9 +60,13 @@ export function createBufferEntriesIterator<T>(
       if (cur >= state.count) return { done: true, value: undefined };
       const idx = toLogicalIndex(cur++);
       const val = getBufferItem(state, idx);
-      return val !== undefined ? { done: false, value: [idx, val] } : { done: true, value: undefined };
+      return val !== undefined
+        ? { done: false, value: [idx, val] }
+        : { done: true, value: undefined };
     },
-    [Symbol.iterator]() { return this; },
+    [Symbol.iterator]() {
+      return this;
+    },
   };
 }
 
@@ -70,7 +79,9 @@ export function createBufferKeysIterator<T = unknown>(
       if (cur >= state.count) return { done: true, value: undefined };
       return { done: false, value: toLogicalIndex(cur++) };
     },
-    [Symbol.iterator]() { return this; },
+    [Symbol.iterator]() {
+      return this;
+    },
   };
 }
 

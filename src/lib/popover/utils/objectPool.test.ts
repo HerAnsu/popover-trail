@@ -432,4 +432,3 @@ describe('ObjectPool utility', () => {
     expect(brokenEvict).toHaveBeenCalledTimes(3);
   });
 });
-

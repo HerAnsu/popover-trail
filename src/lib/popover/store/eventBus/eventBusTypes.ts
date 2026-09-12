@@ -6,10 +6,7 @@
 
 import type { RegisteredKeys, RegisteredDataMap } from '../../types/registerTypes';
 
-import type {
-  PopoverPayloadAction,
-  PopoverEventPayloadDefinitions,
-} from '../../types/eventTypes';
+import type { PopoverPayloadAction, PopoverEventPayloadDefinitions } from '../../types/eventTypes';
 
 export interface PopoverEventRegistry {}
 
@@ -60,7 +57,10 @@ export function createPopoverEvent<
   K extends PopoverEventType,
   TData = RegisteredDataMap[RegisteredKeys],
   TPopoverKey extends string = RegisteredKeys,
->(type: K, detail: PopoverEventPayloadMap<TData, TPopoverKey>[K]): PopoverCustomEvent<K, TData, TPopoverKey> {
+>(
+  type: K,
+  detail: PopoverEventPayloadMap<TData, TPopoverKey>[K],
+): PopoverCustomEvent<K, TData, TPopoverKey> {
   return new PopoverCustomEvent(type, detail);
 }
 
@@ -80,7 +80,8 @@ export interface PopoverEventBusOptions {
 }
 
 export interface PopoverSubscriptionToken {
-  (): void; [Symbol.dispose](): void;
+  (): void;
+  [Symbol.dispose](): void;
 }
 
 export function createSubscriptionToken(unsubscribe: () => void): PopoverSubscriptionToken {

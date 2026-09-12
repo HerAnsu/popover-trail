@@ -191,3 +191,42 @@ export function combineResults<T1, T2, E>(
   if (!r2.success) return r2;
   return Ok(Object.freeze([r1.data, r2.data]));
 }
+
+/**
+ * Asynchronously maps the Ok value of a Result using an async or sync transformer function.
+ *
+ * @template T - Input success type.
+ * @template U - Output success type.
+ * @template E - Error type.
+ * @param result - Result or Promise resolving to a Result.
+ * @param fn - Transformer returning U or Promise<U>.
+ * @returns Promise resolving to the transformed Result.
+ */
+export async function mapAsyncResult<T, U, E>(
+  result: Result<T, E> | Promise<Result<T, E>>,
+  fn: (data: T) => U | Promise<U>,
+): Promise<Result<U, E>> {
+  const resolved = await result;
+  if (!resolved.success) return resolved;
+  const mapped = await fn(resolved.data);
+  return Ok(mapped);
+}
+
+/**
+ * Monadic Kleisli composition over asynchronous Result transformations.
+ *
+ * @template T - Input success type.
+ * @template U - Output success type.
+ * @template E - Error type.
+ * @param result - Result or Promise resolving to a Result.
+ * @param fn - Asynchronous transformation returning a new Result.
+ * @returns Promise resolving to the chained Result.
+ */
+export async function flatMapAsyncResult<T, U, E>(
+  result: Result<T, E> | Promise<Result<T, E>>,
+  fn: (data: T) => Result<U, E> | Promise<Result<U, E>>,
+): Promise<Result<U, E>> {
+  const resolved = await result;
+  if (!resolved.success) return resolved;
+  return await fn(resolved.data);
+}

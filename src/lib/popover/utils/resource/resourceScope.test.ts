@@ -29,7 +29,9 @@ describe('resourceScope: using & usingAsync', () => {
   it('handles async scope execution and cleanup with usingAsync', async () => {
     const cleanup = vi.fn();
     const asyncRes: AsyncScopeDisposable = {
-      disposeAsync: async () => { cleanup(); },
+      disposeAsync: async () => {
+        cleanup();
+      },
     };
 
     const val = await usingAsync(asyncRes, async () => {
@@ -44,7 +46,9 @@ describe('resourceScope: using & usingAsync', () => {
   it('guarantees async cleanup even when async callback rejects', async () => {
     const cleanup = vi.fn();
     const asyncRes: AsyncScopeDisposable = {
-      disposeAsync: async () => { cleanup(); },
+      disposeAsync: async () => {
+        cleanup();
+      },
     };
 
     await expect(

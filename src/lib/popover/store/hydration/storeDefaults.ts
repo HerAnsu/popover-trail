@@ -82,7 +82,9 @@ export const RESETTABLE_STORE_PATCH: ResettableStorePatch<string> = Object.freez
   anchorRect: null,
 });
 
-export function getResettableStorePatch<TPopoverKey extends string = string>(): ResettableStorePatch<TPopoverKey> {
+export function getResettableStorePatch<
+  TPopoverKey extends string = string,
+>(): ResettableStorePatch<TPopoverKey> {
   return {
     ...INITIAL_TRAIL_STATE,
     offsets: emptyRecord<TPopoverKey, Readonly<DragOffset>>(),

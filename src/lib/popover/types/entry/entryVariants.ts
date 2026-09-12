@@ -94,10 +94,30 @@ export type DiscriminatedTrailEntry<TData = unknown, TPopoverKey extends string 
  * ```
  */
 export type PopoverEntryDiscriminatedState<TData = unknown> =
-  | { readonly status: 'idle'; readonly isLoading: false; readonly data: undefined; readonly error: null }
-  | { readonly status: 'loading'; readonly isLoading: true; readonly data: undefined; readonly error: null }
-  | { readonly status: 'error'; readonly isLoading: false; readonly data: undefined; readonly error: Error }
-  | { readonly status: 'success'; readonly isLoading: false; readonly data: TData; readonly error: null };
+  | {
+      readonly status: 'idle';
+      readonly isLoading: false;
+      readonly data: undefined;
+      readonly error: null;
+    }
+  | {
+      readonly status: 'loading';
+      readonly isLoading: true;
+      readonly data: undefined;
+      readonly error: null;
+    }
+  | {
+      readonly status: 'error';
+      readonly isLoading: false;
+      readonly data: undefined;
+      readonly error: Error;
+    }
+  | {
+      readonly status: 'success';
+      readonly isLoading: false;
+      readonly data: TData;
+      readonly error: null;
+    };
 
 export type NarrowTrailEntry<
   TData,

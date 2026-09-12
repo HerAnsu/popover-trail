@@ -26,7 +26,6 @@ export const selectHasEntry =
   (state: HasActiveEntriesState<TData, TPopoverKey>): boolean =>
     hasEntryWithKey(state.floating, state.trail, key);
 
-
 export function selectRootEntry<TData = unknown, TPopoverKey extends string = string>(state: {
   trail: readonly TrailEntry<TData, TPopoverKey>[];
 }): TrailEntry<TData, TPopoverKey> | undefined {
@@ -85,4 +84,3 @@ export function selectDiscriminatedStatus<TData = unknown, TPopoverKey extends s
   if (state.trail.length > 0) return 'active-trail';
   return state.floating.length > 0 ? 'pinned-only' : 'idle';
 }
-

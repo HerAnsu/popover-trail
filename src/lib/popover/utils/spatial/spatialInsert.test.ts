@@ -28,9 +28,9 @@ describe('spatialInsert', () => {
     const onSplit = vi.fn();
 
     expect(insertQuadTreeItem(nodes, items, rootBounds, 2, 2, 0, null, onSplit)).toEqual([]);
-    expect(
-      insertQuadTreeItem(nodes, items, rootBounds, 2, 2, 0, { id: 'bad' }, onSplit),
-    ).toEqual([]);
+    expect(insertQuadTreeItem(nodes, items, rootBounds, 2, 2, 0, { id: 'bad' }, onSplit)).toEqual(
+      [],
+    );
     expect(onSplit).not.toHaveBeenCalled();
     expect(items).toHaveLength(0);
   });
@@ -87,7 +87,9 @@ describe('spatialInsert', () => {
   });
 
   it('removes item from items list or recursively from child nodes', () => {
-    const items: QuadItem<string>[] = [{ id: 'parent-item', bounds: { x: 90, y: 90, width: 30, height: 30 } }];
+    const items: QuadItem<string>[] = [
+      { id: 'parent-item', bounds: { x: 90, y: 90, width: 30, height: 30 } },
+    ];
     const nodes = splitQuadTreeNodes(
       rootBounds,
       2,

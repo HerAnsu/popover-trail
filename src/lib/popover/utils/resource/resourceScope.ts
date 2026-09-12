@@ -48,10 +48,7 @@ export function using<TResource extends ScopeDisposable, TReturn>(
   }
 }
 
-export async function usingAsync<
-  TResource extends AsyncScopeDisposable | ScopeDisposable,
-  TReturn,
->(
+export async function usingAsync<TResource extends AsyncScopeDisposable | ScopeDisposable, TReturn>(
   resource: TResource,
   fn: (res: TResource) => Promise<TReturn>,
 ): Promise<TReturn> {

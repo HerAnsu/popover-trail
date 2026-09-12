@@ -24,10 +24,20 @@ export type BasicConfigSetters<
   TPopoverKey extends string = string,
 > = Pick<
   ConfigSliceSetters<TData, TContext, TPopoverKey>,
-  | 'setOwnerId' | 'setClosePinnedDescendants' | 'setEnableArrowNavigation' | 'setDebug'
-  | 'setCascadeOffsetStep' | 'setExitTransitionDuration' | 'setDefaultOffset' | 'setBaseZIndex'
-  | 'setAllowDragWhenPinned' | 'setAllowDragWhenUnpinned' | 'setMobileBreakpoint'
-  | 'setFocusLockOptions' | 'setStackGroupFilter' | 'setResponsiveMode'
+  | 'setOwnerId'
+  | 'setClosePinnedDescendants'
+  | 'setEnableArrowNavigation'
+  | 'setDebug'
+  | 'setCascadeOffsetStep'
+  | 'setExitTransitionDuration'
+  | 'setDefaultOffset'
+  | 'setBaseZIndex'
+  | 'setAllowDragWhenPinned'
+  | 'setAllowDragWhenUnpinned'
+  | 'setMobileBreakpoint'
+  | 'setFocusLockOptions'
+  | 'setStackGroupFilter'
+  | 'setResponsiveMode'
 >;
 
 export function createBasicConfigSetters<

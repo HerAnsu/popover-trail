@@ -6,7 +6,12 @@
  */
 
 import type { Result } from '../result';
-import type { BufferCapacity, BufferLogicalIndex, BufferRevision, BufferRelativeIndex } from './bufferBranded';
+import type {
+  BufferCapacity,
+  BufferLogicalIndex,
+  BufferRevision,
+  BufferRelativeIndex,
+} from './bufferBranded';
 import type { RingBufferMetrics } from './bufferMetrics';
 import type { BufferEmptyError, IndexOutOfBoundsError } from './bufferErrors';
 export type { RingBufferMetrics };

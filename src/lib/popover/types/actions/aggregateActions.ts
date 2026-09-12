@@ -26,9 +26,7 @@ export interface SubscriptionsSliceActions<
       prevEntry: TrailEntry<KData, K> | undefined,
     ) => void,
   ) => () => void;
-  subscribeEvent: (
-    listener: (event: PopoverStoreEvent<TData, TPopoverKey>) => void,
-  ) => () => void;
+  subscribeEvent: (listener: (event: PopoverStoreEvent<TData, TPopoverKey>) => void) => () => void;
 }
 
 export type SubscriptionSliceActions<

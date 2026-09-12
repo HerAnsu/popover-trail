@@ -76,8 +76,10 @@ export type DiscriminatedUsePopoverResult<TData = unknown, TPopoverKey extends s
   | OpenUsePopoverResult<TData, TPopoverKey>;
 
 /** Alias for DiscriminatedUsePopoverResult. */
-export type UsePopoverResult<TData = unknown, TPopoverKey extends string = string> =
-  DiscriminatedUsePopoverResult<TData, TPopoverKey>;
+export type UsePopoverResult<
+  TData = unknown,
+  TPopoverKey extends string = string,
+> = DiscriminatedUsePopoverResult<TData, TPopoverKey>;
 
 export type PopoverStore<
   TData = unknown,

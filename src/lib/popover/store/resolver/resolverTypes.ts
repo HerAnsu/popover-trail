@@ -22,7 +22,6 @@ import type { PopoverEventBus } from '../eventBus';
 
 export * from './resolverStageTypes';
 
-
 export type StatePatchUpdater<TData, TContext, TPopoverKey extends string> =
   | StatePatch<TData, TContext, TPopoverKey>
   | ((state: StoreState<TData, TContext, TPopoverKey>) => StatePatch<TData, TContext, TPopoverKey>);
@@ -74,8 +73,6 @@ export interface ResolvePopoverEntryParams<
 export type AnyResolverFn<TData, TContext> =
   | PopoverResolver<TData, TContext>
   | ((params: ResolverParams<TData, TContext>) => MaybePromise<TData>);
-
-
 
 export type ResolverLaunchResult<TData> =
   | { readonly isSync: true; readonly result: TData }

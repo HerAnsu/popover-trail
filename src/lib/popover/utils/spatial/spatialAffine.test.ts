@@ -74,4 +74,3 @@ describe('spatialAffine', () => {
     expect(bOut).toEqual({ x: 25, y: 45, width: 60, height: 80 });
   });
 });
-

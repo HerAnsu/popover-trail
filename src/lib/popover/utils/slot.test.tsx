@@ -19,8 +19,12 @@ describe('Slot component and utilities', () => {
 
   it('correctly composes event handlers', () => {
     const calls: string[] = [];
-    const h1 = () => { calls.push('first'); };
-    const h2 = () => { calls.push('second'); };
+    const h1 = () => {
+      calls.push('first');
+    };
+    const h2 = () => {
+      calls.push('second');
+    };
     const composed = composeHandlers(h1, h2);
 
     composed({} as React.MouseEvent);
@@ -41,8 +45,16 @@ describe('Slot component and utilities', () => {
   it('merges event handlers in mergeProps', () => {
     const calls: string[] = [];
     const merged = mergeProps(
-      { onClick: () => { calls.push('slot'); } },
-      { onClick: () => { calls.push('child'); } },
+      {
+        onClick: () => {
+          calls.push('slot');
+        },
+      },
+      {
+        onClick: () => {
+          calls.push('child');
+        },
+      },
     );
 
     const clickHandler = merged.onClick as (e: unknown) => void;

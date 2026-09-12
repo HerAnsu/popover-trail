@@ -9,10 +9,7 @@ import { useEffect, useRef } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, ClickOutsideConfig } from '../types';
 import { isBrowser } from '../utils/typeGuards';
-import {
-  shouldIgnoreEvent,
-  isClickInsidePopoverOrAnchor,
-} from './clickOutsideHelpers';
+import { shouldIgnoreEvent, isClickInsidePopoverOrAnchor } from './clickOutsideHelpers';
 
 export interface UseClickOutsideOptions<
   TData = unknown,
@@ -49,7 +46,9 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
       if (now - lastInteractionTime < 50 || shouldIgnoreEvent(e, ignoreRef.current)) return;
 
       const state = store.getState();
-      if (isClickInsidePopoverOrAnchor(e, selector, ignoreClass, state.ownerId, state.anchorElement)) {
+      if (
+        isClickInsidePopoverOrAnchor(e, selector, ignoreClass, state.ownerId, state.anchorElement)
+      ) {
         lastInteractionTime = now;
         return;
       }

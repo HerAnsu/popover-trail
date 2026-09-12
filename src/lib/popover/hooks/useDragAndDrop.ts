@@ -88,17 +88,13 @@ class ReducedMotionObserverImpl {
 
 const ReducedMotionObserver = new ReducedMotionObserverImpl();
 
-function decayRotationInPlace(
-  c: { x: number; y: number; z: number },
-  decay: number,
-): boolean {
+function decayRotationInPlace(c: { x: number; y: number; z: number }, decay: number): boolean {
   const safeDecay = Math.min(Math.max(decay, 0.1), 0.99);
   c.x = Math.abs(c.x * safeDecay) < 0.05 ? 0 : c.x * safeDecay;
   c.y = Math.abs(c.y * safeDecay) < 0.05 ? 0 : c.y * safeDecay;
   c.z = Math.abs(c.z * safeDecay) < 0.05 ? 0 : c.z * safeDecay;
   return c.x === 0 && c.y === 0 && c.z === 0;
 }
-
 
 function applyElementTiltStyles(
   el: HTMLElement | null,
@@ -243,7 +239,6 @@ export function usePopoverDragAndDrop({
     frameId = requestAnimationFrame(returnToZero);
     return () => cancelAnimationFrame(frameId);
   }, [isDragging, enableTilt, tiltDecay, cardRef, prefersReducedMotion]);
-
 
   const dragX = dragAxis === 'y' ? 0 : (transform?.x ?? 0);
   const dragY = dragAxis === 'x' ? 0 : (transform?.y ?? 0);

@@ -43,7 +43,9 @@ export interface StoreStateInitializerConfig<
   resolveData: PopoverResolver<TData, TContext>;
   customSlices?: readonly StoreSliceDescriptor<object, object, TData, TContext, TPopoverKey>[];
   mergedState: PopoverStateData<TData, TContext, TPopoverKey> & InferSliceStateFromTuple<TSlices>;
-  getStoreInstance: () => StoreApi<CombinedStoreState<TData, TContext, TPopoverKey, TSlices>> | null;
+  getStoreInstance: () => StoreApi<
+    CombinedStoreState<TData, TContext, TPopoverKey, TSlices>
+  > | null;
 }
 
 export function buildStoreStateInitializer<
@@ -58,7 +60,9 @@ export function buildStoreStateInitializer<
 
   return (set, get): CombinedStore => {
     const safeSet = createSafeSet<CombinedStore, TData, TContext, TPopoverKey>(
-      set, get, cfg.mgrs.middlewareEngine,
+      set,
+      get,
+      cfg.mgrs.middlewareEngine,
     );
     const findEntryByKey = (k: string) => findEntryInStore(get().floating, get().trail, k);
     const resetStoreState = () => executeStoreReset({ ...cfg.mgrs, safeSet });
@@ -66,7 +70,8 @@ export function buildStoreStateInitializer<
 
     const deps = buildStoreDependencies<TData, TContext, TPopoverKey>({
       ...cfg.mgrs,
-      effectiveCache: cfg.effectiveCache, customSlices: cfg.customSlices,
+      effectiveCache: cfg.effectiveCache,
+      customSlices: cfg.customSlices,
       findEntryByKey,
       resolvePopoverEntry: boundResolve,
       resetStoreState,
@@ -76,14 +81,17 @@ export function buildStoreStateInitializer<
 
     const actions = Object.freeze(
       createStoreActions<TData, TContext, TPopoverKey, InferSliceActionsFromTuple<TSlices>>(
-        safeSet, get, deps,
+        safeSet,
+        get,
+        deps,
       ),
     );
     return {
       ...cfg.mergedState,
       ...actions,
-      get actions() { return actions; },
+      get actions() {
+        return actions;
+      },
     } satisfies object as CombinedStore;
   };
 }
-

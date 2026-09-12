@@ -60,4 +60,3 @@ describe('schemaGuards', () => {
     expect(hasSchemaResolver({})).toBe(false);
   });
 });
-

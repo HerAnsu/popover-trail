@@ -99,7 +99,10 @@ Complete technical specification for components, hooks, schema builders, core en
    - [createPopoverController and PopoverCardFluentBuilder](#createpopovercontroller-and-popovercardfluentbuilder)
    - [Display options extraction and comparison helpers](#display-options-extraction-and-comparison-helpers)
    - [PopoverError and error codes](#popovererror-and-error-codes)
+   - [Async and concurrency helpers](#async-and-concurrency-helpers)
+   - [Collection and object helpers](#collection-and-object-helpers)
 13. [Recipes and common patterns](#13-recipes-and-common-patterns)
+
    - [Skeleton UI during resolution](#recipe-skeleton-ui-during-resolution)
    - [Retry with backoff via retryPopover](#recipe-retry-with-backoff)
    - [Prefetch on hover](#recipe-prefetch-on-hover)
@@ -3089,7 +3092,73 @@ try {
 
 ---
 
+### Async and concurrency helpers
+
+Built-in zero-dependency asynchronous utilities for resilient data fetching, timeout bounds, and interaction rate-limiting:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `withTimeout(promise, ms, err?)` | `(Promise<T>, number, Error \| string) => Promise<T>` | Enforces a maximum timeout, rejecting and clearing timers on resolution to avoid leaks. |
+| `deferred<T>()` | `() => Deferred<T>` | Creates a detached promise control object with `.resolve()`, `.reject()`, and `.status()`. |
+| `debounce(fn, waitMs)` | `(fn, number) => DebouncedFunction` | Creates a debounced callback with `.cancel()`, `.flush()`, and `.isPending()`. |
+| `throttle(fn, waitMs)` | `(fn, number) => ThrottledFunction` | Creates a rate-limited callback with leading execution and trailing edge guarantee. |
+| `sleep(ms)` | `(number) => Promise<void>` | Promisified delay timer. |
+| `deferMicrotask(fn)` | `(() => void) => void` | Schedules callback onto the JavaScript microtask queue (`queueMicrotask`). |
+
+```typescript
+import { withTimeout, deferred, debounce, throttle } from 'popover-trail';
+
+// 1. Enforce strict timeout on data resolution
+const data = await withTimeout(fetchUserProfile(userId), 3000, 'User profile request timed out');
+
+// 2. Detached promise coordination
+const gate = deferred<boolean>();
+gate.resolve(true);
+await gate.promise;
+
+// 3. Debounce hover open triggers
+const debouncedOpen = debounce((key: string) => store.getState().actions.openRoot(key), 150);
+debouncedOpen('card-1');
+debouncedOpen.cancel(); // Cancel pending call if mouse exits early
+```
+
+---
+
+### Collection and object helpers
+
+Functional array manipulation and prototype-pollution safe object utilities:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `unique(items)` | `(readonly T[]) => readonly T[]` | Returns deduplicated array preserving element insertion order. |
+| `partition(items, pred)` | `(readonly T[], pred) => [readonly T[], readonly T[]]` | Partitions array into `[matching, nonMatching]` 2-tuple. |
+| `groupBy(items, getKey)` | `(readonly T[], fn) => Record<K, readonly T[]>` | Groups items into dictionary by extracted key with prototype pollution immunity. |
+| `keyBy(items, getKey)` | `(readonly T[], fn) => Record<K, T>` | Indexes array items into a dictionary by unique key. |
+| `chunk(items, size)` | `(readonly T[], number) => readonly (readonly T[])[]` | Splits an array into batches of specified size. |
+| `pickRecordKeys(record, keys)` | `(record, keys) => Partial<Record<K, T>>` | Safely creates a shallow copy containing only the selected keys. |
+| `omitRecordKey(record, key)` | `(record, key) => Partial<Record<K, T>>` | Returns a record omitting the specified key (preserves hidden classes). |
+| `safeAssign(target, source)` | `(target, source) => target & source` | Merges properties safely, stripping unsafe `__proto__` and `constructor` keys. |
+
+```typescript
+import { unique, partition, groupBy, keyBy, pickRecordKeys } from 'popover-trail';
+
+// 1. Deduplicate trail keys
+const uniqueKeys = unique(['card-1', 'card-2', 'card-1']); // ['card-1', 'card-2']
+
+// 2. Partition active vs closed popovers
+const [open, closed] = partition(entries, (e) => e.status === 'open');
+
+// 3. Group cards by stack category
+const byCategory = groupBy(entries, (e) => e.data?.category ?? 'general');
+
+// 4. Safe property picking
+const safeOptions = pickRecordKeys(options, ['placement', 'offset', 'enableTilt']);
+```
+
+---
+
 ## 13. Recipes and common patterns
+
 
 ### Recipe: Skeleton UI during resolution
 

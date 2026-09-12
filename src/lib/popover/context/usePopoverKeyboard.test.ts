@@ -38,10 +38,7 @@ describe('usePopoverKeyboardShortcuts', () => {
     capturedHandler = null;
   });
 
-  const createKeyboardEvent = (
-    key: string,
-    defaultPrevented = false,
-  ): KeyboardEvent =>
+  const createKeyboardEvent = (key: string, defaultPrevented = false): KeyboardEvent =>
     ({
       key,
       defaultPrevented,

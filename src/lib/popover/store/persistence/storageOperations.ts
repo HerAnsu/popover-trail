@@ -44,10 +44,6 @@ export function writeStorageItem(
 /**
  * Removes an item from storage safely. Accepts both branded StorageKey and unbranded raw key string.
  */
-export function removeStorageItem(
-  storage: Storage,
-  key: StorageKey | Unbrand<StorageKey>,
-): void {
+export function removeStorageItem(storage: Storage, key: StorageKey | Unbrand<StorageKey>): void {
   wrapResult(() => storage.removeItem(key));
 }
-

@@ -29,7 +29,8 @@ describe('matchActionState', () => {
 
     const result = matchActionState(state, {
       idle: () => 'idle',
-      pending: (data, isOptimistic) => `pending: ${data} (${isOptimistic ? 'optimistic' : 'normal'})`,
+      pending: (data, isOptimistic) =>
+        `pending: ${data} (${isOptimistic ? 'optimistic' : 'normal'})`,
       success: () => 'success',
       error: () => 'error',
     });

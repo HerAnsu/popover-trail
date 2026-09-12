@@ -76,4 +76,3 @@ export function createTrailUpdateActions<
     setFloating: createListSetter('floating'),
   };
 }
-

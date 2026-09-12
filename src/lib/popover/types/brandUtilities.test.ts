@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { emptyRecord, EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT, unbrand } from './branded';
 
-
-
 describe('Brand & Object Utilities', () => {
   it('emptyRecord returns frozen empty record singleton', () => {
     const rec = emptyRecord<string, number>();
@@ -29,4 +27,3 @@ describe('Brand & Object Utilities', () => {
     expect(unbrand(flag)).toBe(true);
   });
 });
-

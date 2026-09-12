@@ -31,7 +31,8 @@ describe('RingBuffer Type Soundness & Static Contracts', () => {
 
   it('preserves type narrowing with custom type guards in find', () => {
     const ring = new RingBuffer<Animal>(4);
-    const isDog = (item: Animal, _idx: number): item is { type: 'dog'; bark(): void } => item.type === 'dog';
+    const isDog = (item: Animal, _idx: number): item is { type: 'dog'; bark(): void } =>
+      item.type === 'dog';
     expectTypeOf(ring.find(isDog)).toEqualTypeOf<{ type: 'dog'; bark(): void } | undefined>();
     expectTypeOf(ring.findLast(isDog)).toEqualTypeOf<{ type: 'dog'; bark(): void } | undefined>();
   });
@@ -64,7 +65,11 @@ describe('RingBuffer Type Soundness & Static Contracts', () => {
   it('validates domain error discriminated unions and configurations', () => {
     expectTypeOf<InvalidCapacityError>().toMatchTypeOf<BufferDomainError>();
     expectTypeOf<IndexOutOfBoundsError>().toMatchTypeOf<BufferDomainError>();
-    const validConfig: RingBufferOptions<string> = { capacity: 10, autoExpand: true, maxCapacity: 100 };
+    const validConfig: RingBufferOptions<string> = {
+      capacity: 10,
+      autoExpand: true,
+      maxCapacity: 100,
+    };
     expectTypeOf(validConfig).toMatchTypeOf<RingBufferOptions<string>>();
   });
 });

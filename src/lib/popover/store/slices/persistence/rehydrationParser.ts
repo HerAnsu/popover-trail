@@ -82,4 +82,3 @@ export function parseFloating<TData, TPopoverKey extends string>(
   }
   return isNonEmptyArray(res) ? res : EMPTY_ARRAY;
 }
-

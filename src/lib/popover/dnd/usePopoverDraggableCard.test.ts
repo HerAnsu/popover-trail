@@ -10,7 +10,7 @@ vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>();
   return {
     ...actual,
-    useRef: <T,>(initial: T) => ({ current: initial }),
+    useRef: <T>(initial: T) => ({ current: initial }),
     useCallback: <T extends (...args: readonly unknown[]) => unknown>(fn: T): T => fn,
   };
 });
@@ -56,9 +56,15 @@ describe('usePopoverDraggableCard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(usePopoverCard).mockReturnValue(defaultCard as unknown as ReturnType<typeof usePopoverCard>);
-    vi.mocked(useDraggable).mockReturnValue(defaultDraggable as unknown as ReturnType<typeof useDraggable>);
-    vi.mocked(usePopoverDragAndDrop).mockReturnValue({} as unknown as ReturnType<typeof usePopoverDragAndDrop>);
+    vi.mocked(usePopoverCard).mockReturnValue(
+      defaultCard as unknown as ReturnType<typeof usePopoverCard>,
+    );
+    vi.mocked(useDraggable).mockReturnValue(
+      defaultDraggable as unknown as ReturnType<typeof useDraggable>,
+    );
+    vi.mocked(usePopoverDragAndDrop).mockReturnValue(
+      {} as unknown as ReturnType<typeof usePopoverDragAndDrop>,
+    );
     vi.mocked(usePopoverOffset).mockReturnValue({ x: 0, y: 0 });
   });
 

@@ -9,9 +9,17 @@ describe('AsyncCompositeDisposable', () => {
     expect(container.isDisposed).toBe(false);
 
     container.add(
-      async () => { order.push(1); },
-      () => { order.push(2); },
-      { disposeAsync: async () => { order.push(3); } },
+      async () => {
+        order.push(1);
+      },
+      () => {
+        order.push(2);
+      },
+      {
+        disposeAsync: async () => {
+          order.push(3);
+        },
+      },
     );
     expect(container.size).toBe(3);
 
@@ -35,9 +43,15 @@ describe('AsyncCompositeDisposable', () => {
     const order: number[] = [];
     const container = new AsyncCompositeDisposable();
     container.add(
-      async () => { order.push(1); },
-      async () => { throw new Error('Boom'); },
-      async () => { order.push(3); },
+      async () => {
+        order.push(1);
+      },
+      async () => {
+        throw new Error('Boom');
+      },
+      async () => {
+        order.push(3);
+      },
     );
 
     await expect(container.disposeAsync()).resolves.not.toThrow();

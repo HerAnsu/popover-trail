@@ -37,7 +37,14 @@ export function traverseDescendantKeys<TPopoverKey extends string>(
   parentKey: TPopoverKey,
   outSet: Set<TPopoverKey>,
 ): Set<TPopoverKey> {
-  visitDescendants(nodes, parentKey, (key) => { outSet.add(key); }, outSet);
+  visitDescendants(
+    nodes,
+    parentKey,
+    (key) => {
+      outSet.add(key);
+    },
+    outSet,
+  );
   return outSet;
 }
 
@@ -69,7 +76,9 @@ export function getGeodesicPath<TPopoverKey extends string>(
 ): TPopoverKey[] {
   if (!nodes.has(targetKey)) return [];
   const path = new RingBuffer<TPopoverKey>({
-    capacity: 16, autoExpand: true, initialItems: [targetKey],
+    capacity: 16,
+    autoExpand: true,
+    initialItems: [targetKey],
   });
   let curr = nodes.get(targetKey);
 

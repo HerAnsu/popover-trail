@@ -26,7 +26,10 @@ function isDetailWithKey<TPopoverKey>(val: unknown): val is EventDetailWithKey<T
 export class EventBusRouter<TData, TPopoverKey extends string = string> {
   public readonly maxListeners = 100;
   public readonly wildcardListeners = new Set<PopoverWildcardListener<TData, TPopoverKey>>();
-  public readonly listenersByKey = new Map<string, Set<PopoverWildcardListener<TData, TPopoverKey>>>();
+  public readonly listenersByKey = new Map<
+    string,
+    Set<PopoverWildcardListener<TData, TPopoverKey>>
+  >();
 
   public subscribeAny(
     listener: PopoverWildcardListener<TData, TPopoverKey>,
@@ -84,6 +87,7 @@ export class EventBusRouter<TData, TPopoverKey extends string = string> {
   }
 
   public clear(): void {
-    this.wildcardListeners.clear(); this.listenersByKey.clear();
+    this.wildcardListeners.clear();
+    this.listenersByKey.clear();
   }
 }

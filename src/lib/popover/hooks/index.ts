@@ -11,10 +11,7 @@ export * from './selectors';
 // React 19 Action & Optimistic
 export { usePopoverAction } from './usePopoverAction';
 export { usePopoverOptimistic, usePopoverCardOptimistic } from './usePopoverOptimistic';
-export {
-  useCrossVersionActionState,
-  useCrossVersionOptimistic,
-} from './adapters/react19Adapters';
+export { useCrossVersionActionState, useCrossVersionOptimistic } from './adapters/react19Adapters';
 
 // Focus & A11y
 export { useFocusTrap, type UseFocusTrapOptions } from './useFocusTrap';
@@ -80,17 +77,10 @@ export {
 } from './usePopoverTimeline';
 
 // Triggers
-export {
-  usePopoverTrigger,
-  usePopoverNestedTrigger,
-} from './usePopoverTriggers';
+export { usePopoverTrigger, usePopoverNestedTrigger } from './usePopoverTriggers';
 
 // Interaction & DOM
 export { useClickOutside, type UseClickOutsideOptions } from './useClickOutside';
 export { useEventListener } from './useEventListener';
-export {
-  useBodyScrollLock,
-  acquireScrollLock,
-  releaseScrollLock,
-} from './useBodyScrollLock';
+export { useBodyScrollLock, acquireScrollLock, releaseScrollLock } from './useBodyScrollLock';
 export { useMergedRef, useStableCallback } from './useHookUtils';

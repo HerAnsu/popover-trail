@@ -48,7 +48,11 @@ describe('PopoverCardHeader component', () => {
     const actionsWrapper = vnode.props.children[2];
 
     expect(React.isValidElement(actionsWrapper)).toBe(true);
-    if (React.isValidElement<{ children?: [React.ReactElement | null, React.ReactElement | null] }>(actionsWrapper)) {
+    if (
+      React.isValidElement<{ children?: [React.ReactElement | null, React.ReactElement | null] }>(
+        actionsWrapper,
+      )
+    ) {
       const [pinBtn, closeBtn] = actionsWrapper.props.children ?? [null, null];
       expect(pinBtn?.type).toBe(PopoverCardPinButton);
       expect(closeBtn?.type).toBe(PopoverCardCloseButton);
@@ -59,7 +63,11 @@ describe('PopoverCardHeader component', () => {
     const vnodeNoPin = PopoverCardHeader({ showPin: false, showClose: true });
     const actionsWrapperNoPin = vnodeNoPin.props.children[2];
 
-    if (React.isValidElement<{ children?: [React.ReactElement | null, React.ReactElement | null] }>(actionsWrapperNoPin)) {
+    if (
+      React.isValidElement<{ children?: [React.ReactElement | null, React.ReactElement | null] }>(
+        actionsWrapperNoPin,
+      )
+    ) {
       const [pinBtn, closeBtn] = actionsWrapperNoPin.props.children ?? [null, null];
       expect(pinBtn).toBeNull();
       expect(closeBtn?.type).toBe(PopoverCardCloseButton);
@@ -68,7 +76,11 @@ describe('PopoverCardHeader component', () => {
     const vnodeNoClose = PopoverCardHeader({ showPin: true, showClose: false });
     const actionsWrapperNoClose = vnodeNoClose.props.children[2];
 
-    if (React.isValidElement<{ children?: [React.ReactElement | null, React.ReactElement | null] }>(actionsWrapperNoClose)) {
+    if (
+      React.isValidElement<{ children?: [React.ReactElement | null, React.ReactElement | null] }>(
+        actionsWrapperNoClose,
+      )
+    ) {
       const [pinBtn, closeBtn] = actionsWrapperNoClose.props.children ?? [null, null];
       expect(pinBtn?.type).toBe(PopoverCardPinButton);
       expect(closeBtn).toBeNull();

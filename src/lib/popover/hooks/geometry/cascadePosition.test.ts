@@ -25,10 +25,22 @@ describe('cascadePosition', () => {
 
   describe('calculateBaseOffsetPosition', () => {
     it('calculates offsets for left, right, top, and bottom directions', () => {
-      expect(calculateBaseOffsetPosition(2, 20, 'left', 100, 200)).toEqual({ baseTop: 100, baseLeft: 160 });
-      expect(calculateBaseOffsetPosition(2, 20, 'right', 100, 200)).toEqual({ baseTop: 100, baseLeft: 240 });
-      expect(calculateBaseOffsetPosition(3, 15, 'top', 100, 200)).toEqual({ baseTop: 55, baseLeft: 200 });
-      expect(calculateBaseOffsetPosition(3, 15, 'bottom', 100, 200)).toEqual({ baseTop: 145, baseLeft: 200 });
+      expect(calculateBaseOffsetPosition(2, 20, 'left', 100, 200)).toEqual({
+        baseTop: 100,
+        baseLeft: 160,
+      });
+      expect(calculateBaseOffsetPosition(2, 20, 'right', 100, 200)).toEqual({
+        baseTop: 100,
+        baseLeft: 240,
+      });
+      expect(calculateBaseOffsetPosition(3, 15, 'top', 100, 200)).toEqual({
+        baseTop: 55,
+        baseLeft: 200,
+      });
+      expect(calculateBaseOffsetPosition(3, 15, 'bottom', 100, 200)).toEqual({
+        baseTop: 145,
+        baseLeft: 200,
+      });
     });
   });
 
@@ -65,15 +77,7 @@ describe('cascadePosition', () => {
         winHeight: 600,
       });
 
-      expect(applySpatialCollisionNudge).toHaveBeenCalledWith(
-        'c2',
-        60,
-        80,
-        800,
-        600,
-        [],
-        {},
-      );
+      expect(applySpatialCollisionNudge).toHaveBeenCalledWith('c2', 60, 80, 800, 600, [], {});
       expect(pos).toEqual({ top: 70, left: 90 });
     });
   });

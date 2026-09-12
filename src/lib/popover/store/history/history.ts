@@ -57,7 +57,9 @@ export function createHistoryManager<
   };
 
   // Pops previous snapshot; preserves present snapshot on redo stack
-  const undo = (state: HistorySnapshotState<TData, TPopoverKey>): HistorySnapshot<TData, TPopoverKey> | null => {
+  const undo = (
+    state: HistorySnapshotState<TData, TPopoverKey>,
+  ): HistorySnapshot<TData, TPopoverKey> | null => {
     const previous = undoPool.pop();
     if (!previous) return null;
     redoPool.push(createHistorySnapshot(state));
@@ -65,7 +67,9 @@ export function createHistoryManager<
   };
 
   // Pops next redo snapshot; preserves present snapshot on undo stack
-  const redo = (state: HistorySnapshotState<TData, TPopoverKey>): HistorySnapshot<TData, TPopoverKey> | null => {
+  const redo = (
+    state: HistorySnapshotState<TData, TPopoverKey>,
+  ): HistorySnapshot<TData, TPopoverKey> | null => {
     const next = redoPool.pop();
     if (!next) return null;
     undoPool.push(createHistorySnapshot(state));
@@ -106,7 +110,10 @@ export function createHistoryManager<
     return ok(next);
   };
 
-  const clearHistory = (): void => { undoPool.clear(); redoPool.clear(); };
+  const clearHistory = (): void => {
+    undoPool.clear();
+    redoPool.clear();
+  };
 
   const getTimeline = (
     current: HistorySnapshotState<TData, TPopoverKey>,
@@ -134,7 +141,11 @@ export function createHistoryManager<
     dispose: clearHistory,
     [DISPOSE_SYMBOL]: clearHistory,
     [Symbol.dispose]: clearHistory,
-    get undoStack() { return undoPool.toArray(); },
-    get redoStack() { return redoPool.toArray(); },
+    get undoStack() {
+      return undoPool.toArray();
+    },
+    get redoStack() {
+      return redoPool.toArray();
+    },
   };
 }

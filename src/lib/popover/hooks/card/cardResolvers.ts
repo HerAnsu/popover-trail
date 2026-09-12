@@ -50,10 +50,7 @@ export function useCardMountingTransition<TPopoverKey extends string = string>(
   }, [key, status, actions]);
 }
 
-export function resolveEffectiveBaseZIndex<
-  TData = unknown,
-  TPopoverKey extends string = string,
->(
+export function resolveEffectiveBaseZIndex<TData = unknown, TPopoverKey extends string = string>(
   entry: TrailEntry<TData, TPopoverKey>,
   zIndexBaseMap?: Record<string, number> | null,
   baseZIndex?: number,
@@ -66,10 +63,7 @@ export function resolveEffectiveBaseZIndex<
   return baseZIndex ?? 1000;
 }
 
-export function resolveCardButtonControls<
-  TData = unknown,
-  TPopoverKey extends string = string,
->(
+export function resolveCardButtonControls<TData = unknown, TPopoverKey extends string = string>(
   entry: TrailEntry<TData, TPopoverKey>,
   cardFeatures?: { enablePin?: boolean; enableClose?: boolean; enableDrag?: boolean },
 ) {

@@ -85,10 +85,7 @@ export type OnPopoverEventMap<TData = unknown, TPopoverKey extends string = stri
  * Strongly-typed event handler dictionary mapping each specific popover event name
  * to a listener callback receiving that exact narrowed event payload.
  */
-export type PopoverEventHandlerMap<
-  TData = unknown,
-  TPopoverKey extends string = string,
-> = {
+export type PopoverEventHandlerMap<TData = unknown, TPopoverKey extends string = string> = {
   readonly [K in keyof PopoverEventMap<TData, TPopoverKey>]?: (
     event: PopoverEventMap<TData, TPopoverKey>[K],
   ) => void;

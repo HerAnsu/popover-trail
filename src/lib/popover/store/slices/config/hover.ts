@@ -27,7 +27,6 @@ export type HoverSliceActions<
  * @returns Object implementing HoverSliceActions methods.
  */
 export function createHoverSlice<
-
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
@@ -75,5 +74,4 @@ export function createHoverSlice<
       transitionScheduler.cancelHover(key);
     },
   };
-
 }

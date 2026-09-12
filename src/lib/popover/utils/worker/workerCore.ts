@@ -16,7 +16,6 @@ import type {
   WorkerResolverDisposables,
 } from './workerTypes';
 
-
 type WorkerTarget<TData, TContext> =
   | Worker
   | string
@@ -96,4 +95,3 @@ export function createWorkerResolver<TData = unknown, TContext = unknown>(
   };
   return Object.assign(resolver, disposables);
 }
-

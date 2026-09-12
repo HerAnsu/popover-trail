@@ -66,8 +66,6 @@ export function asSWRCompatibleCache<TData>(
   return isSWRCompatibleCache<TData>(cache) ? cache : undefined;
 }
 
-export function isExtendedCache<TData>(
-  cache: unknown,
-): cache is ExtendedCache<TData> {
+export function isExtendedCache<TData>(cache: unknown): cache is ExtendedCache<TData> {
   return typeof cache === 'object' && cache !== null;
 }

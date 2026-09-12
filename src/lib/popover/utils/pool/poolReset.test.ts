@@ -11,8 +11,12 @@ import {
 
 describe('poolReset', () => {
   it('chains multiple resetters with composeResetters', () => {
-    const step1 = vi.fn((obj: { a: number; b: number }) => { obj.a = 0; });
-    const step2 = vi.fn((obj: { a: number; b: number }) => { obj.b = 0; });
+    const step1 = vi.fn((obj: { a: number; b: number }) => {
+      obj.a = 0;
+    });
+    const step2 = vi.fn((obj: { a: number; b: number }) => {
+      obj.b = 0;
+    });
     const combined = composeResetters(step1, step2);
 
     const target = { a: 10, b: 20 };
@@ -82,4 +86,3 @@ describe('poolReset', () => {
     expect(item.id).toBe(42);
   });
 });
-

@@ -24,9 +24,7 @@ function cloneDOMRect(rect: DOMRect | PopoverRect): DOMRect {
     right: rect.right ?? x + width,
     bottom: rect.bottom ?? y + height,
     left: rect.left ?? x,
-    toJSON: hasFunctionProperty(rect, 'toJSON')
-      ? () => rect.toJSON()
-      : () => rect,
+    toJSON: hasFunctionProperty(rect, 'toJSON') ? () => rect.toJSON() : () => rect,
   };
 }
 

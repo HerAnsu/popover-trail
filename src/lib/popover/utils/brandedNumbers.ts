@@ -128,11 +128,12 @@ export function isCausalSequence(value: unknown): value is CausalSequence {
  * @param capacity - Raw or branded capacity integer.
  * @returns Validated HistoryCapacity brand.
  */
-export function toHistoryCapacity(capacity: HistoryCapacity | Unbrand<HistoryCapacity>): HistoryCapacity {
+export function toHistoryCapacity(
+  capacity: HistoryCapacity | Unbrand<HistoryCapacity>,
+): HistoryCapacity {
   const safe = Number.isSafeInteger(capacity) && capacity >= 1 ? capacity : 30;
   return createBrand<number, 'HistoryCapacity'>(safe);
 }
-
 
 /**
  * Type guard checking if a value is a valid HistoryCapacity.
@@ -143,4 +144,3 @@ export function toHistoryCapacity(capacity: HistoryCapacity | Unbrand<HistoryCap
 export function isHistoryCapacity(value: unknown): value is HistoryCapacity {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1;
 }
-

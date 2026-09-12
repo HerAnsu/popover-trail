@@ -9,10 +9,7 @@ import { ObjectPool } from './objectPoolCore';
 import { globalPoolRegistry } from './poolRegistry';
 import { toPoolCapacity, toPoolSize } from './poolBranded';
 
-export function createArrayPool<T = unknown>(
-  initial = 16,
-  max = 128,
-): ObjectPool<T[]> {
+export function createArrayPool<T = unknown>(initial = 16, max = 128): ObjectPool<T[]> {
   return new ObjectPool<T[]>({
     factory: () => [],
     reset: (arr) => {

@@ -63,7 +63,6 @@ export function isValidSchemaKey<TSchema extends PopoverSchemaDefinition>(
   return typeof key === 'string' && Object.hasOwn(definition, key);
 }
 
-
 /**
  * Validates whether a node contains an active, callable resolver function.
  *
@@ -80,4 +79,3 @@ export function isPopoverSchemaInstance<
 >(val: unknown): val is PopoverSchemaInstance<TSchema> {
   return isPlainObject(val) && 'createResolver' in val && typeof val.createResolver === 'function';
 }
-

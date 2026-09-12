@@ -87,4 +87,3 @@ export const TriggerRegistry = {
     return registry.size;
   },
 } as const;
-

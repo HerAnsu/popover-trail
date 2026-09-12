@@ -47,15 +47,29 @@ describe('PopoverTimelineStepList component', () => {
       </PopoverTimelineStepList>,
     );
 
-    expect(html).toContain('<ol class="pt-timeline-step-list custom-list" role="list" aria-live="polite">');
+    expect(html).toContain(
+      '<ol class="pt-timeline-step-list custom-list" role="list" aria-live="polite">',
+    );
     expect(html).toContain('<li>First Item</li>');
     expect(html).toContain('<li>Second Item</li>');
   });
 
   it('renders ordered step items using context render prop', () => {
     const items: PopoverTimelineItem<TestData>[] = [
-      { primaryKey: 'p1', stepIndex: 0, trailKeys: [], pinnedKeys: [], payload: { name: 'Step 1' } },
-      { primaryKey: 'p2', stepIndex: 1, trailKeys: [], pinnedKeys: [], payload: { name: 'Step 2' } },
+      {
+        primaryKey: 'p1',
+        stepIndex: 0,
+        trailKeys: [],
+        pinnedKeys: [],
+        payload: { name: 'Step 1' },
+      },
+      {
+        primaryKey: 'p2',
+        stepIndex: 1,
+        trailKeys: [],
+        pinnedKeys: [],
+        payload: { name: 'Step 2' },
+      },
     ];
     const timeline = createMockTimeline(items, 1);
 
@@ -104,16 +118,22 @@ describe('PopoverTimelineStepList component', () => {
     const htmlDefault = renderWithTimeline(
       timeline,
       <PopoverTimelineStepList>
-        {(item: PopoverTimelineItem<TestData>, _active: boolean) => <li key={item.primaryKey}>{item.primaryKey}</li>}
+        {(item: PopoverTimelineItem<TestData>, _active: boolean) => (
+          <li key={item.primaryKey}>{item.primaryKey}</li>
+        )}
       </PopoverTimelineStepList>,
     );
 
-    expect(htmlDefault).toBe('<ol class="pt-timeline-step-list" role="list" aria-live="polite"></ol>');
+    expect(htmlDefault).toBe(
+      '<ol class="pt-timeline-step-list" role="list" aria-live="polite"></ol>',
+    );
 
     const htmlCustomEmpty = renderWithTimeline(
       timeline,
       <PopoverTimelineStepList>
-        {({ history }: PopoverTimelineStepListContext<TestData>) => (history.length === 0 ? <li className="empty">No entries</li> : null)}
+        {({ history }: PopoverTimelineStepListContext<TestData>) =>
+          history.length === 0 ? <li className="empty">No entries</li> : null
+        }
       </PopoverTimelineStepList>,
     );
 
@@ -129,7 +149,9 @@ describe('PopoverTimelineStepList component', () => {
       </PopoverTimelineStepList>,
     );
 
-    expect(html).toContain('<ul class="pt-timeline-step-list" role="list" aria-live="polite" id="timeline-ul">');
+    expect(html).toContain(
+      '<ul class="pt-timeline-step-list" role="list" aria-live="polite" id="timeline-ul">',
+    );
     expect(html).not.toContain('<ol');
   });
 });

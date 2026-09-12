@@ -54,10 +54,11 @@ describe('keyedPool', () => {
 
   it('drains and disposes all partitions cleanly', () => {
     const onEvict = vi.fn();
-    const pool = new KeyedPool(
-      (k: string) => ({ k }),
-      { factory: () => ({ k: '' }), onEvict, initialCapacity: 2 },
-    );
+    const pool = new KeyedPool((k: string) => ({ k }), {
+      factory: () => ({ k: '' }),
+      onEvict,
+      initialCapacity: 2,
+    });
 
     const a = pool.acquire('k1');
     expect(pool.getPool('k1').size).toBe(1);

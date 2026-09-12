@@ -44,6 +44,5 @@ export function hasSchemaContext<TContext>(
 export function createDefaultContextResolver<TContext>(
   defaultContext: TContext,
 ): (context?: TContext) => TContext {
-  return (context?: TContext): TContext =>
-    context !== undefined ? context : defaultContext;
+  return (context?: TContext): TContext => (context !== undefined ? context : defaultContext);
 }

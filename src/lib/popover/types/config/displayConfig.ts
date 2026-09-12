@@ -22,24 +22,13 @@ export type DeepReadonly<T> = T extends (...args: never[]) => unknown
           ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
           : T;
 
-export const CASCADE_OFFSET_DIRECTIONS = [
-  'left',
-  'right',
-  'top',
-  'bottom',
-  'none',
-] as const;
+export const CASCADE_OFFSET_DIRECTIONS = ['left', 'right', 'top', 'bottom', 'none'] as const;
 
 export type CascadeOffsetDirection = (typeof CASCADE_OFFSET_DIRECTIONS)[number];
 
 export const DRAG_AXES = ['x', 'y', 'both'] as const;
 export type DragAxis = (typeof DRAG_AXES)[number];
-export const POPOVER_RESPONSIVE_MODES = [
-  'auto',
-  'popover',
-  'bottom-sheet',
-  'modal',
-] as const;
+export const POPOVER_RESPONSIVE_MODES = ['auto', 'popover', 'bottom-sheet', 'modal'] as const;
 
 export type PopoverResponsiveMode = (typeof POPOVER_RESPONSIVE_MODES)[number];
 

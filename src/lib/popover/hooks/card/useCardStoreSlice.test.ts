@@ -16,13 +16,11 @@ let capturedSelector: ((state: PopoverStore) => unknown) | null = null;
 let capturedEqualityFn: unknown = null;
 
 vi.mock('../../context/usePopoverStore', () => ({
-  usePopoverStore: vi.fn(
-    (selector: (state: PopoverStore) => unknown, equalityFn: unknown) => {
-      capturedSelector = selector;
-      capturedEqualityFn = equalityFn;
-      return null;
-    },
-  ),
+  usePopoverStore: vi.fn((selector: (state: PopoverStore) => unknown, equalityFn: unknown) => {
+    capturedSelector = selector;
+    capturedEqualityFn = equalityFn;
+    return null;
+  }),
 }));
 
 describe('useCardStoreSlice', () => {

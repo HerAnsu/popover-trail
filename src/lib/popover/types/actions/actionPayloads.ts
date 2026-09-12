@@ -87,4 +87,3 @@ export type StoreActionPayloadMap<
 > = {
   readonly [K in StoreActionType]: ExtractActionPayload<K, TData, TContext, TPopoverKey>;
 };
-

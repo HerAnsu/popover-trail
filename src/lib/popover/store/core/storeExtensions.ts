@@ -67,7 +67,8 @@ export function attachStoreExtensions<
   const { store, mgrs, effectiveCache, customSlices } = params;
   const disposalDeps = buildStoreDependencies<TData, TContext, TPopoverKey>({
     ...mgrs,
-    effectiveCache, customSlices,
+    effectiveCache,
+    customSlices,
     resetStoreState: () => {},
     getStoreState: store.getState,
     findEntryByKey: (k) => findEntryInStore(store.getState().floating, store.getState().trail, k),

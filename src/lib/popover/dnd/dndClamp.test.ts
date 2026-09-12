@@ -56,7 +56,8 @@ describe('dndClamp utilities', () => {
   });
 
   it('clamps coordinates to window viewport dimensions in browser context', () => {
-    globalThis.window = { innerWidth: 1024, innerHeight: 768 } as unknown as Window & typeof globalThis;
+    globalThis.window = { innerWidth: 1024, innerHeight: 768 } as unknown as Window &
+      typeof globalThis;
     globalThis.document = {} as unknown as Document;
 
     const transform = { x: 1500, y: 1200, scaleX: 1, scaleY: 1 };

@@ -60,9 +60,12 @@ export function identityMatrix(): Matrix2D {
  */
 export function multiplyMatrix2D(m1: Matrix2D, m2: Matrix2D): Matrix2D {
   return [
-    m1[0] * m2[0] + m1[2] * m2[1], m1[1] * m2[0] + m1[3] * m2[1],
-    m1[0] * m2[2] + m1[2] * m2[3], m1[1] * m2[2] + m1[3] * m2[3],
-    m1[0] * m2[4] + m1[2] * m2[5] + m1[4], m1[1] * m2[4] + m1[3] * m2[5] + m1[5],
+    m1[0] * m2[0] + m1[2] * m2[1],
+    m1[1] * m2[0] + m1[3] * m2[1],
+    m1[0] * m2[2] + m1[2] * m2[3],
+    m1[1] * m2[2] + m1[3] * m2[3],
+    m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
+    m1[1] * m2[4] + m1[3] * m2[5] + m1[5],
   ];
 }
 
@@ -80,8 +83,12 @@ export function invertMatrix2D(m: Matrix2D): Matrix2D | null {
   if (!Number.isFinite(det) || Math.abs(det) < 1e-12) return null;
   const invDet = 1 / det;
   return [
-    m[3] * invDet, -m[1] * invDet, -m[2] * invDet, m[0] * invDet,
-    (m[2] * m[5] - m[3] * m[4]) * invDet, (m[1] * m[4] - m[0] * m[5]) * invDet,
+    m[3] * invDet,
+    -m[1] * invDet,
+    -m[2] * invDet,
+    m[0] * invDet,
+    (m[2] * m[5] - m[3] * m[4]) * invDet,
+    (m[1] * m[4] - m[0] * m[5]) * invDet,
   ];
 }
 
@@ -116,8 +123,12 @@ export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatr
   }
   const invDet = 1 / det;
   return ok([
-    m[3] * invDet, -m[1] * invDet, -m[2] * invDet, m[0] * invDet,
-    (m[2] * m[5] - m[3] * m[4]) * invDet, (m[1] * m[4] - m[0] * m[5]) * invDet,
+    m[3] * invDet,
+    -m[1] * invDet,
+    -m[2] * invDet,
+    m[0] * invDet,
+    (m[2] * m[5] - m[3] * m[4]) * invDet,
+    (m[1] * m[4] - m[0] * m[5]) * invDet,
   ]);
 }
 

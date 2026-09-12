@@ -32,10 +32,7 @@ function isObjectRecord(val: unknown): val is Record<PropertyKey, unknown> {
  */
 export function isDisposable(val: unknown): val is ScopeDisposable {
   if (!isObjectRecord(val)) return false;
-  return (
-    typeof val['dispose'] === 'function' ||
-    typeof val[DISPOSE_SYMBOL] === 'function'
-  );
+  return typeof val['dispose'] === 'function' || typeof val[DISPOSE_SYMBOL] === 'function';
 }
 
 /**
@@ -48,8 +45,7 @@ export function isDisposable(val: unknown): val is ScopeDisposable {
 export function isAsyncDisposable(val: unknown): val is AsyncScopeDisposable {
   if (!isObjectRecord(val)) return false;
   return (
-    typeof val['disposeAsync'] === 'function' ||
-    typeof val[ASYNC_DISPOSE_SYMBOL] === 'function'
+    typeof val['disposeAsync'] === 'function' || typeof val[ASYNC_DISPOSE_SYMBOL] === 'function'
   );
 }
 

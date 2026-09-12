@@ -31,11 +31,7 @@ export function dispatchEventWithMirror<
   router.dispatchWildcards(event);
   router.dispatchKeys(event, payload);
 
-  if (
-    options?.mirrorToGlobalBus !== false &&
-    globalBus &&
-    !Object.is(currentBus, globalBus)
-  ) {
+  if (options?.mirrorToGlobalBus !== false && globalBus && !Object.is(currentBus, globalBus)) {
     globalBus.emit(type, payload);
   }
 

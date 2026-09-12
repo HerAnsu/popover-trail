@@ -34,17 +34,13 @@ export interface CardKeyboardNavigationOptions<
   };
 }
 
-function isCardKeyboardNavOptions<
-  TData = unknown,
-  TPopoverKey extends string = string,
->(val: unknown): val is CardKeyboardNavigationOptions<TData, TPopoverKey> {
+function isCardKeyboardNavOptions<TData = unknown, TPopoverKey extends string = string>(
+  val: unknown,
+): val is CardKeyboardNavigationOptions<TData, TPopoverKey> {
   return isRecordObject(val) && 'event' in val && isRecordObject(val.event);
 }
 
-function resolveNavParams<
-  TData = unknown,
-  TPopoverKey extends string = string,
->(
+function resolveNavParams<TData = unknown, TPopoverKey extends string = string>(
   eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions<TData, TPopoverKey>,
   cardElement?: HTMLElement | null,
   entry?: TrailEntry<TData, TPopoverKey>,
@@ -79,10 +75,7 @@ function resolveNavParams<
   };
 }
 
-export function handleCardKeyboardNavigation<
-  TData = unknown,
-  TPopoverKey extends string = string,
->(
+export function handleCardKeyboardNavigation<TData = unknown, TPopoverKey extends string = string>(
   eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions<TData, TPopoverKey>,
   cardElement?: HTMLElement | null,
   entry?: TrailEntry<TData, TPopoverKey>,
@@ -96,7 +89,13 @@ export function handleCardKeyboardNavigation<
   },
 ): void {
   const p = resolveNavParams<TData, TPopoverKey>(
-    eventOrOptions, cardElement, entry, enableArrowNavigation, isPinned, trail, actions,
+    eventOrOptions,
+    cardElement,
+    entry,
+    enableArrowNavigation,
+    isPinned,
+    trail,
+    actions,
   );
   if (!p.e || !p.cardEntry) return;
   if (handleCustomShortcuts(p.e, p.cardEntry)) return;

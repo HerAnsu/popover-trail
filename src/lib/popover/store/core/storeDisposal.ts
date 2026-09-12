@@ -21,7 +21,11 @@ export interface StoreDisposalConfig<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
-  TStore extends PopoverStore<TData, TContext, TPopoverKey> = PopoverStore<TData, TContext, TPopoverKey>,
+  TStore extends PopoverStore<TData, TContext, TPopoverKey> = PopoverStore<
+    TData,
+    TContext,
+    TPopoverKey
+  >,
 > {
   store: StoreApi<TStore>;
   customSlices?: readonly StoreSliceDescriptor<object, object, TData, TContext, TPopoverKey>[];
@@ -41,7 +45,11 @@ export function disposeCustomSlices<
   TData,
   TContext,
   TPopoverKey extends string,
-  TStore extends PopoverStore<TData, TContext, TPopoverKey> = PopoverStore<TData, TContext, TPopoverKey>,
+  TStore extends PopoverStore<TData, TContext, TPopoverKey> = PopoverStore<
+    TData,
+    TContext,
+    TPopoverKey
+  >,
 >(
   store: StoreApi<TStore>,
   customSlices: readonly StoreSliceDescriptor<object, object, TData, TContext, TPopoverKey>[],
@@ -73,7 +81,11 @@ export function runStoreDisposal<
   TData,
   TContext,
   TPopoverKey extends string,
-  TStore extends PopoverStore<TData, TContext, TPopoverKey> = PopoverStore<TData, TContext, TPopoverKey>,
+  TStore extends PopoverStore<TData, TContext, TPopoverKey> = PopoverStore<
+    TData,
+    TContext,
+    TPopoverKey
+  >,
 >(cfg: StoreDisposalConfig<TData, TContext, TPopoverKey, TStore>): void {
   cfg.unbindFSM?.();
   cfg.fsmRegistry?.destroyAll();

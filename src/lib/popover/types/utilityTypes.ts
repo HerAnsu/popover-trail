@@ -82,7 +82,6 @@ export type DeepPartial<T> = T extends (...args: never[]) => unknown
                 ? { [K in keyof T]?: DeepPartial<T[K]> }
                 : T;
 
-
 /**
  * Extracts the success payload type `T` from a monadic Result structure.
  *
@@ -94,9 +93,7 @@ export type DeepPartial<T> = T extends (...args: never[]) => unknown
  * type Data = InferOk<Res>; // { id: string }
  * ```
  */
-export type InferOk<R> = R extends { readonly success: true; readonly data: infer T }
-  ? T
-  : never;
+export type InferOk<R> = R extends { readonly success: true; readonly data: infer T } ? T : never;
 
 /**
  * Extracts the failure error type `E` from a monadic Result structure.
@@ -126,7 +123,4 @@ export type NonEmptyArray<T> = readonly [T, ...T[]];
  * @template TEventMap - Event dictionary mapping names to events.
  * @template TKey - Key in event map.
  */
-export type EventPayload<
-  TEventMap,
-  TKey extends keyof TEventMap,
-> = TEventMap[TKey];
+export type EventPayload<TEventMap, TKey extends keyof TEventMap> = TEventMap[TKey];

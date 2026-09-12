@@ -82,3 +82,29 @@ export function safeAssign<T extends Record<string, unknown>, S extends Record<s
   }
   return result as T & S;
 }
+
+/**
+ * Creates a shallow copy of a record containing only the specified keys.
+ * Protects against prototype pollution by skipping unsafe keys.
+ *
+ * @template T - Value type of the record.
+ * @template K - Key type of the record.
+ * @param record - Source record.
+ * @param keysToPick - Set or array of keys to include.
+ * @returns A new record containing only the picked keys.
+ */
+export function pickRecordKeys<T, K extends string = string>(
+  record: Partial<Record<K, T>>,
+  keysToPick: ReadonlySet<K> | readonly K[],
+): Partial<Record<K, T>> {
+  if (!record) return {};
+  const filterSet: ReadonlySet<string> =
+    keysToPick instanceof Set ? keysToPick : new Set(keysToPick);
+  const result: Partial<Record<K, T>> = {};
+  for (const key of filterSet) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(key)) {
+      result[key as K] = record[key as K];
+    }
+  }
+  return result;
+}

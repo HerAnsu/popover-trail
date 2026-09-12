@@ -21,9 +21,7 @@ export interface EntryStateMatchers<TData, R, TPopoverKey extends string = strin
 }
 
 export interface DiscriminatedStateMatchers<TData, R> {
-  readonly idle?: (
-    state: Extract<PopoverEntryDiscriminatedState<TData>, { status: 'idle' }>,
-  ) => R;
+  readonly idle?: (state: Extract<PopoverEntryDiscriminatedState<TData>, { status: 'idle' }>) => R;
   readonly loading: (
     state: Extract<PopoverEntryDiscriminatedState<TData>, { status: 'loading' }>,
   ) => R;

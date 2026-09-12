@@ -7,9 +7,7 @@
 
 import { tryResetItem } from './poolOperations';
 
-export function composeResetters<T>(
-  ...resetters: Array<(item: T) => void>
-): (item: T) => void {
+export function composeResetters<T>(...resetters: Array<(item: T) => void>): (item: T) => void {
   return (item: T) => {
     for (const fn of resetters) {
       if (fn !== undefined) {
@@ -19,25 +17,19 @@ export function composeResetters<T>(
   };
 }
 
-export function createPropertyResetter<T extends object>(
-  defaults: Partial<T>,
-): (item: T) => void {
+export function createPropertyResetter<T extends object>(defaults: Partial<T>): (item: T) => void {
   return (item: T) => {
     Object.assign(item, defaults);
   };
 }
 
-export function createCollectionResetter<T extends { clear: () => void }>(): (
-  item: T,
-) => void {
+export function createCollectionResetter<T extends { clear: () => void }>(): (item: T) => void {
   return (item: T) => {
     tryResetItem((c) => c.clear(), item);
   };
 }
 
-export function createArrayResetter<T extends { length: number }>(): (
-  item: T,
-) => void {
+export function createArrayResetter<T extends { length: number }>(): (item: T) => void {
   return (item: T) => {
     item.length = 0;
   };
@@ -70,4 +62,3 @@ export function createBoundingBoxResetter(
 export function createNoopResetter<T>(): (item: T) => void {
   return () => {};
 }
-

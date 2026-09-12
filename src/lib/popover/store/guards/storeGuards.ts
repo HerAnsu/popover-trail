@@ -80,4 +80,3 @@ export function isHistorySnapshot(val: unknown): val is HistorySnapshot {
     isObjectRecord(val.pinnedStates)
   );
 }
-

@@ -8,7 +8,9 @@ describe('spatialClusters', () => {
   });
 
   it('wraps a single isolated item into its own cluster', () => {
-    const single: QuadItem<string>[] = [{ id: 'solo', bounds: { x: 10, y: 20, width: 30, height: 40 } }];
+    const single: QuadItem<string>[] = [
+      { id: 'solo', bounds: { x: 10, y: 20, width: 30, height: 40 } },
+    ];
     const clusters = findSpatialClusters(single);
 
     expect(clusters).toHaveLength(1);

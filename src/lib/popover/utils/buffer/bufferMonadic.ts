@@ -40,7 +40,9 @@ export function peekRingResult<T>(state: ReadonlyRingBufferState<T>): Result<T, 
  * @param state - Internal ring buffer state.
  * @returns Ok with the oldest item, or Err(BufferEmptyError) if buffer count is 0.
  */
-export function peekFirstRingResult<T>(state: ReadonlyRingBufferState<T>): Result<T, BufferEmptyError> {
+export function peekFirstRingResult<T>(
+  state: ReadonlyRingBufferState<T>,
+): Result<T, BufferEmptyError> {
   if (state.count === 0) return Err(createBufferEmptyError());
   const item = getBufferItem(state, toLogicalIndex(0));
   return Ok(item as T);
@@ -93,7 +95,10 @@ export function tryPushRing<T>(
   item: T,
   onResize?: (cap: number) => void,
 ): Result<void, BufferOverflowError> {
-  if (state.count === state.capacity && (!state.autoExpand || state.capacity >= state.maxCapacity)) {
+  if (
+    state.count === state.capacity &&
+    (!state.autoExpand || state.capacity >= state.maxCapacity)
+  ) {
     return Err(createBufferOverflowError(state.capacity));
   }
   pushItem(state, metrics, item, onResize);
@@ -106,7 +111,10 @@ export function tryUnshiftRing<T>(
   item: T,
   onResize?: (cap: number) => void,
 ): Result<void, BufferOverflowError> {
-  if (state.count === state.capacity && (!state.autoExpand || state.capacity >= state.maxCapacity)) {
+  if (
+    state.count === state.capacity &&
+    (!state.autoExpand || state.capacity >= state.maxCapacity)
+  ) {
     return Err(createBufferOverflowError(state.capacity));
   }
   unshiftItem(state, metrics, item, onResize);

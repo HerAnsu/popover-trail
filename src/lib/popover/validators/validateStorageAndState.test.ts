@@ -62,9 +62,7 @@ describe('validateStorageAndState', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining(PopoverWarningCode.HYDRATION_ERROR),
     );
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Network timeout'),
-    );
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Network timeout'));
 
     warnSpy.mockClear();
     validateHydrationError('userCard', null);

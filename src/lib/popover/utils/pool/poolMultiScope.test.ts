@@ -89,4 +89,3 @@ describe('poolMultiScope', () => {
     expect(pool.inspect()).toContain('[ObjectPool size=4/16 inUse=0 hitRate=0%]');
   });
 });
-

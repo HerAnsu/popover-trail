@@ -36,10 +36,7 @@ export function shallowEqual<T>(objA: T, objB: T): boolean {
   return areObjectsEqual(objA, objB);
 }
 
-function areObjectsEqual(
-  recA: Record<string, unknown>,
-  recB: Record<string, unknown>,
-): boolean {
+function areObjectsEqual(recA: Record<string, unknown>, recB: Record<string, unknown>): boolean {
   let countA = 0;
   let countB = 0;
 

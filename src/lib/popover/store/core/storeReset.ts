@@ -25,11 +25,7 @@ export interface ResetStoreSubsystems<
   safeSet: SafeSetFn<TData, TContext, TPopoverKey>;
 }
 
-export function executeStoreReset<
-  TData,
-  TContext = unknown,
-  TPopoverKey extends string = string,
->(
+export function executeStoreReset<TData, TContext = unknown, TPopoverKey extends string = string>(
   subsystems: ResetStoreSubsystems<TData, TContext, TPopoverKey>,
 ): void {
   subsystems.controllerManager.abortControllersForKeys(

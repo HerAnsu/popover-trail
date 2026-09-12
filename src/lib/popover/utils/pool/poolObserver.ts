@@ -26,35 +26,58 @@ export class PoolObserverHub<T> {
 
   notifyAcquire(item: T, hit: boolean): void {
     for (const obs of this.observers) {
-      try { obs.onAcquire?.(item, hit); } catch { /* fault isolation */ }
+      try {
+        obs.onAcquire?.(item, hit);
+      } catch {
+        /* fault isolation */
+      }
     }
   }
 
   notifyRelease(item: T): void {
     for (const obs of this.observers) {
-      try { obs.onRelease?.(item); } catch { /* fault isolation */ }
+      try {
+        obs.onRelease?.(item);
+      } catch {
+        /* fault isolation */
+      }
     }
   }
 
   notifyEvict(item: T): void {
     for (const obs of this.observers) {
-      try { obs.onEvict?.(item); } catch { /* fault isolation */ }
+      try {
+        obs.onEvict?.(item);
+      } catch {
+        /* fault isolation */
+      }
     }
   }
 
   notifyPreallocate(count: number): void {
     for (const obs of this.observers) {
-      try { obs.onPreallocate?.(count); } catch { /* fault isolation */ }
+      try {
+        obs.onPreallocate?.(count);
+      } catch {
+        /* fault isolation */
+      }
     }
   }
 
   notifyDrain(count: number): void {
     for (const obs of this.observers) {
-      try { obs.onDrain?.(count); } catch { /* fault isolation */ }
+      try {
+        obs.onDrain?.(count);
+      } catch {
+        /* fault isolation */
+      }
     }
   }
 
-  get size(): number { return this.observers.length; }
-  clear(): void { this.observers.length = 0; }
+  get size(): number {
+    return this.observers.length;
+  }
+  clear(): void {
+    this.observers.length = 0;
+  }
 }
-

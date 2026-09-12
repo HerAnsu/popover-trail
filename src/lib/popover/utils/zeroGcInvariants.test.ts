@@ -107,7 +107,8 @@ describe('I_ZeroGC: Hot-Path Zero-Allocation and Singleton Invariants', () => {
       shallowEqual(prevOffset, nextOffset);
     }
 
-    const startMemory = typeof process !== 'undefined' ? process?.memoryUsage?.()?.heapUsed : undefined;
+    const startMemory =
+      typeof process !== 'undefined' ? process?.memoryUsage?.()?.heapUsed : undefined;
 
     for (let frame = 0; frame < 10_000; frame++) {
       const deltaX = (frame % 300) - 150;
@@ -121,7 +122,8 @@ describe('I_ZeroGC: Hot-Path Zero-Allocation and Singleton Invariants', () => {
       shallowEqual(prevOffset, nextOffset);
     }
 
-    const endMemory = typeof process !== 'undefined' ? process?.memoryUsage?.()?.heapUsed : undefined;
+    const endMemory =
+      typeof process !== 'undefined' ? process?.memoryUsage?.()?.heapUsed : undefined;
 
     // Verify scratchpads preserve exact object reference identity and valid outputs
     expect(Number.isFinite(coordTarget.x)).toBe(true);

@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  createArrayPool,
-  createMapPool,
-  sharedArrayPool,
-  sharedMapPool,
-} from './poolCollections';
+import { createArrayPool, createMapPool, sharedArrayPool, sharedMapPool } from './poolCollections';
 import { globalPoolRegistry } from './poolRegistry';
 
 describe('poolCollections', () => {

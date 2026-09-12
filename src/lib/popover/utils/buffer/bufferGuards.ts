@@ -32,24 +32,36 @@ export function isRingBufferOptions<T = unknown>(val: unknown): val is RingBuffe
 export function isReadonlyRingBuffer<T = unknown>(val: unknown): val is ReadonlyRingBuffer<T> {
   if (typeof val !== 'object' || val === null) return false;
   return (
-    'capacity' in val && typeof val.capacity === 'number' &&
-    'size' in val && typeof val.size === 'number' &&
-    'revision' in val && isBufferRevision(val.revision) &&
-    'peek' in val && typeof val.peek === 'function' &&
-    'at' in val && typeof val.at === 'function' &&
-    'forEach' in val && typeof val.forEach === 'function' &&
-    'toArray' in val && typeof val.toArray === 'function'
+    'capacity' in val &&
+    typeof val.capacity === 'number' &&
+    'size' in val &&
+    typeof val.size === 'number' &&
+    'revision' in val &&
+    isBufferRevision(val.revision) &&
+    'peek' in val &&
+    typeof val.peek === 'function' &&
+    'at' in val &&
+    typeof val.at === 'function' &&
+    'forEach' in val &&
+    typeof val.forEach === 'function' &&
+    'toArray' in val &&
+    typeof val.toArray === 'function'
   );
 }
 
 export function isRingBuffer<T = unknown>(val: unknown): val is RingBuffer<T> {
   if (!isReadonlyRingBuffer<T>(val)) return false;
   return (
-    'push' in val && typeof val.push === 'function' &&
-    'pop' in val && typeof val.pop === 'function' &&
-    'shift' in val && typeof val.shift === 'function' &&
-    'clear' in val && typeof val.clear === 'function' &&
-    'resize' in val && typeof val.resize === 'function'
+    'push' in val &&
+    typeof val.push === 'function' &&
+    'pop' in val &&
+    typeof val.pop === 'function' &&
+    'shift' in val &&
+    typeof val.shift === 'function' &&
+    'clear' in val &&
+    typeof val.clear === 'function' &&
+    'resize' in val &&
+    typeof val.resize === 'function'
   );
 }
 
@@ -57,20 +69,29 @@ export function isRingBuffer<T = unknown>(val: unknown): val is RingBuffer<T> {
 export function isRingBufferState<T = unknown>(val: unknown): val is RingBufferState<T> {
   if (typeof val !== 'object' || val === null) return false;
   return (
-    'buffer' in val && isArray(val.buffer) &&
-    'head' in val && isPhysicalIndex(val.head) &&
-    'count' in val && typeof val.count === 'number' &&
-    'capacity' in val && typeof val.capacity === 'number' &&
-    'revision' in val && isBufferRevision(val.revision)
+    'buffer' in val &&
+    isArray(val.buffer) &&
+    'head' in val &&
+    isPhysicalIndex(val.head) &&
+    'count' in val &&
+    typeof val.count === 'number' &&
+    'capacity' in val &&
+    typeof val.capacity === 'number' &&
+    'revision' in val &&
+    isBufferRevision(val.revision)
   );
 }
 
-export function isBufferEmpty(target: { readonly count: number } | { readonly size: number }): boolean {
+export function isBufferEmpty(
+  target: { readonly count: number } | { readonly size: number },
+): boolean {
   return 'size' in target ? target.size === 0 : target.count === 0;
 }
 
 export function isBufferFull(
-  target: { readonly count: number; readonly capacity: number } | { readonly size: number; readonly capacity: number },
+  target:
+    | { readonly count: number; readonly capacity: number }
+    | { readonly size: number; readonly capacity: number },
 ): boolean {
   return 'size' in target ? target.size === target.capacity : target.count === target.capacity;
 }

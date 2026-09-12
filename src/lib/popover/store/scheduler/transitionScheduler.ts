@@ -8,10 +8,7 @@
 import { KeyedTimerPool } from '../../utils/keyedTimerPool';
 import { DISPOSE_SYMBOL, type ScopeDisposable } from '../../utils/resource';
 import { TransitionBatchScheduler } from './transitionBatchScheduler';
-import {
-  cancelKeyTransitions,
-  cancelMultipleKeyTransitions,
-} from './transitionSchedulerHelpers';
+import { cancelKeyTransitions, cancelMultipleKeyTransitions } from './transitionSchedulerHelpers';
 import type { TransitionBatchHandle } from './transitionSchedulerTypes';
 
 export type { TransitionBatchHandle };
@@ -36,8 +33,12 @@ export class PopoverTransitionScheduler<
     if (!this.isDisposed) this.hoverTimers.schedule(key, delay, onComplete);
   }
 
-  cancelHover(key: string): void { this.hoverTimers.cancel(key); }
-  cancelAllHover(): void { this.hoverTimers.cancelAll(); }
+  cancelHover(key: string): void {
+    this.hoverTimers.cancel(key);
+  }
+  cancelAllHover(): void {
+    this.hoverTimers.cancelAll();
+  }
 
   scheduleExitTransition(key: string, duration: number, onComplete: () => void): void {
     if (this.isDisposed) return;
@@ -49,10 +50,18 @@ export class PopoverTransitionScheduler<
     this.scheduleExitTransition(key, duration, onComplete);
   }
 
-  cancelExit(key: string): void { this.exitTimers.cancel(key); }
-  cancelAllExit(): void { this.exitTimers.cancelAll(); }
-  hasActiveExit(key: string): boolean { return this.exitTimers.has(key); }
-  hasActiveHover(key: string): boolean { return this.hoverTimers.has(key); }
+  cancelExit(key: string): void {
+    this.exitTimers.cancel(key);
+  }
+  cancelAllExit(): void {
+    this.exitTimers.cancelAll();
+  }
+  hasActiveExit(key: string): boolean {
+    return this.exitTimers.has(key);
+  }
+  hasActiveHover(key: string): boolean {
+    return this.hoverTimers.has(key);
+  }
 
   hasPendingTransitions(): boolean {
     return this.hoverTimers.size > 0 || this.exitTimers.size > 0 || this.batches.size > 0;

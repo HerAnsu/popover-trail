@@ -6,7 +6,12 @@
 
 import { useEffect, useRef } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
-import type { PopoverStore, PopoverResolver, PopoverStateData, StoreSliceDescriptor } from '../types';
+import type {
+  PopoverStore,
+  PopoverResolver,
+  PopoverStateData,
+  StoreSliceDescriptor,
+} from '../types';
 import type { PopoverProviderProps } from './PopoverProviderProps';
 import {
   DEFAULT_CASCADE_OFFSET_STEP,

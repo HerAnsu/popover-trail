@@ -7,8 +7,10 @@ describe('validatePerformance', () => {
   let clearMarksSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    markSpy = vi.spyOn(performance, 'mark').mockImplementation(() => ({} as PerformanceMark));
-    measureSpy = vi.spyOn(performance, 'measure').mockImplementation(() => ({} as PerformanceMeasure));
+    markSpy = vi.spyOn(performance, 'mark').mockImplementation(() => ({}) as PerformanceMark);
+    measureSpy = vi
+      .spyOn(performance, 'measure')
+      .mockImplementation(() => ({}) as PerformanceMeasure);
     clearMarksSpy = vi.spyOn(performance, 'clearMarks').mockImplementation(() => {});
   });
 

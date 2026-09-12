@@ -24,7 +24,9 @@ describe('validateComponentScope', () => {
       expect.stringContaining(PopoverWarningCode.CARD_SUBCOMPONENT_OUTSIDE_SCOPE),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('<PopoverCard.CloseButton> was rendered outside of a <PopoverCard> container.'),
+      expect.stringContaining(
+        '<PopoverCard.CloseButton> was rendered outside of a <PopoverCard> container.',
+      ),
     );
 
     warnSpy.mockClear();
@@ -38,7 +40,9 @@ describe('validateComponentScope', () => {
       expect.stringContaining(PopoverWarningCode.TIMELINE_SUBCOMPONENT_OUTSIDE_SCOPE),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('<PopoverTimeline.Step> was rendered outside of a <PopoverTimeline> container.'),
+      expect.stringContaining(
+        '<PopoverTimeline.Step> was rendered outside of a <PopoverTimeline> container.',
+      ),
     );
 
     warnSpy.mockClear();

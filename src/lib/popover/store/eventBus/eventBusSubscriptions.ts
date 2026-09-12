@@ -48,7 +48,10 @@ export class EventBusSubscriptions<TData, TPopoverKey extends string> {
     return this.router.subscribeAny(listener);
   }
 
-  onKey(key: TPopoverKey, listener: PopoverWildcardListener<TData, TPopoverKey>): PopoverSubscriptionToken {
+  onKey(
+    key: TPopoverKey,
+    listener: PopoverWildcardListener<TData, TPopoverKey>,
+  ): PopoverSubscriptionToken {
     this.checkCapacity();
     return this.router.subscribeKey(key, listener);
   }

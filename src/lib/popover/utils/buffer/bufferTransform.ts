@@ -34,7 +34,6 @@ export function mapRingBuffer<T, U>(
   return result;
 }
 
-
 export function filterRingBuffer<T, S extends T>(
   state: ReadonlyRingBufferState<T>,
   pred: BufferTypeGuard<T, S>,
