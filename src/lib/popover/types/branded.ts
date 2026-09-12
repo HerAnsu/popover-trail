@@ -22,6 +22,53 @@ declare const __brandSymbol: unique symbol;
  */
 export type Brand<T, B extends string> = T & { readonly [__brandSymbol]: B };
 
+/**
+ * Universal wildcard constraint matching any nominal branded type.
+ */
+export type AnyBrand = Brand<unknown, string>;
+
+/**
+ * Strips the nominal brand tag from branded type `T`, recovering the underlying primitive type.
+ *
+ * @template T - Potentially branded type.
+ *
+ * @example
+ * ```typescript
+ * type RawKey = Unbrand<PopoverKey>; // string
+ * type RawNumber = Unbrand<DurationMs>; // number
+ * ```
+ */
+export type Unbrand<T> = T extends { readonly [__brandSymbol]: string }
+  ? T extends number
+    ? number
+    : T extends string
+      ? string
+      : T extends boolean
+        ? boolean
+        : T extends bigint
+          ? bigint
+          : T
+  : T;
+
+/**
+ * Extracts the brand identifier string literal from branded type `T`.
+ *
+ * @template T - Branded type.
+ *
+ * @example
+ * ```typescript
+ * type Tag = BrandTagOf<PopoverKey>; // 'PopoverKey'
+ * ```
+ */
+export type BrandTagOf<T> = T extends Brand<unknown, infer B> ? B : never;
+
+/**
+ * Compile-time type-level boolean evaluating whether `T` carries a nominal brand tag.
+ *
+ * @template T - Type to inspect.
+ */
+export type IsBranded<T> = T extends Brand<unknown, string> ? true : false;
+
 /** Nominal type for popover unique string keys. */
 export type PopoverKey<T extends string = string> = Brand<T, 'PopoverKey'>;
 

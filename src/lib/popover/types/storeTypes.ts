@@ -13,6 +13,10 @@ export * from './selectorTypes';
 
 export type {
   Brand,
+  AnyBrand,
+  Unbrand,
+  BrandTagOf,
+  IsBranded,
   StackGroupId,
   ViewportX,
   ViewportY,
@@ -21,6 +25,23 @@ export type {
   PopoverKey,
   ParentKey,
   ZIndexDepth,
+  TriggerId,
+  ScopeId,
+  SubscriptionId,
+  WorkerTaskId,
+  CausalSequence,
+  StorageKey,
+  ChannelId,
+  CacheKey,
+  HistoryCapacity,
+  DurationMs,
+  TimestampMs,
+} from './branded';
+
+export {
+  EMPTY_READONLY_ARRAY,
+  EMPTY_READONLY_OBJECT,
+  emptyRecord,
 } from './branded';
 
 export type { DeepReadonly } from './configTypes';

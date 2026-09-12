@@ -124,6 +124,12 @@ export type {
   ChannelId,
   CacheKey,
   HistoryCapacity,
+  DurationMs,
+  TimestampMs,
+  Unbrand,
+  BrandTagOf,
+  IsBranded,
+  AnyBrand,
 } from './types/branded';
 
 // Types: Global Schema Registry Declaration Merging
@@ -135,7 +141,7 @@ export type {
   ResolveRegisteredData,
 } from './types/registerTypes';
 
-export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT } from './types/branded';
+export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT, emptyRecord } from './types/branded';
 
 export type {
   PolymorphicRef,

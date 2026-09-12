@@ -21,7 +21,7 @@ import type {
   ZIndexBaseMap,
   PopoverSlotComponents,
 } from '../configTypes';
-import type { StackGroupId } from '../branded';
+import type { StackGroupId, OwnerId, DurationMs, ZIndexDepth } from '../branded';
 import type { PopoverStore } from '../selectorTypes';
 import type { PopoverCache, PopoverResolver } from './resolvers';
 
@@ -33,7 +33,7 @@ export interface PopoverStateData<
   readonly stateRevision: number;
   readonly trail: readonly TrailEntry<TData, TPopoverKey>[];
   readonly floating: readonly TrailEntry<TData, TPopoverKey>[];
-  readonly ownerId: string | null;
+  readonly ownerId: OwnerId | string | null;
   readonly offsets: Readonly<Partial<Record<TPopoverKey, Readonly<DragOffset>>>>;
   readonly pinnedStates: Readonly<Partial<Record<TPopoverKey, boolean>>>;
   readonly zIndexOrder: readonly TPopoverKey[];
@@ -49,9 +49,9 @@ export interface PopoverStateData<
   readonly enableArrowNavigation: boolean;
   readonly debug: boolean;
   readonly cascadeOffsetStep: number;
-  readonly exitTransitionDuration: number;
+  readonly exitTransitionDuration: DurationMs | number;
   readonly defaultOffset: number;
-  readonly baseZIndex: number;
+  readonly baseZIndex: ZIndexDepth | number;
   readonly mountingClassName: string;
   readonly unmountingClassName: string;
   readonly mountedClassName: string;

@@ -2377,6 +2377,13 @@ Nominal branding attaches phantom brand tags to primitives, preventing developer
 - `EMPTY_READONLY_OBJECT`: Frozen empty dictionary (`Object.freeze({})`).
 - `emptyRecord<K, V>()`: Type-safe accessor for the frozen empty record singleton.
 
+#### Brand type utilities
+
+- `Unbrand<T>`: Strips nominal branding, returning the underlying primitive type (`string`, `number`, `boolean`).
+- `BrandTagOf<T>`: Extracts the literal string brand tag from branded type `T` (e.g. `BrandTagOf<PopoverKey>` is `'PopoverKey'`).
+- `IsBranded<T>`: Evaluates to `true` if `T` carries a nominal brand tag, otherwise `false`.
+- `AnyBrand`: Universal wildcard type constraint matching any nominal branded type.
+
 #### Smart constructors and type guards
 
 All smart constructors validate invariants at runtime and return the branded type without requiring double type assertions:

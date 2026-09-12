@@ -41,6 +41,14 @@ import {
   type PopoverNotFoundError,
   type SingularMatrixError,
   type SpatialNotFoundError,
+  type DurationMs,
+  type TimestampMs,
+  type Unbrand,
+  type BrandTagOf,
+  type IsBranded,
+  type AnyBrand,
+  type NarrowTrailEntry,
+  emptyRecord,
   collectResults,
   partitionResults,
   usingResult,
@@ -256,5 +264,36 @@ describe('Type-Level Static Assertions (test-d)', () => {
     expectTypeOf<SpatialNotFoundError>().toMatchTypeOf<
       { type: 'spatial_not_found'; message: string }
     >();
+  });
+
+  it('verifies Unbrand, BrandTagOf, IsBranded, and AnyBrand utility types', () => {
+    expectTypeOf<Unbrand<PopoverKey>>().toEqualTypeOf<string>();
+    expectTypeOf<Unbrand<DurationMs>>().toEqualTypeOf<number>();
+    expectTypeOf<Unbrand<TimestampMs>>().toEqualTypeOf<number>();
+    expectTypeOf<Unbrand<number>>().toEqualTypeOf<number>();
+
+    expectTypeOf<BrandTagOf<PopoverKey>>().toEqualTypeOf<'PopoverKey'>();
+    expectTypeOf<BrandTagOf<DurationMs>>().toEqualTypeOf<'DurationMs'>();
+    expectTypeOf<BrandTagOf<TimestampMs>>().toEqualTypeOf<'TimestampMs'>();
+
+    expectTypeOf<IsBranded<PopoverKey>>().toEqualTypeOf<true>();
+    expectTypeOf<IsBranded<string>>().toEqualTypeOf<false>();
+
+    expectTypeOf<PopoverKey>().toMatchTypeOf<AnyBrand>();
+    expectTypeOf<DurationMs>().toMatchTypeOf<AnyBrand>();
+  });
+
+  it('verifies NarrowTrailEntry narrows to exact variant', () => {
+    expectTypeOf<NarrowTrailEntry<{ id: string }, 'success'>>().toEqualTypeOf<
+      SuccessTrailEntry<{ id: string }>
+    >();
+    expectTypeOf<NarrowTrailEntry<unknown, 'loading'>>().toEqualTypeOf<LoadingTrailEntry>();
+    expectTypeOf<NarrowTrailEntry<unknown, 'error'>>().toEqualTypeOf<ErrorTrailEntry>();
+  });
+
+  it('verifies emptyRecord returns frozen empty record singleton', () => {
+    expectTypeOf(emptyRecord).toBeFunction();
+    const rec = emptyRecord<string, number>();
+    expectTypeOf(rec).toMatchTypeOf<Readonly<Partial<Record<string, number>>>>();
   });
 });

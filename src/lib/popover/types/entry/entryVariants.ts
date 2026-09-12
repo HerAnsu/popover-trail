@@ -101,7 +101,7 @@ export type PopoverEntryDiscriminatedState<TData = unknown> =
 
 export type NarrowTrailEntry<
   TData,
-  TStatus extends 'idle' | 'loading' | 'error' | 'success',
+  TStatus extends TrailEntryStatus,
   TPopoverKey extends string = string,
 > = TStatus extends 'idle'
   ? IdleTrailEntry<TData, TPopoverKey>
