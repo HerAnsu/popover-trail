@@ -10,6 +10,7 @@ import { usePopoverStore } from '../../context/usePopoverStore';
 import {
   selectActiveTrail,
   selectFloatingEntries,
+  selectRootEntry,
   selectParentKey,
   selectChildrenKeys,
   selectBreadcrumbs,
@@ -36,10 +37,9 @@ export function usePopoverRootEntry<
   TData = RegisteredDataMap[RegisteredKeys],
   TPopoverKey extends string = RegisteredKeys,
 >(): TrailEntry<TData, TPopoverKey> | undefined {
-  return usePopoverStore<TrailEntry<TData, TPopoverKey> | undefined, TData, unknown, TPopoverKey>(
-    (state) => state.trail[0],
-  );
+  return usePopoverStore(selectRootEntry<TData, TPopoverKey>);
 }
+
 
 export function usePopoverTotalActiveCount(): number {
   return usePopoverStore((state) => state.floating.length + state.trail.length);

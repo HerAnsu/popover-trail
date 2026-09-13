@@ -7,6 +7,7 @@
 import type { CacheEntry, StorageAdapter } from './cacheTypes';
 import { isValidStorageKey } from '../safeKeys';
 import { ensureSuffix } from '../stringUtils';
+import { fromThrowable } from '../result';
 
 function isCacheEntry<T>(val: unknown): val is CacheEntry<T> {
   return (
@@ -25,30 +26,29 @@ export class WebStorageAdapter<T = unknown> implements StorageAdapter<T> {
 
   public get(key: string): CacheEntry<T> | undefined {
     if (!isValidStorageKey(key)) return undefined;
+    const rawRes = fromThrowable(() => this.storage.getItem(this.prefix + key));
+    if (!rawRes.success || !rawRes.data) return undefined;
     try {
-      const raw = this.storage.getItem(this.prefix + key);
-      if (!raw) return undefined;
-      const parsed: unknown = JSON.parse(raw);
+      const parsed: unknown = JSON.parse(rawRes.data);
       return isCacheEntry<T>(parsed) ? parsed : undefined;
     } catch {
       return undefined;
     }
   }
 
+
   public set(key: string, entry: CacheEntry<T>): void {
     if (!isValidStorageKey(key)) return;
-    try {
+    fromThrowable(() => {
       this.storage.setItem(this.prefix + key, JSON.stringify(entry));
-    } catch {
-      // Quota exceeded or serialization failure
-    }
+    });
   }
 
   public delete(key: string): boolean {
     if (!isValidStorageKey(key)) return false;
-    this.storage.removeItem(this.prefix + key);
-    return true;
+    return fromThrowable(() => this.storage.removeItem(this.prefix + key)).success;
   }
+
 
   public clear(): void {
     const keysToRemove = [...this.keys()];

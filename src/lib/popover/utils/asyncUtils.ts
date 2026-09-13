@@ -222,3 +222,92 @@ export function throttle<Args extends readonly unknown[]>(
 
   return throttled;
 }
+
+/**
+ * Options configuring the exponential backoff retry policy.
+ */
+export interface RetryOptions {
+  readonly retries?: number;
+  readonly delayMs?: number;
+  readonly backoffMultiplier?: number;
+  readonly maxDelayMs?: number;
+  readonly shouldRetry?: (error: unknown) => boolean;
+}
+
+/**
+ * Retries an asynchronous operation with exponential backoff.
+ *
+ * @template T - Return type.
+ * @param fn - Asynchronous function to execute.
+ * @param options - Configuration options for retries, delays, and backoff.
+ * @returns Result of the resolved asynchronous operation.
+ */
+export async function retryAsync<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T> {
+  const retries = options?.retries ?? 3;
+  const delayMs = options?.delayMs ?? 100;
+  const backoffMultiplier = options?.backoffMultiplier ?? 2;
+  const maxDelayMs = options?.maxDelayMs ?? 5000;
+  const shouldRetry = options?.shouldRetry ?? (() => true);
+
+  const attempt = async (remainingRetries: number, currentDelay: number): Promise<T> => {
+    try {
+      return await fn();
+    } catch (err: unknown) {
+      if (remainingRetries <= 0 || !shouldRetry(err)) {
+        throw err;
+      }
+      if (currentDelay > 0) {
+        await sleep(currentDelay);
+      }
+      const nextDelay = Math.min(currentDelay * backoffMultiplier, maxDelayMs);
+      return attempt(remainingRetries - 1, nextDelay);
+    }
+  };
+
+  return attempt(retries, Math.max(0, delayMs));
+}
+
+
+/**
+ * Asynchronous mutex lock for serializing critical asynchronous sections.
+ */
+export interface AsyncMutex {
+  runExclusive<T>(fn: () => Promise<T>): Promise<T>;
+  isLocked(): boolean;
+}
+
+/**
+ * Creates an asynchronous mutex lock guaranteeing sequential FIFO execution without race conditions.
+ *
+ * @returns An AsyncMutex instance.
+ */
+export function createAsyncMutex(): AsyncMutex {
+  let pending: Promise<unknown> = Promise.resolve();
+  let locked = false;
+
+  return {
+    async runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+      const current = pending;
+      let release: () => void = noop;
+      pending = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+
+      try {
+        await current;
+      } catch {
+        // Proceed even if previous task encountered an unhandled rejection
+      }
+
+      locked = true;
+      try {
+        return await fn();
+      } finally {
+        locked = false;
+        release();
+      }
+    },
+    isLocked: () => locked,
+  };
+}
+

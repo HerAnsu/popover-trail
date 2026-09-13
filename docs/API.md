@@ -3428,9 +3428,105 @@ const scratchpad = { x: 0, y: 0 };
 addPoints2DInto(p1, p2, scratchpad); // scratchpad is now { x: 50, y: 80 }
 ```
 
+### Functional Combinators and Predicate Algebra
+
+Pure functional programming combinators and zero-allocation predicate combinators:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `curry2(fn)` | `<A, B, R>((A, B) => R) => (A) => (B) => R` | Curries a binary function into unary functions. |
+| `prop(key)` | `<T, K>(K) => (T) => T[K]` | Safe property accessor generator function. |
+| `propEq(key, val)` | `<T, K>(K, T[K]) => (T) => boolean` | Predicate testing if object property strictly equals value. |
+| `and(...predicates)` | `<T>(...((T) => boolean)[]) => (T) => boolean` | Short-circuiting logical conjunction with zero heap allocation. |
+| `or(...predicates)` | `<T>(...((T) => boolean)[]) => (T) => boolean` | Short-circuiting logical disjunction with zero heap allocation. |
+| `not(predicate)` | `<T>((T) => boolean) => (T) => boolean` | Logical negation of a predicate function. |
+| `isMatchingKey(key)` | `<T extends HasKey>(string) => (T) => boolean` | High-frequency predicate checking if `item.key === key`. |
+| `hasKeyIn(keysSet)` | `<T extends HasKey>(ReadonlySet<string>) => (T) => boolean` | Fast $O(1)$ predicate testing if `item.key` is in a Set. |
+
+```typescript
+import { prop, propEq, and, not, isMatchingKey, hasKeyIn } from 'popover-trail';
+
+// Property extraction and comparison
+const getStatus = prop('status');
+const isResolved = propEq('status', 'resolved');
+
+// Zero-allocation predicate combination
+const isActiveAndNotPinned = and(
+  (entry) => entry.isOpen,
+  not((entry) => entry.isPinned)
+);
+
+// High-speed key matching
+const isTargetCard = isMatchingKey('user-profile');
+const isChildOfSelection = hasKeyIn(new Set(['card-a', 'card-b']));
+```
+
+### Array Slicing and Fast-Path Operations
+
+Non-allocating array accessors and structural sharing slices:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `first(items)` | `<T>(readonly T[]) => T \| undefined` | Returns the first element of an array using safe `.at(0)`. |
+| `last(items)` | `<T>(readonly T[]) => T \| undefined` | Returns the last element of an array using safe `.at(-1)`. |
+| `take(items, count)` | `<T>(readonly T[], number) => readonly T[]` | Slices first `count` elements with identity preservation on bounds. |
+| `drop(items, count)` | `<T>(readonly T[], number) => readonly T[]` | Slices omitting first `count` elements with identity preservation. |
+| `concatImmutable(...arrays)` | `<T>(...(readonly T[])[]) => readonly T[]` | Concatenates arrays with Zero-GC singleton return for empty inputs. |
+
+```typescript
+import { first, last, take, drop, concatImmutable } from 'popover-trail';
+
+const entries = ['card-1', 'card-2', 'card-3'];
+
+first(entries); // 'card-1'
+last(entries);  // 'card-3'
+
+take(entries, 2); // ['card-1', 'card-2']
+take(entries, 5); // returns original `entries` reference (Zero-GC)
+
+drop(entries, 1); // ['card-2', 'card-3']
+
+// Fast-path concatenation: returns exact instance if only one is non-empty
+const combined = concatImmutable([], entries, []); // returns `entries` directly
+```
+
+### Asynchronous Concurrency and Resilience
+
+Fault-tolerant async retry policies and asynchronous mutual exclusion gates:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `retryAsync(fn, options?)` | `<T>(() => Promise<T>, RetryOptions?) => Promise<T>` | Retries async tasks with exponential backoff and custom filters. |
+| `createAsyncMutex()` | `() => AsyncMutex` | Creates an async mutex for serializing critical operations (FIFO). |
+
+```typescript
+import { retryAsync, createAsyncMutex } from 'popover-trail';
+
+// 1. Exponential backoff retry for resolvers or network fetches
+const data = await retryAsync(
+  () => fetchUserProfile('user_123'),
+  {
+    retries: 3,
+    delayMs: 150,
+    backoffMultiplier: 2,
+    maxDelayMs: 2000,
+    shouldRetry: (err) => !(err instanceof AuthorizationError),
+  }
+);
+
+// 2. Asynchronous mutex to prevent concurrent write collisions
+const mutex = createAsyncMutex();
+
+await mutex.runExclusive(async () => {
+  // Critical section executed sequentially without race conditions
+  await persistActiveSnapshots();
+});
+```
+
 ---
 
 ## 13. Recipes and common patterns
+
 
 
 ### Recipe: Skeleton UI during resolution

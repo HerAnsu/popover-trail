@@ -4,7 +4,7 @@
  * @module store/persistence/storageOperations
  */
 
-import { wrapResult } from '../../utils/result';
+import { wrapResult, unwrapOr } from '../../utils/result';
 import { isBrowser } from '../../utils/typeGuards';
 import type { StorageKey, Unbrand } from '../../types';
 import type { PlatformStorageType } from './persistenceTypes';
@@ -14,8 +14,7 @@ import type { PlatformStorageType } from './persistenceTypes';
  */
 export function resolvePlatformStorage(type: PlatformStorageType): Storage | null {
   if (!isBrowser()) return null;
-  const result = wrapResult(() => window[type]);
-  return result.success ? result.data : null;
+  return unwrapOr(wrapResult(() => window[type]), null);
 }
 
 /**
@@ -25,9 +24,9 @@ export function readStorageItem(
   storage: Storage,
   key: StorageKey | Unbrand<StorageKey>,
 ): string | null {
-  const result = wrapResult(() => storage.getItem(key));
-  return result.success ? result.data : null;
+  return unwrapOr(wrapResult(() => storage.getItem(key)), null);
 }
+
 
 /**
  * Writes an item to storage safely. Accepts both branded StorageKey and unbranded raw key string.

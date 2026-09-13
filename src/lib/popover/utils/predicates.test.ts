@@ -8,7 +8,11 @@ import {
   isDefined,
   isNull,
   isUndefined,
+  isMatchingKey,
+  hasKeyIn,
 } from './predicates';
+
+
 
 describe('predicates utility', () => {
   it('checks if key is in list', () => {
@@ -70,5 +74,21 @@ describe('predicates utility', () => {
     expect(isUndefined(null)).toBe(false);
     expect(isUndefined('')).toBe(false);
   });
+
+  it('isMatchingKey returns true only when item.key strictly matches', () => {
+    const isTarget = isMatchingKey('target-key');
+    expect(isTarget({ key: 'target-key' })).toBe(true);
+    expect(isTarget({ key: 'other-key' })).toBe(false);
+  });
+
+
+  it('hasKeyIn returns true only when item.key exists in the provided Set', () => {
+    const set = new Set(['k1', 'k2']);
+    const inSet = hasKeyIn(set);
+    expect(inSet({ key: 'k1' })).toBe(true);
+    expect(inSet({ key: 'k2' })).toBe(true);
+    expect(inSet({ key: 'k3' })).toBe(false);
+  });
 });
+
 

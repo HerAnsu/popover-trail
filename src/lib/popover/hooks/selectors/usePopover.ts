@@ -20,6 +20,8 @@ import type {
 } from '../../types/registerTypes';
 import { shallowEqual } from '../../utils/equality';
 import { ZERO_OFFSET } from '../../constants';
+import { findEntryInStore } from '../../utils/collections';
+
 
 
 /**
@@ -62,11 +64,11 @@ export function usePopover<
   const slice = usePopoverStore(
     useCallback(
       (state: PopoverStore<TData, TContext>) => {
-        const entry =
-          state.floating.find((e) => e.key === key) ?? state.trail.find((e) => e.key === key);
+        const entry = findEntryInStore(state.floating, state.trail, key);
         return {
           entry,
           isOpen: entry !== undefined,
+
           isPinned: state.pinnedStates[key] ?? false,
           zIndex: state.zIndexOrder.indexOf(key),
           isTop: state.zIndexOrder.length > 0 && state.zIndexOrder.at(-1) === key,

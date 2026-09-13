@@ -5,7 +5,7 @@
  * @module snapshotStorageAdapter
  */
 
-import { wrapResult, isOk } from '../../utils/result';
+import { wrapResult, isOk, fromThrowable, unwrapOr } from '../../utils/result';
 import { logger } from '../../utils/logger';
 import { toError } from '../../utils/guards/errorGuards';
 import { isServer } from '../../utils/guards/envGuards';
@@ -20,8 +20,7 @@ export {
 
 function getStorage(type: 'localStorage' | 'sessionStorage' | 'none'): Storage | null {
   if (type === 'none' || isServer()) return null;
-  const res = wrapResult(() => window[type]);
-  return isOk(res) ? res.data : null;
+  return unwrapOr(fromThrowable(() => window[type]), null);
 }
 
 export function saveSnapshotToPlatform<TData>(
@@ -57,9 +56,13 @@ export function loadSnapshotFromPlatform<TData>(
     const parsed: unknown = deserializer ? deserializer(raw) : JSON.parse(raw);
     return isValidSnapshot<TData>(parsed) ? parsed : null;
   } catch (err) {
-    logger.error(`[popover-trail]: Failed to parse snapshot from ${storageType}:`, toError(err));
+    logger.error(
+      `[popover-trail]: Failed to parse snapshot from ${storageType}:`,
+      toError(err),
+    );
     return null;
   }
+
 }
 
 export function removeSnapshotFromPlatform(
@@ -67,5 +70,6 @@ export function removeSnapshotFromPlatform(
   storageKey: string,
 ): void {
   const storage = getStorage(storageType);
-  if (storage) wrapResult(() => storage.removeItem(storageKey));
+  if (storage) fromThrowable(() => storage.removeItem(storageKey));
 }
+

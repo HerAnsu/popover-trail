@@ -109,3 +109,87 @@ export function compose(
     return acc;
   };
 }
+
+/**
+ * Curries a binary function into a sequence of two unary functions.
+ *
+ * @template A - First parameter type.
+ * @template B - Second parameter type.
+ * @template R - Return value type.
+ * @param fn - Binary function to curry.
+ * @returns Curried unary function returning unary function.
+ */
+export function curry2<A, B, R>(fn: (a: A, b: B) => R): (a: A) => (b: B) => R {
+  return (a: A) => (b: B) => fn(a, b);
+}
+
+/**
+ * Creates an accessor function extracting the specified property from an object.
+ *
+ * @template T - Object type.
+ * @template K - Property key type.
+ * @param key - Property key to extract.
+ * @returns Unary accessor function returning the property value.
+ */
+export function prop<T, K extends keyof T>(key: K): (obj: T) => T[K] {
+  return (obj: T) => obj[key];
+}
+
+/**
+ * Creates a predicate checking if an object's property strictly equals the specified value.
+ *
+ * @template T - Object type.
+ * @template K - Property key type.
+ * @param key - Property key to inspect.
+ * @param value - Expected property value.
+ * @returns Predicate function returning true when property equals value.
+ */
+export function propEq<T, K extends keyof T>(key: K, value: T[K]): (obj: T) => boolean {
+  return (obj: T) => obj[key] === value;
+}
+
+/**
+ * Combines multiple predicates into a single conjunction predicate (logical AND).
+ * Short-circuits with zero heap allocations on hot path.
+ *
+ * @template T - Target value type.
+ * @param predicates - Readonly array of predicate functions.
+ * @returns Conjunction predicate function.
+ */
+export function and<T>(...predicates: readonly ((val: T) => boolean)[]): (val: T) => boolean {
+  return (val: T) => {
+    for (const pred of predicates) {
+      if (!pred(val)) return false;
+    }
+    return true;
+  };
+}
+
+/**
+ * Combines multiple predicates into a single disjunction predicate (logical OR).
+ * Short-circuits with zero heap allocations on hot path.
+ *
+ * @template T - Target value type.
+ * @param predicates - Readonly array of predicate functions.
+ * @returns Disjunction predicate function.
+ */
+export function or<T>(...predicates: readonly ((val: T) => boolean)[]): (val: T) => boolean {
+  return (val: T) => {
+    for (const pred of predicates) {
+      if (pred(val)) return true;
+    }
+    return false;
+  };
+}
+
+/**
+ * Inverts a predicate function (logical NOT).
+ *
+ * @template T - Target value type.
+ * @param predicate - Source predicate to invert.
+ * @returns Negated predicate function.
+ */
+export function not<T>(predicate: (val: T) => boolean): (val: T) => boolean {
+  return (val: T) => !predicate(val);
+}
+

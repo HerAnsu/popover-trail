@@ -273,14 +273,33 @@ export {
   deferred,
   debounce,
   throttle,
+  retryAsync,
+  createAsyncMutex,
   type Deferred,
   type DebouncedFunction,
   type ThrottledFunction,
+  type RetryOptions,
+  type AsyncMutex,
 } from './utils/asyncUtils';
 
 // Utilities: Collections & Objects
 export { unique, partition, groupBy, keyBy, chunk, zip, range, compact } from './utils/collections';
-export { isNonNullable, isDefined, isNull, isUndefined } from './utils/predicates';
+export {
+  first,
+  last,
+  take,
+  drop,
+  concatImmutable,
+} from './utils/arrayUtils';
+export {
+  isNonNullable,
+  isDefined,
+  isNull,
+  isUndefined,
+  isMatchingKey,
+  hasKeyIn,
+} from './utils/predicates';
+
 export {
   clamp,
   lerp,
@@ -317,7 +336,14 @@ export {
   constant,
   pipe,
   compose,
+  curry2,
+  prop,
+  propEq,
+  and,
+  or,
+  not,
 } from './utils/functional';
+
 export {
   memoizeOne,
   memoizeWeak,

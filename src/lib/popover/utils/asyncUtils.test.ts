@@ -7,7 +7,10 @@ import {
   withTimeout,
   debounce,
   throttle,
+  retryAsync,
+  createAsyncMutex,
 } from './asyncUtils';
+
 
 describe('asyncUtils', () => {
   it('isPromise detects standard Promises and thenables', () => {
@@ -114,4 +117,87 @@ describe('asyncUtils', () => {
     throttled.cancel();
     vi.useRealTimers();
   });
+
+  describe('retryAsync', () => {
+    it('resolves immediately when operation succeeds on first attempt', async () => {
+      const fn = vi.fn().mockResolvedValue('success');
+      const result = await retryAsync(fn, { retries: 3, delayMs: 1 });
+      expect(result).toBe('success');
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries until success within attempt limit', async () => {
+      let attempts = 0;
+      const fn = vi.fn().mockImplementation(async () => {
+        attempts++;
+        if (attempts < 3) throw new Error('temporary failure');
+        return 'recovered';
+      });
+
+      const result = await retryAsync(fn, { retries: 3, delayMs: 1 });
+      expect(result).toBe('recovered');
+      expect(fn).toHaveBeenCalledTimes(3);
+    });
+
+    it('throws the last error when retries are exhausted', async () => {
+      const fn = vi.fn().mockRejectedValue(new Error('fatal failure'));
+      await expect(retryAsync(fn, { retries: 2, delayMs: 1 })).rejects.toThrow(
+        'fatal failure',
+      );
+      expect(fn).toHaveBeenCalledTimes(3); // 1 initial + 2 retries
+    });
+
+    it('stops retrying when shouldRetry returns false', async () => {
+      const fn = vi.fn().mockRejectedValue(new Error('unretryable error'));
+      await expect(
+        retryAsync(fn, {
+          retries: 5,
+          delayMs: 1,
+          shouldRetry: (err) => err instanceof Error && err.message !== 'unretryable error',
+        }),
+      ).rejects.toThrow('unretryable error');
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('createAsyncMutex', () => {
+    it('executes tasks serially without race conditions', async () => {
+      const mutex = createAsyncMutex();
+      const executionOrder: number[] = [];
+
+      const task1 = mutex.runExclusive(async () => {
+        await sleep(10);
+        executionOrder.push(1);
+        return 1;
+      });
+
+      const task2 = mutex.runExclusive(async () => {
+        await sleep(5);
+        executionOrder.push(2);
+        return 2;
+      });
+
+      const [res1, res2] = await Promise.all([task1, task2]);
+      expect(res1).toBe(1);
+      expect(res2).toBe(2);
+      expect(executionOrder).toEqual([1, 2]);
+    });
+
+    it('continues executing subsequent tasks even if a task rejects', async () => {
+      const mutex = createAsyncMutex();
+      const task1 = mutex.runExclusive(async () => {
+        throw new Error('task 1 failed');
+      });
+
+      const task2 = mutex.runExclusive(async () => {
+        return 'task 2 succeeded';
+      });
+
+      await expect(task1).rejects.toThrow('task 1 failed');
+      const res2 = await task2;
+      expect(res2).toBe('task 2 succeeded');
+      expect(mutex.isLocked()).toBe(false);
+    });
+  });
 });
+

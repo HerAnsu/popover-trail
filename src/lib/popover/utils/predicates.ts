@@ -93,3 +93,27 @@ export function isUndefined<T>(value: T | undefined): value is undefined {
   return value === undefined;
 }
 
+/**
+ * Creates a predicate checking if an object's `key` matches the target string.
+ *
+ * @template T - Object extending HasKey.
+ * @param key - Target key string to match.
+ * @returns Predicate function.
+ */
+export function isMatchingKey<T extends HasKey>(key: string): (item: T) => boolean {
+  return (item: T) => item.key === key;
+}
+
+
+/**
+ * Creates a predicate checking if an object's `key` is contained within a Set.
+ *
+ * @template T - Object extending HasKey.
+ * @param keys - Set of target key strings.
+ * @returns Predicate function.
+ */
+export function hasKeyIn<T extends HasKey>(keys: ReadonlySet<string>): (item: T) => boolean {
+  return (item: T) => keys.has(item.key);
+}
+
+

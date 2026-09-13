@@ -8,7 +8,7 @@
 import type { TrailEntry } from '../types';
 import { EMPTY_READONLY_ARRAY } from '../types/branded';
 import { isUnsafeKey } from './safeKeys';
-import { isNonNullable } from './predicates';
+import { isNonNullable, isMatchingKey } from './predicates';
 
 export function getEntryAtIndex<TData, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],
@@ -25,9 +25,10 @@ export function findEntryIndex<TData, TPopoverKey extends string = string>(
   trail: readonly TrailEntry<TData, TPopoverKey>[],
   key: string,
 ): number {
-  const fi = floating.findIndex((e) => e.key === key);
+  const isTarget = isMatchingKey(key);
+  const fi = floating.findIndex(isTarget);
   if (fi !== -1) return fi;
-  const ti = trail.findIndex((e) => e.key === key);
+  const ti = trail.findIndex(isTarget);
   return ti !== -1 ? floating.length + ti : -1;
 }
 
@@ -36,7 +37,8 @@ export function hasEntryWithKey<TData, TPopoverKey extends string = string>(
   trail: readonly TrailEntry<TData, TPopoverKey>[],
   key: string,
 ): boolean {
-  return floating.some((e) => e.key === key) || trail.some((e) => e.key === key);
+  const isTarget = isMatchingKey(key);
+  return floating.some(isTarget) || trail.some(isTarget);
 }
 
 export function findEntryInStore<TData, TPopoverKey extends string = string>(
@@ -44,8 +46,11 @@ export function findEntryInStore<TData, TPopoverKey extends string = string>(
   trail: readonly TrailEntry<TData, TPopoverKey>[],
   key: string,
 ): TrailEntry<TData, TPopoverKey> | undefined {
-  return floating.find((e) => e.key === key) ?? trail.find((e) => e.key === key);
+  const isTarget = isMatchingKey(key);
+  return floating.find(isTarget) ?? trail.find(isTarget);
 }
+
+
 
 /**
  * Returns a deduplicated array preserving original order.

@@ -42,5 +42,22 @@ describe('index entry point exports', () => {
     expect(PopoverLib.distance2D).toBeDefined();
     expect(PopoverLib.distanceSquared2D).toBeDefined();
     expect(PopoverLib.lerpPoint2D).toBeDefined();
+    expect(PopoverLib.curry2).toBeDefined();
+    expect(PopoverLib.prop).toBeDefined();
+    expect(PopoverLib.propEq).toBeDefined();
+    expect(PopoverLib.and).toBeDefined();
+    expect(PopoverLib.or).toBeDefined();
+    expect(PopoverLib.not).toBeDefined();
+    expect(PopoverLib.isMatchingKey).toBeDefined();
+    expect(PopoverLib.hasKeyIn).toBeDefined();
+
+    expect(PopoverLib.first).toBeDefined();
+    expect(PopoverLib.last).toBeDefined();
+    expect(PopoverLib.take).toBeDefined();
+    expect(PopoverLib.drop).toBeDefined();
+    expect(PopoverLib.concatImmutable).toBeDefined();
+    expect(PopoverLib.retryAsync).toBeDefined();
+    expect(PopoverLib.createAsyncMutex).toBeDefined();
   });
 });
+

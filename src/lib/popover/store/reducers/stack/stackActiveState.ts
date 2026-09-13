@@ -22,8 +22,10 @@ function filterZIndexOrder<TPopoverKey extends string = string>(
   const isEveryKeyActive = order.every((key) => activeKeys.has(key));
   if (isEveryKeyActive) return order;
 
-  return order.filter((key) => activeKeys.has(key));
+  const nextOrder = order.filter((key) => activeKeys.has(key));
+  return nextOrder.length === 0 ? EMPTY_ARRAY : nextOrder;
 }
+
 
 /**
  * Collects active state slices and synchronizes dictionary records with active keys.
