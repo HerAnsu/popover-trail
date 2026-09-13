@@ -6,6 +6,7 @@
  */
 
 import type { OpenRootOptions, OpenNestedOptions, TrailEntry } from '../types';
+import { pickRecordKeys } from './cleanObject';
 
 export const DISPLAY_OPTION_KEYS = [
   'collision',
@@ -41,10 +42,10 @@ export const DISPLAY_OPTION_KEYS = [
 ] as const;
 
 export type DisplayOptionKey = (typeof DISPLAY_OPTION_KEYS)[number];
-const DISPLAY_OPTION_KEYS_SET = new Set<string>(DISPLAY_OPTION_KEYS);
+const DISPLAY_OPTION_KEYS_SET: ReadonlySet<DisplayOptionKey> = new Set(DISPLAY_OPTION_KEYS);
 
 export function isDisplayOptionKey(key: string): key is DisplayOptionKey {
-  return DISPLAY_OPTION_KEYS_SET.has(key);
+  return DISPLAY_OPTION_KEYS_SET.has(key as DisplayOptionKey);
 }
 
 export function extractDisplayOptions<TData = unknown, TPopoverKey extends string = string>(
@@ -54,15 +55,10 @@ export function extractDisplayOptions<TData = unknown, TPopoverKey extends strin
     | null,
 ): OpenRootOptions & OpenNestedOptions {
   if (!entry) return {};
-  const extracted: Partial<OpenRootOptions & OpenNestedOptions> = {};
-
-  for (const key of DISPLAY_OPTION_KEYS) {
-    if (Object.hasOwn(entry, key)) {
-      const val = Reflect.get(entry, key);
-      if (val !== undefined) Reflect.set(extracted, key, val);
-    }
-  }
-  return extracted;
+  return pickRecordKeys(
+    entry as Partial<Record<DisplayOptionKey, unknown>>,
+    DISPLAY_OPTION_KEYS_SET,
+  ) as OpenRootOptions & OpenNestedOptions;
 }
 
 export function mergeDisplayOptions(

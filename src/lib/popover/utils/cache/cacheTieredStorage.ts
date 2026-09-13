@@ -6,6 +6,7 @@
 
 import type { CacheEntry, StorageAdapter } from './cacheTypes';
 import { MemoryStorageAdapter } from './cacheStorage';
+import { unique } from '../collections';
 
 export interface TieredStorageOptions<T = unknown> {
   readonly l1?: StorageAdapter<T>;
@@ -81,6 +82,6 @@ export class TieredStorageAdapter<T = unknown> implements StorageAdapter<T> {
   }
 
   public get size(): number {
-    return new Set<string>([...this.l1.keys(), ...this.l2.keys()]).size;
+    return unique([...this.l1.keys(), ...this.l2.keys()]).length;
   }
 }

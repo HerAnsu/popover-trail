@@ -8,12 +8,13 @@
 import type { CollisionConfig } from './collisionConfig';
 import type { PopoverDisplayOptions } from './optionsConfig';
 import type { ZIndexBaseMap } from './timingConfig';
+import type { MaybePromise, Nullable } from '../utilityTypes';
 
 export interface StateStorageEngine {
-  getItem: (key: string) => Promise<string | null> | string | null;
-  setItem: (key: string, value: string) => Promise<void> | void;
-  removeItem: (key: string) => Promise<void> | void;
-  clear?: () => Promise<void> | void;
+  getItem: (key: string) => MaybePromise<Nullable<string>>;
+  setItem: (key: string, value: string) => MaybePromise<void>;
+  removeItem: (key: string) => MaybePromise<void>;
+  clear?: () => MaybePromise<void>;
 }
 
 export interface PopoverPersistConfig {
@@ -39,7 +40,7 @@ export interface PopoverConfig<TData = unknown, TContext = unknown> extends Popo
     parentData?: TData,
     context?: TContext,
     signal?: AbortSignal,
-  ) => Promise<TData> | TData;
+  ) => MaybePromise<TData>;
   initialContext?: TContext;
   closePinnedDescendants?: boolean;
   collisionConfig?: CollisionConfig;

@@ -4,6 +4,8 @@
  * @module cache/cacheSWRRunner
  */
 
+import { sleep } from '../asyncUtils';
+
 export class CacheSWRRunner<T = unknown> {
   public readonly capacity: number;
   private readonly inFlight = new Map<string, Promise<T>>();
@@ -43,7 +45,7 @@ export class CacheSWRRunner<T = unknown> {
       if (attempt > retries) throw err;
       const jitter = (attempt * 17) % 50;
       const delay = Math.min(2000, baseDelayMs * Math.pow(2, attempt - 1)) + jitter;
-      await new Promise((resolve) => setTimeout(resolve, delay));
+      await sleep(delay);
       return this.runWithRetry(task, retries, baseDelayMs, attempt + 1);
     }
   }

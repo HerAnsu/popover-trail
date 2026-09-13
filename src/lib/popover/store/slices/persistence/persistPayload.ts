@@ -11,6 +11,7 @@ import type {
   TrailEntry,
 } from '../../../types';
 import { EMPTY_ARRAY, emptyRecord } from '../../storeDefaults';
+import { pickRecordKeys } from '../../../utils/cleanObject';
 import {
   PERSIST_SCHEMA_VERSION,
   sanitizePersistedEntries,
@@ -31,14 +32,7 @@ function buildCleanPinned<TPopoverKey extends string>(
   keys: ReadonlySet<TPopoverKey>,
   pinnedStates: Partial<Record<TPopoverKey, boolean>>,
 ): Partial<Record<TPopoverKey, boolean>> {
-  if (keys.size === 0) return emptyRecord<TPopoverKey, boolean>();
-  const cleanPinned: Partial<Record<TPopoverKey, boolean>> = {};
-  for (const k of keys) {
-    if (pinnedStates[k] !== undefined) {
-      cleanPinned[k] = pinnedStates[k];
-    }
-  }
-  return cleanPinned;
+  return pickRecordKeys(pinnedStates, keys);
 }
 
 /**

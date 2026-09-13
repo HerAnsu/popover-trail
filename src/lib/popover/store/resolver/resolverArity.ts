@@ -6,12 +6,13 @@
  */
 
 import type { ResolverParams } from '../../types';
+import type { Maybe, MaybePromise } from '../../types/utilityTypes';
 import { PopoverErrorCode, createPopoverError } from '../../utils/errors';
 import type { AnyResolverFn } from './resolverTypes';
 
 type ObjectResolver<TData, TContext> = (
   params: ResolverParams<TData, TContext>,
-) => Promise<TData> | TData;
+) => MaybePromise<TData>;
 
 const arityCache = new WeakMap<object, 'positional' | 'object'>();
 
@@ -45,11 +46,11 @@ function isObjectResolver<TData, TContext>(
 function invokeByConvention<TData, TContext>(
   resolver: AnyResolverFn<TData, TContext>,
   key: string,
-  parentData: TData | null | undefined,
+  parentData: Maybe<TData>,
   context: TContext | undefined,
   signal: AbortSignal,
   style: 'positional' | 'object',
-): TData | Promise<TData> {
+): MaybePromise<TData> {
   const cleanParentData = parentData ?? undefined;
   if (isObjectResolver(resolver, style)) {
     return resolver({ key, parentData: cleanParentData, context, signal });
@@ -63,10 +64,10 @@ function invokeByConvention<TData, TContext>(
 export function invokeResolverSafely<TData, TContext>(
   resolver: AnyResolverFn<TData, TContext>,
   key: string,
-  parentData: TData | null | undefined,
+  parentData: Maybe<TData>,
   context: TContext | undefined,
   signal: AbortSignal,
-): TData | Promise<TData> {
+): MaybePromise<TData> {
   assertResolverFunction(resolver);
 
   const invoke = (s: 'positional' | 'object') =>

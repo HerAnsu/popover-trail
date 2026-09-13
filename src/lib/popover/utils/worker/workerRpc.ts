@@ -6,6 +6,7 @@
  */
 
 import { wrapAsyncResult, isOk } from '../result';
+import type { MaybePromise } from '../../types/utilityTypes';
 import type { WorkerTaskMessage, WorkerTaskResolveMessage } from './workerTypes';
 
 function handleWorkerAbort(activeTasks: Map<number, AbortController>, id: number): void {
@@ -20,7 +21,7 @@ async function handleWorkerResolve<TData, TContext>(
   selfScope: WindowOrWorkerGlobalScope & { postMessage(message: unknown): void },
   activeTasks: Map<number, AbortController>,
   msg: WorkerTaskResolveMessage<TContext>,
-  handler: (key: string, parentData?: unknown, context?: TContext) => TData | Promise<TData>,
+  handler: (key: string, parentData?: unknown, context?: TContext) => MaybePromise<TData>,
 ): Promise<void> {
   const { id, key = '', parentData, context } = msg;
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -47,7 +48,7 @@ function isWorkerTaskMessage<TContext>(data: unknown): data is WorkerTaskMessage
 }
 
 export function definePopoverWorkerRPC<TData = unknown, TContext = unknown>(
-  handler: (key: string, parentData?: unknown, context?: TContext) => TData | Promise<TData>,
+  handler: (key: string, parentData?: unknown, context?: TContext) => MaybePromise<TData>,
 ): void {
   if (typeof self === 'undefined') return;
   const activeTasks = new Map<number, AbortController>();

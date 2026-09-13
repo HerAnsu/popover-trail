@@ -1,4 +1,5 @@
 import type { PopoverStateData, StatePatch } from '../../types';
+import type { MaybePromise } from '../../types/utilityTypes';
 import type { PopoverDAG } from '../../utils/dag';
 import { rollbackTransactionState } from './transactionHelpers';
 import { logger } from '../../utils/logger';
@@ -54,7 +55,7 @@ export class TransactionScope<
     }
   }
 
-  public async executeResult<R>(action: () => Promise<R> | R): Promise<Result<R, PopoverError>> {
+  public async executeResult<R>(action: () => MaybePromise<R>): Promise<Result<R, PopoverError>> {
     try {
       const result = await action();
       this.commit();

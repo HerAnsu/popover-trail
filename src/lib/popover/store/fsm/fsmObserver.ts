@@ -14,6 +14,7 @@ import {
 import type { PopoverFSMRegistry } from './fsmRegistry';
 import { isIdleFSM, isPinnedFSM } from './fsmGuards';
 import { toError } from '../../utils/guards/errorGuards';
+import { unique } from '../../utils/collections';
 
 /**
  * Binds an FSM Registry as a shadow invariant watchdog to the store event bus.
@@ -66,12 +67,11 @@ export function bindFSMRegistryToEventBus<TData = unknown, TPopoverKey extends s
       return;
     }
     if (isEvent(e, 'popover:close')) {
-      const closed = new Set<TPopoverKey>();
-      if (e.detail.key) closed.add(e.detail.key);
-      if (e.detail.keys) {
-        for (const k of e.detail.keys) closed.add(k);
-      }
-      for (const k of closed) fsmRegistry.send(k, { type: 'CLOSE' });
+      const keysToClose = unique([
+        ...(e.detail.key ? [e.detail.key] : []),
+        ...(e.detail.keys ?? []),
+      ]);
+      for (const k of keysToClose) fsmRegistry.send(k, { type: 'CLOSE' });
       return;
     }
     if (isEvent(e, 'popover:clear')) {

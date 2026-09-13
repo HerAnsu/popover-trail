@@ -4,6 +4,7 @@ import type { ResolverPipelineDependencies } from './resolverTypes';
 import { awaitInFlightResolution } from './awaitResolution';
 import { startInFlightResolver } from './inFlightLauncher';
 import { runTracked } from '../storeControllers';
+import { deferred } from '../../utils/asyncUtils';
 
 describe('resolver/inFlightResolution', () => {
   const makeEntry = (key: string): TrailEntry<unknown, string> =>
@@ -71,19 +72,19 @@ describe('resolver/inFlightResolution', () => {
   it('keeps a newer promise registered when an older one settles late', async () => {
     const map = new Map<string, Promise<number>>();
 
-    let releaseFirst!: (v: number) => void;
-    const first = runTracked(map, 'k', () => new Promise<number>((r) => (releaseFirst = r)));
+    const d1 = deferred<number>();
+    const first = runTracked(map, 'k', () => d1.promise);
 
-    let releaseSecond!: (v: number) => void;
-    const second = runTracked(map, 'k', () => new Promise<number>((r) => (releaseSecond = r)));
+    const d2 = deferred<number>();
+    const second = runTracked(map, 'k', () => d2.promise);
 
     expect(map.get('k')).toBe(second);
 
-    releaseFirst(1);
+    d1.resolve(1);
     await first;
     expect(map.has('k')).toBe(true);
 
-    releaseSecond(2);
+    d2.resolve(2);
     await second;
     expect(map.has('k')).toBe(false);
   });

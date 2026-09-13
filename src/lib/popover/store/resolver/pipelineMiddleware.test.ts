@@ -8,6 +8,7 @@ import {
   type ResolverHandler,
 } from './pipelineMiddleware';
 import type { PopoverCache } from '../../types';
+import { sleep } from '../../utils/asyncUtils';
 
 describe('resolver/pipelineMiddleware', () => {
   it('withL1Cache returns cached data on hit and writes through on miss', async () => {
@@ -42,7 +43,7 @@ describe('resolver/pipelineMiddleware', () => {
     let callCount = 0;
     const slowTask: ResolverHandler<number> = async () => {
       callCount++;
-      await new Promise((r) => setTimeout(r, 10));
+      await sleep(10);
       return callCount;
     };
 

@@ -12,6 +12,7 @@ import type { PopoverActions } from './actions';
 import type { RegisteredKeys, RegisteredDataMap } from './registerTypes';
 import type { PopoverRect } from './geometry';
 import type { ZIndexDepth } from './branded';
+import type { Nullable } from './utilityTypes';
 
 export type StateSelector<TState, TResult> = (state: TState) => TResult;
 export type StateEqualityFn<T> = (a: T, b: T) => boolean;
@@ -49,8 +50,8 @@ export interface OpenUsePopoverResult<TData = unknown, TPopoverKey extends strin
   readonly isTop: boolean;
   readonly offset: DragOffset;
   readonly isLoading: boolean;
-  readonly data: TData | null;
-  readonly error: Error | null;
+  readonly data: Nullable<TData>;
+  readonly error: Nullable<Error>;
   readonly close: () => void;
   readonly pin: (rect?: DOMRect | PopoverRect) => void;
   readonly bringToFront: () => void;

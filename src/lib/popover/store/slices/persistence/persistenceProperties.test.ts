@@ -3,6 +3,7 @@ import * as fc from 'fast-check';
 import { createPersistenceSlice } from './createPersistenceSlice';
 import { createSliceTestHarness } from '../../../testing';
 import type { StateStorageEngine } from '../../../types';
+import { unique } from '../../../utils/collections';
 
 const createMockStorage = (initial?: string): StateStorageEngine => {
   let store = initial ?? null;
@@ -81,7 +82,7 @@ describe('createPersistenceSlice property-based invariant test suite', () => {
         async (cardKeys, offsets) => {
           const storage = createMockStorage();
           const harness = createSliceTestHarness(createPersistenceSlice);
-          const expectedKeys = [...new Set(cardKeys)];
+          const expectedKeys = unique(cardKeys);
           const initialFloating = expectedKeys.map((key) => ({
             key,
             isLoading: false,

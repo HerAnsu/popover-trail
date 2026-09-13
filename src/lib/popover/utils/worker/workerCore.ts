@@ -6,6 +6,7 @@
  */
 
 import type { PopoverResolver } from '../../types';
+import type { MaybePromise } from '../../types/utilityTypes';
 import { wrapResult, isOk } from '../result';
 import { DISPOSE_SYMBOL } from '../disposable';
 import { createPopoverWorkerScript } from './workerScript';
@@ -19,7 +20,7 @@ import type {
 type WorkerTarget<TData, TContext> =
   | Worker
   | string
-  | ((key: string, parentData?: unknown, context?: TContext) => TData | Promise<TData>);
+  | ((key: string, parentData?: unknown, context?: TContext) => MaybePromise<TData>);
 
 export function createWorkerResolver<TData = unknown, TContext = unknown>(
   workerOrFn: WorkerTarget<TData, TContext>,

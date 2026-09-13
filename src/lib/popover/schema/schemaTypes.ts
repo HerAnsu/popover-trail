@@ -14,6 +14,7 @@ import type {
 } from '../types';
 import type { PopoverTriggerProps } from '../components/PopoverTrigger';
 import type { Brand } from '../types/branded';
+import type { MaybePromise } from '../types/utilityTypes';
 import type { SchemaActionsHook } from './schemaActionTypes';
 
 export interface PopoverSchemaNode<
@@ -26,7 +27,7 @@ export interface PopoverSchemaNode<
     parentData?: TParentData,
     context?: TContext,
     signal?: AbortSignal,
-  ) => TData | Promise<TData>;
+  ) => MaybePromise<TData>;
   children?: ReadonlyArray<string>;
 }
 

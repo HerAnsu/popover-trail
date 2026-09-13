@@ -20,6 +20,7 @@ import {
 } from '../hooks/usePopoverSelectors';
 import { validateSchemaKey } from '../validators';
 import type { PopoverResolver } from '../types';
+import { keyBy } from '../utils/collections';
 import type {
   PopoverSchemaDefinition,
   PopoverSchemaInstance,
@@ -39,9 +40,9 @@ export function createPopoverSchema<
 >(definition: TSchema): PopoverSchemaInstance<TSchema, TContext> {
   validateSchemaIntegrity(definition);
 
-  const keysMap: Record<string, string> = {};
-  for (const k of Object.keys(definition)) keysMap[k] = k;
-  const keys = Object.freeze(keysMap) as { readonly [K in SchemaKeys<TSchema>]: K };
+  const keys = Object.freeze(keyBy(Object.keys(definition), (k) => k)) as {
+    readonly [K in SchemaKeys<TSchema>]: K;
+  };
 
   const createResolver = <TC = TContext>(): PopoverResolver<
     SchemaData<TSchema, SchemaKeys<TSchema>>,

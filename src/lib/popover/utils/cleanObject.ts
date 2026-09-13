@@ -103,7 +103,10 @@ export function pickRecordKeys<T, K extends string = string>(
   const result: Partial<Record<K, T>> = {};
   for (const key of filterSet) {
     if (Object.hasOwn(record, key) && !isUnsafeKey(key)) {
-      result[key as K] = record[key as K];
+      const val = record[key as K];
+      if (val !== undefined) {
+        result[key as K] = val;
+      }
     }
   }
   return result;

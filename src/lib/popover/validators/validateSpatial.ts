@@ -3,6 +3,7 @@ import {
   isNonEmptyString,
   isPositiveFinite,
 } from '../utils/typeGuards';
+import type { Maybe } from '../types/utilityTypes';
 import { isDevEnv, PopoverWarningCode, warnDevDetails } from './warningEngine';
 
 /** PT-114: Validates drag offset coordinates. */
@@ -18,7 +19,7 @@ export function validateDragOffset(x: number, y: number): void {
 }
 
 /** PT-116: Validates stack group filter string. */
-export function validateStackGroup(stackGroup: string | null | undefined): void {
+export function validateStackGroup(stackGroup: Maybe<string>): void {
   if (!isDevEnv() || stackGroup === null || stackGroup === undefined) return;
 
   if (!isNonEmptyString(stackGroup)) {

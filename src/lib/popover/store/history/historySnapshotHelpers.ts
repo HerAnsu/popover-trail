@@ -6,6 +6,7 @@
 
 import type { DragOffset } from '../../types';
 import { EMPTY_ARRAY, ZERO_OFFSET, emptyRecord } from '../hydration/storeDefaults';
+import { shallowEqual } from '../../utils/equality';
 import type { HistorySnapshot } from './historyTypes';
 
 export function cloneNonEmptyRecord<K extends string = string, V = unknown>(
@@ -52,13 +53,7 @@ export function arePinnedStatesEqual(
   a: Record<string, unknown>,
   b: Record<string, unknown>,
 ): boolean {
-  const aKeys = Object.keys(a);
-  const bKeys = Object.keys(b);
-  if (aKeys.length !== bKeys.length) return false;
-  for (const key of aKeys) {
-    if (a[key] !== b[key]) return false;
-  }
-  return true;
+  return shallowEqual(a, b);
 }
 
 export function areSnapshotsEqual<TData, TPopoverKey extends string>(

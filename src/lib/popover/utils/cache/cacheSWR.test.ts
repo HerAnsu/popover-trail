@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { SimplePopoverCache } from './SimplePopoverCache';
+import { sleep } from '../asyncUtils';
 
 describe('Cache SWR & Reactivity Engine', () => {
   it('deduplicates concurrent fetches with getOrSet', async () => {
     const cache = new SimplePopoverCache<string>();
     const fetcher = vi.fn(async () => {
-      await new Promise((r) => setTimeout(r, 10));
+      await sleep(10);
       return 'fetched-data';
     });
 
