@@ -7,19 +7,14 @@
 import type { TrailEntry } from '../../../types';
 import type { PopoverDAG } from '../../../utils/dag';
 import { EMPTY_ARRAY } from '../../storeDefaults';
+import { getActiveKeys } from '../../reducers/stack/recordFilter';
+import { setDifference } from '../../../utils/setOperations';
+import { prop } from '../../../utils/functional';
 
 /**
  * Collects a unique Set of all active keys from floating and trail collections.
  */
-export function collectActiveKeySet<TData, TPopoverKey extends string>(
-  floating: readonly TrailEntry<TData, TPopoverKey>[],
-  trail: readonly TrailEntry<TData, TPopoverKey>[] = EMPTY_ARRAY,
-): Set<TPopoverKey> {
-  const set = new Set<TPopoverKey>();
-  for (const { key } of floating) set.add(key);
-  for (const { key } of trail) set.add(key);
-  return set;
-}
+export const collectActiveKeySet = getActiveKeys;
 
 /**
  * Zero-GC helper to prune DAG nodes directly from entry lists without intermediate array allocations.
@@ -32,8 +27,10 @@ export function pruneDAGNodes<TData, TPopoverKey extends string = string>(
 ): void {
   if (!dag || entriesToPrune.length === 0) return;
   const activeKeys = collectActiveKeySet(remainingFloating, remainingTrail);
-  for (const { key } of entriesToPrune) {
-    if (!activeKeys.has(key)) dag.removeNode(key);
+  const candidateKeys = new Set<TPopoverKey>(entriesToPrune.map(prop('key')));
+  const pruneKeys = setDifference(candidateKeys, activeKeys);
+  for (const key of pruneKeys) {
+    dag.removeNode(key);
   }
 }
 

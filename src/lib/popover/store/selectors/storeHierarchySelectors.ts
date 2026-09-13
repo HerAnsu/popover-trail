@@ -9,6 +9,7 @@ import type { TrailEntry } from '../../types';
 import { EMPTY_ARRAY } from '../hydration';
 import { hasKeyIn } from '../../utils/predicates';
 import { concatImmutable } from '../../utils/arrayUtils';
+import { setUnion } from '../../utils/setOperations';
 import type { HasActiveEntriesState } from './storeSelectorTypes';
 
 
@@ -101,7 +102,7 @@ export function selectTrailBranch<TPopoverKey extends string = string, TData = u
   ): readonly TrailEntry<TData, TPopoverKey>[] => {
     const breadcrumbs = buildBreadcrumbPath<TPopoverKey, TData>(state.floating, state.trail, key);
     const children = collectChildrenKeys<TPopoverKey, TData>(state.floating, state.trail, key);
-    const keys = new Set<string>([...breadcrumbs, ...children]);
+    const keys = setUnion(new Set(breadcrumbs), new Set(children));
     return collectBranchMatches<TPopoverKey, TData>(state.floating, state.trail, keys);
   };
 }

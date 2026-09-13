@@ -7,6 +7,7 @@
 import type { TrailEntry } from '../../../types';
 import type { Effect } from '../../effects';
 import { collectActiveKeySet } from './dagHelpers';
+import { setDifference } from '../../../utils/setOperations';
 
 /**
  * Computes declarative side effects (PRUNE_DAG, NOTIFY_USER_CALLBACK) and updates nextPinnedStates.
@@ -22,25 +23,23 @@ export function collectClosedEntryEffects<
   nextPinnedStates: Partial<Record<TPopoverKey, boolean>>,
 ): Effect<TData, TPopoverKey, TContext>[] {
   const activeKeys = collectActiveKeySet(nextFloating, nextTrail);
-  const effects: Effect<TData, TPopoverKey, TContext>[] = [];
-  const prunedKeys: TPopoverKey[] = [];
+  const prunedKeysSet = setDifference(removedKeys, activeKeys);
+  if (prunedKeysSet.size === 0) return [];
 
-  for (const key of removedKeys) {
-    if (!activeKeys.has(key)) {
-      nextPinnedStates[key] = false;
-      prunedKeys.push(key);
-      effects.push({
-        type: 'NOTIFY_USER_CALLBACK',
-        key,
-        callbackType: 'onClose',
-      });
-    }
-  }
-
-  if (prunedKeys.length > 0) {
-    effects.unshift({
+  const prunedKeys = [...prunedKeysSet];
+  const effects: Effect<TData, TPopoverKey, TContext>[] = [
+    {
       type: 'PRUNE_DAG',
       keys: prunedKeys,
+    },
+  ];
+
+  for (const key of prunedKeys) {
+    nextPinnedStates[key] = false;
+    effects.push({
+      type: 'NOTIFY_USER_CALLBACK',
+      key,
+      callbackType: 'onClose',
     });
   }
 
