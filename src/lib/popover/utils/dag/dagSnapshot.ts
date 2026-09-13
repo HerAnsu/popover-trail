@@ -7,6 +7,7 @@
 
 import type { DAGSnapshot, InternalDAGNode } from './dagTypes';
 import type { PopoverDAG } from './dagCore';
+import { isArray } from '../guards/arrayGuards';
 
 export function exportDAGSnapshot<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
@@ -26,14 +27,14 @@ export function importDAGSnapshot<TPopoverKey extends string>(
   snapshot: DAGSnapshot<TPopoverKey> | null | undefined,
   targetDAG: PopoverDAG<TPopoverKey>,
 ): boolean {
-  if (!snapshot || !Array.isArray(snapshot.nodes)) return false;
+  if (!snapshot || !isArray(snapshot.nodes)) return false;
   targetDAG.clear();
 
   for (const item of snapshot.nodes) {
     if (item && item.key) targetDAG.addNode(item.key);
   }
   for (const item of snapshot.nodes) {
-    if (item && item.key && Array.isArray(item.parentKeys)) {
+    if (item && item.key && isArray(item.parentKeys)) {
       for (const p of item.parentKeys) targetDAG.addEdge(p, item.key);
     }
   }

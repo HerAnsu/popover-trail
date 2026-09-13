@@ -8,6 +8,7 @@ import type { CacheEntry, StorageAdapter } from './cacheTypes';
 import type { CacheEventEmitter } from './cacheEventEmitter';
 import { isValidStorageKey } from '../safeKeys';
 import { ensureCapacity } from './cacheEviction';
+import { isArray } from '../guards/arrayGuards';
 
 function isValidSnapshotEntry<T>(entry: unknown): entry is CacheEntry<T> {
   return (
@@ -34,7 +35,7 @@ export function restoreCacheSnapshot<T>(
   const now = Date.now();
 
   for (const item of snapshot) {
-    if (!Array.isArray(item) || item.length < 2) continue;
+    if (!isArray(item) || item.length < 2) continue;
     const [key, entry] = item;
     if (typeof key !== 'string' || !isValidStorageKey(key)) {
       continue;

@@ -11,7 +11,7 @@ import {
   sanitizePersistedOffsets,
 } from '../../persistence/persistenceHelpers';
 import { parseFloating } from './rehydrationParser';
-import { isRecordObject, isNonEmptyString } from '../../../utils/typeGuards';
+import { isRecordObject, isNonEmptyString, isArray } from '../../../utils/typeGuards';
 
 function buildCleanOffsets<TPopoverKey extends string>(
   rawOffsets: unknown,
@@ -37,7 +37,7 @@ function buildCleanZIndexOrder<TPopoverKey extends string>(
   rawOrder: unknown,
   activeKeys: ReadonlySet<TPopoverKey>,
 ): TPopoverKey[] {
-  if (Array.isArray(rawOrder)) {
+  if (isArray(rawOrder)) {
     const keysLookup: ReadonlySet<string> = activeKeys;
     return rawOrder.filter(
       (k): k is TPopoverKey => isNonEmptyString(k) && isSafeKey(k) && keysLookup.has(k),
@@ -55,7 +55,7 @@ export function applyRehydratedState<TData, TContext, TPopoverKey extends string
   dag?: { clear: () => void; addNode: (key: TPopoverKey, parentKey?: TPopoverKey) => void },
 ): boolean {
   const rawFloating = parsed.floating ?? parsed.pinned;
-  if (!Array.isArray(rawFloating)) return false;
+  if (!isArray(rawFloating)) return false;
 
   const nextFloating = parseFloating<TData, TPopoverKey>(rawFloating);
   const activeKeys = new Set<TPopoverKey>(nextFloating.map(({ key }) => key));

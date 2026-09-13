@@ -4,6 +4,8 @@
  * @module cache/cacheWeightEstimator
  */
 
+import { isArray } from '../guards/arrayGuards';
+
 export function estimateByteWeight(value: unknown, depth = 0, maxDepth = 2): number {
   if (value === null || value === undefined) return 0;
   const type = typeof value;
@@ -17,7 +19,7 @@ export function estimateByteWeight(value: unknown, depth = 0, maxDepth = 2): num
   if (type === 'object') {
     if (depth >= maxDepth) return 32;
 
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
       let arrayBytes = 16;
       const limit = Math.min(value.length, 50);
       for (let i = 0; i < limit; i++) {

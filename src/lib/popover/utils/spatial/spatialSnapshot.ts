@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Spatial Partitioning Index Serialization & Snapshot Restoration.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
  *
@@ -6,6 +6,7 @@
  */
 
 import type { BoundingBox, QuadItem } from '../guards/spatialGuards';
+import { isArray } from '../guards/arrayGuards';
 import { QuadTree } from './quadTreeCore';
 
 export interface SpatialSnapshot<TId extends string = string> {
@@ -30,7 +31,7 @@ export function exportSpatialSnapshot<TId extends string>(
 export function importSpatialSnapshot<TId extends string>(
   snapshot: SpatialSnapshot<TId> | null | undefined,
 ): QuadTree<TId> | null {
-  if (!snapshot || !snapshot.bounds || !Array.isArray(snapshot.items)) {
+  if (!snapshot || !snapshot.bounds || !isArray(snapshot.items)) {
     return null;
   }
 

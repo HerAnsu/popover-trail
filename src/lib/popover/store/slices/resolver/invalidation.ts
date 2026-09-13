@@ -7,6 +7,7 @@
 import type { PopoverActions } from '../../../types';
 import { findEntryInStore } from '../../../utils/storeHelpers';
 import { logger } from '../../../utils/logger';
+import { isArray } from '../../../utils/guards/arrayGuards';
 import type { SliceContext } from '../context';
 
 /**
@@ -32,7 +33,7 @@ export function createResolverInvalidationAction<
 
   return {
     invalidate: async (keyOrKeys) => {
-      const keys = Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
+      const keys = isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys];
       if (keys.length === 0) return;
 
       const fetchPromises: Promise<void>[] = [];

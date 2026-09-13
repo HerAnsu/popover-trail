@@ -6,6 +6,7 @@
  */
 
 import { isUnsafeKey } from '../safeKeys';
+import { isArray } from './arrayGuards';
 
 const PLAIN_OBJECT_PROTOTYPE = Object.getPrototypeOf({});
 
@@ -14,7 +15,7 @@ const PLAIN_OBJECT_PROTOTYPE = Object.getPrototypeOf({});
  * explicitly rejecting class instances (Date, RegExp, Map, Set, Error) and arrays.
  */
 export function isPlainObject(val: unknown): val is Record<string, unknown> {
-  if (typeof val !== 'object' || val === null || Array.isArray(val)) return false;
+  if (typeof val !== 'object' || val === null || isArray(val)) return false;
   const proto = Object.getPrototypeOf(val);
   return proto === null || proto === PLAIN_OBJECT_PROTOTYPE;
 }

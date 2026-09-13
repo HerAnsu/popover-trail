@@ -10,18 +10,12 @@ import {
   type TrailEntryBase,
   POPOVER_TRANSITION_STATUSES,
 } from '../../types/entry';
-import { and } from '../functional';
 
 const TRANSITION_STATUSES: ReadonlySet<string> = new Set<string>(POPOVER_TRANSITION_STATUSES);
 
-const checkTransitionStatus = and(
-  (val: unknown) => typeof val === 'string',
-  (val: unknown) => TRANSITION_STATUSES.has(val as string),
-);
-
 /** Validates whether an unknown value is a valid PopoverTransitionStatus. */
 export function isTransitionStatus(val: unknown): val is PopoverTransitionStatus {
-  return checkTransitionStatus(val);
+  return typeof val === 'string' && TRANSITION_STATUSES.has(val);
 }
 
 /** Checks whether a popover entry is currently in the mounted transition state. */

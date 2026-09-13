@@ -14,6 +14,7 @@ import type {
 import type { HistorySnapshot } from '../history/historyTypes';
 import type { PopoverStore } from '../../types/selectorTypes';
 import { isObjectRecord } from '../../utils/guards/objectGuards';
+import { isArray } from '../../utils/guards/arrayGuards';
 
 /**
  * Validates whether an unknown value is a valid Zustand StoreApi instance.
@@ -73,9 +74,9 @@ export function isSchemaKey<TSchema extends PopoverSchemaDefinition>(
 export function isHistorySnapshot(val: unknown): val is HistorySnapshot {
   if (!isObjectRecord(val)) return false;
   return (
-    Array.isArray(val.trail) &&
-    Array.isArray(val.floating) &&
-    Array.isArray(val.zIndexOrder) &&
+    isArray(val.trail) &&
+    isArray(val.floating) &&
+    isArray(val.zIndexOrder) &&
     isObjectRecord(val.offsets) &&
     isObjectRecord(val.pinnedStates)
   );

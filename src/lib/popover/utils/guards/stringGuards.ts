@@ -5,6 +5,7 @@
  */
 
 import { and } from '../functional';
+import { isArray } from './arrayGuards';
 
 /**
  * Type guard verifying that a value is a non-empty string (excluding whitespace-only strings).
@@ -23,7 +24,7 @@ export function isFunction(value: unknown): value is (...args: unknown[]) => unk
 const checkRecordCandidate = and(
   (val: unknown) => typeof val === 'object',
   (val: unknown) => val !== null,
-  (val: unknown) => !Array.isArray(val),
+  (val: unknown) => !isArray(val),
 );
 
 /**

@@ -82,8 +82,6 @@ export function composeResolverPipeline<
     (mw): mw is ResolverMiddleware<TData, TContext, TPopoverKey> => typeof mw === 'function',
   );
   if (valid.length === 0) return baseResolver;
-  const pipeline = compose(...(valid as readonly ((h: unknown) => unknown)[])) as (
-    base: ResolverHandler<TData, TContext, TPopoverKey>,
-  ) => ResolverHandler<TData, TContext, TPopoverKey>;
+  const pipeline = compose<ResolverHandler<TData, TContext, TPopoverKey>>(...valid);
   return pipeline(baseResolver);
 }

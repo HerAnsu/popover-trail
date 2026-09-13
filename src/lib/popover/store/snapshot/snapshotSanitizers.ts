@@ -6,6 +6,7 @@
 
 import { SNAPSHOT_VERSION, type PopoverSnapshotData } from './snapshotManagerTypes';
 import { isPlainObject } from '../../utils/guards/objectGuards';
+import { isArray } from '../../utils/guards/arrayGuards';
 import { ZERO_OFFSET } from '../../constants';
 import { filterRecord } from '../../utils/cleanObject';
 
@@ -42,8 +43,8 @@ export function isValidSnapshot<TData>(val: unknown): val is PopoverSnapshotData
     val.version === SNAPSHOT_VERSION &&
     typeof val.timestamp === 'number' &&
     typeof val.tabId === 'string' &&
-    Array.isArray(val.trailKeys) &&
-    Array.isArray(val.pinnedKeys) &&
+    isArray(val.trailKeys) &&
+    isArray(val.pinnedKeys) &&
     typeof val.offsets === 'object' &&
     val.offsets !== null
   );

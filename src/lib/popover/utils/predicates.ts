@@ -95,8 +95,6 @@ export function isUndefined<T>(value: T | undefined): value is undefined {
   return value === undefined;
 }
 
-const keyMatcher = curry2((k: string, item: HasKey): boolean => item.key === k);
-
 /**
  * Creates a predicate checking if an object's `key` matches the target string.
  *
@@ -105,12 +103,8 @@ const keyMatcher = curry2((k: string, item: HasKey): boolean => item.key === k);
  * @returns Predicate function.
  */
 export function isMatchingKey<T extends HasKey>(key: string): (item: T) => boolean {
-  return keyMatcher(key) as (item: T) => boolean;
+  return curry2((k: string, item: T) => item.key === k)(key);
 }
-
-const keyInSetMatcher = curry2(
-  (keys: ReadonlySet<string>, item: HasKey): boolean => keys.has(item.key),
-);
 
 /**
  * Creates a predicate checking if an object's `key` is contained within a Set.
@@ -120,7 +114,7 @@ const keyInSetMatcher = curry2(
  * @returns Predicate function.
  */
 export function hasKeyIn<T extends HasKey>(keys: ReadonlySet<string>): (item: T) => boolean {
-  return keyInSetMatcher(keys) as (item: T) => boolean;
+  return curry2((set: ReadonlySet<string>, item: T) => set.has(item.key))(keys);
 }
 
 
