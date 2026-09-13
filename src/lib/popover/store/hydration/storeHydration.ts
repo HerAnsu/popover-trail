@@ -5,7 +5,7 @@
  * @module storeHydration
  */
 
-import { omitRecordKey, mapRecordValues } from '../../utils/cleanObject';
+import { omitRecordKey, toOmittedRecordKeys, mapRecordValues } from '../../utils/cleanObject';
 
 export interface HydrationState {
   rootHydrationRequestCounter: number;
@@ -43,6 +43,10 @@ export function createHydrationManager() {
     nestedCounters = omitRecordKey(nestedCounters, parentKey);
   };
 
+  const deleteNestedCounters = (parentKeys: readonly string[] | ReadonlySet<string>): void => {
+    nestedCounters = toOmittedRecordKeys(nestedCounters, parentKeys);
+  };
+
   const markAllCountersStale = (): void => {
     rootCounter++;
     epoch++;
@@ -66,6 +70,7 @@ export function createHydrationManager() {
     incrementNestedCounter,
     isNestedStale,
     deleteNestedCounter,
+    deleteNestedCounters,
     markAllCountersStale,
     resetHydrationCounters,
   };

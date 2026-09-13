@@ -47,11 +47,15 @@ export const omitRecordKey = toOmittedRecordKey;
  * @returns A new record with the keys omitted.
  */
 export function toOmittedRecordKeys<T, K extends string = string>(
-  record: Partial<Record<K, T>>,
-  keysToOmit: ReadonlySet<K> | readonly K[],
+  record?: Partial<Record<K, T>> | null,
+  keysToOmit?: ReadonlySet<K> | readonly K[] | null,
 ): Partial<Record<K, T>> {
+  if (!record) return {};
+  if (!keysToOmit) return record;
   const filterSet: ReadonlySet<string> =
     keysToOmit instanceof Set ? keysToOmit : new Set(keysToOmit);
+  if (filterSet.size === 0) return record;
+
   const result: Partial<Record<K, T>> = {};
   for (const key in record) {
     if (Object.hasOwn(record, key) && !filterSet.has(key) && !isUnsafeKey(key)) {
@@ -60,6 +64,8 @@ export function toOmittedRecordKeys<T, K extends string = string>(
   }
   return result;
 }
+
+export const omitRecordKeys = toOmittedRecordKeys;
 
 /**
  * Safely assigns source properties to a target object protecting against prototype pollution.

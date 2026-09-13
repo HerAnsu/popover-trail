@@ -52,6 +52,21 @@ describe('storeHydration module', () => {
     expect(manager.getNestedCounters()).toHaveProperty('p2');
   });
 
+  it('deletes multiple nested parent counters via deleteNestedCounters', () => {
+    const manager = createHydrationManager();
+    manager.incrementNestedCounter('p1');
+    manager.incrementNestedCounter('p2');
+    manager.incrementNestedCounter('p3');
+    expect(manager.getNestedCounters()).toHaveProperty('p1');
+    expect(manager.getNestedCounters()).toHaveProperty('p2');
+    expect(manager.getNestedCounters()).toHaveProperty('p3');
+
+    manager.deleteNestedCounters(['p1', 'p2']);
+    expect(manager.getNestedCounters()).not.toHaveProperty('p1');
+    expect(manager.getNestedCounters()).not.toHaveProperty('p2');
+    expect(manager.getNestedCounters()).toHaveProperty('p3');
+  });
+
   it('tracks monotonic epoch and validates epoch staleness', () => {
     const manager = createHydrationManager();
     expect(manager.getEpoch()).toBe(0);

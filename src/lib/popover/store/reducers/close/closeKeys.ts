@@ -10,6 +10,8 @@ import { getAllDescendants } from '../stack';
 import { shouldIncludeDescendant } from './closeHierarchy';
 import { prop } from '../../../utils/functional';
 
+import { isDisjoint } from '../../../utils/setOperations';
+
 /**
  * Resolves all direct and transitive descendant keys to remove for a close operation.
  */
@@ -36,6 +38,13 @@ export function resolveAllRemovedKeys<TData = unknown, TPopoverKey extends strin
     !closePinnedDescendants && !pinnedStates && floating.length > 0
       ? new Set<TPopoverKey>(floating.map(prop('key')))
       : undefined;
+
+  if (floatingSet && isDisjoint(descendants, floatingSet)) {
+    for (const key of descendants) {
+      result.add(key);
+    }
+    return result;
+  }
 
   for (const key of descendants) {
     if (shouldIncludeDescendant(key, closePinnedDescendants, pinnedStates, floatingSet)) {

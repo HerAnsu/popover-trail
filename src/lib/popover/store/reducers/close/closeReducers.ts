@@ -9,7 +9,7 @@ import { EMPTY_OBJECT } from '../../storeDefaults';
 import type { PopoverDAG } from '../../../utils/dag';
 import { getCleanupStatePatch, findUnifiedEntryIndex } from '../stack';
 import { getRemovedKeysForClose } from './closeCalculation';
-import { filterRetainedEntries } from './closeFilter';
+import { filterRetainedEntries, omitRemovedRecordKeys } from './closeFilter';
 
 export { getRemovedKeysForClose } from './closeCalculation';
 
@@ -39,10 +39,10 @@ export function closeFromState<TData, TContext, TPopoverKey extends string = str
   const cleanupPatch = getCleanupStatePatch<TData, TContext, TPopoverKey>(
     nextFloating,
     nextTrail,
-    state.offsets,
+    omitRemovedRecordKeys(state.offsets, removedKeys),
     state.zIndexOrder,
-    state.pinnedStates,
-    state.nestedHydrationRequestCounters,
+    omitRemovedRecordKeys(state.pinnedStates, removedKeys),
+    omitRemovedRecordKeys(state.nestedHydrationRequestCounters, removedKeys),
   );
 
   return {

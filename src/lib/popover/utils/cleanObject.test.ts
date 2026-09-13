@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   omitRecordKey,
+  omitRecordKeys,
+  toOmittedRecordKeys,
   pickRecordKeys,
   safeAssign,
   isEmptyRecord,
@@ -22,6 +24,15 @@ describe('cleanObject', () => {
   it('returns original reference when key is absent', () => {
     const original: Record<string, number> = { a: 1 };
     expect(omitRecordKey(original, 'b')).toBe(original);
+  });
+
+  it('omits multiple keys via omitRecordKeys / toOmittedRecordKeys', () => {
+    const original = { a: 1, b: 2, c: 3, d: 4 };
+    const result = omitRecordKeys(original, ['b', 'd']);
+    expect(result).toEqual({ a: 1, c: 3 });
+    expect(toOmittedRecordKeys(original, new Set(['a', 'c']))).toEqual({ b: 2, d: 4 });
+    expect(omitRecordKeys(original, [])).toBe(original);
+    expect(omitRecordKeys(null, ['a'])).toEqual({});
   });
 
   it('safely assigns without prototype pollution', () => {

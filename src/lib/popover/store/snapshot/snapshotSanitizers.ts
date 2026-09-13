@@ -35,7 +35,7 @@ export function sanitizePayloads<TData>(
   payloads?: Record<string, TData>,
 ): Record<string, TData> | undefined {
   if (!payloads || typeof payloads !== 'object') return undefined;
-  return filterRecord(payloads, (v) => typeof v !== 'function');
+  return filterRecord(payloads, (v) => typeof v !== 'function' && v !== null && v !== undefined);
 }
 
 export function isValidSnapshot<TData>(val: unknown): val is PopoverSnapshotData<TData> {

@@ -11,7 +11,7 @@ import type {
   TrailEntry,
 } from '../../../types';
 import { EMPTY_ARRAY, emptyRecord } from '../../storeDefaults';
-import { pickRecordKeys } from '../../../utils/cleanObject';
+import { compactRecord, pickRecordKeys } from '../../../utils/cleanObject';
 import { prop } from '../../../utils/functional';
 import {
   PERSIST_SCHEMA_VERSION,
@@ -33,7 +33,7 @@ function buildCleanPinned<TPopoverKey extends string>(
   keys: ReadonlySet<TPopoverKey>,
   pinnedStates: Partial<Record<TPopoverKey, boolean>>,
 ): Partial<Record<TPopoverKey, boolean>> {
-  return pickRecordKeys(pinnedStates, keys);
+  return compactRecord(pickRecordKeys(pinnedStates, keys));
 }
 
 /**
@@ -69,7 +69,7 @@ export function buildPersistPayload<TData, TContext, TPopoverKey extends string 
     timestamp: Date.now(),
     tabId,
     floating: sanitizePersistedEntries(filtered),
-    offsets: cleanOffsets,
+    offsets: compactRecord(cleanOffsets),
     pinnedStates: cleanPinned,
     zIndexOrder: zIndexOrder.filter((key) => keys.has(key)),
   };
