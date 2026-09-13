@@ -132,3 +132,14 @@ export function normalizeRatio(value: number, min: number, max: number): number 
   return (clamped - lower) / (upper - lower);
 }
 
+/**
+ * Normalizes an unknown value to a finite number, returning fallback if non-finite.
+ *
+ * @param val - Input value to normalize.
+ * @param fallback - Fallback number if non-finite (defaults to 0).
+ * @returns Finite number.
+ */
+export function toFiniteNumber(val: unknown, fallback = 0): number {
+  return typeof val === 'number' && Number.isFinite(val) ? val : fallback;
+}
+

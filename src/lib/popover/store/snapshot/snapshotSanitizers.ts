@@ -10,17 +10,18 @@ import { isArray } from '../../utils/guards/arrayGuards';
 import { ZERO_OFFSET } from '../../constants';
 import { filterRecord } from '../../utils/cleanObject';
 
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+import { isUnsafeKey } from '../../utils/safeKeys';
+import { toFiniteNumber } from '../../utils/math';
 
 export function sanitizeOffsets(
   offsets: Record<string, { x: number; y: number }>,
 ): Record<string, { x: number; y: number }> {
   const result: Record<string, { x: number; y: number }> = {};
   for (const [key, offset] of Object.entries(offsets)) {
-    if (UNSAFE_KEYS.has(key)) continue;
+    if (isUnsafeKey(key)) continue;
     if (offset && typeof offset === 'object') {
-      const x = Number.isFinite(offset.x) ? offset.x : 0;
-      const y = Number.isFinite(offset.y) ? offset.y : 0;
+      const x = toFiniteNumber(offset.x);
+      const y = toFiniteNumber(offset.y);
       result[key] = x === 0 && y === 0 ? ZERO_OFFSET : { x, y };
     } else {
       result[key] = ZERO_OFFSET;

@@ -260,7 +260,7 @@ export async function retryAsync<T>(fn: () => Promise<T>, options?: RetryOptions
       if (currentDelay > 0) {
         await sleep(currentDelay);
       }
-      const nextDelay = Math.min(currentDelay * backoffMultiplier, maxDelayMs);
+      const nextDelay = clamp(currentDelay * backoffMultiplier, 0, maxDelayMs);
       return attempt(remainingRetries - 1, nextDelay);
     }
   };

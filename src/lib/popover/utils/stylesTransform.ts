@@ -25,9 +25,7 @@ export function hashTransformCoordinates(
   return h ^ (h >>> 16);
 }
 
-export function toFiniteNumber(val: unknown, fallback = 0): number {
-  return typeof val === 'number' && Number.isFinite(val) ? val : fallback;
-}
+export { toFiniteNumber } from './math';
 
 export function buildTransformString(
   translateX: number,

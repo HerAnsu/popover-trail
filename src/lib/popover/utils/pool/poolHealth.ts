@@ -35,7 +35,7 @@ export function assessPoolHealth(metrics: ObjectPoolMetrics, leakedCount = 0): P
   }
 
   if (leakedCount > 0) {
-    score -= Math.min(40, leakedCount * 10);
+    score -= clamp(leakedCount * 10, 0, 40);
     recs.push(`${leakedCount} potentially leaked item(s) detected.`);
   }
 

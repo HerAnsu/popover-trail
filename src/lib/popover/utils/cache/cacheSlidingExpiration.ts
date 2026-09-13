@@ -6,6 +6,7 @@
 
 import type { CacheEntry, StorageAdapter } from './cacheTypes';
 import { isValidStorageKey } from '../safeKeys';
+import { clamp } from '../math';
 
 export interface TouchOptions {
   readonly extensionMs: number;
@@ -39,7 +40,7 @@ export function touchCacheEntry<T = unknown>(
       storage.delete(key);
       return false;
     }
-    targetExpiry = Math.min(targetExpiry, maxExpiry);
+    targetExpiry = clamp(targetExpiry, 0, maxExpiry);
   }
 
   const updated: CacheEntry<T> = {

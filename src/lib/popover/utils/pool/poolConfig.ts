@@ -19,6 +19,7 @@ import {
 } from './poolBranded';
 import { type InvalidPoolOptionsError, createInvalidPoolOptionsError } from './poolErrors';
 import { Ok, Err, type Result } from '../result';
+import { clamp } from '../math';
 
 export interface ObjectPoolResolvedConfig<T> {
   readonly factory: () => T;
@@ -40,7 +41,7 @@ export function resolvePoolOptions<T>(
   if (typeof target === 'object' && target !== null) {
     const safeMax = toPoolCapacity(target.maxCapacity ?? DEFAULT_POOL_MAX);
     const rawInit = target.initialCapacity ?? DEFAULT_POOL_INITIAL;
-    const safeInitial = toPoolSize(Math.min(toPoolSize(rawInit), safeMax));
+    const safeInitial = toPoolSize(clamp(toPoolSize(rawInit), 0, safeMax));
     const idleDrain =
       target.idleDrainTimeoutMs !== undefined
         ? toPoolTimeoutMs(target.idleDrainTimeoutMs)
@@ -59,7 +60,7 @@ export function resolvePoolOptions<T>(
   }
 
   const safeMax = toPoolCapacity(maxCapacity);
-  const safeInitial = toPoolSize(Math.min(toPoolSize(initialCapacity), safeMax));
+  const safeInitial = toPoolSize(clamp(toPoolSize(initialCapacity), 0, safeMax));
   return {
     factory: target,
     reset,

@@ -5,6 +5,7 @@
  */
 
 import { sleep } from '../asyncUtils';
+import { clamp } from '../math';
 
 export class CacheSWRRunner<T = unknown> {
   public readonly capacity: number;
@@ -44,7 +45,7 @@ export class CacheSWRRunner<T = unknown> {
     } catch (err) {
       if (attempt > retries) throw err;
       const jitter = (attempt * 17) % 50;
-      const delay = Math.min(2000, baseDelayMs * Math.pow(2, attempt - 1)) + jitter;
+      const delay = clamp(baseDelayMs * Math.pow(2, attempt - 1), 0, 2000) + jitter;
       await sleep(delay);
       return this.runWithRetry(task, retries, baseDelayMs, attempt + 1);
     }
