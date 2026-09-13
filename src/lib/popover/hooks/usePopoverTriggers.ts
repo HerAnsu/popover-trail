@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { usePopoverActions } from '../context/usePopoverStore';
 import { useIsPopoverOpen } from './usePopoverSelectors';
+import { useLatestRef } from './useHookUtils';
 import type {
   AnchorEventLike,
   OpenNestedOptions,
@@ -15,14 +16,9 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
   explicitIsOpen?: boolean,
 ) {
   const actions = usePopoverActions();
-  const optionsRef = useRef(options);
-  const onOpenHandlerRef = useRef(onOpenHandler);
+  const optionsRef = useLatestRef(options);
+  const onOpenHandlerRef = useLatestRef(onOpenHandler);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    optionsRef.current = options;
-    onOpenHandlerRef.current = onOpenHandler;
-  }, [options, onOpenHandler]);
 
   useEffect(() => {
     return () => {
@@ -32,25 +28,31 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
     };
   }, []);
 
-  const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    if (optionsRef.current?.hover?.enabled) return;
-    onOpenHandlerRef.current(e, e.currentTarget);
-  }, []);
+  const onClick = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      if (optionsRef.current?.hover?.enabled) return;
+      onOpenHandlerRef.current(e, e.currentTarget);
+    },
+    [optionsRef, onOpenHandlerRef],
+  );
 
-  const onMouseEnter = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    const hoverOpts = optionsRef.current?.hover;
-    if (hoverOpts?.enabled) {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
+  const onMouseEnter = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      const hoverOpts = optionsRef.current?.hover;
+      if (hoverOpts?.enabled) {
+        if (openTimerRef.current) {
+          clearTimeout(openTimerRef.current);
+        }
+        const currentTarget = e.currentTarget;
+        const delay = hoverOpts.openDelay ?? 200;
+        e.persist?.();
+        openTimerRef.current = setTimeout(() => {
+          onOpenHandlerRef.current(e, currentTarget);
+        }, delay);
       }
-      const currentTarget = e.currentTarget;
-      const delay = hoverOpts.openDelay ?? 200;
-      e.persist?.();
-      openTimerRef.current = setTimeout(() => {
-        onOpenHandlerRef.current(e, currentTarget);
-      }, delay);
-    }
-  }, []);
+    },
+    [optionsRef, onOpenHandlerRef],
+  );
 
   const onMouseLeave = useCallback(() => {
     const hoverOpts = optionsRef.current?.hover;
@@ -61,7 +63,7 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
       const delay = hoverOpts.closeDelay ?? 300;
       actions.hoverLeave(key, delay);
     }
-  }, [actions, key]);
+  }, [actions, key, optionsRef]);
 
   const hoverEnabled = Boolean(options?.hover?.enabled);
   const storeIsOpen = useIsPopoverOpen(key);

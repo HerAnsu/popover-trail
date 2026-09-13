@@ -6,6 +6,7 @@
  */
 
 import type { PopoverStore, TrailEntry, DragOffset } from '../../types';
+import { EMPTY_READONLY_ARRAY } from '../../types/branded';
 import {
   selectEntryByKey,
   selectOffset,
@@ -45,12 +46,14 @@ export function getCardParents<TData, TContext, TPopoverKey extends string>(
   state: PopoverStore<TData, TContext, TPopoverKey>,
   key: TPopoverKey,
 ): readonly TPopoverKey[] {
-  return [...state.getParents(key)];
+  const parents = state.getParents(key);
+  return parents.size === 0 ? EMPTY_READONLY_ARRAY : [...parents];
 }
 
 export function getCardChildren<TData, TContext, TPopoverKey extends string>(
   state: PopoverStore<TData, TContext, TPopoverKey>,
   key: TPopoverKey,
 ): readonly TPopoverKey[] {
-  return [...state.getChildren(key)];
+  const children = state.getChildren(key);
+  return children.size === 0 ? EMPTY_READONLY_ARRAY : [...children];
 }

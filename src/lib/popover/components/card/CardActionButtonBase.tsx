@@ -8,6 +8,7 @@
 import React, { useCallback, type ReactNode, type ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
 import { getPolymorphicProps } from '../../utils/componentUtils';
+import { invokeEventHandlers } from '../trigger/triggerRendering';
 
 export type CardActionButtonBaseProps<E extends ElementType = 'button'> = PolymorphicProps<
   E,
@@ -35,8 +36,7 @@ export function CardActionButtonBase<E extends ElementType = 'button'>({
         e.preventDefault();
         return;
       }
-      onAction(e);
-      onClick?.(e);
+      invokeEventHandlers(e, onAction, onClick);
     },
     [disabled, onAction, onClick],
   );

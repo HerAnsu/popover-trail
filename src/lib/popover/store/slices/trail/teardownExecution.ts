@@ -10,16 +10,21 @@ import { TRANSITION_STATUS_UNMOUNTING } from '../../../constants';
 import type { Effect } from '../../effects';
 import type { SliceContext } from '../context';
 import { collectClosedEntryEffects } from './teardownHelpers';
+import { hasKeyIn } from '../../../utils/predicates';
+import { not } from '../../../utils/functional';
+import { first } from '../../../utils/arrayUtils';
 
 const mapToUnmounting = <TData, TPopoverKey extends string>(
   list: readonly TrailEntry<TData, TPopoverKey>[],
   removedKeys: ReadonlySet<TPopoverKey>,
-) =>
-  list.map((entry) =>
-    removedKeys.has(entry.key)
+) => {
+  const isInRemoved = hasKeyIn<TrailEntry<TData, TPopoverKey>>(removedKeys);
+  return list.map((entry) =>
+    isInRemoved(entry)
       ? { ...entry, transitionStatus: TRANSITION_STATUS_UNMOUNTING }
       : entry,
   );
+};
 
 /**
  * Creates the low-level teardown execution runner.
@@ -45,7 +50,7 @@ export function createTrailTeardownExecution<
     const { floating, trail, pinnedStates, offsets, zIndexOrder, nestedHydrationRequestCounters } =
       currentState;
 
-    const isRetained = ({ key }: TrailEntry<TData, TPopoverKey>) => !removedKeys.has(key);
+    const isRetained = not(hasKeyIn<TrailEntry<TData, TPopoverKey>>(removedKeys));
     const nextFloating = floating.filter(isRetained);
     const nextTrail = trail.filter(isRetained);
     const nextPinnedStates = { ...pinnedStates };
@@ -71,7 +76,7 @@ export function createTrailTeardownExecution<
     const keys = [...removedKeys];
     const finalEffects: Effect<TData, TPopoverKey, TContext>[] = [
       ...closedEffects,
-      { type: 'EMIT_EVENT', event: { type: 'close', keys, key: keys[0] } },
+      { type: 'EMIT_EVENT', event: { type: 'close', keys, key: first(keys) } },
     ];
 
     if (nextFloating.length === 0 && nextTrail.length === 0) {

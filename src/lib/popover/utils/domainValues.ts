@@ -5,11 +5,13 @@
  * @module utils/domainValues
  */
 
+import { toFiniteNumber } from './stylesTransform';
+
 export class ZIndex {
   public readonly value: number;
 
   private constructor(val: number) {
-    this.value = Math.max(0, Math.floor(Number.isFinite(val) ? val : 0));
+    this.value = Math.max(0, Math.floor(toFiniteNumber(val)));
   }
 
   public static of(val: number): ZIndex {
@@ -29,7 +31,7 @@ export class DurationMs {
   public readonly value: number;
 
   private constructor(val: number) {
-    this.value = Math.max(0, Number.isFinite(val) ? val : 0);
+    this.value = Math.max(0, toFiniteNumber(val));
   }
 
   public static of(val: number): DurationMs {

@@ -8,6 +8,7 @@
 import { isElementLike } from './typeGuards';
 import { getEventPath } from './domEvents';
 import { getMemoizedEscapedSelector } from './domSelector';
+import { first, last } from './arrayUtils';
 import { DATA_POPOVER_PORTAL, DATA_POPOVER_IGNORE_OUTSIDE } from '../constants';
 
 export { getMemoizedEscapedSelector };
@@ -70,5 +71,5 @@ export function findNextFocusable(container: HTMLElement, reverse = false): HTML
     (el) => el.offsetParent !== null && !el.hasAttribute('disabled'),
   );
   if (elements.length === 0) return null;
-  return reverse ? (elements.at(-1) ?? null) : (elements[0] ?? null);
+  return reverse ? (last(elements) ?? null) : (first(elements) ?? null);
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Imperative Store Controller Core Factory.
  * Clean Architecture Layer 2: Headless State Management & Orchestration.
  *
@@ -7,6 +7,7 @@
 
 import type { StoreApi } from 'zustand';
 import type { PopoverStore } from '../../types';
+import { EMPTY_READONLY_ARRAY } from '../../types/branded';
 import { validateStoreControllerInstance } from '../devWarnings';
 import { createFluentBuilder } from './fluentBuilder';
 import type { PopoverController } from './controllerTypes';
@@ -54,8 +55,14 @@ export function createPopoverController<
     retryPopover: (key) => getState().retryPopover(key),
     addParent: (child, parent) => getState().addEdge(parent, child),
     removeParent: (child, parent) => getState().removeEdge(parent, child),
-    getParents: (key) => [...getState().getParents(key)],
-    getChildren: (key) => [...getState().getChildren(key)],
+    getParents: (key) => {
+      const parents = getState().getParents(key);
+      return parents.size === 0 ? EMPTY_READONLY_ARRAY : [...parents];
+    },
+    getChildren: (key) => {
+      const children = getState().getChildren(key);
+      return children.size === 0 ? EMPTY_READONLY_ARRAY : [...children];
+    },
     getState,
     dispose: clear,
   };

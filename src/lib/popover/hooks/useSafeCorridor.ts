@@ -5,9 +5,10 @@
  * @module hooks/useSafeCorridor
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isCursorInSafeCorridor } from '../utils/spatial';
 import { sharedPointPool, sharedBoxPool } from '../utils/pool/spatialPools';
+import { useLatestRef } from './useHookUtils';
 
 export interface UseSafeCorridorOptions {
   readonly triggerRef: React.RefObject<HTMLElement | null>;
@@ -23,8 +24,7 @@ export function useSafeCorridor({
   onLeave,
 }: UseSafeCorridorOptions): { isInsideCorridor: boolean } {
   const [isInside, setIsInside] = useState(false);
-  const onLeaveRef = useRef(onLeave);
-  onLeaveRef.current = onLeave;
+  const onLeaveRef = useLatestRef(onLeave);
 
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
@@ -67,7 +67,7 @@ export function useSafeCorridor({
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [enabled, triggerRef, childCardId]);
+  }, [enabled, triggerRef, childCardId, onLeaveRef]);
 
   return { isInsideCorridor: isInside };
 }

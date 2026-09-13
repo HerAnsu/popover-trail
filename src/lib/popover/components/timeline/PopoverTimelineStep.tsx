@@ -11,6 +11,7 @@ import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
 import { getPolymorphicProps } from '../../utils/componentUtils';
 import { isArrowLeftKey, isArrowRightKey } from '../../utils/typeGuards';
+import { clamp } from '../../utils/math';
 
 export interface PopoverTimelineStepBaseProps {
   index?: number;
@@ -54,10 +55,10 @@ function PopoverTimelineStepInner<E extends ElementType = 'button'>({
   const handleKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (isArrowLeftKey(e) && timeline.canUndo) {
       e.preventDefault();
-      timeline.jumpToStep(Math.max(0, effectiveIndex - 1));
+      timeline.jumpToStep(clamp(effectiveIndex - 1, 0, timeline.history.length - 1));
     } else if (isArrowRightKey(e) && timeline.canRedo) {
       e.preventDefault();
-      timeline.jumpToStep(Math.min(timeline.history.length - 1, effectiveIndex + 1));
+      timeline.jumpToStep(clamp(effectiveIndex + 1, 0, timeline.history.length - 1));
     }
     onKeyDown?.(e);
   };

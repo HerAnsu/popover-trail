@@ -4,7 +4,7 @@
  * @module context/usePopoverPropSync
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type {
   PopoverStore,
@@ -19,6 +19,7 @@ import {
   DEFAULT_BASE_Z_INDEX,
   DEFAULT_MOBILE_BREAKPOINT_PX,
 } from '../constants';
+import { useLatestRef } from '../hooks/useHookUtils';
 
 export function usePopoverPropSync<
   TData = unknown,
@@ -41,8 +42,7 @@ export function usePopoverPropSync<
   props: PopoverProviderProps<TData, TContext, TSlices>,
   activeResolver: PopoverResolver<TData, TContext>,
 ): void {
-  const propsRef = useRef(props);
-  propsRef.current = props;
+  const propsRef = useLatestRef(props);
 
   useEffect(() => {
     const currentProps = propsRef.current;
@@ -73,6 +73,7 @@ export function usePopoverPropSync<
     store.getState().actions.updateConfig(patch);
   }, [
     store,
+    propsRef,
     props.enableArrowNavigation,
     props.allowDragWhenPinned,
     props.allowDragWhenUnpinned,

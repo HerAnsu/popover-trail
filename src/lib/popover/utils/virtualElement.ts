@@ -6,6 +6,7 @@
  */
 
 import type { AnchorEventLike } from '../types/storeStateTypes';
+import { toFiniteNumber } from './styles';
 
 /**
  * Creates a safe fallback DOMRect instance.
@@ -34,10 +35,10 @@ export function createVirtualElement(
   width = 0,
   height = 0,
 ): AnchorEventLike & { getBoundingClientRect: () => DOMRect } {
-  const safeX = Number.isFinite(x) ? x : 0;
-  const safeY = Number.isFinite(y) ? y : 0;
-  const safeWidth = Number.isFinite(width) ? Math.max(0, width) : 0;
-  const safeHeight = Number.isFinite(height) ? Math.max(0, height) : 0;
+  const safeX = toFiniteNumber(x);
+  const safeY = toFiniteNumber(y);
+  const safeWidth = Math.max(0, toFiniteNumber(width));
+  const safeHeight = Math.max(0, toFiniteNumber(height));
 
   const rectData = {
     x: safeX,
@@ -70,10 +71,10 @@ export function normalizeDOMRect(
 ): DOMRect {
   if (!rect) return createDefaultDOMRect();
   if (typeof DOMRect !== 'undefined' && rect instanceof DOMRect) return rect;
-  const top = Number.isFinite(rect.top) ? rect.top : 0;
-  const left = Number.isFinite(rect.left) ? rect.left : 0;
-  const width = Number.isFinite(rect.width) && rect.width >= 0 ? rect.width : 0;
-  const height = Number.isFinite(rect.height) && rect.height >= 0 ? rect.height : 0;
+  const top = toFiniteNumber(rect.top);
+  const left = toFiniteNumber(rect.left);
+  const width = Math.max(0, toFiniteNumber(rect.width));
+  const height = Math.max(0, toFiniteNumber(rect.height));
   return {
     top,
     left,

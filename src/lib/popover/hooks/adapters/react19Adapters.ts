@@ -5,9 +5,10 @@
  * @module hooks/adapters/react19Adapters
  */
 
-import { useTransition, useState, useCallback, useRef } from 'react';
+import { useTransition, useState, useCallback } from 'react';
 import type { PopoverServerAction, PopoverActionState } from '../../types/react19Types';
 import { wrapAsyncResult, isOk } from '../../utils/result';
+import { useLatestRef } from '../useHookUtils';
 
 export function useCrossVersionActionState<TData, TInput = void>(
   action: PopoverServerAction<TData, TInput>,
@@ -15,8 +16,7 @@ export function useCrossVersionActionState<TData, TInput = void>(
 ): readonly [PopoverActionState<TData>, (input: TInput) => void, boolean] {
   const [state, setState] = useState<PopoverActionState<TData>>(initialState);
   const [isPending, startTransition] = useTransition();
-  const actionRef = useRef(action);
-  actionRef.current = action;
+  const actionRef = useLatestRef(action);
 
   const dispatch = useCallback(
     (input: TInput) => {
@@ -43,7 +43,7 @@ export function useCrossVersionActionState<TData, TInput = void>(
         }
       });
     },
-    [state],
+    [state, actionRef],
   );
 
   return [state, dispatch, isPending] as const;

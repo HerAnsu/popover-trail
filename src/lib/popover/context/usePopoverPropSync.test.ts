@@ -19,6 +19,9 @@ vi.mock('react', async (importOriginal) => {
     useEffect: (fn: () => void) => {
       capturedEffects.push(fn);
     },
+    useInsertionEffect: (fn: () => void) => {
+      fn();
+    },
   };
 });
 

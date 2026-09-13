@@ -5,7 +5,7 @@
  * @module hooks/usePopoverAction
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type {
   PopoverActionState,
   PopoverServerAction,
@@ -16,6 +16,7 @@ import { useCrossVersionActionState } from '../utils/react19Adapters';
 import { usePopoverStoreApi } from '../context/usePopoverStore';
 import { wrapAsyncResult, isOk } from '../utils/result';
 import { toError } from '../utils/typeGuards';
+import { useLatestRef } from './useHookUtils';
 
 /**
  * Executes a React 19 Server Action or async mutation with automatic popover store synchronization.
@@ -83,8 +84,7 @@ export function usePopoverAction<TData, TInput = void, TPopoverKey extends strin
   }, [initialData]);
 
   const [optimisticActive, setOptimisticActive] = useState(false);
-  const callbacksRef = useRef({ onSuccess, onError });
-  callbacksRef.current = { onSuccess, onError };
+  const callbacksRef = useLatestRef({ onSuccess, onError });
 
   const wrappedAction: PopoverServerAction<TData, TInput> = useCallback(
     async (prevState, input) => {
@@ -118,7 +118,7 @@ export function usePopoverAction<TData, TInput = void, TPopoverKey extends strin
         isOptimistic: false,
       };
     },
-    [action, updateCardData],
+    [action, updateCardData, callbacksRef],
   );
 
   const actionTuple = useCrossVersionActionState<TData, TInput>(wrappedAction, initialState);

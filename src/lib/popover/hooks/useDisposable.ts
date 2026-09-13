@@ -8,6 +8,7 @@
 import { useEffect, useRef, type DependencyList } from 'react';
 import { CompositeDisposable } from '../utils/resource/compositeDisposable';
 import { getDisposeMethod, type CleanupItem } from '../utils/resource/disposableTypes';
+import { useLatestRef } from './useHookUtils';
 
 export function useCompositeDisposable(): CompositeDisposable {
   const containerRef = useRef<CompositeDisposable | null>(null);
@@ -25,8 +26,7 @@ export function useCompositeDisposable(): CompositeDisposable {
 }
 
 export function useDisposable(factory: () => CleanupItem, deps: DependencyList = []): void {
-  const factoryRef = useRef(factory);
-  factoryRef.current = factory;
+  const factoryRef = useLatestRef(factory);
 
   useEffect(() => {
     const item = factoryRef.current();
