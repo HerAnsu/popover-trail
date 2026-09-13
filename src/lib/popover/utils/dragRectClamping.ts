@@ -6,6 +6,7 @@
  */
 
 import { isBrowser } from './typeGuards';
+import { clamp } from './math';
 import type { DragTransform2D, DragNodeRect, DragBoundsRect } from './dragBounds';
 
 export function clampCoordinateToBounds(
@@ -20,8 +21,8 @@ export function clampCoordinateToBounds(
 
   return {
     ...transform,
-    x: Math.max(minX, Math.min(maxX, transform.x)),
-    y: Math.max(minY, Math.min(maxY, transform.y)),
+    x: clamp(transform.x, minX, maxX),
+    y: clamp(transform.y, minY, maxY),
     scaleX: transform.scaleX,
     scaleY: transform.scaleY,
   };

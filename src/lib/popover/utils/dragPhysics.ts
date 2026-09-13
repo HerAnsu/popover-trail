@@ -6,6 +6,7 @@
  */
 
 import { toFiniteOrDefault, isNonNegativeFinite } from './typeGuards';
+import { clamp } from './math';
 
 export function normalizeDragDelta(
   deltaX: number,
@@ -45,8 +46,8 @@ export function computeTiltMatrixInPlace(
   const rawX = -safeDeltaY * safeSensitivity;
   const rawY = safeDeltaX * safeSensitivity;
 
-  out.rotationX = Math.max(-safeMaxAngle, Math.min(safeMaxAngle, rawX));
-  out.rotationY = Math.max(-safeMaxAngle, Math.min(safeMaxAngle, rawY));
+  out.rotationX = clamp(rawX, -safeMaxAngle, safeMaxAngle);
+  out.rotationY = clamp(rawY, -safeMaxAngle, safeMaxAngle);
 }
 
 export function computeRawTiltAngles(
@@ -70,5 +71,5 @@ export function computeTiltMatrix(
 }
 
 export function applyDragFriction(delta: number, friction = 0.5): number {
-  return delta * (1 - Math.min(1, Math.max(0, friction)));
+  return delta * (1 - clamp(friction, 0, 1));
 }

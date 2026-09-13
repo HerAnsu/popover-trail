@@ -54,7 +54,7 @@ export function pruneTruncatedTrailNodes<TData, TPopoverKey extends string>(
     if (entry) activeKeys.add(entry.key);
   }
   for (let i = trailIdx + 1; i < trail.length; i++) {
-    const { key } = trail[i] ?? {};
-    if (key && !activeKeys.has(key)) dag.removeNode(key);
+    const entry = trail[i];
+    if (entry && !activeKeys.has(entry.key)) dag.removeNode(entry.key);
   }
 }

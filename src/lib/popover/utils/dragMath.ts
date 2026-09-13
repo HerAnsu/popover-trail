@@ -7,3 +7,4 @@
 
 export * from './dragPhysics';
 export * from './dragBounds';
+export * from './math';

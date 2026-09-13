@@ -17,10 +17,9 @@ function getPrefetchContext<TData, TContext>(
   options: PrefetchOptions<TData, TContext> | undefined,
   storeContext: TContext | null | undefined,
 ) {
-  const { parentData, context } = options ?? {};
   return {
-    parentData,
-    activeContext: context ?? storeContext ?? undefined,
+    parentData: options?.parentData,
+    activeContext: options?.context ?? storeContext ?? undefined,
   };
 }
 

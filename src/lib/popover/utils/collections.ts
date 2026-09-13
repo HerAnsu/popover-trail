@@ -8,6 +8,7 @@
 import type { TrailEntry } from '../types';
 import { EMPTY_READONLY_ARRAY } from '../types/branded';
 import { isUnsafeKey } from './safeKeys';
+import { isNonNullable } from './predicates';
 
 export function getEntryAtIndex<TData, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],
@@ -71,6 +72,7 @@ export function partition<T>(
   items: readonly T[],
   predicate: (item: T) => boolean,
 ): readonly [readonly T[], readonly T[]] {
+  if (items.length === 0) return [EMPTY_READONLY_ARRAY, EMPTY_READONLY_ARRAY];
   const matching: T[] = [];
   const nonMatching: T[] = [];
   for (const item of items) {
@@ -196,4 +198,23 @@ export function range(start: number, end: number, step = 1): readonly number[] {
   }
   return Object.freeze(result);
 }
+
+/**
+ * Removes null and undefined elements from an array with zero allocations on empty input.
+ *
+ * @template T - Element type.
+ * @param array - Array with potentially null or undefined items.
+ * @returns Frozen array of non-nullable elements.
+ */
+export function compact<T>(array: readonly (T | null | undefined)[]): readonly T[] {
+  if (array.length === 0) return EMPTY_READONLY_ARRAY;
+  const result: T[] = [];
+  for (const item of array) {
+    if (isNonNullable(item)) {
+      result.push(item);
+    }
+  }
+  return result.length === 0 ? EMPTY_READONLY_ARRAY : Object.freeze(result);
+}
+
 

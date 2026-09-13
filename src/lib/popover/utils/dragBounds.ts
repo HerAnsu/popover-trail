@@ -6,6 +6,7 @@
  */
 
 import { toFiniteOrDefault } from './typeGuards';
+import { clamp } from './math';
 
 export interface ClampBounds {
   minX?: number;
@@ -54,8 +55,8 @@ export function clampDragCoordinatesInPlace(
   const maxX = toFiniteOrDefault(bounds.maxX, Infinity);
   const minY = toFiniteOrDefault(bounds.minY, -Infinity);
   const maxY = toFiniteOrDefault(bounds.maxY, Infinity);
-  outTarget.x = Math.max(minX, Math.min(maxX, safeX));
-  outTarget.y = Math.max(minY, Math.min(maxY, safeY));
+  outTarget.x = clamp(safeX, minX, maxX);
+  outTarget.y = clamp(safeY, minY, maxY);
 }
 
 export function clampDragCoordinates(

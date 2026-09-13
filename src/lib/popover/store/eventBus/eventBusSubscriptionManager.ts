@@ -38,7 +38,9 @@ export class EventBusSubscriptionManager<TData, TPopoverKey extends string = str
     const existing = subscribers.get(listener);
     if (existing) target.removeEventListener(type, existing);
 
-    const { once, signal, ...nativeOptions } = options ?? {};
+    const once = options?.once;
+    const signal = options?.signal;
+    const nativeOptions = options ? { capture: options.capture, passive: options.passive } : undefined;
     const handler: EventListener = (e: Event) => {
       if (!isPopoverCustomEvent<K, TData, TPopoverKey>(e, type)) return;
       if (once) this.unsubscribe(target, type, listener, options);

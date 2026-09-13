@@ -1,9 +1,11 @@
-﻿/**
+/**
  * Immutable 2D Spatial Coordinate Vector Value Object.
  * Encapsulates coordinate transformations, distance calculations, and clamping with NaN-safety.
  *
  * @module utils/Point2D
  */
+
+import { clamp } from './math';
 
 function resolveCoords(pt?: { x?: number; y?: number } | null): { x: number; y: number } {
   return { x: pt?.x ?? 0, y: pt?.y ?? 0 };
@@ -51,8 +53,8 @@ export class Point2D {
   }
 
   clamp(minX: number, maxX: number, minY: number, maxY: number): Point2D {
-    const clampedX = Math.max(minX, Math.min(maxX, this.x));
-    const clampedY = Math.max(minY, Math.min(maxY, this.y));
+    const clampedX = clamp(this.x, minX, maxX);
+    const clampedY = clamp(this.y, minY, maxY);
     return new Point2D(clampedX, clampedY);
   }
 

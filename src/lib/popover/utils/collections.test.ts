@@ -11,6 +11,7 @@ import {
   chunk,
   zip,
   range,
+  compact,
 } from './collections';
 
 import type { TrailEntry } from '../types';
@@ -99,6 +100,19 @@ describe('collections utilities', () => {
     expect(range(5, 0, -1)).toEqual([5, 4, 3, 2, 1]);
     expect(range(5, 5)).toEqual([]);
     expect(range(10, 5, 1)).toEqual([]);
+  });
+
+  it('compact removes null and undefined elements', () => {
+    expect(compact([1, null, 2, undefined, 3])).toEqual([1, 2, 3]);
+    expect(compact([])).toEqual([]);
+    expect(compact([null, undefined])).toEqual([]);
+    expect(compact([0, false, ''])).toEqual([0, false, '']);
+  });
+
+  it('partition handles empty arrays cleanly', () => {
+    const [truthy, falsy] = partition([], (x) => x > 0);
+    expect(truthy).toEqual([]);
+    expect(falsy).toEqual([]);
   });
 });
 

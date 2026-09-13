@@ -279,8 +279,9 @@ export {
 } from './utils/asyncUtils';
 
 // Utilities: Collections & Objects
-export { unique, partition, groupBy, keyBy, chunk, zip, range } from './utils/collections';
+export { unique, partition, groupBy, keyBy, chunk, zip, range, compact } from './utils/collections';
 export { isNonNullable, isDefined, isNull, isUndefined } from './utils/predicates';
+export { clamp, lerp, inRange, degToRad, radToDeg } from './utils/math';
 export { omitRecordKey, pickRecordKeys, safeAssign } from './utils/cleanObject';
 
 

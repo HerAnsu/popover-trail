@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useDebugValue } from 'react';
 import type { DragAxis } from '../types';
 import { computeTiltMatrixInPlace } from '../utils/dragMath';
 import { validateDragOffset } from '../utils/devWarnings';
+import { clamp } from '../utils/math';
 
 import { isBrowser, isFunction } from '../utils/typeGuards';
 
@@ -89,7 +90,7 @@ class ReducedMotionObserverImpl {
 const ReducedMotionObserver = new ReducedMotionObserverImpl();
 
 function decayRotationInPlace(c: { x: number; y: number; z: number }, decay: number): boolean {
-  const safeDecay = Math.min(Math.max(decay, 0.1), 0.99);
+  const safeDecay = clamp(decay, 0.1, 0.99);
   c.x = Math.abs(c.x * safeDecay) < 0.05 ? 0 : c.x * safeDecay;
   c.y = Math.abs(c.y * safeDecay) < 0.05 ? 0 : c.y * safeDecay;
   c.z = Math.abs(c.z * safeDecay) < 0.05 ? 0 : c.z * safeDecay;
@@ -182,7 +183,7 @@ export function usePopoverDragAndDrop({
       const boundedY = curr.y * safeFriction + tiltTargetRef.current.rotationY;
 
       const nextZ = curr.z * safeFriction + velocityX * (tiltSensitivity / 2) * (1 - tiltFriction);
-      const boundedZ = Math.max(-maxTiltAngle / 2, Math.min(maxTiltAngle / 2, nextZ));
+      const boundedZ = clamp(nextZ, -maxTiltAngle / 2, maxTiltAngle / 2);
 
       curr.z = boundedZ;
       curr.x = boundedX;

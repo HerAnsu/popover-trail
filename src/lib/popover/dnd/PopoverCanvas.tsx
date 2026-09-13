@@ -22,7 +22,7 @@ import {
   DEFAULT_TOUCH_TOLERANCE_PX,
   ZERO_OFFSET,
 } from '../constants';
-import { isNonNullable } from '../utils/predicates';
+import { compact } from '../utils/collections';
 import { usePopoverTrail, usePopoverFloating } from '../hooks/usePopoverSelectors';
 import { usePopoverStore, usePopoverStoreApi, usePopoverActions } from '../context/usePopoverStore';
 
@@ -64,7 +64,7 @@ export function PopoverCanvas<TData = unknown>({
       ...trail.map((entry, idx) => ({ entry, isPinned: false, index: floating.length + idx })),
     ];
     if (zIndexOrder.length === 0) return raw;
-    const orderMap = new Map(zIndexOrder.filter(isNonNullable).map((k, i) => [k, i]));
+    const orderMap = new Map(compact(zIndexOrder).map((k, i) => [k, i]));
     return raw.sort(
       (a, b) => (orderMap.get(a.entry.key) ?? a.index) - (orderMap.get(b.entry.key) ?? b.index),
     );

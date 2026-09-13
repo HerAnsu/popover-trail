@@ -70,7 +70,8 @@ export class PopoverFSMRegistry<TData = unknown, TPopoverKey extends string = st
     from: PopoverStateValue,
     event: PopoverFSMEvent<TData, TPopoverKey>,
   ): void {
-    const { isDev, onIllegalTransition } = this.options ?? {};
+    const isDev = this.options?.isDev;
+    const onIllegalTransition = this.options?.onIllegalTransition;
     if (!isDev && !onIllegalTransition) return;
     logger.warn(
       `[FSMRegistry] Ignored or illegal transition for key "${key}": from "${from}" with event "${event.type}"`,

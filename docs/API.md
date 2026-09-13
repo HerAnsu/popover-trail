@@ -3150,12 +3150,13 @@ Functional array manipulation and prototype-pollution safe object utilities:
 | `chunk(items, size)` | `(readonly T[], number) => readonly (readonly T[])[]` | Splits an array into batches of specified size. |
 | `zip(a, b)` | `(readonly A[], readonly B[]) => readonly [A, B][]` | Pairs elements from two arrays into 2-tuples up to the shorter length. |
 | `range(start, end, step?)` | `(number, number, number?) => readonly number[]` | Generates arithmetic progression sequence from start (inclusive) to end (exclusive). |
+| `compact(items)` | `(readonly (T \| null \| undefined)[]) => readonly T[]` | Removes null and undefined elements returning a frozen array. |
 | `pickRecordKeys(record, keys)` | `(record, keys) => Partial<Record<K, T>>` | Safely creates a shallow copy containing only the selected keys. |
 | `omitRecordKey(record, key)` | `(record, key) => Partial<Record<K, T>>` | Returns a record omitting the specified key (preserves hidden classes). |
 | `safeAssign(target, source)` | `(target, source) => target & source` | Merges properties safely, stripping unsafe `__proto__` and `constructor` keys. |
 
 ```typescript
-import { unique, partition, groupBy, keyBy, chunk, zip, range, pickRecordKeys } from 'popover-trail';
+import { unique, partition, groupBy, keyBy, chunk, zip, range, compact, pickRecordKeys } from 'popover-trail';
 
 // 1. Deduplicate trail keys
 const uniqueKeys = unique(['card-1', 'card-2', 'card-1']); // ['card-1', 'card-2']
@@ -3169,10 +3170,37 @@ const byCategory = groupBy(entries, (e) => e.data?.category ?? 'general');
 // 4. Pair arrays and generate coordinate ranges
 const coords = zip(range(0, 100, 20), range(0, 100, 20)); // [[0, 0], [20, 20], [40, 40], ...]
 
-// 5. Safe property picking
+// 5. Compact nullable items
+const validKeys = compact(['a', null, 'b', undefined]); // ['a', 'b']
+
+// 6. Safe property picking
 const safeOptions = pickRecordKeys(options, ['placement', 'offset', 'enableTilt']);
 ```
 
+### Scalar Math and Geometric Utilities
+
+Zero-allocation mathematical scalar transformations and boundary clamping:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `clamp(val, min, max)` | `(number, number, number) => number` | Restricts a number to `[min, max]` with NaN/non-finite normalization. |
+| `lerp(a, b, factor)` | `(number, number, number) => number` | Computes linear interpolation between two values by ratio `t`. |
+| `inRange(val, min, max)` | `(number, number, number) => boolean` | Evaluates whether value resides within inclusive interval `[min, max]`. |
+| `degToRad(deg)` | `(number) => number` | Converts angle from degrees to radians. |
+| `radToDeg(rad)` | `(number) => number` | Converts angle from radians to degrees. |
+
+```typescript
+import { clamp, lerp, inRange, degToRad } from 'popover-trail';
+
+// Clamp drag coordinates within viewport boundary
+const boundedX = clamp(rawX, 0, window.innerWidth - 320);
+
+// Interpolate spring velocity
+const currentVelocity = lerp(initialVelocity, 0, 0.05);
+
+// Check if pointer is within target bounds
+const isInside = inRange(pointerX, cardLeft, cardRight);
+```
 
 ---
 
