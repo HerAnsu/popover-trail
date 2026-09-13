@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { clamp, lerp, inRange, degToRad, radToDeg } from './math';
+import {
+  clamp,
+  lerp,
+  inRange,
+  degToRad,
+  radToDeg,
+  roundTo,
+  approxEqual,
+  normalizeRatio,
+} from './math';
 
 describe('math utilities', () => {
   describe('clamp', () => {
@@ -84,6 +93,51 @@ describe('math utilities', () => {
     it('handles non-finite values safely', () => {
       expect(degToRad(Number.NaN)).toBe(0);
       expect(radToDeg(Number.NaN)).toBe(0);
+    });
+  });
+
+  describe('roundTo', () => {
+    it('rounds numbers to specified decimal places', () => {
+      expect(roundTo(1.2345, 2)).toBe(1.23);
+      expect(roundTo(1.2355, 2)).toBe(1.24);
+      expect(roundTo(1.5, 0)).toBe(2);
+      expect(roundTo(100.005, 2)).toBe(100.01);
+    });
+
+    it('handles non-finite values safely', () => {
+      expect(roundTo(Number.NaN)).toBe(0);
+      expect(roundTo(Number.POSITIVE_INFINITY)).toBe(0);
+    });
+  });
+
+  describe('approxEqual', () => {
+    it('evaluates floating-point equality with epsilon threshold', () => {
+      expect(approxEqual(0.1 + 0.2, 0.3)).toBe(true);
+      expect(approxEqual(10, 10.0000001)).toBe(true);
+      expect(approxEqual(10, 10.01)).toBe(false);
+      expect(approxEqual(10, 10.01, 0.05)).toBe(true);
+    });
+
+    it('returns false for non-finite values', () => {
+      expect(approxEqual(Number.NaN, Number.NaN)).toBe(false);
+      expect(approxEqual(Number.POSITIVE_INFINITY, 10)).toBe(false);
+    });
+  });
+
+  describe('normalizeRatio', () => {
+    it('normalizes scalar into [0, 1] range', () => {
+      expect(normalizeRatio(50, 0, 100)).toBe(0.5);
+      expect(normalizeRatio(0, 0, 100)).toBe(0);
+      expect(normalizeRatio(100, 0, 100)).toBe(1);
+    });
+
+    it('clamps outside values to [0, 1]', () => {
+      expect(normalizeRatio(-10, 0, 100)).toBe(0);
+      expect(normalizeRatio(150, 0, 100)).toBe(1);
+    });
+
+    it('returns 0 if min === max', () => {
+      expect(normalizeRatio(5, 5, 5)).toBe(0);
     });
   });
 });

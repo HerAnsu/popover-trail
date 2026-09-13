@@ -281,7 +281,16 @@ export {
 // Utilities: Collections & Objects
 export { unique, partition, groupBy, keyBy, chunk, zip, range, compact } from './utils/collections';
 export { isNonNullable, isDefined, isNull, isUndefined } from './utils/predicates';
-export { clamp, lerp, inRange, degToRad, radToDeg } from './utils/math';
+export {
+  clamp,
+  lerp,
+  inRange,
+  degToRad,
+  radToDeg,
+  roundTo,
+  approxEqual,
+  normalizeRatio,
+} from './utils/math';
 export {
   omitRecordKey,
   pickRecordKeys,
@@ -299,6 +308,26 @@ export {
   isSuperset,
   isDisjoint,
 } from './utils/setOperations';
+export {
+  identity,
+  noop,
+  constant,
+  pipe,
+  compose,
+} from './utils/functional';
+export {
+  memoizeOne,
+  memoizeWeak,
+  type MemoizedFn,
+} from './utils/memoize';
+export {
+  kebabCase,
+  camelCase,
+  capitalize,
+  ensurePrefix,
+  ensureSuffix,
+  truncate,
+} from './utils/stringUtils';
 
 
 export {

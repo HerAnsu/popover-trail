@@ -3209,9 +3209,12 @@ Zero-allocation mathematical scalar transformations and boundary clamping:
 | `inRange(val, min, max)` | `(number, number, number) => boolean` | Evaluates whether value resides within inclusive interval `[min, max]`. |
 | `degToRad(deg)` | `(number) => number` | Converts angle from degrees to radians. |
 | `radToDeg(rad)` | `(number) => number` | Converts angle from radians to degrees. |
+| `roundTo(val, decimals)` | `(number, number?) => number` | Safely rounds float to specified decimal places without precision artifacts. |
+| `approxEqual(a, b, epsilon)` | `(number, number, number?) => boolean` | Evaluates floating-point equality within tolerance epsilon (default 1e-6). |
+| `normalizeRatio(val, min, max)` | `(number, number, number) => number` | Normalizes value into `[0, 1]` factor (inverse of `lerp`). |
 
 ```typescript
-import { clamp, lerp, inRange, degToRad } from 'popover-trail';
+import { clamp, lerp, inRange, degToRad, roundTo, approxEqual, normalizeRatio } from 'popover-trail';
 
 // Clamp drag coordinates within viewport boundary
 const boundedX = clamp(rawX, 0, window.innerWidth - 320);
@@ -3221,6 +3224,11 @@ const currentVelocity = lerp(initialVelocity, 0, 0.05);
 
 // Check if pointer is within target bounds
 const isInside = inRange(pointerX, cardLeft, cardRight);
+
+// Float rounding & tolerance checks
+const roundedScore = roundTo(1.2345, 2); // 1.23
+const isNearZero = approxEqual(det, 0, 1e-12); // true
+const progress = normalizeRatio(scrollY, 0, 500); // 0.0 to 1.0
 ```
 
 ### Set Algebra Utilities
@@ -3265,6 +3273,87 @@ const symDiff = setSymmetricDifference(setA, setB);
 // Predicates
 const isSub = isSubset(new Set(['card-1']), setA); // true
 const disjoint = isDisjoint(setA, new Set(['card-99'])); // true
+```
+
+### Functional Programming Combinators
+
+Pure functional primitives for pipeline transformation and function composition:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `pipe(value, ...fns)` | `<A, ..., Z>(A, (A) => B, ...) => Z` | Strongly typed left-to-right pipeline execution (up to 7 steps). |
+| `compose(...fns)` | `<..., Z>((...) => Z, ...) => (A) => Z` | Strongly typed right-to-left function composition. |
+| `identity(value)` | `<T>(T) => T` | Pure identity function returning input unchanged. |
+| `noop()` | `() => void` | Zero-allocation singleton no-op callback. |
+| `constant(value)` | `<T>(T) => () => T` | Factory returning a constant function. |
+
+```typescript
+import { pipe, compose, identity, noop, constant } from 'popover-trail';
+
+// 1. Pipeline execution
+const result = pipe(
+  10,
+  (x) => x * 2,
+  (x) => x + 5,
+  (x) => `Total: ${x}`,
+); // "Total: 25"
+
+// 2. Right-to-left composition
+const doubleAndAddTen = compose(
+  (x: number) => x + 10,
+  (x: number) => x * 2,
+);
+doubleAndAddTen(5); // 20
+
+// 3. Fallback callbacks
+const defaultCallback = noop;
+const defaultGetter = constant('card-root');
+```
+
+### Memoization Utilities
+
+Zero-memory-leak memoization primitives for high-frequency interaction and computation paths:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `memoizeOne(fn, isEqual?)` | `<Args, R>(fn, comparator?) => MemoizedFn<Args, R>` | Bounded capacity 1 memoization based on shallow argument equality. Includes `.clear()`. |
+| `memoizeWeak(fn)` | `<K extends object, R>((K) => R) => ((K) => R) & { delete(K): boolean }` | WeakMap-based cache. Keys are automatically garbage-collected when unreachable. |
+
+```typescript
+import { memoizeOne, memoizeWeak } from 'popover-trail';
+
+// Bounded capacity 1 memoizer for layout calculations
+const computeBounds = memoizeOne((x: number, y: number, width: number, height: number) => {
+  return { left: x, top: y, right: x + width, bottom: y + height };
+});
+
+// WeakMap cache for DOM element observers
+const getCardMetadata = memoizeWeak((element: HTMLElement) => {
+  return { id: element.id, tag: element.tagName };
+});
+```
+
+### String and Case Conversion Utilities
+
+Pure string manipulation utilities for CSS custom properties, tokens, and identifier formatting:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `kebabCase(str)` | `(string) => string` | Converts camelCase / PascalCase / snake_case to kebab-case. |
+| `camelCase(str)` | `(string) => string` | Converts kebab-case / snake_case to camelCase. |
+| `capitalize(str)` | `(string) => string` | Capitalizes first character. |
+| `ensurePrefix(str, prefix)` | `(string, string) => string` | Ensures string begins with prefix (e.g. `'--pt-'`). |
+| `ensureSuffix(str, suffix)` | `(string, string) => string` | Ensures string terminates with suffix (e.g. `'px'`). |
+| `truncate(str, maxLength, suffix?)` | `(string, number, string?) => string` | Truncates string to length with optional ellipsis. |
+
+```typescript
+import { kebabCase, camelCase, ensurePrefix, ensureSuffix, truncate } from 'popover-trail';
+
+kebabCase('transitionDurationMs'); // 'transition-duration-ms'
+camelCase('border-radius-px');     // 'borderRadiusPx'
+ensurePrefix('base-z-index', '--'); // '--base-z-index'
+ensureSuffix('120', 'ms');          // '120ms'
+truncate('Long descriptive title', 10); // 'Long de...'
 ```
 
 ---

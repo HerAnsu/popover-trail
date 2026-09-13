@@ -83,3 +83,52 @@ export function degToRad(degrees: number): number {
 export function radToDeg(radians: number): number {
   return ((Number.isFinite(radians) ? radians : 0) * 180) / Math.PI;
 }
+
+/**
+ * Rounds a numeric scalar to the specified number of decimal digits safely.
+ *
+ * @param value - Float number to round.
+ * @param decimals - Decimal precision places (clamped between 0 and 15, default 0).
+ * @returns Correctly rounded number.
+ */
+export function roundTo(value: number, decimals = 0): number {
+  if (!Number.isFinite(value)) return 0;
+  const safeDecimals = clamp(Math.trunc(decimals), 0, 15);
+  if (safeDecimals === 0) return Math.round(value);
+  const factor = 10 ** safeDecimals;
+  return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+/**
+ * Evaluates whether two numbers are approximately equal within a tolerance threshold (epsilon).
+ *
+ * @param a - First number.
+ * @param b - Second number.
+ * @param epsilon - Allowed difference threshold (default 1e-6).
+ * @returns True if the absolute difference does not exceed epsilon.
+ */
+export function approxEqual(a: number, b: number, epsilon = 1e-6): boolean {
+  if (a === b) return true;
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return Math.abs(a - b) <= epsilon;
+}
+
+/**
+ * Computes the normalized ratio $t \in [0, 1]$ corresponding to value between min and max.
+ * Inverse of linear interpolation (`lerp`).
+ *
+ * @param value - Value to normalize.
+ * @param min - Lower reference bound.
+ * @param max - Upper reference bound.
+ * @returns Normalized factor clamped between 0 and 1.
+ */
+export function normalizeRatio(value: number, min: number, max: number): number {
+  const safeMin = Number.isFinite(min) ? min : 0;
+  const safeMax = Number.isFinite(max) ? max : safeMin;
+  const lower = Math.min(safeMin, safeMax);
+  const upper = Math.max(safeMin, safeMax);
+  if (lower === upper) return 0;
+  const clamped = clamp(value, lower, upper);
+  return (clamped - lower) / (upper - lower);
+}
+

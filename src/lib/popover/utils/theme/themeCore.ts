@@ -7,6 +7,7 @@
 
 import { createDisposable, type ScopeDisposable } from '../disposable';
 import { isEmptyRecord } from '../cleanObject';
+import { noop } from '../functional';
 import { injectStyleProperty, removeThemeTokens } from './themeDom';
 import {
   DEFAULT_THEME_TOKENS,
@@ -20,7 +21,7 @@ export function applyThemeTokens(
     : null,
   tokens?: PopoverThemeTokens,
 ): ScopeDisposable {
-  if (!element) return createDisposable(() => {});
+  if (!element) return createDisposable(noop);
 
   const merged =
     !isEmptyRecord(tokens)

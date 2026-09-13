@@ -8,6 +8,7 @@
 import type { BoundingBox } from '../guards/spatialGuards';
 import type { Point2D } from './spatialEnergy';
 import { ok, err, type Result } from '../result';
+import { approxEqual } from '../math';
 
 /**
  * Diagnostic error payload returned when a 2D affine matrix cannot be inverted due to singularity.
@@ -114,7 +115,7 @@ export function invertMatrix2D(m: Matrix2D): Matrix2D | null {
 export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatrixError> {
   // Determinant: ad - bc
   const det = m[0] * m[3] - m[1] * m[2];
-  if (!Number.isFinite(det) || Math.abs(det) < 1e-12) {
+  if (!Number.isFinite(det) || approxEqual(det, 0, 1e-12)) {
     return err({
       type: 'singular_matrix',
       message: `Cannot invert singular 2D affine matrix with determinant ${det}.`,
