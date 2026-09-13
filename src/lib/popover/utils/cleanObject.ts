@@ -182,3 +182,74 @@ export function filterRecord<K extends string | number, V>(
   return result;
 }
 
+/**
+ * Removes null and undefined values from a record, returning a clean partial record.
+ * Protects against prototype pollution by skipping unsafe keys.
+ *
+ * @template K - Key type.
+ * @template V - Value type.
+ * @param record - Source record.
+ * @returns A new record containing only defined, non-null values.
+ */
+export function compactRecord<K extends string | number, V>(
+  record?: Partial<Record<K, V | null | undefined>> | null,
+): Partial<Record<K, V>> {
+  if (!record || isEmptyRecord(record)) return {};
+  const result: Partial<Record<K, V>> = {};
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(String(key))) {
+      const val = record[key as K];
+      if (val !== undefined && val !== null) {
+        result[key as K] = val;
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Inverts keys and values of a record ({ a: 'x' } -> { x: 'a' }).
+ * Protects against prototype pollution by skipping unsafe keys and values.
+ *
+ * @template K - Source key type.
+ * @template V - Source value type.
+ * @param record - Source record with unique string or number values.
+ * @returns A new inverted record.
+ */
+export function invertRecord<K extends string, V extends string | number>(
+  record?: Record<K, V> | null,
+): Record<V, K> {
+  const result: Record<string | number, K> = {};
+  if (!record || isEmptyRecord(record)) return result as unknown as Record<V, K>;
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(key)) {
+      const val = record[key];
+      if (val !== undefined && val !== null && !isUnsafeKey(String(val))) {
+        result[val] = key;
+      }
+    }
+  }
+  return result as unknown as Record<V, K>;
+}
+
+/**
+ * Recursively freezes an object and its nested properties, preventing runtime mutations.
+ *
+ * @template T - Object type.
+ * @param obj - Target object to freeze deeply.
+ * @returns Deeply frozen object.
+ */
+export function freezeDeep<T>(obj: T): Readonly<T> {
+  if (obj === null || typeof obj !== 'object') return obj;
+  for (const key of Object.keys(obj)) {
+    if (!isUnsafeKey(key)) {
+      const val = (obj as Record<string, unknown>)[key];
+      if (typeof val === 'object' && val !== null && !Object.isFrozen(val)) {
+        freezeDeep(val);
+      }
+    }
+  }
+  return Object.freeze(obj);
+}
+
+

@@ -3356,6 +3356,78 @@ ensureSuffix('120', 'ms');          // '120ms'
 truncate('Long descriptive title', 10); // 'Long de...'
 ```
 
+### Object and Record Utilities
+
+Prototype-pollution-safe object and dictionary transformation functions:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `compactRecord(record)` | `<K, V>(Partial<Record<K, V \| null \| undefined>>) => Partial<Record<K, V>>` | Removes `null` and `undefined` entries from a record. |
+| `invertRecord(record)` | `<K, V>(Record<K, V>) => Record<V, K>` | Inverts keys and values safely without prototype vulnerability. |
+| `freezeDeep(obj)` | `<T>(T) => Readonly<T>` | Recursively freezes object trees and arrays preventing runtime mutations. |
+| `isEmptyRecord(record)` | `(object?) => boolean` | Zero-allocation check whether an object has 0 own enumerable properties. |
+| `mapRecordValues(record, fn)` | `<K, V, R>(Record<K, V>, (V, K) => R) => Record<K, R>` | Maps values of a record while blocking prototype pollution. |
+| `filterRecord(record, predicate)` | `<K, V>(Record<K, V>, (V, K) => boolean) => Partial<Record<K, V>>` | Filters record entries based on predicate evaluation. |
+| `pickRecordKeys(record, keys)` | `<K, V>(Record<K, V>, K[]) => Partial<Record<K, V>>` | Creates a record containing only specified keys. |
+| `omitRecordKey(record, key)` | `<K, V>(Record<K, V>, K) => Partial<Record<K, V>>` | Shallow copies record omitting a specific key without V8 de-opt. |
+| `safeAssign(target, source)` | `<T, S>(T, S) => T & S` | Merges objects while stripping dangerous keys (`__proto__`, `constructor`). |
+
+```typescript
+import { compactRecord, invertRecord, freezeDeep } from 'popover-trail';
+
+// 1. Strip null/undefined props
+compactRecord({ top: 10, left: 20, right: null, bottom: undefined });
+// => { top: 10, left: 20 }
+
+// 2. Invert lookup dictionaries
+invertRecord({ en: 'English', es: 'Spanish' });
+// => { English: 'en', Spanish: 'es' }
+
+// 3. Deep immutability
+const config = freezeDeep({ theme: { colors: { primary: '#3b82f6' } } });
+```
+
+### 2D Vector and Coordinate Geometry Algebra
+
+Vector math and spatial distance calculations with both pure functions and Zero-GC in-place scratchpad operations:
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `createPoint2D(x?, y?)` | `(number?, number?) => Point2D` | Creates a validated 2D point guaranteed to have finite coordinates. |
+| `distance2D(a, b)` | `(Point2D, Point2D) => number` | Euclidean distance $d(a, b) = \sqrt{(a_x - b_x)^2 + (a_y - b_y)^2}$. |
+| `distanceSquared2D(a, b)` | `(Point2D, Point2D) => number` | Squared euclidean distance (fast-path avoiding square root). |
+| `manhattanDistance2D(a, b)` | `(Point2D, Point2D) => number` | Manhattan $L_1$ grid distance $|a_x - b_x| + |a_y - b_y|$. |
+| `vectorLength2D(v)` | `(Point2D) => number` | Vector magnitude $\|v\| = \sqrt{x^2 + y^2}$. |
+| `dotProduct2D(a, b)` | `(Point2D, Point2D) => number` | Scalar dot product $a \cdot b = a_x b_x + a_y b_y$. |
+| `addPoints2D(a, b)` / `addPoints2DInto` | `(Point2D, Point2D, out?)` | Vector addition $(a + b)$ with in-place Zero-GC variant. |
+| `subtractPoints2D(a, b)` / `subtractPoints2DInto` | `(Point2D, Point2D, out?)` | Vector subtraction $(a - b)$ with in-place Zero-GC variant. |
+| `scalePoint2D(p, factor)` / `scalePoint2DInto` | `(Point2D, number, out?)` | Scalar multiplication $(p \times k)$ with in-place Zero-GC variant. |
+| `lerpPoint2D(a, b, t)` / `lerpPoint2DInto` | `(Point2D, Point2D, number, out?)` | Linear interpolation between points clamped to $t \in [0, 1]$. |
+
+```typescript
+import {
+  createPoint2D,
+  distance2D,
+  distanceSquared2D,
+  lerpPoint2D,
+  addPoints2DInto,
+} from 'popover-trail';
+
+const p1 = createPoint2D(10, 20);
+const p2 = createPoint2D(40, 60);
+
+// Distance checks
+const d = distance2D(p1, p2); // 50
+const isNearby = distanceSquared2D(p1, p2) < 100 * 100;
+
+// Linear interpolation (e.g. spring or smooth panning animation)
+const midpoint = lerpPoint2D(p1, p2, 0.5); // { x: 25, y: 40 }
+
+// Zero-GC in-place calculation during requestAnimationFrame loops
+const scratchpad = { x: 0, y: 0 };
+addPoints2DInto(p1, p2, scratchpad); // scratchpad is now { x: 50, y: 80 }
+```
+
 ---
 
 ## 13. Recipes and common patterns

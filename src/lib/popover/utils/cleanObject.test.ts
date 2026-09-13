@@ -6,6 +6,9 @@ import {
   isEmptyRecord,
   mapRecordValues,
   filterRecord,
+  compactRecord,
+  invertRecord,
+  freezeDeep,
 } from './cleanObject';
 
 describe('cleanObject', () => {
@@ -66,5 +69,29 @@ describe('cleanObject', () => {
     const filtered = filterRecord(record, (v) => v % 2 === 0);
     expect(filtered).toEqual({ b: 2, d: 4 });
     expect(filterRecord({}, () => true)).toEqual({});
+  });
+
+  it('compactRecord removes null and undefined entries', () => {
+    const input = { a: 1, b: null, c: undefined, d: 'valid', e: 0, f: false };
+    const output = compactRecord(input);
+    expect(output).toEqual({ a: 1, d: 'valid', e: 0, f: false });
+    expect(compactRecord(null)).toEqual({});
+    expect(compactRecord({})).toEqual({});
+  });
+
+  it('invertRecord reverses keys and values safely', () => {
+    const input = { keyA: 'valA', keyB: 'valB' };
+    const inverted = invertRecord(input);
+    expect(inverted).toEqual({ valA: 'keyA', valB: 'keyB' });
+    expect(invertRecord(null)).toEqual({});
+    expect(invertRecord({})).toEqual({});
+  });
+
+  it('freezeDeep recursively freezes nested objects and arrays', () => {
+    const obj = { nested: { prop: 42 }, arr: [1, 2, 3] };
+    const frozen = freezeDeep(obj);
+    expect(Object.isFrozen(frozen)).toBe(true);
+    expect(Object.isFrozen(frozen.nested)).toBe(true);
+    expect(Object.isFrozen(frozen.arr)).toBe(true);
   });
 });

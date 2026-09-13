@@ -20,6 +20,7 @@ export * from './spatialClusters';
 export * from './spatialSnapshot';
 export * from './spatialQueryPool';
 export * from './quadTreeCore';
+export * from './spatialVector';
 
 export {
   type BoundingBox,

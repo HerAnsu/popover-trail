@@ -298,6 +298,9 @@ export {
   isEmptyRecord,
   mapRecordValues,
   filterRecord,
+  compactRecord,
+  invertRecord,
+  freezeDeep,
 } from './utils/cleanObject';
 export {
   setUnion,
