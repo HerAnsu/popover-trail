@@ -6,6 +6,7 @@
 
 import type { StoreState, StatePatch, TrailEntry } from '../../types';
 import { patchEntryInLists, createResolvedTrailEntry } from '../reducers';
+import { isPopoverActive } from '../../utils/predicates';
 import type { ResolvePopoverEntryParams, StatePatchUpdater } from './resolverTypes';
 
 function hasEntryInLists<TData = unknown, TPopoverKey extends string = string>(
@@ -13,7 +14,7 @@ function hasEntryInLists<TData = unknown, TPopoverKey extends string = string>(
   trail: readonly TrailEntry<TData, TPopoverKey>[],
   key: string,
 ): boolean {
-  return floating.some((e) => e.key === key) || trail.some((e) => e.key === key);
+  return isPopoverActive({ floating, trail }, key);
 }
 
 function resolveSettledEntry<TData, TPopoverKey extends string>(

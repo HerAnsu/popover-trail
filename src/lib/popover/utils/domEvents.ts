@@ -1,5 +1,6 @@
 import { isElementLike, isFunction } from './typeGuards';
 import { DATA_POPOVER_PORTAL, DATA_POPOVER_IGNORE_OUTSIDE } from '../constants';
+import { first } from './arrayUtils';
 
 /**
  * Returns the event propagation path array, with support for Shadow DOM `composedPath()`.
@@ -26,7 +27,7 @@ export function getEventTarget<T extends EventTarget = HTMLElement>(
   guard?: (node: EventTarget) => node is T,
 ): T | null {
   const path = isFunction(e.composedPath) ? e.composedPath() : null;
-  const candidate = path && path.length > 0 ? (path[0] ?? e.target) : e.target;
+  const candidate = path && path.length > 0 ? (first(path) ?? e.target) : e.target;
   if (!candidate) return null;
   if (guard) {
     return guard(candidate) ? candidate : null;

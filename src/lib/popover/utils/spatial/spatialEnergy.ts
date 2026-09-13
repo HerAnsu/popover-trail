@@ -9,6 +9,7 @@ import type { BoundingBox } from '../guards/spatialGuards';
 import { sharedBoxPool } from '../pool/spatialPools';
 import { intersectionArea } from './spatialAABB';
 import { distanceSquared2D } from './spatialVector';
+import { first } from '../arrayUtils';
 
 export interface Point2D {
   readonly x: number;
@@ -59,7 +60,7 @@ export function selectLowestEnergyPlacement(
   lambda = 0.5,
 ): Point2D | undefined {
   if (candidates.length === 0) return undefined;
-  let bestPos = candidates[0];
+  let bestPos = first(candidates);
   let minEnergy = Infinity;
 
   const cardBox = sharedBoxPool.acquire();

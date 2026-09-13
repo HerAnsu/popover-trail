@@ -6,6 +6,7 @@
 
 import { getCleanupStatePatch } from '../../reducers';
 import { EMPTY_ARRAY } from '../../storeDefaults';
+import { first } from '../../../utils/arrayUtils';
 import type { SliceContext } from '../context';
 import type { CloseTransitionOptions } from './close';
 import { collectClosedEntryEffects } from './teardownHelpers';
@@ -72,7 +73,7 @@ export function createTrailClearActions<
         { type: 'ABORT_IN_FLIGHT', keys: oldKeys },
         { type: 'CANCEL_TIMERS', keys: oldKeys },
         ...closedEffects,
-        { type: 'EMIT_EVENT', event: { type: 'close', keys: oldKeys, key: oldKeys[0] } },
+        { type: 'EMIT_EVENT', event: { type: 'close', keys: oldKeys, key: first(oldKeys) } },
       ]);
     },
 

@@ -5,6 +5,7 @@
  */
 
 import type { TrailEntry } from '../../../types';
+import { last } from '../../../utils/arrayUtils';
 
 /**
  * Finds index of a specific popover key in entry list using fast loop.
@@ -65,7 +66,7 @@ export function elevateKeyInOrder<TPopoverKey extends string = string>(
   order: readonly TPopoverKey[],
   key: TPopoverKey,
 ): readonly TPopoverKey[] {
-  if (order.length > 0 && order.at(-1) === key) {
+  if (last(order) === key) {
     return order;
   }
   const result: TPopoverKey[] = [];

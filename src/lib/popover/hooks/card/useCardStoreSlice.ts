@@ -9,6 +9,7 @@ import { useCallback } from 'react';
 import { usePopoverStore } from '../../context/usePopoverStore';
 import { shallowEqual } from '../../utils/equality';
 import { ZERO_OFFSET } from '../../constants';
+import { last } from '../../utils/arrayUtils';
 import type { PopoverStore, TrailEntry } from '../../types';
 
 export * from './cardResolvers';
@@ -39,7 +40,7 @@ export function useCardStoreSlice<TData = unknown, TPopoverKey extends string = 
         offset: state.offsets[entryKey] ?? ZERO_OFFSET,
         zIndex: state.zIndexOrder.indexOf(entryKey),
 
-        isTop: state.zIndexOrder.length > 0 && state.zIndexOrder.at(-1) === entryKey,
+        isTop: last(state.zIndexOrder) === entryKey,
         enableArrowNavigation: state.enableArrowNavigation,
         trail: state.trail,
         floating: state.floating,

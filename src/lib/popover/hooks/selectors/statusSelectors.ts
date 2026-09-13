@@ -9,6 +9,7 @@ import type { PopoverStore } from '../../types';
 import { usePopoverStore } from '../../context/usePopoverStore';
 import { selectIsPinned, selectHasEntry } from '../../store/selectors';
 import type { RegisteredKeys } from '../../types/registerTypes';
+import { last } from '../../utils/arrayUtils';
 
 export function useIsPopoverPinned<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore(selectIsPinned(key));
@@ -21,9 +22,7 @@ export function usePopoverZIndex<TPopoverKey extends string = RegisteredKeys>(ke
 }
 
 export function useIsPopoverTopMost<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
-  return usePopoverStore(
-    (state) => state.zIndexOrder.length > 0 && state.zIndexOrder.at(-1) === key,
-  );
+  return usePopoverStore((state) => last(state.zIndexOrder) === key);
 }
 
 export const usePopoverIsTopMost = useIsPopoverTopMost;

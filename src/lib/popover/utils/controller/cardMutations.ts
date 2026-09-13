@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Scoped State Mutation Helpers for Popover Cards.
  * Clean Architecture Layer 2: Headless State Management & Orchestration.
  *
@@ -8,6 +8,7 @@
 import type { StoreApi } from 'zustand';
 import type { PopoverStore } from '../../types';
 import { selectIsPinned } from '../../store/selectors';
+import { isPopoverActive, isKeyInList, isMatchingKey } from '../predicates';
 
 export function updateCardData<TData, TContext, TPopoverKey extends string>(
   store: StoreApi<PopoverStore<TData, TContext, TPopoverKey>>,
@@ -15,16 +16,18 @@ export function updateCardData<TData, TContext, TPopoverKey extends string>(
   data: TData,
 ): void {
   store.setState((state) => {
-    const inFloating = state.floating.some((e) => e.key === key);
-    const inTrail = state.trail.some((e) => e.key === key);
-    if (!inFloating && !inTrail) return state;
+    if (!isPopoverActive(state, key)) return state;
+
+    const matchesKey = isMatchingKey(key);
+    const inFloating = isKeyInList(state.floating, key);
+    const inTrail = isKeyInList(state.trail, key);
 
     return {
       floating: inFloating
-        ? state.floating.map((e) => (e.key === key ? { ...e, data, isLoading: false } : e))
+        ? state.floating.map((e) => (matchesKey(e) ? { ...e, data, isLoading: false } : e))
         : state.floating,
       trail: inTrail
-        ? state.trail.map((e) => (e.key === key ? { ...e, data, isLoading: false } : e))
+        ? state.trail.map((e) => (matchesKey(e) ? { ...e, data, isLoading: false } : e))
         : state.trail,
     };
   });

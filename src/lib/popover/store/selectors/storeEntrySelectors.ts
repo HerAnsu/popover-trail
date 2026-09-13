@@ -7,6 +7,7 @@
 
 import type { TrailEntry, DragOffset } from '../../types';
 import { findEntryInStore, hasEntryWithKey } from '../../utils/storeHelpers';
+import { first, last } from '../../utils/arrayUtils';
 import { ZERO_OFFSET } from '../hydration';
 import type {
   HasActiveEntriesState,
@@ -29,7 +30,7 @@ export const selectHasEntry =
 export function selectRootEntry<TData = unknown, TPopoverKey extends string = string>(state: {
   trail: readonly TrailEntry<TData, TPopoverKey>[];
 }): TrailEntry<TData, TPopoverKey> | undefined {
-  return state.trail[0];
+  return first(state.trail);
 }
 
 export const selectIsLoading =
@@ -73,8 +74,8 @@ export function selectTopmostEntry<TData = unknown, TPopoverKey extends string =
   state: HasActiveEntriesState<TData, TPopoverKey> & HasZIndexState<TPopoverKey>,
 ): TrailEntry<TData, TPopoverKey> | undefined {
   const { zIndexOrder, floating, trail } = state;
-  if (zIndexOrder.length === 0) return trail.at(-1) ?? floating.at(-1);
-  const topmostKey = zIndexOrder.at(-1);
+  if (zIndexOrder.length === 0) return last(trail) ?? last(floating);
+  const topmostKey = last(zIndexOrder);
   return topmostKey ? findEntryInStore(floating, trail, topmostKey) : undefined;
 }
 

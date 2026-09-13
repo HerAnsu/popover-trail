@@ -4,6 +4,8 @@
  * @module store/reducers/stack/stackZIndex
  */
 
+import { last } from '../../../utils/arrayUtils';
+
 export { bringToFrontPatch } from './stackElevation';
 
 /**
@@ -15,8 +17,7 @@ export function getNextZIndexOrder<TPopoverKey extends string = string>(
   activeKey: TPopoverKey,
 ): readonly TPopoverKey[] {
   if (
-    currentOrder.length > 0 &&
-    currentOrder.at(-1) === activeKey &&
+    last(currentOrder) === activeKey &&
     currentOrder.length === activeKeys.size &&
     currentOrder.every((k) => activeKeys.has(k))
   ) {

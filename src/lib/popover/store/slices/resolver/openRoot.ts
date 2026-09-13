@@ -8,6 +8,8 @@ import type { PopoverActions, TrailEntry } from '../../../types';
 import { openRootState } from '../../reducers/open';
 import { DEFAULT_OWNER_ID, ROOT_CONTROLLER_KEY } from '../../constants';
 import { stopEventPropagation } from '../../../utils/domGuards';
+import { first } from '../../../utils/arrayUtils';
+import { prop } from '../../../utils/functional';
 import type { SliceContext } from '../context';
 import { cancelStaleActiveKeys, notifyEntryOpen, resolveTriggerBoundingRect } from './helpers';
 import { isFloatingActive, isRootAlreadyActive } from './predicates';
@@ -50,10 +52,10 @@ export function createResolverOpenRootAction<
     }
 
     pushSnapshot(state);
-    const oldRootKey = trail[0]?.key;
+    const oldRootKey = first(trail)?.key;
     if (trail.length > 0 && (finalOwnerId !== ownerId || oldRootKey !== key)) {
       cancelStaleActiveKeys(
-        trail.map(({ key: k }) => k),
+        trail.map(prop('key')),
         deps,
       );
     }

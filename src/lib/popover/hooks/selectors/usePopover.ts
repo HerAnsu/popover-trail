@@ -21,6 +21,7 @@ import type {
 import { shallowEqual } from '../../utils/equality';
 import { ZERO_OFFSET } from '../../constants';
 import { findEntryInStore } from '../../utils/collections';
+import { last } from '../../utils/arrayUtils';
 
 
 
@@ -71,7 +72,7 @@ export function usePopover<
 
           isPinned: state.pinnedStates[key] ?? false,
           zIndex: state.zIndexOrder.indexOf(key),
-          isTop: state.zIndexOrder.length > 0 && state.zIndexOrder.at(-1) === key,
+          isTop: last(state.zIndexOrder) === key,
           offset: state.offsets[key] ?? ZERO_OFFSET,
         };
 

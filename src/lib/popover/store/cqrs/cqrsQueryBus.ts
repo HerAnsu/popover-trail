@@ -23,6 +23,8 @@ import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { createHistorySnapshot, type HistorySnapshot } from '../history/history';
 import { ok, err, type Result, mapResult } from '../../utils/result';
 import { ZERO_OFFSET } from '../../constants';
+import { first, last } from '../../utils/arrayUtils';
+import { isPopoverActive } from '../../utils/predicates';
 
 /**
  * Diagnostic error payload returned when a query operation targets a nonexistent or closed popover.
@@ -76,7 +78,7 @@ export class PopoverQueryBus<
   }
   /** Root popover entry anchoring the active cascading trail. */
   get root(): TrailEntry<TData, TPopoverKey> | undefined {
-    return this.getStoreState().trail[0];
+    return first(this.getStoreState().trail);
   }
   /** Z-index stacking sequence of active popover keys. */
   get zIndexOrder(): readonly TPopoverKey[] {
@@ -192,8 +194,7 @@ export class PopoverQueryBus<
   }
 
   public isOpen(key: TPopoverKey): boolean {
-    const { floating, trail } = this.getStoreState();
-    return floating.some((e) => e.key === key) || trail.some((e) => e.key === key);
+    return isPopoverActive(this.getStoreState(), key);
   }
 
   public hasEntry(key: TPopoverKey): boolean {
@@ -203,8 +204,7 @@ export class PopoverQueryBus<
     return Boolean(this.getStoreState().pinnedStates[key]);
   }
   public isTopmost(key: TPopoverKey): boolean {
-    const { zIndexOrder } = this.getStoreState();
-    return zIndexOrder.length > 0 && zIndexOrder.at(-1) === key;
+    return last(this.getStoreState().zIndexOrder) === key;
   }
   public isLoading(key: TPopoverKey): boolean {
     return this.getEntry(key)?.isLoading ?? false;

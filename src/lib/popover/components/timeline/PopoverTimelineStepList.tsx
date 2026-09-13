@@ -12,7 +12,7 @@ import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
 import type { PopoverTimelineItem, UsePopoverTimelineResult } from '../../hooks/usePopoverTimeline';
 
 export interface PopoverTimelineStepListContext<TData = unknown> {
-  history: PopoverTimelineItem<TData>[];
+  history: readonly PopoverTimelineItem<TData>[];
   currentIndex: number;
   timeline: UsePopoverTimelineResult<TData>;
 }

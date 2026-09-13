@@ -8,7 +8,7 @@
 import type { TrailEntry } from '../types';
 import { EMPTY_READONLY_ARRAY } from '../types/branded';
 import { isUnsafeKey } from './safeKeys';
-import { isNonNullable, isMatchingKey } from './predicates';
+import { isNonNullable, isMatchingKey, isPopoverActive } from './predicates';
 
 export function getEntryAtIndex<TData, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],
@@ -37,8 +37,7 @@ export function hasEntryWithKey<TData, TPopoverKey extends string = string>(
   trail: readonly TrailEntry<TData, TPopoverKey>[],
   key: string,
 ): boolean {
-  const isTarget = isMatchingKey(key);
-  return floating.some(isTarget) || trail.some(isTarget);
+  return isPopoverActive({ floating, trail }, key);
 }
 
 export function findEntryInStore<TData, TPopoverKey extends string = string>(

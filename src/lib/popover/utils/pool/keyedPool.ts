@@ -8,6 +8,7 @@
 import { DISPOSE_SYMBOL } from '../disposable';
 import type { ObjectPoolMetrics, ObjectPoolOptions } from './poolTypes';
 import { ObjectPool } from './objectPoolCore';
+import { last } from '../arrayUtils';
 
 export interface KeyedPoolOptions<K, T> {
   factory: (key: K) => T;
@@ -90,7 +91,7 @@ export function findNextBucket(buckets: readonly number[], minSize: number): num
   for (const b of buckets) {
     if (b >= minSize) return b;
   }
-  return buckets.at(-1) ?? minSize;
+  return last(buckets) ?? minSize;
 }
 
 export function createBucketPool<T>(
