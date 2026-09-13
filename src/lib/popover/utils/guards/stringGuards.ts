@@ -4,6 +4,8 @@
  * @module utils/guards/stringGuards
  */
 
+import { and } from '../functional';
+
 /**
  * Type guard verifying that a value is a non-empty string (excluding whitespace-only strings).
  */
@@ -18,9 +20,15 @@ export function isFunction(value: unknown): value is (...args: unknown[]) => unk
   return typeof value === 'function';
 }
 
+const checkRecordCandidate = and(
+  (val: unknown) => typeof val === 'object',
+  (val: unknown) => val !== null,
+  (val: unknown) => !Array.isArray(val),
+);
+
 /**
  * Type guard verifying that a value is a non-null object record.
  */
 export function isRecordObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return checkRecordCandidate(value);
 }

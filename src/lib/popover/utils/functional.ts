@@ -67,6 +67,7 @@ export function pipe<A, B, C, D, E, F, G>(
   ef: (e: E) => F,
   fg: (f: F) => G,
 ): G;
+export function pipe<T = unknown>(value: T, ...fns: readonly ((arg: T) => T)[]): T;
 export function pipe(value: unknown, ...fns: readonly ((arg: unknown) => unknown)[]): unknown {
   let acc = value;
   for (const fn of fns) {
@@ -95,6 +96,7 @@ export function compose<A, B, C, D, E>(
   bc: (b: B) => C,
   ab: (a: A) => B,
 ): (a: A) => E;
+export function compose<T = unknown>(...fns: readonly ((arg: T) => T)[]): (initial: T) => T;
 export function compose(
   ...fns: readonly ((arg: unknown) => unknown)[]
 ): (initial: unknown) => unknown {

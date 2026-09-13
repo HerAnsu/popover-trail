@@ -8,7 +8,7 @@ import { EMPTY_ARRAY, ZERO_OFFSET, emptyRecord } from '../hydration/storeDefault
 import { shallowEqual } from '../../utils/equality';
 import { isEmptyRecord } from '../../utils/cleanObject';
 import { isDragOffset } from '../../utils/guards/geometryGuards';
-import { prop } from '../../utils/functional';
+import { and, pipe, prop } from '../../utils/functional';
 import type { HistorySnapshot } from './historyTypes';
 
 export function cloneNonEmptyRecord<K extends string = string, V = unknown>(
@@ -54,29 +54,30 @@ export function arePinnedStatesEqual(
   return shallowEqual(a, b);
 }
 
+function areEntriesKeyEqual(
+  aList: readonly { readonly key: string }[],
+  bList: readonly { readonly key: string }[],
+): boolean {
+  return (
+    aList === bList ||
+    areKeysEqual(
+      pipe(aList, (list) => list.map(prop('key'))),
+      pipe(bList, (list) => list.map(prop('key'))),
+    )
+  );
+}
+
 export function areSnapshotsEqual<TData, TPopoverKey extends string>(
   a: HistorySnapshot<TData, TPopoverKey>,
   b: HistorySnapshot<TData, TPopoverKey>,
 ): boolean {
-  if (a.ownerId !== b.ownerId) return false;
-  if (
-    a.trail !== b.trail &&
-    !areKeysEqual(
-      a.trail.map(prop('key')),
-      b.trail.map(prop('key')),
-    )
-  )
-    return false;
-  if (
-    a.floating !== b.floating &&
-    !areKeysEqual(
-      a.floating.map(prop('key')),
-      b.floating.map(prop('key')),
-    )
-  )
-    return false;
-  if (!areKeysEqual(a.zIndexOrder, b.zIndexOrder)) return false;
-  if (!areOffsetsEqual(a.offsets, b.offsets)) return false;
-  if (!arePinnedStatesEqual(a.pinnedStates, b.pinnedStates)) return false;
-  return true;
+  const matchSnapshot = and(
+    () => a.ownerId === b.ownerId,
+    () => areEntriesKeyEqual(a.trail, b.trail),
+    () => areEntriesKeyEqual(a.floating, b.floating),
+    () => areKeysEqual(a.zIndexOrder, b.zIndexOrder),
+    () => areOffsetsEqual(a.offsets, b.offsets),
+    () => arePinnedStatesEqual(a.pinnedStates, b.pinnedStates),
+  );
+  return matchSnapshot(undefined);
 }

@@ -4,6 +4,8 @@
  * @module utils/guards/numberGuards
  */
 
+import { and } from '../functional';
+
 /** Checks if a value is a valid finite number. */
 export function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
@@ -11,7 +13,11 @@ export function isFiniteNumber(value: unknown): value is number {
 
 /** Checks if a value is a valid finite number within the inclusive range [min, max]. */
 export function isNumberInRange(value: unknown, min: number, max: number): value is number {
-  return isFiniteNumber(value) && value >= min && value <= max;
+  const inRange = and(
+    (v: number) => v >= min,
+    (v: number) => v <= max,
+  );
+  return isFiniteNumber(value) && inRange(value);
 }
 
 /** Checks if a value is a valid finite number greater than or equal to 0. */
@@ -31,7 +37,11 @@ export function isCoordinateWithinBounds(value: unknown, limit = 10000): value i
 
 /** Checks if both X and Y coordinates are valid finite numbers within [-limit, limit]. */
 export function areCoordinatesWithinBounds(x: unknown, y: unknown, limit = 10000): boolean {
-  return isCoordinateWithinBounds(x, limit) && isCoordinateWithinBounds(y, limit);
+  const withinLimit = and(
+    (c: readonly [unknown, unknown]) => isCoordinateWithinBounds(c[0], limit),
+    (c: readonly [unknown, unknown]) => isCoordinateWithinBounds(c[1], limit),
+  );
+  return withinLimit([x, y]);
 }
 
 /** Sanitizes an unknown numeric candidate to a safe finite number with default fallback. */

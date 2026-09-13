@@ -11,8 +11,11 @@ import { createLRUCache } from './lruCache';
 import { hashTransformCoordinates, toFiniteNumber, buildTransformString } from './stylesTransform';
 import { DEFAULT_BASE_Z_INDEX, ZERO_OFFSET } from '../constants';
 import { roundTo } from './math';
+import { compose, pipe } from './functional';
 
 export { hashTransformCoordinates, toFiniteNumber };
+
+const roundCoordinate = compose(Math.round, toFiniteNumber);
 
 export interface GetPopoverStylesParams {
   readonly finalLayoutPos: { readonly top: number; readonly left: number };
@@ -39,8 +42,8 @@ export function getPopoverStyles({
   rotationY = 0,
   zIndex = DEFAULT_FALLBACK_Z_INDEX,
 }: GetPopoverStylesParams): CSSProperties {
-  const top = Math.round(toFiniteNumber(finalLayoutPos?.top));
-  const left = Math.round(toFiniteNumber(finalLayoutPos?.left));
+  const top = roundCoordinate(finalLayoutPos?.top);
+  const left = roundCoordinate(finalLayoutPos?.left);
   const safeDragX = toFiniteNumber(dragX);
   const safeDragY = toFiniteNumber(dragY);
   const safeOffsetX = toFiniteNumber(offset?.x);
@@ -54,8 +57,8 @@ export function getPopoverStyles({
     safeDragX !== 0 || safeDragY !== 0 || safeRot !== 0 || safeRotX !== 0 || safeRotY !== 0;
   const rawX = safeDragX + safeOffsetX;
   const rawY = safeDragY + safeOffsetY;
-  const translateX = isDynamic ? roundTo(rawX, 2) : Math.round(rawX);
-  const translateY = isDynamic ? roundTo(rawY, 2) : Math.round(rawY);
+  const translateX = isDynamic ? roundTo(rawX, 2) : pipe(rawX, Math.round);
+  const translateY = isDynamic ? roundTo(rawY, 2) : pipe(rawY, Math.round);
 
   const cacheKey = isDynamic
     ? 0

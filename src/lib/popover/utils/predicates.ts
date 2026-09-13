@@ -5,6 +5,8 @@
  * @module utils/predicates
  */
 
+import { curry2 } from './functional';
+
 export interface HasKey {
   readonly key: string;
 }
@@ -93,6 +95,8 @@ export function isUndefined<T>(value: T | undefined): value is undefined {
   return value === undefined;
 }
 
+const keyMatcher = curry2((k: string, item: HasKey): boolean => item.key === k);
+
 /**
  * Creates a predicate checking if an object's `key` matches the target string.
  *
@@ -101,9 +105,12 @@ export function isUndefined<T>(value: T | undefined): value is undefined {
  * @returns Predicate function.
  */
 export function isMatchingKey<T extends HasKey>(key: string): (item: T) => boolean {
-  return (item: T) => item.key === key;
+  return keyMatcher(key) as (item: T) => boolean;
 }
 
+const keyInSetMatcher = curry2(
+  (keys: ReadonlySet<string>, item: HasKey): boolean => keys.has(item.key),
+);
 
 /**
  * Creates a predicate checking if an object's `key` is contained within a Set.
@@ -113,7 +120,7 @@ export function isMatchingKey<T extends HasKey>(key: string): (item: T) => boole
  * @returns Predicate function.
  */
 export function hasKeyIn<T extends HasKey>(keys: ReadonlySet<string>): (item: T) => boolean {
-  return (item: T) => keys.has(item.key);
+  return keyInSetMatcher(keys) as (item: T) => boolean;
 }
 
 

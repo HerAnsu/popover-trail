@@ -5,6 +5,7 @@
  */
 
 import { last } from '../../../utils/arrayUtils';
+import { and } from '../../../utils/functional';
 
 export { bringToFrontPatch } from './stackElevation';
 
@@ -24,7 +25,11 @@ export function getNextZIndexOrder<TPopoverKey extends string = string>(
     return currentOrder;
   }
 
-  const nextOrder = currentOrder.filter((k) => activeKeys.has(k) && k !== activeKey);
+  const isRetainedOrderKey = and(
+    (k: TPopoverKey) => activeKeys.has(k),
+    (k: TPopoverKey) => k !== activeKey,
+  );
+  const nextOrder = currentOrder.filter(isRetainedOrderKey);
   if (activeKeys.has(activeKey)) {
     nextOrder.push(activeKey);
   }

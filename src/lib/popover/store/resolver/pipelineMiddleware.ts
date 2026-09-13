@@ -8,6 +8,7 @@
 import type { ResolverCacheManager } from './ResolverCacheManager';
 import type { InFlightPromiseCache } from '../controllers/InFlightPromiseCache';
 import type { ResolverHandler, ResolverMiddleware } from './pipelineMiddlewareTypes';
+import { compose } from '../../utils/functional';
 
 export type {
   ResolverParams,
@@ -77,5 +78,12 @@ export function composeResolverPipeline<
   baseResolver: ResolverHandler<TData, TContext, TPopoverKey>,
   middlewares: readonly ResolverMiddleware<TData, TContext, TPopoverKey>[],
 ): ResolverHandler<TData, TContext, TPopoverKey> {
-  return middlewares.reduceRight((handler, mw) => (mw ? mw(handler) : handler), baseResolver);
+  const valid = middlewares.filter(
+    (mw): mw is ResolverMiddleware<TData, TContext, TPopoverKey> => typeof mw === 'function',
+  );
+  if (valid.length === 0) return baseResolver;
+  const pipeline = compose(...(valid as readonly ((h: unknown) => unknown)[])) as (
+    base: ResolverHandler<TData, TContext, TPopoverKey>,
+  ) => ResolverHandler<TData, TContext, TPopoverKey>;
+  return pipeline(baseResolver);
 }

@@ -240,7 +240,7 @@ export function invertRecord<K extends string, V extends string | number>(
       }
     }
   }
-  return result;
+  return result as Record<V, K>;
 }
 
 /**

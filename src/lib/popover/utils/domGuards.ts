@@ -9,6 +9,7 @@ import { isElementLike } from './typeGuards';
 import { getEventPath } from './domEvents';
 import { getMemoizedEscapedSelector } from './domSelector';
 import { first, last } from './arrayUtils';
+import { and } from './functional';
 import { DATA_POPOVER_PORTAL, DATA_POPOVER_IGNORE_OUTSIDE } from '../constants';
 
 export { getMemoizedEscapedSelector };
@@ -67,8 +68,12 @@ const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function findNextFocusable(container: HTMLElement, reverse = false): HTMLElement | null {
+  const isFocusableElement = and(
+    (el: HTMLElement) => el.offsetParent !== null,
+    (el: HTMLElement) => !el.hasAttribute('disabled'),
+  );
   const elements = [...container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(
-    (el) => el.offsetParent !== null && !el.hasAttribute('disabled'),
+    isFocusableElement,
   );
   if (elements.length === 0) return null;
   return reverse ? (last(elements) ?? null) : (first(elements) ?? null);
