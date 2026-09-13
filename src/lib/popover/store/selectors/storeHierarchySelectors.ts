@@ -8,6 +8,7 @@
 import type { TrailEntry } from '../../types';
 import { EMPTY_ARRAY } from '../hydration';
 import { hasKeyIn } from '../../utils/predicates';
+import { concatImmutable } from '../../utils/arrayUtils';
 import type { HasActiveEntriesState } from './storeSelectorTypes';
 
 
@@ -88,15 +89,8 @@ function collectBranchMatches<TPopoverKey extends string = string, TData = unkno
   trail: readonly TrailEntry<TData, TPopoverKey>[],
   keys: ReadonlySet<string>,
 ): readonly TrailEntry<TData, TPopoverKey>[] {
-  const matches: TrailEntry<TData, TPopoverKey>[] = [];
-  const inKeys = hasKeyIn(keys);
-  for (const e of floating) {
-    if (inKeys(e)) matches.push(e);
-  }
-  for (const e of trail) {
-    if (inKeys(e)) matches.push(e);
-  }
-  return matches.length > 0 ? matches : EMPTY_ARRAY;
+  const inKeys = hasKeyIn<TrailEntry<TData, TPopoverKey>>(keys);
+  return concatImmutable(floating.filter(inKeys), trail.filter(inKeys));
 }
 
 export function selectTrailBranch<TPopoverKey extends string = string, TData = unknown>(

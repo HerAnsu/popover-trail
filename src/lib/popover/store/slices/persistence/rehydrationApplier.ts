@@ -12,6 +12,7 @@ import {
 } from '../../persistence/persistenceHelpers';
 import { parseFloating } from './rehydrationParser';
 import { isRecordObject, isNonEmptyString, isArray } from '../../../utils/typeGuards';
+import { prop } from '../../../utils/functional';
 
 function buildCleanOffsets<TPopoverKey extends string>(
   rawOffsets: unknown,
@@ -58,7 +59,7 @@ export function applyRehydratedState<TData, TContext, TPopoverKey extends string
   if (!isArray(rawFloating)) return false;
 
   const nextFloating = parseFloating<TData, TPopoverKey>(rawFloating);
-  const activeKeys = new Set<TPopoverKey>(nextFloating.map(({ key }) => key));
+  const activeKeys = new Set<TPopoverKey>(nextFloating.map(prop('key')));
   const cleanOffsets = buildCleanOffsets(parsed.offsets, activeKeys);
   const cleanPinned = buildCleanPinnedStates(parsed.pinnedStates, activeKeys);
   const rawZOrder = buildCleanZIndexOrder(parsed.zIndexOrder, activeKeys);

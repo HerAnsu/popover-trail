@@ -8,16 +8,7 @@ import type { TrailEntry } from '../../../types';
 import type { PopoverDAG } from '../../../utils/dag';
 import { getAllDescendants } from '../stack';
 import { shouldIncludeDescendant } from './closeHierarchy';
-
-function createFloatingKeySet<TData, TPopoverKey extends string = string>(
-  floating: readonly TrailEntry<TData, TPopoverKey>[],
-): Set<TPopoverKey> {
-  const set = new Set<TPopoverKey>();
-  for (const entry of floating) {
-    if (entry) set.add(entry.key);
-  }
-  return set;
-}
+import { prop } from '../../../utils/functional';
 
 /**
  * Resolves all direct and transitive descendant keys to remove for a close operation.
@@ -43,7 +34,7 @@ export function resolveAllRemovedKeys<TData = unknown, TPopoverKey extends strin
 
   const floatingSet =
     !closePinnedDescendants && !pinnedStates && floating.length > 0
-      ? createFloatingKeySet(floating)
+      ? new Set<TPopoverKey>(floating.map(prop('key')))
       : undefined;
 
   for (const key of descendants) {

@@ -6,7 +6,7 @@
 
 import type { PopoverRect, TrailEntry } from '../../../types';
 import { hasFunctionProperty } from '../../../utils/guards/objectGuards';
-import { toFiniteNumber } from '../../../utils/stylesTransform';
+import { toFiniteNumber } from '../../../utils/math';
 import { constant } from '../../../utils/functional';
 
 function cloneDOMRect(rect: DOMRect | PopoverRect): DOMRect {

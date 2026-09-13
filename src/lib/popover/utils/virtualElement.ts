@@ -6,7 +6,7 @@
  */
 
 import type { AnchorEventLike } from '../types/storeStateTypes';
-import { toFiniteNumber } from './styles';
+import { toFiniteNumber } from './math';
 
 /**
  * Creates a safe fallback DOMRect instance.

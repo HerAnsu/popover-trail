@@ -63,7 +63,7 @@ export class PoolStorage<T> {
   }
 
   drain(keepCapacity = 0): T[] {
-    const safeKeep = Math.max(0, keepCapacity);
+    const safeKeep = clamp(keepCapacity, 0, this.maxCapacity);
     const evicted: T[] = [];
     while (this.items.length > safeKeep) {
       const item = this.items.pop();
