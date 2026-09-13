@@ -17,6 +17,7 @@ import type { StoreManagers } from './storeManagers';
 import { dispatchStoreEvent } from '../eventBus';
 import { runEffects, type Effect } from '../effects';
 import { reactScheduleTransition } from '../../utils/reactTransitions';
+import { constant, noop } from '../../utils/functional';
 
 export interface StoreDependenciesConfig<
   TData = unknown,
@@ -83,7 +84,7 @@ export function buildStoreDependencies<
     middlewareEngine: cfg.middlewareEngine,
     cache: cfg.effectiveCache,
     popoverDAG: cfg.popoverDAG,
-    subscribeState: cfg.subscribeState ?? (() => () => {}),
+    subscribeState: cfg.subscribeState ?? constant(noop),
     customSlices: cfg.customSlices,
     fsmRegistry: cfg.fsmRegistry,
     scheduleTransition: reactScheduleTransition,

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Cycle Detection and Resolution for Multi-Parent DAGs.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
  *
@@ -53,7 +53,7 @@ export function resolveReparentingCycles<TPopoverKey extends string>(
       if (childNode) {
         childNode.parentKeys.delete(node.key);
         if (childNode.parentKey === node.key) {
-          childNode.parentKey = [...childNode.parentKeys][0];
+          childNode.parentKey = childNode.parentKeys.values().next().value;
         }
       }
       node.childrenKeys.delete(childKey);

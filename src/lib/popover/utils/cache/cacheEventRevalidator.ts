@@ -5,6 +5,7 @@
  */
 
 import { DISPOSE_SYMBOL } from '../disposable';
+import { noop } from '../functional';
 
 export class CacheEventRevalidator {
   public readonly capacity = 100;
@@ -32,7 +33,7 @@ export class CacheEventRevalidator {
   };
 
   public register(callback: () => void): () => void {
-    if (this.listeners.size >= this.capacity) return () => {};
+    if (this.listeners.size >= this.capacity) return noop;
     this.listeners.add(callback);
     this.ensureBound();
     return () => {

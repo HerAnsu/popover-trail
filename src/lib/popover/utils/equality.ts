@@ -7,6 +7,7 @@
 
 import { isUnsafeKey } from './safeKeys';
 import { isRecordObject, isArray } from './typeGuards';
+import { isSubset } from './setOperations';
 
 export function shallowEqualArray<T>(a?: readonly T[], b?: readonly T[]): boolean {
   if (a === b) return true;
@@ -20,10 +21,7 @@ export function shallowEqualArray<T>(a?: readonly T[], b?: readonly T[]): boolea
 export function areSetsEqual<T>(a?: ReadonlySet<T>, b?: ReadonlySet<T>): boolean {
   if (a === b) return true;
   if (!a || !b || a.size !== b.size) return false;
-  for (const item of a) {
-    if (!b.has(item)) return false;
-  }
-  return true;
+  return isSubset(a, b);
 }
 
 export function shallowEqual<T>(objA: T, objB: T): boolean {

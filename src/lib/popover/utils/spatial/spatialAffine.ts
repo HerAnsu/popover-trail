@@ -81,7 +81,7 @@ export function multiplyMatrix2D(m1: Matrix2D, m2: Matrix2D): Matrix2D {
  */
 export function invertMatrix2D(m: Matrix2D): Matrix2D | null {
   const det = m[0] * m[3] - m[1] * m[2];
-  if (!Number.isFinite(det) || Math.abs(det) < 1e-12) return null;
+  if (!Number.isFinite(det) || approxEqual(det, 0, 1e-12)) return null;
   const invDet = 1 / det;
   return [
     m[3] * invDet,

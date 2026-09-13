@@ -22,6 +22,7 @@ import { createSafeSet } from './storeSafeSet';
 import { buildStoreDependencies } from './storeDependencies';
 import { executeStoreReset } from './storeReset';
 import type { StoreManagers } from './storeManagers';
+import { noop } from '../../utils/functional';
 
 export type CombinedStoreState<
   TData,
@@ -76,7 +77,7 @@ export function buildStoreStateInitializer<
       resolvePopoverEntry: boundResolve,
       resetStoreState,
       getStoreState: get,
-      subscribeState: (l) => cfg.getStoreInstance()?.subscribe(l) ?? (() => {}),
+      subscribeState: (l) => cfg.getStoreInstance()?.subscribe(l) ?? noop,
     });
 
     const actions = Object.freeze(

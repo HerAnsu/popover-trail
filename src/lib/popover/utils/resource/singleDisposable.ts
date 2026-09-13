@@ -7,6 +7,7 @@
 
 import { wrapResult } from '../result';
 import { DISPOSE_SYMBOL, type ScopeDisposable } from './disposableTypes';
+import { noop } from '../functional';
 
 export function createDisposable(
   cleanupFn: () => void,
@@ -32,6 +33,6 @@ export const DISPOSED_DISPOSABLE: ScopeDisposable & {
   readonly isDisposed: boolean;
 } = Object.freeze({
   isDisposed: true,
-  dispose: () => {},
-  [DISPOSE_SYMBOL]: () => {},
+  dispose: noop,
+  [DISPOSE_SYMBOL]: noop,
 });

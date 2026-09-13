@@ -7,13 +7,14 @@
 import React from 'react';
 import { clsx } from '../../utils/clsx';
 import { isRecordObject } from '../../utils/typeGuards';
+import { noop } from '../../utils/functional';
 import type { PopoverTriggerChildProps } from './types';
 
 export function composeEventHandlers<E extends React.SyntheticEvent>(
   handlerA?: (e: E) => void,
   handlerB?: (e: E) => void,
 ): (e: E) => void {
-  if (!handlerA) return handlerB ?? (() => {});
+  if (!handlerA) return handlerB ?? noop;
   if (!handlerB) return handlerA;
   return (e: E) => {
     handlerA(e);

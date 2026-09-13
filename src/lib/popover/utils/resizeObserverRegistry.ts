@@ -8,6 +8,7 @@
 import { wrapResult, isErr } from './result';
 import { logger } from './logger';
 import { isBrowser, isResizeObserverSupported } from './guards/envGuards';
+import { noop } from './functional';
 
 type ResizeCallback = (entry: ResizeObserverEntry) => void;
 
@@ -50,7 +51,7 @@ class ResizeObserverRegistryImpl {
   }
 
   observe(element: Element | null | undefined, callback: ResizeCallback): () => void {
-    if (!element || !isBrowser()) return () => {};
+    if (!element || !isBrowser()) return noop;
     this.initObserver();
     let set = this.listeners.get(element);
     if (!set) {

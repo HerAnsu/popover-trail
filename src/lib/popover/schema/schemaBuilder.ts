@@ -21,6 +21,7 @@ import {
 import { validateSchemaKey } from '../validators';
 import type { PopoverResolver } from '../types';
 import { keyBy } from '../utils/collections';
+import { identity } from '../utils/functional';
 import type {
   PopoverSchemaDefinition,
   PopoverSchemaInstance,
@@ -40,7 +41,7 @@ export function createPopoverSchema<
 >(definition: TSchema): PopoverSchemaInstance<TSchema, TContext> {
   validateSchemaIntegrity(definition);
 
-  const keys = Object.freeze(keyBy(Object.keys(definition), (k) => k)) as {
+  const keys = Object.freeze(keyBy(Object.keys(definition), identity)) as {
     readonly [K in SchemaKeys<TSchema>]: K;
   };
 

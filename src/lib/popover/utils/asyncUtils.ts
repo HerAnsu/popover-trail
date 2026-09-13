@@ -6,6 +6,7 @@
  */
 
 import { isRecordObject, isFunction } from './typeGuards';
+import { noop } from './functional';
 
 export function isPromise<T>(value: unknown): value is Promise<T> {
   if (value instanceof Promise) return true;
@@ -22,7 +23,7 @@ export function deferMicrotask(fn: () => void): void {
   } else {
     Promise.resolve()
       .then(fn)
-      .catch(() => {});
+      .catch(noop);
   }
 }
 

@@ -7,17 +7,18 @@
 import type { CrossTabBroadcaster } from './persistenceTypes';
 import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { isBrowser } from '../../utils/typeGuards';
+import { constant, noop } from '../../utils/functional';
 import { createBroadcastChannelDriver } from './broadcastChannelEngine';
 import { createStorageFallbackDriver } from './storageFallbackBroadcaster';
 
 export type { CrossTabBroadcaster } from './persistenceTypes';
 
 const NOOP_BROADCASTER: CrossTabBroadcaster = Object.freeze({
-  postMessage: () => {},
-  onMessage: () => () => {},
-  dispose: () => {},
-  [DISPOSE_SYMBOL]: () => {},
-  [Symbol.dispose]: () => {},
+  postMessage: noop,
+  onMessage: constant(noop),
+  dispose: noop,
+  [DISPOSE_SYMBOL]: noop,
+  [Symbol.dispose]: noop,
 });
 
 /**

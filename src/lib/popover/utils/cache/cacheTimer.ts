@@ -5,6 +5,7 @@
  */
 
 import { DISPOSE_SYMBOL } from '../disposable';
+import { noop } from '../functional';
 
 function hasUnrefMethod(timer: unknown): timer is { unref: () => void } {
   return (
@@ -43,7 +44,7 @@ export class CacheTimerManager {
       typeof setInterval === 'undefined' ||
       this.pollTimers.size >= this.capacity
     ) {
-      return () => {};
+      return noop;
     }
 
     const timer = setInterval(task, intervalMs);

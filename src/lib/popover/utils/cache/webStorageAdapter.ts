@@ -6,6 +6,7 @@
 
 import type { CacheEntry, StorageAdapter } from './cacheTypes';
 import { isValidStorageKey } from '../safeKeys';
+import { ensureSuffix } from '../stringUtils';
 
 function isCacheEntry<T>(val: unknown): val is CacheEntry<T> {
   return (
@@ -19,7 +20,7 @@ export class WebStorageAdapter<T = unknown> implements StorageAdapter<T> {
 
   constructor(storage: Storage, prefix = 'pt_cache:') {
     this.storage = storage;
-    this.prefix = prefix;
+    this.prefix = ensureSuffix(prefix, ':');
   }
 
   public get(key: string): CacheEntry<T> | undefined {

@@ -20,6 +20,7 @@ import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { buildStoreDependencies } from './storeDependencies';
 import { runStoreDisposal } from './storeDisposal';
 import type { StoreManagers } from './storeManagers';
+import { noop } from '../../utils/functional';
 
 type CombinedStore<
   TData,
@@ -69,7 +70,7 @@ export function attachStoreExtensions<
     ...mgrs,
     effectiveCache,
     customSlices,
-    resetStoreState: () => {},
+    resetStoreState: noop,
     getStoreState: store.getState,
     findEntryByKey: (k) => findEntryInStore(store.getState().floating, store.getState().trail, k),
   });

@@ -27,7 +27,7 @@ function updateEntryParents<TData, TPopoverKey extends string>(
 ): readonly TrailEntry<TData, TPopoverKey>[] {
   return entries.map((entry) => {
     if (entry.key !== targetKey) return entry;
-    const parentKey = [...parents][0];
+    const parentKey = parents.values().next().value;
     return { ...entry, parentKeys: parents, parentKey };
   });
 }

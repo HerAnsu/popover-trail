@@ -10,6 +10,7 @@ import type { ZIndexDepth } from '../types/branded';
 import { createLRUCache } from './lruCache';
 import { hashTransformCoordinates, toFiniteNumber, buildTransformString } from './stylesTransform';
 import { DEFAULT_BASE_Z_INDEX, ZERO_OFFSET } from '../constants';
+import { roundTo } from './math';
 
 export { hashTransformCoordinates, toFiniteNumber };
 
@@ -53,8 +54,8 @@ export function getPopoverStyles({
     safeDragX !== 0 || safeDragY !== 0 || safeRot !== 0 || safeRotX !== 0 || safeRotY !== 0;
   const rawX = safeDragX + safeOffsetX;
   const rawY = safeDragY + safeOffsetY;
-  const translateX = isDynamic ? Math.round(rawX * 100) / 100 : Math.round(rawX);
-  const translateY = isDynamic ? Math.round(rawY * 100) / 100 : Math.round(rawY);
+  const translateX = isDynamic ? roundTo(rawX, 2) : Math.round(rawX);
+  const translateY = isDynamic ? roundTo(rawY, 2) : Math.round(rawY);
 
   const cacheKey = isDynamic
     ? 0

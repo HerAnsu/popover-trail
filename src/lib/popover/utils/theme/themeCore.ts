@@ -8,6 +8,7 @@
 import { createDisposable, type ScopeDisposable } from '../disposable';
 import { isEmptyRecord } from '../cleanObject';
 import { noop } from '../functional';
+import { ensureSuffix } from '../stringUtils';
 import { injectStyleProperty, removeThemeTokens } from './themeDom';
 import {
   DEFAULT_THEME_TOKENS,
@@ -29,11 +30,11 @@ export function applyThemeTokens(
       : DEFAULT_THEME_TOKENS;
 
   injectStyleProperty(element, '--pt-base-z-index', String(merged.baseZIndex));
-  injectStyleProperty(element, '--pt-cascade-offset', `${merged.cascadeOffset}px`);
-  injectStyleProperty(element, '--pt-transition-duration', `${merged.transitionDurationMs}ms`);
-  injectStyleProperty(element, '--pt-backdrop-blur', `${merged.backdropBlurPx}px`);
+  injectStyleProperty(element, '--pt-cascade-offset', ensureSuffix(String(merged.cascadeOffset), 'px'));
+  injectStyleProperty(element, '--pt-transition-duration', ensureSuffix(String(merged.transitionDurationMs), 'ms'));
+  injectStyleProperty(element, '--pt-backdrop-blur', ensureSuffix(String(merged.backdropBlurPx), 'px'));
   injectStyleProperty(element, '--pt-card-shadow', merged.cardShadow);
-  injectStyleProperty(element, '--pt-border-radius', `${merged.borderRadiusPx}px`);
+  injectStyleProperty(element, '--pt-border-radius', ensureSuffix(String(merged.borderRadiusPx), 'px'));
 
   return createDisposable(() => {
     removeThemeTokens(element);

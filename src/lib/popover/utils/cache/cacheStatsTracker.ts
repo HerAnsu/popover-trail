@@ -5,6 +5,7 @@
  */
 
 import type { CacheStats } from './cacheTypes';
+import { roundTo } from '../math';
 
 export class CacheStatsTracker {
   public readonly capacity: number;
@@ -25,7 +26,7 @@ export class CacheStatsTracker {
 
   public getStats(currentSize: number): CacheStats {
     const total = this.hitsCount + this.missesCount;
-    const hitRatio = total > 0 ? Math.round((this.hitsCount / total) * 1000) / 1000 : 0;
+    const hitRatio = total > 0 ? roundTo(this.hitsCount / total, 3) : 0;
     return {
       size: currentSize,
       hits: this.hitsCount,

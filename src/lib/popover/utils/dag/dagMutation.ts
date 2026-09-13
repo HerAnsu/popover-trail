@@ -70,7 +70,7 @@ export function disconnectDAGEdge<K extends string>(
   const child = nodes.get(childKey);
   if (child) {
     child.parentKeys.delete(parentKey);
-    if (child.parentKey === parentKey) child.parentKey = [...child.parentKeys][0];
+    if (child.parentKey === parentKey) child.parentKey = child.parentKeys.values().next().value;
   }
 }
 
@@ -82,7 +82,7 @@ export function deleteDAGNode<K extends string>(nodes: Map<K, InternalDAGNode<K>
     const ch = nodes.get(c);
     if (!ch) continue;
     ch.parentKeys.delete(key);
-    if (ch.parentKey === key) ch.parentKey = [...ch.parentKeys][0];
+    if (ch.parentKey === key) ch.parentKey = ch.parentKeys.values().next().value;
   }
   nodes.delete(key);
 }

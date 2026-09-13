@@ -9,6 +9,7 @@ import type { PopoverMiddleware, PopoverStore, TypedMiddlewarePatch } from '../.
 import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { toError } from '../../utils/storeHelpers';
 import { isUnsafeKey } from '../../utils/safeKeys';
+import { noop } from '../../utils/functional';
 
 function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
   val: unknown,
@@ -56,7 +57,7 @@ export class PopoverMiddlewareEngine<
    * @returns Cleanup unsubscriber function.
    */
   public use(middleware: PopoverMiddleware<TData, TContext, TPopoverKey>): () => void {
-    if (!middleware || typeof middleware !== 'function') return () => {};
+    if (!middleware || typeof middleware !== 'function') return noop;
     this.middlewares.add(middleware);
     return () => {
       this.middlewares.delete(middleware);

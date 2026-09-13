@@ -12,19 +12,22 @@ import type { TrailEntry } from '../types';
 import { resolveContainerElement } from '../utils/componentUtils';
 import { isFunction, isBrowser } from '../utils/typeGuards';
 import { validatePortalContainer } from '../utils/devWarnings';
+import { constant, noop } from '../utils/functional';
 
 export interface PopoverPortalProps {
   children: ReactNode | ((entries: Array<TrailEntry & { isPinned: boolean }>) => ReactNode);
   container?: HTMLElement | (() => HTMLElement | null) | React.RefObject<HTMLElement | null>;
 }
 
-const emptySubscribe = () => () => {};
+const emptySubscribe = constant(noop);
+const getClientSnapshot = constant(true);
+const getServerSnapshot = constant(false);
 
 export function PopoverPortal({ children, container }: PopoverPortalProps) {
   const isHydrated = useSyncExternalStore(
     emptySubscribe,
-    () => true,
-    () => false,
+    getClientSnapshot,
+    getServerSnapshot,
   );
   const trail = usePopoverTrail();
   const floating = usePopoverFloating();
