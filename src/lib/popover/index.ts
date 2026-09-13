@@ -290,6 +290,15 @@ export {
   mapRecordValues,
   filterRecord,
 } from './utils/cleanObject';
+export {
+  setUnion,
+  setIntersection,
+  setDifference,
+  setSymmetricDifference,
+  isSubset,
+  isSuperset,
+  isDisjoint,
+} from './utils/setOperations';
 
 
 export {

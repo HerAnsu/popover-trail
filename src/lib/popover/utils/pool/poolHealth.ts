@@ -6,6 +6,7 @@
  */
 
 import type { ObjectPoolMetrics } from './poolTypes';
+import { clamp } from '../math';
 
 export type PoolHealthStatus = 'healthy' | 'warning' | 'critical';
 
@@ -38,7 +39,7 @@ export function assessPoolHealth(metrics: ObjectPoolMetrics, leakedCount = 0): P
     recs.push(`${leakedCount} potentially leaked item(s) detected.`);
   }
 
-  const finalScore = Math.max(0, Math.min(100, score));
+  const finalScore = clamp(score, 0, 100);
   const status: PoolHealthStatus =
     finalScore >= 80 ? 'healthy' : finalScore >= 50 ? 'warning' : 'critical';
 

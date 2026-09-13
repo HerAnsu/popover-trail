@@ -5,8 +5,9 @@
  * @module hooks/useEventListener
  */
 
-import { useEffect, useInsertionEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { isBrowser } from '../utils/typeGuards';
+import { useLatestRef } from './useHookUtils';
 
 /**
  * Attaches a strongly typed event listener to the `window` object.
@@ -57,13 +58,7 @@ export function useEventListener<E extends Event = Event>(
   element: EventTarget | null = isBrowser() ? window : null,
   options?: boolean | AddEventListenerOptions,
 ): void {
-  const savedHandler = useRef(handler);
-  const optionsRef = useRef(options);
-
-  useInsertionEffect(() => {
-    savedHandler.current = handler;
-    optionsRef.current = options;
-  });
+  const savedHandler = useLatestRef(handler);
 
   const isBoolean = typeof options === 'boolean';
   const capture = isBoolean ? options : options?.capture;
@@ -83,5 +78,5 @@ export function useEventListener<E extends Event = Event>(
     return () => {
       target.removeEventListener(eventName, listener, currentOptions);
     };
-  }, [eventName, element, isBoolean, capture, passive, once]);
+  }, [eventName, element, isBoolean, capture, passive, once, savedHandler]);
 }

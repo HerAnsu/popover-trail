@@ -5,11 +5,12 @@
  * @module hooks/useClickOutside
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
 import type { PopoverStore, ClickOutsideConfig } from '../types';
 import { isBrowser } from '../utils/typeGuards';
 import { shouldIgnoreEvent, isClickInsidePopoverOrAnchor } from './clickOutsideHelpers';
+import { useLatestRef } from './useHookUtils';
 
 export interface UseClickOutsideOptions<
   TData = unknown,
@@ -30,12 +31,7 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
   const enabled = clickOutside?.enabled;
   const ignoreClass = clickOutside?.ignoreClass;
   const selector = clickOutside?.popoverSelector ?? '.popover-card';
-  const shouldIgnoreClick = clickOutside?.shouldIgnoreClick;
-  const ignoreRef = useRef(shouldIgnoreClick);
-
-  useEffect(() => {
-    ignoreRef.current = shouldIgnoreClick;
-  }, [shouldIgnoreClick]);
+  const ignoreRef = useLatestRef(clickOutside?.shouldIgnoreClick);
 
   useEffect(() => {
     if (!enabled) return;
@@ -61,5 +57,5 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
     return () => {
       document.removeEventListener(eventType, handleClickOutside, { capture: true });
     };
-  }, [enabled, ignoreClass, selector, store]);
+  }, [enabled, ignoreClass, selector, store, ignoreRef]);
 }

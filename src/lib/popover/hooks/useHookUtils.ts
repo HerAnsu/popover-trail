@@ -5,7 +5,15 @@
  * @module useHookUtils
  */
 
-import { useRef, useCallback, useInsertionEffect, type Ref, type RefCallback } from 'react';
+import {
+  useRef,
+  useCallback,
+  useEffect,
+  useInsertionEffect,
+  type Ref,
+  type RefCallback,
+  type RefObject,
+} from 'react';
 import { isReactRefObject } from '../utils/guards/reactGuards';
 
 /**
@@ -94,3 +102,63 @@ export function useStableCallback<T extends (...args: never[]) => unknown>(fn: T
 
   return useCallback(((...args: Parameters<T>) => ref.current(...args)) as T, []);
 }
+
+/**
+ * Returns a ref object that synchronously updates to always hold the latest value.
+ *
+ * @template T - Value type.
+ * @param value - Value to keep track of.
+ * @returns Ref containing the latest value.
+ */
+export function useLatestRef<T>(value: T): RefObject<T> {
+  const ref = useRef(value);
+
+  useInsertionEffect(() => {
+    ref.current = value;
+  });
+
+  return ref;
+}
+
+/**
+ * Returns a predicate function indicating whether the component is currently mounted.
+ * Useful in asynchronous flows to prevent state updates on unmounted components.
+ *
+ * @returns Stable predicate function returning true if mounted.
+ */
+export function useIsMounted(): () => boolean {
+  const isMountedRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  return useCallback(() => isMountedRef.current, []);
+}
+
+/**
+ * Returns the value from the previous render cycle.
+ *
+ * @template T - Value type.
+ * @param value - Current value to track.
+ * @returns Previous value or undefined on the first render cycle.
+ */
+export function usePrevious<T>(value: T): T | undefined {
+  const ref = useRef<{ value: T; prev: T | undefined }>({
+    value,
+    prev: undefined,
+  });
+
+  if (ref.current.value !== value) {
+    ref.current = {
+      value,
+      prev: ref.current.value,
+    };
+  }
+
+  return ref.current.prev;
+}
+

@@ -1,10 +1,21 @@
 import { describe, it, expect, vi } from 'vitest';
-import { useMergedRef, useStableCallback, setRef, mergeRefs } from './useHookUtils';
+import {
+  useMergedRef,
+  useStableCallback,
+  useLatestRef,
+  useIsMounted,
+  usePrevious,
+  setRef,
+  mergeRefs,
+} from './useHookUtils';
 
 describe('useHookUtils module', () => {
-  it('exports useMergedRef and useStableCallback hook functions', () => {
+  it('exports hook functions and ref helpers', () => {
     expect(typeof useMergedRef).toBe('function');
     expect(typeof useStableCallback).toBe('function');
+    expect(typeof useLatestRef).toBe('function');
+    expect(typeof useIsMounted).toBe('function');
+    expect(typeof usePrevious).toBe('function');
     expect(typeof setRef).toBe('function');
     expect(typeof mergeRefs).toBe('function');
   });

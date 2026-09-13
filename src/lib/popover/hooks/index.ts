@@ -83,4 +83,12 @@ export { usePopoverTrigger, usePopoverNestedTrigger } from './usePopoverTriggers
 export { useClickOutside, type UseClickOutsideOptions } from './useClickOutside';
 export { useEventListener } from './useEventListener';
 export { useBodyScrollLock, acquireScrollLock, releaseScrollLock } from './useBodyScrollLock';
-export { useMergedRef, useStableCallback, setRef, mergeRefs } from './useHookUtils';
+export {
+  useMergedRef,
+  useStableCallback,
+  useLatestRef,
+  useIsMounted,
+  usePrevious,
+  setRef,
+  mergeRefs,
+} from './useHookUtils';

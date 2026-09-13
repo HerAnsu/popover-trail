@@ -1212,9 +1212,14 @@ Fine-grained selector hooks:
 
 ### Utility and adapter hooks
 
-- `useEventListener(target, event, handler, options)`: Type-safe DOM event listener binder.
-- `useMergedRef(...refs)`: Merges multiple React refs into a single callback ref.
+- `setRef(ref, value)`: Safely assigns a DOM node or value to a mutable `RefObject` or `RefCallback`.
+- `mergeRefs(...refs)`: Pure function composing multiple React refs into a unified `RefCallback`.
+- `useMergedRef(...refs)`: Merges multiple React refs into a single referentially stable callback ref.
 - `useStableCallback(fn)`: Returns referentially stable callback across renders.
+- `useLatestRef(value)`: Returns a ref object synchronously updated to always hold the latest value (`useInsertionEffect`).
+- `useIsMounted()`: Returns a stable predicate function indicating whether the component is currently mounted.
+- `usePrevious(value)`: Returns the value from the previous render cycle without render lag.
+- `useEventListener(target, event, handler, options)`: Type-safe DOM event listener binder with automatic teardown.
 - `useClickOutside(config, isActive)`: Binds click-outside dismissal handlers.
 - `useCrossVersionActionState(action, initialState)`: Cross-version wrapper using React 19 `useActionState` when available, falling back to React 18 transition state.
 - `useCrossVersionOptimistic(passthrough, updateFn)`: Cross-version wrapper using React 19 `useOptimistic` when available, falling back to local state.
@@ -3216,6 +3221,50 @@ const currentVelocity = lerp(initialVelocity, 0, 0.05);
 
 // Check if pointer is within target bounds
 const isInside = inRange(pointerX, cardLeft, cardRight);
+```
+
+### Set Algebra Utilities
+
+Pure functional Set algebra with zero-allocation fast-paths (identity / empty set reference preservation):
+
+| Function | Signature | Description |
+| :--- | :--- | :--- |
+| `setUnion(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => ReadonlySet<T>` | Computes union $A \cup B$. Fast-path returns original reference if one set is empty or identical. |
+| `setIntersection(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => ReadonlySet<T>` | Computes intersection $A \cap B$. Iterates smaller set; returns `EMPTY_READONLY_SET` if disjoint. |
+| `setDifference(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => ReadonlySet<T>` | Computes relative complement $A \setminus B$. Fast-paths for empty sets and identical reference. |
+| `setSymmetricDifference(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => ReadonlySet<T>` | Computes symmetric difference $A \triangle B$. |
+| `isSubset(subset, superset)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => boolean` | Evaluates if $A \subseteq B$. |
+| `isSuperset(superset, subset)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => boolean` | Evaluates if $A \supseteq B$. |
+| `isDisjoint(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => boolean` | Evaluates if $A \cap B = \emptyset$. |
+
+```typescript
+import {
+  setUnion,
+  setIntersection,
+  setDifference,
+  setSymmetricDifference,
+  isSubset,
+  isDisjoint,
+} from 'popover-trail';
+
+const setA = new Set(['card-1', 'card-2']);
+const setB = new Set(['card-2', 'card-3']);
+
+// Union: {'card-1', 'card-2', 'card-3'}
+const union = setUnion(setA, setB);
+
+// Intersection: {'card-2'}
+const intersection = setIntersection(setA, setB);
+
+// Difference: {'card-1'}
+const difference = setDifference(setA, setB);
+
+// Symmetric Difference: {'card-1', 'card-3'}
+const symDiff = setSymmetricDifference(setA, setB);
+
+// Predicates
+const isSub = isSubset(new Set(['card-1']), setA); // true
+const disjoint = isDisjoint(setA, new Set(['card-99'])); // true
 ```
 
 ---

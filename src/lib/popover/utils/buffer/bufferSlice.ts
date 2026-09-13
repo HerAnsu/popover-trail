@@ -18,13 +18,14 @@ import { forEachItem } from './bufferIteration';
 import { evictBufferItems } from './bufferState';
 import type { RingBufferOptions, RingBufferState, ReadonlyRingBufferState } from './bufferTypes';
 import type { RingBuffer } from './ringBufferCore';
+import { clamp } from '../math';
 
 export function sliceRing<T>(
   state: ReadonlyRingBufferState<T>,
   start: BufferRelativeIndex = 0,
   end: BufferRelativeIndex = state.count,
 ): T[] {
-  let s = start < 0 ? Math.max(0, state.count + start) : Math.min(state.count, start);
+  let s = clamp(start < 0 ? state.count + start : start, 0, state.count);
   const e = countBound(state.count, end);
   if (s >= e) return [];
   const res: T[] = [];
@@ -36,7 +37,7 @@ export function sliceRing<T>(
 }
 
 function countBound(count: number, end: number): number {
-  return end < 0 ? Math.max(0, count + end) : Math.min(count, end);
+  return clamp(end < 0 ? count + end : end, 0, count);
 }
 
 export function copyRingTo<T>(
