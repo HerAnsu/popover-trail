@@ -80,7 +80,7 @@ export function mergePopoverSchemas<
   for (const s of schemas) {
     const def = 'definition' in s ? s.definition : s;
     if (def && typeof def === 'object') {
-      merged = safeAssign(merged, def as Record<string, PopoverSchemaNode>);
+      merged = safeAssign(merged, def);
     }
   }
   return createPopoverSchema<MergedSchemaDefinition<TSchemas>>(

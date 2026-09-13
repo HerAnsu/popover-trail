@@ -23,7 +23,7 @@ import { findEntryInStore } from '../utils/collections';
 import { noop, constant } from '../utils/functional';
 
 export interface SliceTestHarness<
-  TActions = PopoverActions,
+  TActions extends object = PopoverActions,
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
@@ -71,7 +71,7 @@ export function createMockSliceContext<
   getHistory: () =>
     | ReturnType<typeof createHistoryManager<TData, TPopoverKey, TContext>>
     | undefined;
-  setBoundActions: (actions: Record<string, unknown>) => void;
+  setBoundActions: (actions: object) => void;
 } {
   let state = createMockStoreState<TData, TContext, TPopoverKey>(initialOverrides);
   const historyMgr = createHistoryManager<TData, TPopoverKey, TContext>();
@@ -82,7 +82,7 @@ export function createMockSliceContext<
   const eventListeners = new Set<(event: PopoverStoreEvent<TData, TPopoverKey>) => void>();
   const snapshots: HistorySnapshot<TData, TPopoverKey>[] = [];
   const emittedEvents: PopoverStoreEvent<TData, TPopoverKey>[] = [];
-  let boundActions: Record<string, unknown> = {};
+  let boundActions: object = {};
 
   const deps: ActionRegistryDependencies<TData, TContext, TPopoverKey> = {
     activeControllers: new Map<string, AbortController>(),
@@ -182,7 +182,7 @@ export function createMockSliceContext<
 }
 
 export function createSliceTestHarness<
-  TActions,
+  TActions extends object,
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
@@ -200,7 +200,7 @@ export function createSliceTestHarness<
   depOverrides?: Partial<ActionRegistryDependencies<TData, TContext, TPopoverKey>>,
 ): SliceTestHarness<PopoverActions<TData, TContext, TPopoverKey>, TData, TContext, TPopoverKey>;
 export function createSliceTestHarness<
-  TActions = Record<string, unknown>,
+  TActions extends object = PopoverActions,
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
@@ -233,7 +233,7 @@ export function createSliceTestHarness<
       )
     : ({} as TActions);
 
-  mockCtx.setBoundActions(actions as Record<string, unknown>);
+  mockCtx.setBoundActions(actions);
 
   return {
     actions,

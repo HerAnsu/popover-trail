@@ -51,7 +51,7 @@ describe('createPersistenceSlice property-based invariant test suite', () => {
           const result = await harness.actions.rehydrateState({ storage });
           expect(typeof result).toBe('boolean');
           const state = harness.getState();
-          expect((Object.prototype as Record<string, unknown>)['polluted']).toBeUndefined();
+          expect(Reflect.get(Object.prototype, 'polluted')).toBeUndefined();
           for (const entry of state.floating) {
             expect(['__proto__', 'constructor', 'prototype', '']).not.toContain(entry.key.trim());
           }

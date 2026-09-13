@@ -33,8 +33,8 @@ describe('displayOptions utility', () => {
     expect(extracted.offset).toBe(16);
     expect(extracted.baseZIndex).toBe(2000);
     expect(extracted.enableTilt).toBe(true);
-    expect((extracted as Record<string, unknown>).key).toBeUndefined();
-    expect((extracted as Record<string, unknown>).data).toBeUndefined();
+    expect(Reflect.get(extracted, 'key')).toBeUndefined();
+    expect(Reflect.get(extracted, 'data')).toBeUndefined();
   });
 
   it('returns empty object when extracting from null/undefined', () => {

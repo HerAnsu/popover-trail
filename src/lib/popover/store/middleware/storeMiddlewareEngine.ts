@@ -104,10 +104,7 @@ export class PopoverMiddlewareEngine<
 
       // Copy-On-Write: safeAssign allocates a new container preserving immutability
       if (isStorePatchObject(result)) {
-        patch = safeAssign(
-          patch as Record<string, unknown>,
-          result as Record<string, unknown>,
-        ) as typeof patch;
+        patch = safeAssign(patch, result);
       }
     }
     return patch;
@@ -141,10 +138,7 @@ export function composeMiddlewares<
       if (res === false) return false;
       // Lazily clone and sanitize patch mutations via safeAssign
       if (typeof res === 'object' && res !== null) {
-        patch = safeAssign(
-          patch as Record<string, unknown>,
-          res as Record<string, unknown>,
-        ) as typeof patch;
+        patch = safeAssign(patch, res);
       }
     }
     return patch;

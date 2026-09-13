@@ -41,7 +41,7 @@ describe('reducerEdgeCases module', () => {
   });
 
   it('sanitizes prototype pollution keys in filterRecord', () => {
-    const record = { normal: 1, __proto__: 2 } as Record<string, number>;
+    const record: Record<string, number> = { normal: 1, ['__proto__']: 2 };
     const allowed = new Set(['normal', '__proto__']);
     const filtered = filterRecord(record, allowed);
     expect(filtered.normal).toBe(1);

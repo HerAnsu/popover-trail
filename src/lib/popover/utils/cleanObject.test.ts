@@ -26,10 +26,7 @@ describe('cleanObject', () => {
 
   it('safely assigns without prototype pollution', () => {
     const target = { x: 1 };
-    const source = JSON.parse('{"y": 2, "__proto__": {"polluted": true}}') as Record<
-      string,
-      unknown
-    >;
+    const source = JSON.parse('{"y": 2, "__proto__": {"polluted": true}}') as { y: number };
     const result = safeAssign(target, source);
     expect(result.x).toBe(1);
     expect(result.y).toBe(2);
@@ -41,10 +38,9 @@ describe('cleanObject', () => {
     const picked = pickRecordKeys(original, ['a', 'c']);
     expect(picked).toEqual({ a: 1, c: 3 });
 
-    const withPollution = JSON.parse('{"valid": 42, "__proto__": {"bad": true}}') as Record<
-      string,
-      unknown
-    >;
+    const withPollution = JSON.parse('{"valid": 42, "__proto__": {"bad": true}}') as {
+      valid: number;
+    };
     const pickedSafe = pickRecordKeys(withPollution, ['valid', '__proto__']);
     expect(pickedSafe).toEqual({ valid: 42 });
     expect('bad' in Object.prototype).toBe(false);

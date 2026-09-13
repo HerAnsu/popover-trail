@@ -83,8 +83,9 @@ describe('schemaMerger', () => {
     const auditResult = await resolver('audit');
     expect(auditResult).toEqual({ logCount: 5 });
 
-    const profileNode = (merged.definition as Record<string, unknown>)
-      .profile as (typeof overrideSchema.definition)['profile'];
+    const profileNode = Reflect.get(merged.definition, 'profile') as
+      | (typeof overrideSchema.definition)['profile']
+      | undefined;
     expect(profileNode?.placement).toBe('bottom');
     expect(profileNode?.offset).toBe(16);
   });

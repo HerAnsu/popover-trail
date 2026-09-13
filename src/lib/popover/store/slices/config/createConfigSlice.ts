@@ -39,7 +39,6 @@ export function createConfigSlice<
     updateConfig: (patch) => {
       const current = get();
       const diff: Partial<PopoverStateData<TData, TContext, TPopoverKey>> = {};
-      const target = diff as Record<string, unknown>;
       let hasChanges = false;
       const keys = Object.keys(patch) as (keyof PopoverStateData<TData, TContext, TPopoverKey>)[];
 
@@ -65,7 +64,7 @@ export function createConfigSlice<
           deps.markAllCountersStale?.();
         }
 
-        target[key] = nextVal;
+        Reflect.set(diff, key, nextVal);
         hasChanges = true;
       }
 

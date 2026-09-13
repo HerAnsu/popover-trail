@@ -66,10 +66,7 @@ export function buildMergedInitialState<
   if (customSlices) {
     for (const slice of customSlices) {
       if (slice.initialState) {
-        merged = safeAssign(
-          merged as unknown as Record<string, unknown>,
-          slice.initialState as Record<string, unknown>,
-        ) as typeof merged;
+        merged = safeAssign(merged, slice.initialState);
       }
     }
   }

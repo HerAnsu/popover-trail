@@ -70,17 +70,20 @@ export function toOmittedRecordKeys<T, K extends string = string>(
  * @param source - Incoming source properties.
  * @returns Merged intersection object without unsafe prototype keys.
  */
-export function safeAssign<T extends Record<string, unknown>, S extends Record<string, unknown>>(
+export function safeAssign<T extends object, S extends object>(
   target: T,
-  source: S,
+  source?: S | null,
 ): T & S {
-  const result: Record<string, unknown> = { ...target };
-  for (const key in source) {
-    if (Object.hasOwn(source, key) && !isUnsafeKey(key)) {
-      result[key] = source[key];
+  if (!source || typeof source !== 'object') {
+    return { ...target } as T & S;
+  }
+  const result = { ...target } as T & S;
+  for (const key of Object.keys(source)) {
+    if (!isUnsafeKey(key)) {
+      Reflect.set(result, key, Reflect.get(source, key));
     }
   }
-  return result as T & S;
+  return result;
 }
 
 /**
@@ -166,6 +169,14 @@ export function mapRecordValues<K extends string | number, V, R>(
  * @returns A new record containing only entries that satisfied the predicate.
  */
 export function filterRecord<K extends string | number, V>(
+  record: Record<K, V>,
+  predicate: (value: V, key: K) => boolean,
+): Record<K, V>;
+export function filterRecord<K extends string | number, V>(
+  record: Partial<Record<K, V>>,
+  predicate: (value: V, key: K) => boolean,
+): Partial<Record<K, V>>;
+export function filterRecord<K extends string | number, V>(
   record: Partial<Record<K, V>>,
   predicate: (value: V, key: K) => boolean,
 ): Partial<Record<K, V>> {
@@ -219,17 +230,17 @@ export function compactRecord<K extends string | number, V>(
 export function invertRecord<K extends string, V extends string | number>(
   record?: Record<K, V> | null,
 ): Record<V, K> {
-  const result: Record<string | number, K> = {};
-  if (!record || isEmptyRecord(record)) return result as unknown as Record<V, K>;
+  const result: Record<string, K> = {};
+  if (!record || isEmptyRecord(record)) return result as Record<V, K>;
   for (const key in record) {
     if (Object.hasOwn(record, key) && !isUnsafeKey(key)) {
       const val = record[key];
       if (val !== undefined && val !== null && !isUnsafeKey(String(val))) {
-        result[val] = key;
+        Reflect.set(result, String(val), key);
       }
     }
   }
-  return result as unknown as Record<V, K>;
+  return result;
 }
 
 /**
@@ -243,7 +254,7 @@ export function freezeDeep<T>(obj: T): Readonly<T> {
   if (obj === null || typeof obj !== 'object') return obj;
   for (const key of Object.keys(obj)) {
     if (!isUnsafeKey(key)) {
-      const val = (obj as Record<string, unknown>)[key];
+      const val = Reflect.get(obj, key);
       if (typeof val === 'object' && val !== null && !Object.isFrozen(val)) {
         freezeDeep(val);
       }

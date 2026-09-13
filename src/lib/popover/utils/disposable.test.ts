@@ -34,7 +34,7 @@ describe('disposable utility', () => {
 
     const disposeSymbol = Symbol.dispose;
     if (disposeSymbol) {
-      expect((disposable as Record<symbol, unknown>)[disposeSymbol]).toBeDefined();
+      expect(Reflect.get(disposable, disposeSymbol)).toBeDefined();
     }
   });
 
