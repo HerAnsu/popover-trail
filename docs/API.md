@@ -2377,9 +2377,13 @@ Nominal branding attaches phantom brand tags to primitives, preventing developer
 
 #### Zero-allocation singletons
 
-- `EMPTY_READONLY_ARRAY`: Frozen empty array (`Object.freeze([])`).
-- `EMPTY_READONLY_OBJECT`: Frozen empty dictionary (`Object.freeze({})`).
+- `EMPTY_READONLY_ARRAY` / `EMPTY_ARRAY`: Frozen empty array (`Object.freeze([])`).
+- `EMPTY_READONLY_OBJECT` / `EMPTY_OBJECT`: Frozen empty dictionary (`Object.freeze({})`).
+- `EMPTY_READONLY_SET` / `EMPTY_SET`: Frozen empty Set (`Object.freeze(new Set())`).
+- `ZERO_OFFSET`: Frozen coordinate origin (`Object.freeze({ x: 0, y: 0 })`).
 - `emptyRecord<K, V>()`: Type-safe accessor for the frozen empty record singleton.
+- `emptySet<T>()`: Type-safe accessor for the frozen empty Set singleton.
+
 
 #### Brand type utilities
 
@@ -2642,7 +2646,16 @@ All executable type guards, assertion helpers, and pattern matchers are exported
 - `definePopoverMiddleware(mw)`: Type-safe middleware definition builder.
 - `defineStoreSlice(descriptor)`: Creates a frozen `StoreSliceDescriptor` for OCP domain slices.
 
+### Foundational value and nullability predicates
+
+- `isNonNullable(val)`: Narrows `val` to `NonNullable<T>` (`val !== null && val !== undefined`).
+- `isDefined(val)`: Narrows optional candidate `T | undefined` to defined `T`.
+- `isNull(val)`: Narrows candidate `T | null` to strictly `null`.
+- `isUndefined(val)`: Narrows optional candidate `T | undefined` to strictly `undefined`.
+- `isPromise(val)`: Robust duck-typed check verifying whether `val` is a thenable/Promise instance across realms.
+
 ---
+
 
 ### `matchEntryState`
 
@@ -3135,12 +3148,14 @@ Functional array manipulation and prototype-pollution safe object utilities:
 | `groupBy(items, getKey)` | `(readonly T[], fn) => Record<K, readonly T[]>` | Groups items into dictionary by extracted key with prototype pollution immunity. |
 | `keyBy(items, getKey)` | `(readonly T[], fn) => Record<K, T>` | Indexes array items into a dictionary by unique key. |
 | `chunk(items, size)` | `(readonly T[], number) => readonly (readonly T[])[]` | Splits an array into batches of specified size. |
+| `zip(a, b)` | `(readonly A[], readonly B[]) => readonly [A, B][]` | Pairs elements from two arrays into 2-tuples up to the shorter length. |
+| `range(start, end, step?)` | `(number, number, number?) => readonly number[]` | Generates arithmetic progression sequence from start (inclusive) to end (exclusive). |
 | `pickRecordKeys(record, keys)` | `(record, keys) => Partial<Record<K, T>>` | Safely creates a shallow copy containing only the selected keys. |
 | `omitRecordKey(record, key)` | `(record, key) => Partial<Record<K, T>>` | Returns a record omitting the specified key (preserves hidden classes). |
 | `safeAssign(target, source)` | `(target, source) => target & source` | Merges properties safely, stripping unsafe `__proto__` and `constructor` keys. |
 
 ```typescript
-import { unique, partition, groupBy, keyBy, pickRecordKeys } from 'popover-trail';
+import { unique, partition, groupBy, keyBy, chunk, zip, range, pickRecordKeys } from 'popover-trail';
 
 // 1. Deduplicate trail keys
 const uniqueKeys = unique(['card-1', 'card-2', 'card-1']); // ['card-1', 'card-2']
@@ -3151,9 +3166,13 @@ const [open, closed] = partition(entries, (e) => e.status === 'open');
 // 3. Group cards by stack category
 const byCategory = groupBy(entries, (e) => e.data?.category ?? 'general');
 
-// 4. Safe property picking
+// 4. Pair arrays and generate coordinate ranges
+const coords = zip(range(0, 100, 20), range(0, 100, 20)); // [[0, 0], [20, 20], [40, 40], ...]
+
+// 5. Safe property picking
 const safeOptions = pickRecordKeys(options, ['placement', 'offset', 'enableTilt']);
 ```
+
 
 ---
 

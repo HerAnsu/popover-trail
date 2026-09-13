@@ -279,8 +279,10 @@ export {
 } from './utils/asyncUtils';
 
 // Utilities: Collections & Objects
-export { unique, partition, groupBy, keyBy, chunk } from './utils/collections';
+export { unique, partition, groupBy, keyBy, chunk, zip, range } from './utils/collections';
+export { isNonNullable, isDefined, isNull, isUndefined } from './utils/predicates';
 export { omitRecordKey, pickRecordKeys, safeAssign } from './utils/cleanObject';
+
 
 export {
   createDisposable,

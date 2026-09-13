@@ -23,6 +23,8 @@ import {
 } from './dagOrdering';
 import { findRoots, findLeaves, computeMaxDepth } from './dagMetrics';
 import { exportDAGSnapshot, importDAGSnapshot } from './dagSnapshot';
+import { EMPTY_READONLY_SET } from '../../types/branded';
+
 
 /**
  * Tracks parent-child relationships and manages cascade ordering for popovers.
@@ -115,13 +117,14 @@ export class PopoverDAG<TPopoverKey extends string = string> {
 
   /** Returns the direct parent keys of the specified node. */
   getParents(key: TPopoverKey): ReadonlySet<TPopoverKey> {
-    return this.nodes.get(key)?.parentKeys ?? new Set();
+    return this.nodes.get(key)?.parentKeys ?? EMPTY_READONLY_SET;
   }
 
   /** Returns the direct children keys opened by the specified node. */
   getChildren(key: TPopoverKey): ReadonlySet<TPopoverKey> {
-    return this.nodes.get(key)?.childrenKeys ?? new Set();
+    return this.nodes.get(key)?.childrenKeys ?? EMPTY_READONLY_SET;
   }
+
 
   /**
    * Computes the order-preserving linear extension restricted to the branch rooted at `rootKey`.

@@ -9,7 +9,10 @@ import {
   groupBy,
   keyBy,
   chunk,
+  zip,
+  range,
 } from './collections';
+
 import type { TrailEntry } from '../types';
 
 describe('collections utilities', () => {
@@ -80,4 +83,22 @@ describe('collections utilities', () => {
     expect(chunk([], 3)).toEqual([]);
     expect(chunk([1, 2], 5)).toEqual([[1, 2]]);
   });
+
+  it('zip pairs elements into tuples up to shortest length', () => {
+    expect(zip(['a', 'b', 'c'], [1, 2])).toEqual([
+      ['a', 1],
+      ['b', 2],
+    ]);
+    expect(zip([], [1, 2])).toEqual([]);
+    expect(zip([1, 2], [])).toEqual([]);
+  });
+
+  it('range generates arithmetic progressions', () => {
+    expect(range(0, 5)).toEqual([0, 1, 2, 3, 4]);
+    expect(range(2, 8, 2)).toEqual([2, 4, 6]);
+    expect(range(5, 0, -1)).toEqual([5, 4, 3, 2, 1]);
+    expect(range(5, 5)).toEqual([]);
+    expect(range(10, 5, 1)).toEqual([]);
+  });
 });
+

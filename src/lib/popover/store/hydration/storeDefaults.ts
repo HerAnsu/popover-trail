@@ -5,19 +5,26 @@
  */
 
 import type { PopoverResolver, PopoverCache, PopoverStateData, DragOffset } from '../../types';
-import { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT, emptyRecord } from '../../types/branded';
+import {
+  EMPTY_READONLY_ARRAY,
+  EMPTY_READONLY_OBJECT,
+  EMPTY_READONLY_SET,
+  emptyRecord,
+  emptySet,
+} from '../../types/branded';
 import {
   DEFAULT_BASE_Z_INDEX,
   DEFAULT_CASCADE_OFFSET_STEP,
   DEFAULT_MOBILE_BREAKPOINT_PX,
   DEFAULT_OFFSET_PX,
+  ZERO_OFFSET,
 } from '../../constants';
 
 export const EMPTY_ARRAY = EMPTY_READONLY_ARRAY;
 export const EMPTY_OBJECT = EMPTY_READONLY_OBJECT;
-export const ZERO_OFFSET: DragOffset = Object.freeze({ x: 0, y: 0 });
+export const EMPTY_SET = EMPTY_READONLY_SET;
+export { ZERO_OFFSET, emptyRecord, emptySet };
 
-export { emptyRecord } from '../../types/branded';
 
 export const INITIAL_TRAIL_STATE = Object.freeze({
   trail: EMPTY_READONLY_ARRAY,

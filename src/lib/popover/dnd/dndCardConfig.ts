@@ -9,6 +9,8 @@ import type { CSSProperties } from 'react';
 import type { TrailEntry } from '../types';
 import type { PopoverCardProps } from './dndTypes';
 import { isPopoverCardFeatures } from './dndGuards';
+import { ZERO_OFFSET } from '../constants';
+
 
 export const FIXED_CONTAINER_STYLE = {
   position: 'fixed',
@@ -32,9 +34,10 @@ export function resolveDragTransformState(
   physics: { rotation: number; rotationX: number; rotationY: number; dragX: number; dragY: number },
 ) {
   if (!isDragAllowed) {
-    return { offset: { x: 0, y: 0 }, dragX: 0, dragY: 0, rotation: 0, rotationX: 0, rotationY: 0 };
+    return { offset: ZERO_OFFSET, dragX: 0, dragY: 0, rotation: 0, rotationX: 0, rotationY: 0 };
   }
   return {
+
     offset,
     dragX: physics.dragX,
     dragY: physics.dragY,

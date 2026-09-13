@@ -5,6 +5,13 @@
  * @module constants
  */
 
+import {
+  EMPTY_READONLY_ARRAY,
+  EMPTY_READONLY_OBJECT,
+  EMPTY_READONLY_SET,
+} from './types/branded';
+import type { DragOffset } from './types/geometry';
+
 export const defaultPopoverConfig = {
   timing: { hoverOpenDelay: 200, hoverLeaveDelay: 300, exitTransitionDuration: 200 },
   layout: { cascadeStep: 8, defaultOffset: 8, collisionPadding: 12 },
@@ -62,3 +69,17 @@ export const FOCUSABLE_ELEMENTS_SELECTOR = [
   'button:not([disabled])',
   "[tabindex]:not([tabindex='-1'])",
 ].join(',');
+
+export {
+  EMPTY_READONLY_ARRAY,
+  EMPTY_READONLY_OBJECT,
+  EMPTY_READONLY_SET,
+  emptyRecord,
+  emptySet,
+} from './types/branded';
+
+export const EMPTY_ARRAY = EMPTY_READONLY_ARRAY;
+export const EMPTY_OBJECT = EMPTY_READONLY_OBJECT;
+export const EMPTY_SET = EMPTY_READONLY_SET;
+export const ZERO_OFFSET: DragOffset = Object.freeze({ x: 0, y: 0 });
+

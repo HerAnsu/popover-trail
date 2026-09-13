@@ -7,6 +7,7 @@
 
 import type { TrailEntry } from '../../types';
 import { isRecordObject } from '../../utils/typeGuards';
+import { EMPTY_ARRAY } from '../../constants';
 import {
   type KeyboardNavEvent,
   handleCustomShortcuts,
@@ -60,7 +61,7 @@ function resolveNavParams<TData = unknown, TPopoverKey extends string = string>(
       cardEntry: o.entry,
       enableArrow: o.enableArrowNavigation,
       pinned: o.isPinned,
-      trailList: o.trail ?? [],
+      trailList: o.trail ?? EMPTY_ARRAY,
       act: o.actions,
     };
   }
@@ -70,10 +71,11 @@ function resolveNavParams<TData = unknown, TPopoverKey extends string = string>(
     cardEntry: entry,
     enableArrow: Boolean(enableArrowNavigation),
     pinned: Boolean(isPinned),
-    trailList: trail ?? [],
+    trailList: trail ?? EMPTY_ARRAY,
     act: actions,
   };
 }
+
 
 export function handleCardKeyboardNavigation<TData = unknown, TPopoverKey extends string = string>(
   eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions<TData, TPopoverKey>,

@@ -8,7 +8,9 @@ import { useContext, useMemo } from 'react';
 import type { PopoverCache } from '../types';
 import { PopoverStoreContext } from '../context/PopoverStoreContext';
 import { isRecordObject } from '../utils/typeGuards';
+import { isPromise } from '../utils/asyncUtils';
 import { isExtendedCache, type UsePopoverCacheResult } from './usePopoverCacheTypes';
+
 
 export type { UsePopoverCacheResult };
 
@@ -51,8 +53,9 @@ export function usePopoverCache<TData = unknown>(
         if (!cache) return undefined;
         if (ext && typeof ext.mutate === 'function') return ext.mutate(key, updater);
         const prev = cache.get(key);
-        const resolvedPrev = prev instanceof Promise ? undefined : prev;
+        const resolvedPrev = isPromise(prev) ? undefined : prev;
         const next = isUpdaterFn(updater) ? updater(resolvedPrev) : updater;
+
         cache.set(key, next);
         return next;
       },

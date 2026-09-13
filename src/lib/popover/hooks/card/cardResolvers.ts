@@ -8,6 +8,8 @@
 import { useEffect } from 'react';
 import type { PopoverTransitionStatus, TrailEntry } from '../../types';
 import { isTransitionStatus } from '../../utils/typeGuards';
+import { DEFAULT_BASE_Z_INDEX, EMPTY_ARRAY } from '../../constants';
+
 
 export function resolveTransitionClassName(
   status: string | undefined,
@@ -60,7 +62,7 @@ export function resolveEffectiveBaseZIndex<TData = unknown, TPopoverKey extends 
     const mapped = zIndexBaseMap[entry.stackGroup];
     if (mapped !== undefined) return mapped;
   }
-  return baseZIndex ?? 1000;
+  return baseZIndex ?? DEFAULT_BASE_Z_INDEX;
 }
 
 export function resolveCardButtonControls<TData = unknown, TPopoverKey extends string = string>(
@@ -71,6 +73,7 @@ export function resolveCardButtonControls<TData = unknown, TPopoverKey extends s
     enablePin: cardFeatures?.enablePin ?? entry.buttonControls?.enablePin ?? true,
     enableClose: cardFeatures?.enableClose ?? entry.buttonControls?.enableClose ?? true,
     enableDrag: cardFeatures?.enableDrag ?? entry.buttonControls?.enableDrag ?? true,
-    customButtons: entry.buttonControls?.customButtons ?? [],
+    customButtons: entry.buttonControls?.customButtons ?? EMPTY_ARRAY,
   };
 }
+

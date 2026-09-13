@@ -6,6 +6,7 @@
 
 import { SNAPSHOT_VERSION, type PopoverSnapshotData } from './snapshotManagerTypes';
 import { isPlainObject } from '../../utils/guards/objectGuards';
+import { ZERO_OFFSET } from '../../constants';
 
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -18,13 +19,14 @@ export function sanitizeOffsets(
     if (offset && typeof offset === 'object') {
       const x = Number.isFinite(offset.x) ? offset.x : 0;
       const y = Number.isFinite(offset.y) ? offset.y : 0;
-      result[key] = { x, y };
+      result[key] = x === 0 && y === 0 ? ZERO_OFFSET : { x, y };
     } else {
-      result[key] = { x: 0, y: 0 };
+      result[key] = ZERO_OFFSET;
     }
   }
   return result;
 }
+
 
 export function sanitizePayloads<TData>(
   payloads?: Record<string, TData>,

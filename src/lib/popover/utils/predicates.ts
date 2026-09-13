@@ -47,3 +47,49 @@ export function hasAnimationClassNamesChanged(
     prev.mountedClassName !== next.mountedClassName
   );
 }
+
+/**
+ * Type guard verifying that a value is neither `null` nor `undefined`.
+ * Narrowing predicate for array filtering and optional chaining.
+ *
+ * @template T - Input value type.
+ * @param value - Value to inspect.
+ * @returns True if value is non-nullable.
+ */
+export function isNonNullable<T>(value: T): value is NonNullable<T> {
+  return value !== null && value !== undefined;
+}
+
+/**
+ * Type guard asserting that an optional candidate is defined (not `undefined`).
+ *
+ * @template T - Value type.
+ * @param value - Value to inspect.
+ * @returns True if value is not `undefined`.
+ */
+export function isDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
+}
+
+/**
+ * Type guard asserting that a nullable candidate is strictly `null`.
+ *
+ * @template T - Value type.
+ * @param value - Value to inspect.
+ * @returns True if value is `null`.
+ */
+export function isNull<T>(value: T | null): value is null {
+  return value === null;
+}
+
+/**
+ * Type guard asserting that an optional candidate is strictly `undefined`.
+ *
+ * @template T - Value type.
+ * @param value - Value to inspect.
+ * @returns True if value is `undefined`.
+ */
+export function isUndefined<T>(value: T | undefined): value is undefined {
+  return value === undefined;
+}
+

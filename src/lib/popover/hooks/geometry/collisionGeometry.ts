@@ -1,4 +1,4 @@
-﻿/**
+/**
  * QuadTree Spatial Collision Detection and Lowest-Energy Cascade Placement.
  * Clean Architecture Layer 3: Reactive Integration & Hooks.
  *
@@ -7,6 +7,7 @@
 
 import type { TrailEntry, DragOffset } from '../../types';
 import { QuadTree, type BoundingBox, selectLowestEnergyPlacement } from '../../utils/quadTree';
+import { ZERO_OFFSET } from '../../constants';
 
 export function applySpatialCollisionNudge(
   id: string,
@@ -23,7 +24,8 @@ export function applySpatialCollisionNudge(
 
   for (const sibling of activeFloating) {
     if (sibling.key !== id) {
-      const off = activeOffsets[sibling.key] ?? { x: 0, y: 0 };
+      const off = activeOffsets[sibling.key] ?? ZERO_OFFSET;
+
       const bounds: BoundingBox = {
         x: (sibling.pinnedLayoutPos?.left ?? 0) + off.x,
         y: (sibling.pinnedLayoutPos?.top ?? 0) + off.y,

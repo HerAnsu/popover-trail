@@ -11,7 +11,7 @@ import type {
   TrailEntry,
   PopoverRect,
 } from '../../../types';
-import { EMPTY_OBJECT } from '../../storeDefaults';
+import { EMPTY_OBJECT, ZERO_OFFSET } from '../../storeDefaults';
 import { omitRecordKey } from '../../../utils/cleanObject';
 import { getCleanupStatePatch, filterOutEntryKey, elevateKeyInOrder } from '../stack';
 import { toFloatingEntry, toTrailEntry } from './pinGeometry';
@@ -35,8 +35,9 @@ export function pinTrailEntry<TData, TContext, TPopoverKey extends string = stri
   ];
   const nextOffsets: Partial<Record<TPopoverKey, DragOffset>> = {
     ...state.offsets,
-    [key]: { x: 0, y: 0 },
+    [key]: ZERO_OFFSET,
   };
+
   const nextPinned: Partial<Record<TPopoverKey, boolean>> = { ...state.pinnedStates, [key]: true };
   const nextZIndexOrder = elevateKeyInOrder(state.zIndexOrder, key);
 

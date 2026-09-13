@@ -152,6 +152,7 @@ export function unbrand<T>(value: T): Unbrand<T> {
 
 export const EMPTY_READONLY_ARRAY: readonly never[] = Object.freeze([]);
 export const EMPTY_READONLY_OBJECT: Readonly<Partial<Record<string, unknown>>> = Object.freeze({});
+export const EMPTY_READONLY_SET: ReadonlySet<never> = Object.freeze(new Set<never>());
 
 /**
  * Type-safe accessor for the frozen empty record singleton.
@@ -162,3 +163,12 @@ export function emptyRecord<K extends string = string, V = unknown>(): Readonly<
 > {
   return EMPTY_READONLY_OBJECT as Readonly<Partial<Record<K, V>>>;
 }
+
+/**
+ * Type-safe accessor for the frozen empty Set singleton.
+ * Eliminates duplicate empty set instantiations across DAG and query methods.
+ */
+export function emptySet<T = never>(): ReadonlySet<T> {
+  return EMPTY_READONLY_SET as ReadonlySet<T>;
+}
+

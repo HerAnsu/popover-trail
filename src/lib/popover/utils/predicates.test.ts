@@ -4,6 +4,10 @@ import {
   isPopoverActive,
   shouldTrackFloatingGeometry,
   hasAnimationClassNamesChanged,
+  isNonNullable,
+  isDefined,
+  isNull,
+  isUndefined,
 } from './predicates';
 
 describe('predicates utility', () => {
@@ -44,4 +48,27 @@ describe('predicates utility', () => {
       ),
     ).toBe(true);
   });
+
+  it('narrows non-null and defined values with isNonNullable and isDefined', () => {
+    expect(isNonNullable('hello')).toBe(true);
+    expect(isNonNullable(0)).toBe(true);
+    expect(isNonNullable(false)).toBe(true);
+    expect(isNonNullable(null)).toBe(false);
+    expect(isNonNullable(undefined)).toBe(false);
+
+    expect(isDefined(0)).toBe(true);
+    expect(isDefined(null)).toBe(true);
+    expect(isDefined(undefined)).toBe(false);
+  });
+
+  it('identifies null and undefined with isNull and isUndefined', () => {
+    expect(isNull(null)).toBe(true);
+    expect(isNull(undefined)).toBe(false);
+    expect(isNull(0)).toBe(false);
+
+    expect(isUndefined(undefined)).toBe(true);
+    expect(isUndefined(null)).toBe(false);
+    expect(isUndefined('')).toBe(false);
+  });
 });
+

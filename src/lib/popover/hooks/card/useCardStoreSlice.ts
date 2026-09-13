@@ -8,11 +8,11 @@
 import { useCallback } from 'react';
 import { usePopoverStore } from '../../context/usePopoverStore';
 import { shallowEqual } from '../../utils/equality';
+import { ZERO_OFFSET } from '../../constants';
 import type { PopoverStore, TrailEntry } from '../../types';
 
 export * from './cardResolvers';
 
-const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
 export interface CardStoreSliceData<TData = unknown, TPopoverKey extends string = string> {
   readonly offset: { readonly x: number; readonly y: number };
@@ -36,8 +36,9 @@ export function useCardStoreSlice<TData = unknown, TPopoverKey extends string = 
       (
         state: PopoverStore<TData, unknown, TPopoverKey>,
       ): CardStoreSliceData<TData, TPopoverKey> => ({
-        offset: state.offsets[entryKey] ?? DEFAULT_OFFSET,
+        offset: state.offsets[entryKey] ?? ZERO_OFFSET,
         zIndex: state.zIndexOrder.indexOf(entryKey),
+
         isTop: state.zIndexOrder.length > 0 && state.zIndexOrder.at(-1) === entryKey,
         enableArrowNavigation: state.enableArrowNavigation,
         trail: state.trail,

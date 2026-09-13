@@ -6,6 +6,7 @@
  */
 
 import type { TrailEntry } from '../types';
+import { EMPTY_READONLY_ARRAY } from '../types/branded';
 import { isUnsafeKey } from './safeKeys';
 
 export function getEntryAtIndex<TData, TPopoverKey extends string = string>(
@@ -150,3 +151,49 @@ export function chunk<T>(items: readonly T[], size: number): readonly (readonly 
   }
   return Object.freeze(result);
 }
+
+/**
+ * Combines two arrays element-wise into pairs of 2-tuples up to the shorter array length.
+ *
+ * @template A - First element type.
+ * @template B - Second element type.
+ * @param a - First array.
+ * @param b - Second array.
+ * @returns Frozen array of tuples.
+ */
+export function zip<A, B>(a: readonly A[], b: readonly B[]): readonly (readonly [A, B])[] {
+  const len = Math.min(a.length, b.length);
+  if (len === 0) return EMPTY_READONLY_ARRAY;
+  const result: (readonly [A, B])[] = [];
+  for (let i = 0; i < len; i++) {
+    result.push(Object.freeze([a[i] as A, b[i] as B]));
+  }
+  return Object.freeze(result);
+}
+
+/**
+ * Generates an arithmetic progression sequence of numbers from start (inclusive) to end (exclusive).
+ *
+ * @param start - Starting value (inclusive).
+ * @param end - Ending bound (exclusive).
+ * @param step - Step increment (defaults to 1, must not be 0).
+ * @returns Frozen array of numbers in progression.
+ */
+export function range(start: number, end: number, step = 1): readonly number[] {
+  const safeStep = step === 0 ? 1 : step;
+  if ((safeStep > 0 && start >= end) || (safeStep < 0 && start <= end)) {
+    return EMPTY_READONLY_ARRAY;
+  }
+  const result: number[] = [];
+  if (safeStep > 0) {
+    for (let n = start; n < end; n += safeStep) {
+      result.push(n);
+    }
+  } else {
+    for (let n = start; n > end; n += safeStep) {
+      result.push(n);
+    }
+  }
+  return Object.freeze(result);
+}
+

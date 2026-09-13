@@ -8,6 +8,8 @@
 import type { TrailSliceActions, TrailEntry } from '../../../types';
 import type { SliceContext } from '../context';
 import type { PopoverDAG } from '../../../utils/dag';
+import { EMPTY_ARRAY, EMPTY_SET } from '../../../constants';
+
 
 export type TrailDAGActions<
   TData = unknown,
@@ -72,13 +74,14 @@ export function createTrailDAGActions<
     },
 
     getParents: (key: TPopoverKey): ReadonlySet<TPopoverKey> =>
-      popoverDAG?.getParents(key) ?? new Set(),
+      popoverDAG?.getParents(key) ?? EMPTY_SET,
 
     getChildren: (key: TPopoverKey): ReadonlySet<TPopoverKey> =>
-      popoverDAG?.getChildren(key) ?? new Set(),
+      popoverDAG?.getChildren(key) ?? EMPTY_SET,
 
     getGeodesicPath: (key: TPopoverKey): readonly TPopoverKey[] =>
-      popoverDAG?.getGeodesicPath(key) ?? [],
+      popoverDAG?.getGeodesicPath(key) ?? EMPTY_ARRAY,
+
 
     getDAG: (): PopoverDAG<TPopoverKey> | undefined => popoverDAG,
   };

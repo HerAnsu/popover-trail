@@ -41,3 +41,5 @@ export * from '../context/cardScopeGuards';
 export * from '../dnd/dndGuards';
 export * from '../schema/schemaGuards';
 export * from './branded';
+export * from './predicates';
+

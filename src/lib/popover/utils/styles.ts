@@ -9,6 +9,7 @@ import type { CSSProperties } from 'react';
 import type { ZIndexDepth } from '../types/branded';
 import { createLRUCache } from './lruCache';
 import { hashTransformCoordinates, toFiniteNumber, buildTransformString } from './stylesTransform';
+import { DEFAULT_BASE_Z_INDEX, ZERO_OFFSET } from '../constants';
 
 export { hashTransformCoordinates, toFiniteNumber };
 
@@ -24,12 +25,12 @@ export interface GetPopoverStylesParams {
 }
 
 const styleCache = createLRUCache<number, CSSProperties>(128);
-const DEFAULT_FALLBACK_Z_INDEX = 1000;
-const DEFAULT_ZERO_OFFSET: Readonly<{ x: number; y: number }> = Object.freeze({ x: 0, y: 0 });
+const DEFAULT_FALLBACK_Z_INDEX = DEFAULT_BASE_Z_INDEX;
 
 export function getPopoverStyles({
   finalLayoutPos,
-  offset = DEFAULT_ZERO_OFFSET,
+  offset = ZERO_OFFSET,
+
   dragX = 0,
   dragY = 0,
   rotation = 0,

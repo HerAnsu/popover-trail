@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { globalCacheEventRevalidator } from '../utils/cache';
+import { isPromise } from '../utils/asyncUtils';
 import { usePopoverCache } from './usePopoverCache';
 import {
   asSWRCompatibleCache,
@@ -25,8 +26,9 @@ export function usePopoverCacheValue<TData = unknown>(
 
   const [data, setData] = useState<TData | undefined>(() => {
     const cached = cache?.get(key);
-    return cached instanceof Promise ? opts?.initialData : (cached ?? opts?.initialData);
+    return isPromise(cached) ? opts?.initialData : (cached ?? opts?.initialData);
   });
+
   const [isLoading, setIsLoading] = useState<boolean>(Boolean(fetcher && data === undefined));
   const [error, setError] = useState<unknown>(null);
 

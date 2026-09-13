@@ -22,6 +22,7 @@ import {
 import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { createHistorySnapshot, type HistorySnapshot } from '../history/history';
 import { ok, err, type Result, mapResult } from '../../utils/result';
+import { ZERO_OFFSET } from '../../constants';
 
 /**
  * Diagnostic error payload returned when a query operation targets a nonexistent or closed popover.
@@ -35,8 +36,6 @@ export interface PopoverNotFoundError<K extends string = string> {
   /** Explanatory message. */
   readonly message: string;
 }
-
-const ZERO_OFFSET: DragOffset = Object.freeze({ x: 0, y: 0 });
 
 /**
  * Read-only query bus for inspecting popover store state.

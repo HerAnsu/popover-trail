@@ -44,6 +44,9 @@ export function toFilteredOutEntryKey<TData = unknown, TPopoverKey extends strin
   list: readonly TrailEntry<TData, TPopoverKey>[],
   key: TPopoverKey,
 ): TrailEntry<TData, TPopoverKey>[] {
+  const index = findEntryIndex(list, key);
+  if (index === -1) return list as TrailEntry<TData, TPopoverKey>[];
+
   const result: TrailEntry<TData, TPopoverKey>[] = [];
   for (const entry of list) {
     if (entry && entry.key !== key) {
@@ -62,6 +65,9 @@ export function elevateKeyInOrder<TPopoverKey extends string = string>(
   order: readonly TPopoverKey[],
   key: TPopoverKey,
 ): readonly TPopoverKey[] {
+  if (order.length > 0 && order.at(-1) === key) {
+    return order;
+  }
   const result: TPopoverKey[] = [];
   for (const item of order) {
     if (item !== key) result.push(item);
@@ -69,3 +75,4 @@ export function elevateKeyInOrder<TPopoverKey extends string = string>(
   result.push(key);
   return result;
 }
+

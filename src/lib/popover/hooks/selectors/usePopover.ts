@@ -19,8 +19,8 @@ import type {
   ResolveRegisteredData,
 } from '../../types/registerTypes';
 import { shallowEqual } from '../../utils/equality';
+import { ZERO_OFFSET } from '../../constants';
 
-const DEFAULT_OFFSET = Object.freeze({ x: 0, y: 0 });
 
 /**
  * High-level ergonomic composite hook for reactive inspection and control of an individual popover card.
@@ -70,8 +70,9 @@ export function usePopover<
           isPinned: state.pinnedStates[key] ?? false,
           zIndex: state.zIndexOrder.indexOf(key),
           isTop: state.zIndexOrder.length > 0 && state.zIndexOrder.at(-1) === key,
-          offset: state.offsets[key] ?? DEFAULT_OFFSET,
+          offset: state.offsets[key] ?? ZERO_OFFSET,
         };
+
       },
       [key],
     ),
