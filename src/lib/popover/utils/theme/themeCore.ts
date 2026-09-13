@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Core Theme Token Application and RAII Lifecycle.
  * Clean Architecture Layer 2: Headless State Management.
  *
@@ -6,6 +6,7 @@
  */
 
 import { createDisposable, type ScopeDisposable } from '../disposable';
+import { isEmptyRecord } from '../cleanObject';
 import { injectStyleProperty, removeThemeTokens } from './themeDom';
 import {
   DEFAULT_THEME_TOKENS,
@@ -22,7 +23,7 @@ export function applyThemeTokens(
   if (!element) return createDisposable(() => {});
 
   const merged =
-    tokens && Object.keys(tokens).length > 0
+    !isEmptyRecord(tokens)
       ? { ...DEFAULT_THEME_TOKENS, ...tokens }
       : DEFAULT_THEME_TOKENS;
 

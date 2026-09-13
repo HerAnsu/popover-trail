@@ -13,10 +13,21 @@ export function composeEventHandlers<E extends React.SyntheticEvent>(
   handlerA?: (e: E) => void,
   handlerB?: (e: E) => void,
 ): (e: E) => void {
+  if (!handlerA) return handlerB ?? (() => {});
+  if (!handlerB) return handlerA;
   return (e: E) => {
-    handlerA?.(e);
-    handlerB?.(e);
+    handlerA(e);
+    handlerB(e);
   };
+}
+
+export function invokeEventHandlers<E extends React.SyntheticEvent>(
+  e: E,
+  handlerA?: (e: E) => void,
+  handlerB?: (e: E) => void,
+): void {
+  handlerA?.(e);
+  handlerB?.(e);
 }
 
 export function useComposedTriggerHandlers(
@@ -25,35 +36,35 @@ export function useComposedTriggerHandlers(
 ) {
   const onClick = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      composeEventHandlers(triggerProps.onClick, childProps?.onClick)(e);
+      invokeEventHandlers(e, triggerProps.onClick, childProps?.onClick);
     },
     [triggerProps.onClick, childProps?.onClick],
   );
 
   const onMouseEnter = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      composeEventHandlers(triggerProps.onMouseEnter, childProps?.onMouseEnter)(e);
+      invokeEventHandlers(e, triggerProps.onMouseEnter, childProps?.onMouseEnter);
     },
     [triggerProps.onMouseEnter, childProps?.onMouseEnter],
   );
 
   const onMouseLeave = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      composeEventHandlers(triggerProps.onMouseLeave, childProps?.onMouseLeave)(e);
+      invokeEventHandlers(e, triggerProps.onMouseLeave, childProps?.onMouseLeave);
     },
     [triggerProps.onMouseLeave, childProps?.onMouseLeave],
   );
 
   const onKeyDown = React.useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
-      composeEventHandlers(triggerProps.onKeyDown, childProps?.onKeyDown)(e);
+      invokeEventHandlers(e, triggerProps.onKeyDown, childProps?.onKeyDown);
     },
     [triggerProps.onKeyDown, childProps?.onKeyDown],
   );
 
   const onFocus = React.useCallback(
     (e: React.FocusEvent<HTMLElement>) => {
-      composeEventHandlers(triggerProps.onFocus, childProps?.onFocus)(e);
+      invokeEventHandlers(e, triggerProps.onFocus, childProps?.onFocus);
     },
     [triggerProps.onFocus, childProps?.onFocus],
   );

@@ -3154,9 +3154,25 @@ Functional array manipulation and prototype-pollution safe object utilities:
 | `pickRecordKeys(record, keys)` | `(record, keys) => Partial<Record<K, T>>` | Safely creates a shallow copy containing only the selected keys. |
 | `omitRecordKey(record, key)` | `(record, key) => Partial<Record<K, T>>` | Returns a record omitting the specified key (preserves hidden classes). |
 | `safeAssign(target, source)` | `(target, source) => target & source` | Merges properties safely, stripping unsafe `__proto__` and `constructor` keys. |
+| `isEmptyRecord(record)` | `(record?) => boolean` | Zero-allocation check whether object has zero own enumerable properties. |
+| `mapRecordValues(record, fn)` | `(record, fn) => Partial<Record<K, R>>` | Transforms values of a record skipping unsafe prototype keys. |
+| `filterRecord(record, pred)` | `(record, pred) => Partial<Record<K, V>>` | Filters entries of a record by predicate skipping unsafe prototype keys. |
 
 ```typescript
-import { unique, partition, groupBy, keyBy, chunk, zip, range, compact, pickRecordKeys } from 'popover-trail';
+import {
+  unique,
+  partition,
+  groupBy,
+  keyBy,
+  chunk,
+  zip,
+  range,
+  compact,
+  pickRecordKeys,
+  isEmptyRecord,
+  mapRecordValues,
+  filterRecord,
+} from 'popover-trail';
 
 // 1. Deduplicate trail keys
 const uniqueKeys = unique(['card-1', 'card-2', 'card-1']); // ['card-1', 'card-2']

@@ -9,10 +9,40 @@ import { useRef, useCallback, useInsertionEffect, type Ref, type RefCallback } f
 import { isReactRefObject } from '../utils/guards/reactGuards';
 
 /**
+ * Safely assigns a value to a React ref (either mutable RefObject or RefCallback).
+ *
+ * @template T - Node element type.
+ * @param ref - React ref to assign.
+ * @param value - DOM node or value to pass to the ref.
+ */
+export function setRef<T>(ref: Ref<T> | undefined | null, value: T | null): void {
+  if (typeof ref === 'function') {
+    ref(value);
+  } else if (isReactRefObject<T>(ref)) {
+    ref.current = value;
+  }
+}
+
+/**
+ * Composes multiple React refs into a single RefCallback.
+ *
+ * @template T - Node element type.
+ * @param refs - Sequence of refs to merge.
+ * @returns Composed callback ref.
+ */
+export function mergeRefs<T>(...refs: (Ref<T> | undefined | null)[]): RefCallback<T> {
+  return (node: T | null) => {
+    for (const ref of refs) {
+      setRef(ref, node);
+    }
+  };
+}
+
+/**
  * Merges multiple React refs into a single referentially stable callback ref.
  * Eliminates layout thrashing by avoiding DOM node detach/reattach cycles.
  */
-export function useMergedRef<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T> {
+export function useMergedRef<T>(...refs: (Ref<T> | undefined | null)[]): RefCallback<T> {
   const refsRef = useRef(refs);
 
   useInsertionEffect(() => {
@@ -21,11 +51,7 @@ export function useMergedRef<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T>
 
   return useCallback((node: T | null) => {
     for (const ref of refsRef.current) {
-      if (typeof ref === 'function') {
-        ref(node);
-      } else if (isReactRefObject<T>(ref)) {
-        ref.current = node;
-      }
+      setRef(ref, node);
     }
   }, []);
 }

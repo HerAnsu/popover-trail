@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { omitRecordKey, pickRecordKeys, safeAssign } from './cleanObject';
+import {
+  omitRecordKey,
+  pickRecordKeys,
+  safeAssign,
+  isEmptyRecord,
+  mapRecordValues,
+  filterRecord,
+} from './cleanObject';
 
 describe('cleanObject', () => {
   it('omits key from record without mutation', () => {
@@ -38,5 +45,26 @@ describe('cleanObject', () => {
     const pickedSafe = pickRecordKeys(withPollution, ['valid', '__proto__']);
     expect(pickedSafe).toEqual({ valid: 42 });
     expect('bad' in Object.prototype).toBe(false);
+  });
+
+  it('identifies empty records without allocating memory', () => {
+    expect(isEmptyRecord({})).toBe(true);
+    expect(isEmptyRecord(undefined)).toBe(true);
+    expect(isEmptyRecord(null)).toBe(true);
+    expect(isEmptyRecord({ a: 1 })).toBe(false);
+  });
+
+  it('maps record values while preserving prototype safety', () => {
+    const record = { a: 1, b: 2, c: 3 };
+    const mapped = mapRecordValues(record, (v) => v * 10);
+    expect(mapped).toEqual({ a: 10, b: 20, c: 30 });
+    expect(mapRecordValues({}, (v) => v)).toEqual({});
+  });
+
+  it('filters record entries while preserving prototype safety', () => {
+    const record = { a: 1, b: 2, c: 3, d: 4 };
+    const filtered = filterRecord(record, (v) => v % 2 === 0);
+    expect(filtered).toEqual({ b: 2, d: 4 });
+    expect(filterRecord({}, () => true)).toEqual({});
   });
 });

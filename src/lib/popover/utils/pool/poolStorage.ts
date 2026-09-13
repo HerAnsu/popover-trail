@@ -6,6 +6,7 @@
  */
 
 import type { PoolCapacity } from './poolBranded';
+import { clamp } from '../math';
 
 export class PoolStorage<T> {
   private readonly items: T[] = [];
@@ -52,7 +53,7 @@ export class PoolStorage<T> {
   }
 
   preallocate(count: number, factory: () => T): number {
-    const toAdd = Math.min(Math.max(0, count), this.maxCapacity - this.items.length);
+    const toAdd = clamp(count, 0, this.maxCapacity - this.items.length);
     for (let i = 0; i < toAdd; i++) {
       const item = factory();
       this.items.push(item);

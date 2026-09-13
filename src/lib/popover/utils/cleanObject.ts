@@ -111,3 +111,74 @@ export function pickRecordKeys<T, K extends string = string>(
   }
   return result;
 }
+
+/**
+ * Checks whether a record contains zero own enumerable properties.
+ * Executes in O(1) without heap allocation (unlike Object.keys(record).length === 0).
+ *
+ * @param record - Source record to inspect.
+ * @returns True if nullish or having no own enumerable properties.
+ */
+export function isEmptyRecord(record?: object | null): boolean {
+  if (!record) return true;
+  for (const key in record) {
+    if (Object.hasOwn(record, key)) return false;
+  }
+  return true;
+}
+
+/**
+ * Transforms the values of a record using a mapping function.
+ * Protects against prototype pollution by skipping unsafe keys.
+ *
+ * @template K - Key type.
+ * @template V - Input value type.
+ * @template R - Output value type.
+ * @param record - Source record.
+ * @param fn - Value transformer function.
+ * @returns A new record with transformed values.
+ */
+export function mapRecordValues<K extends string | number, V, R>(
+  record: Partial<Record<K, V>>,
+  fn: (value: V, key: K) => R,
+): Partial<Record<K, R>> {
+  if (!record || isEmptyRecord(record)) return {};
+  const result: Partial<Record<K, R>> = {};
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(String(key))) {
+      const val = record[key as K];
+      if (val !== undefined) {
+        result[key as K] = fn(val, key as unknown as K);
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Filters a record based on a key-value predicate evaluation.
+ * Protects against prototype pollution by skipping unsafe keys.
+ *
+ * @template K - Key type.
+ * @template V - Value type.
+ * @param record - Source record.
+ * @param predicate - Entry filter function.
+ * @returns A new record containing only entries that satisfied the predicate.
+ */
+export function filterRecord<K extends string | number, V>(
+  record: Partial<Record<K, V>>,
+  predicate: (value: V, key: K) => boolean,
+): Partial<Record<K, V>> {
+  if (!record || isEmptyRecord(record)) return {};
+  const result: Partial<Record<K, V>> = {};
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(String(key))) {
+      const val = record[key as K];
+      if (val !== undefined && predicate(val, key as unknown as K)) {
+        result[key as K] = val;
+      }
+    }
+  }
+  return result;
+}
+

@@ -7,12 +7,13 @@
 import type { DragOffset } from '../../types';
 import { EMPTY_ARRAY, ZERO_OFFSET, emptyRecord } from '../hydration/storeDefaults';
 import { shallowEqual } from '../../utils/equality';
+import { isEmptyRecord } from '../../utils/cleanObject';
 import type { HistorySnapshot } from './historyTypes';
 
 export function cloneNonEmptyRecord<K extends string = string, V = unknown>(
   record?: Readonly<Partial<Record<K, V>>>,
 ): Readonly<Partial<Record<K, V>>> {
-  if (!record || Object.keys(record).length === 0) {
+  if (!record || isEmptyRecord(record)) {
     return emptyRecord<K, V>();
   }
   return { ...record };
