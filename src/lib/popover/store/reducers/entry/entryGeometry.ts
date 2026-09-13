@@ -6,12 +6,14 @@
 
 import type { PopoverRect, TrailEntry } from '../../../types';
 import { hasFunctionProperty } from '../../../utils/guards/objectGuards';
+import { toFiniteNumber } from '../../../utils/stylesTransform';
+import { constant } from '../../../utils/functional';
 
 function cloneDOMRect(rect: DOMRect | PopoverRect): DOMRect {
-  const x = rect.x ?? rect.left ?? 0;
-  const y = rect.y ?? rect.top ?? 0;
-  const width = rect.width ?? 0;
-  const height = rect.height ?? 0;
+  const x = toFiniteNumber(rect.x ?? rect.left);
+  const y = toFiniteNumber(rect.y ?? rect.top);
+  const width = Math.max(0, toFiniteNumber(rect.width));
+  const height = Math.max(0, toFiniteNumber(rect.height));
   if (typeof DOMRect !== 'undefined') {
     return new DOMRect(x, y, width, height);
   }
@@ -24,7 +26,7 @@ function cloneDOMRect(rect: DOMRect | PopoverRect): DOMRect {
     right: rect.right ?? x + width,
     bottom: rect.bottom ?? y + height,
     left: rect.left ?? x,
-    toJSON: hasFunctionProperty(rect, 'toJSON') ? () => rect.toJSON() : () => rect,
+    toJSON: hasFunctionProperty(rect, 'toJSON') ? () => rect.toJSON() : constant(rect),
   };
 }
 

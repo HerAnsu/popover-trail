@@ -6,6 +6,7 @@
  */
 
 import { tryResetItem } from './poolOperations';
+import { noop } from '../functional';
 
 export function composeResetters<T>(...resetters: Array<(item: T) => void>): (item: T) => void {
   return (item: T) => {
@@ -60,5 +61,5 @@ export function createBoundingBoxResetter(
 }
 
 export function createNoopResetter<T>(): (item: T) => void {
-  return () => {};
+  return noop;
 }

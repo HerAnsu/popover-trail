@@ -11,6 +11,7 @@ import type {
   PopoverSchemaInstance,
 } from './schemaTypes';
 import { createPopoverSchema } from './schemaBuilder';
+import { safeAssign } from '../utils/cleanObject';
 
 /**
  * Extracts raw PopoverSchemaDefinition from a standalone definition or schema instance wrapper.
@@ -75,10 +76,12 @@ export function mergePopoverSchemas<
     | { readonly definition: PopoverSchemaDefinition }
   )[],
 >(...schemas: TSchemas): PopoverSchemaInstance<MergedSchemaDefinition<TSchemas>> {
-  const merged: Record<string, PopoverSchemaNode> = {};
+  let merged: Record<string, PopoverSchemaNode> = {};
   for (const s of schemas) {
     const def = 'definition' in s ? s.definition : s;
-    if (def && typeof def === 'object') Object.assign(merged, def);
+    if (def && typeof def === 'object') {
+      merged = safeAssign(merged, def as Record<string, PopoverSchemaNode>);
+    }
   }
   return createPopoverSchema<MergedSchemaDefinition<TSchemas>>(
     merged as MergedSchemaDefinition<TSchemas>,

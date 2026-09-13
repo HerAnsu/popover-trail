@@ -4,10 +4,11 @@
  * @module historySnapshotHelpers
  */
 
-import type { DragOffset } from '../../types';
 import { EMPTY_ARRAY, ZERO_OFFSET, emptyRecord } from '../hydration/storeDefaults';
 import { shallowEqual } from '../../utils/equality';
 import { isEmptyRecord } from '../../utils/cleanObject';
+import { isDragOffset } from '../../utils/guards/geometryGuards';
+import { prop } from '../../utils/functional';
 import type { HistorySnapshot } from './historyTypes';
 
 export function cloneNonEmptyRecord<K extends string = string, V = unknown>(
@@ -30,10 +31,6 @@ export function areKeysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
     if (a[i] !== b[i]) return false;
   }
   return true;
-}
-
-function isDragOffset(val: unknown): val is DragOffset {
-  return typeof val === 'object' && val !== null && 'x' in val && 'y' in val;
 }
 
 export function areOffsetsEqual(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
@@ -65,16 +62,16 @@ export function areSnapshotsEqual<TData, TPopoverKey extends string>(
   if (
     a.trail !== b.trail &&
     !areKeysEqual(
-      a.trail.map((e) => e.key),
-      b.trail.map((e) => e.key),
+      a.trail.map(prop('key')),
+      b.trail.map(prop('key')),
     )
   )
     return false;
   if (
     a.floating !== b.floating &&
     !areKeysEqual(
-      a.floating.map((e) => e.key),
-      b.floating.map((e) => e.key),
+      a.floating.map(prop('key')),
+      b.floating.map(prop('key')),
     )
   )
     return false;

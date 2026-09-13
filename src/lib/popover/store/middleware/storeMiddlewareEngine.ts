@@ -8,28 +8,13 @@
 import type { PopoverMiddleware, PopoverStore, TypedMiddlewarePatch } from '../../types';
 import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { toError } from '../../utils/storeHelpers';
-import { isUnsafeKey } from '../../utils/safeKeys';
 import { noop } from '../../utils/functional';
+import { safeAssign } from '../../utils/cleanObject';
 
 function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
   val: unknown,
 ): val is Partial<PopoverStore<TData, TContext, TPopoverKey>> {
   return typeof val === 'object' && val !== null;
-}
-
-/**
- * Merges patch properties into target while blocking prototype pollution.
- *
- * @remarks
- * Skips dangerous keys (`__proto__`, `constructor`, `prototype`) to guard against
- * prototype pollution from third-party middleware, modifying the object directly.
- */
-function mergeSanitizedPatch<T extends object>(target: T, source: object): void {
-  for (const k of Object.keys(source)) {
-    if (!isUnsafeKey(k)) {
-      Reflect.set(target, k, Reflect.get(source, k));
-    }
-  }
 }
 
 /**
@@ -103,7 +88,6 @@ export class PopoverMiddlewareEngine<
     currentState: PopoverStore<TData, TContext, TPopoverKey>,
   ): Partial<PopoverStore<TData, TContext, TPopoverKey>> | false {
     let patch = initialPatch;
-    let isCloned = false;
 
     for (const mw of this.middlewares) {
       let result: ReturnType<typeof mw>;
@@ -118,13 +102,12 @@ export class PopoverMiddlewareEngine<
       // Explicit cancellation / rejection
       if (result === false) return false;
 
-      // Copy-On-Write: allocate new patch container only when first patch modification occurs
+      // Copy-On-Write: safeAssign allocates a new container preserving immutability
       if (isStorePatchObject(result)) {
-        if (!isCloned) {
-          patch = { ...initialPatch };
-          isCloned = true;
-        }
-        mergeSanitizedPatch(patch, result);
+        patch = safeAssign(
+          patch as Record<string, unknown>,
+          result as Record<string, unknown>,
+        ) as typeof patch;
       }
     }
     return patch;
@@ -150,20 +133,18 @@ export function composeMiddlewares<
 ): PopoverMiddleware<TData, TContext, TPopoverKey> {
   return (initialPatch, currentState) => {
     let patch: TypedMiddlewarePatch<TData, TContext, TPopoverKey> = initialPatch;
-    let isCloned = false;
 
     for (const mw of middlewares) {
       if (typeof mw !== 'function') continue;
       const res = mw(patch, currentState);
       // Veto if any middleware explicitly returns false
       if (res === false) return false;
-      // Lazily clone and sanitize patch mutations
+      // Lazily clone and sanitize patch mutations via safeAssign
       if (typeof res === 'object' && res !== null) {
-        if (!isCloned) {
-          patch = { ...initialPatch };
-          isCloned = true;
-        }
-        mergeSanitizedPatch(patch, res);
+        patch = safeAssign(
+          patch as Record<string, unknown>,
+          res as Record<string, unknown>,
+        ) as typeof patch;
       }
     }
     return patch;

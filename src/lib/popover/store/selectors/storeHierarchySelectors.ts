@@ -8,6 +8,7 @@
 import type { TrailEntry } from '../../types';
 import { EMPTY_ARRAY } from '../hydration';
 import { hasKeyIn } from '../../utils/predicates';
+import { or, propEq } from '../../utils/functional';
 import type { HasActiveEntriesState } from './storeSelectorTypes';
 
 
@@ -17,8 +18,10 @@ export function collectChildrenKeys<TPopoverKey extends string = string, TData =
   key: string,
 ): readonly TPopoverKey[] {
   const children: TPopoverKey[] = [];
-  const isChild = (e: TrailEntry<TData, TPopoverKey>) =>
-    e.parentKey === key || e.originalParentKey === key;
+  const isChild = or<TrailEntry<TData, TPopoverKey>>(
+    propEq('parentKey', key as TPopoverKey | undefined),
+    propEq('originalParentKey', key as TPopoverKey | undefined),
+  );
   for (const e of floating) if (isChild(e)) children.push(e.key);
   for (const e of trail) if (isChild(e)) children.push(e.key);
   return children.length > 0 ? children : EMPTY_ARRAY;

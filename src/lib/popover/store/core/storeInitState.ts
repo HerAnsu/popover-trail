@@ -18,13 +18,9 @@ import {
   type PopoverStoreOptions,
   type NormalizedStoreConfig,
 } from './storeOptions';
+import { isEmptyRecord, safeAssign } from '../../utils/cleanObject';
 
-export function isEmptyOwnObject(value: object): boolean {
-  for (const key in value) {
-    if (Object.hasOwn(value, key)) return false;
-  }
-  return true;
-}
+export const isEmptyOwnObject = isEmptyRecord;
 
 export function normalizeStoreConfig<
   TData = unknown,
@@ -64,12 +60,17 @@ export function buildMergedInitialState<
     effectiveContext,
     effectiveCache,
   );
-  const merged = { ...base } as PopoverStateData<TData, TContext, TPopoverKey> &
+  let merged = { ...base } as PopoverStateData<TData, TContext, TPopoverKey> &
     InferSliceStateFromTuple<TSlices>;
 
   if (customSlices) {
     for (const slice of customSlices) {
-      if (slice.initialState) Object.assign(merged, slice.initialState);
+      if (slice.initialState) {
+        merged = safeAssign(
+          merged as unknown as Record<string, unknown>,
+          slice.initialState as Record<string, unknown>,
+        ) as typeof merged;
+      }
     }
   }
   return merged;

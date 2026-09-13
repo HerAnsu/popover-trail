@@ -6,6 +6,7 @@
  */
 
 import { DISPOSE_SYMBOL } from '../disposable';
+import { clamp } from '../math';
 import { type PoolCapacity, toPoolCapacity } from './poolBranded';
 import { tryResetItem } from './poolOperations';
 import { runWithItem } from './poolScope';
@@ -55,7 +56,7 @@ export class FixedPool<T> {
   }
 
   get inUse(): number {
-    return Math.max(0, this.capacity - this.head);
+    return clamp(this.capacity - this.head, 0, Infinity);
   }
 
   get isFull(): boolean {

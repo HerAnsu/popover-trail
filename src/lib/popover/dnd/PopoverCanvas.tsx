@@ -23,6 +23,7 @@ import {
   ZERO_OFFSET,
 } from '../constants';
 import { compact } from '../utils/collections';
+import { toFiniteNumber } from '../utils/stylesTransform';
 import { usePopoverTrail, usePopoverFloating } from '../hooks/usePopoverSelectors';
 import { usePopoverStore, usePopoverStoreApi, usePopoverActions } from '../context/usePopoverStore';
 
@@ -91,8 +92,8 @@ export function PopoverCanvas<TData = unknown>({
       updateOffset(
 
         key,
-        cur.x + (Number.isFinite(e.delta?.x) ? e.delta.x : 0),
-        cur.y + (Number.isFinite(e.delta?.y) ? e.delta.y : 0),
+        cur.x + toFiniteNumber(e.delta?.x),
+        cur.y + toFiniteNumber(e.delta?.y),
       );
     },
     [store, updateOffset],

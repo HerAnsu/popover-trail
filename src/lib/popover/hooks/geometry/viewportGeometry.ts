@@ -13,6 +13,7 @@ import {
   isCenteredModalMode,
   isDockedTopMode,
 } from '../../utils/typeGuards';
+import { clamp } from '../../utils/math';
 
 /**
  * Helper to safely measure current viewport bounds across SSR and browser environments.
@@ -63,22 +64,22 @@ export function calculateResponsivePosition(
 ): { top: number; left: number } | null {
   if (isBottomSheetMode(effectiveResponsiveMode, isMobileViewport, layoutStrategy)) {
     return {
-      top: Math.max(0, winHeight - 320),
-      left: Math.max(0, (winWidth - 400) / 2),
+      top: clamp(winHeight - 320, 0, Infinity),
+      left: clamp((winWidth - 400) / 2, 0, Infinity),
     };
   }
 
   if (isCenteredModalMode(effectiveResponsiveMode, layoutStrategy)) {
     return {
-      top: Math.max(20, (winHeight - 350) / 2),
-      left: Math.max(20, (winWidth - 400) / 2),
+      top: clamp((winHeight - 350) / 2, 20, Infinity),
+      left: clamp((winWidth - 400) / 2, 20, Infinity),
     };
   }
 
   if (isDockedTopMode(layoutStrategy)) {
     return {
       top: 10,
-      left: Math.max(0, (winWidth - 400) / 2),
+      left: clamp((winWidth - 400) / 2, 0, Infinity),
     };
   }
 

@@ -19,6 +19,8 @@ import { PopoverMiddlewareEngine } from '../store/storeMiddlewareEngine';
 import { PopoverTransitionScheduler } from '../store/transitionScheduler';
 import { PopoverEventBus, dispatchStoreEvent } from '../store/eventBus';
 import { runEffects, type Effect } from '../store/effects';
+import { findEntryInStore } from '../utils/collections';
+import { noop, constant } from '../utils/functional';
 
 export interface SliceTestHarness<
   TActions = PopoverActions,
@@ -85,13 +87,13 @@ export function createMockSliceContext<
   const deps: ActionRegistryDependencies<TData, TContext, TPopoverKey> = {
     activeControllers: new Map<string, AbortController>(),
     inFlightPromises: new Map<string, Promise<TData>>(),
-    abortControllersForKeys: () => {},
-    abortAllControllers: () => {},
+    abortControllersForKeys: noop,
+    abortAllControllers: noop,
     incrementRootCounter: () => 1,
-    isRootStale: () => false,
+    isRootStale: constant(false),
     incrementNestedCounter: () => 1,
-    isNestedStale: () => false,
-    markAllCountersStale: () => {},
+    isNestedStale: constant(false),
+    markAllCountersStale: noop,
     resolvePopoverEntry: () => Promise.resolve(),
     transitionScheduler,
     eventBus,
@@ -118,9 +120,8 @@ export function createMockSliceContext<
           historyMgr.pushSnapshot(s);
         },
         getStoreState: () => state,
-        findEntryByKey: (key: string) =>
-          state.trail.find((e) => e.key === key) ?? state.floating.find((e) => e.key === key),
-        resetStoreState: () => {},
+        findEntryByKey: (key: string) => findEntryInStore(state.floating, state.trail, key),
+        resetStoreState: noop,
       });
     },
     pushSnapshot: (s: PopoverStateData<TData, TContext, TPopoverKey>) => {
@@ -132,11 +133,10 @@ export function createMockSliceContext<
     undoStack: historyMgr.undoStack,
     redoStack: historyMgr.redoStack,
     historyManager: historyMgr,
-    resetStoreState: () => {},
-    findEntryByKey: (key: string) =>
-      state.trail.find((e) => e.key === key) ?? state.floating.find((e) => e.key === key),
-    startBatch: () => {},
-    endBatch: () => {},
+    resetStoreState: noop,
+    findEntryByKey: (key: string) => findEntryInStore(state.floating, state.trail, key),
+    startBatch: noop,
+    endBatch: noop,
     middlewareEngine: mw,
     popoverDAG: dag,
     ...depOverrides,

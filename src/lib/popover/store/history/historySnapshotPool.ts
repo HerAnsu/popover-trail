@@ -12,6 +12,7 @@ import {
 } from '../../utils/buffer';
 import type { Result } from '../../utils/result';
 import { EMPTY_ARRAY } from '../hydration/storeDefaults';
+import { clamp } from '../../utils/math';
 import {
   cloneNonEmptyRecord,
   cloneNonEmptyArray,
@@ -38,7 +39,7 @@ export class HistorySnapshotPool<TData, TPopoverKey extends string = string> {
   private readonly buffer: RingBuffer<HistorySnapshot<TData, TPopoverKey>>;
 
   constructor(capacity = 30) {
-    this.buffer = new RingBuffer<HistorySnapshot<TData, TPopoverKey>>(Math.max(1, capacity));
+    this.buffer = new RingBuffer<HistorySnapshot<TData, TPopoverKey>>(clamp(capacity, 1, Infinity));
   }
 
   get size(): number {

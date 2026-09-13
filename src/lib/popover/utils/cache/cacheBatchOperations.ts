@@ -35,8 +35,8 @@ export function setManyEntries<T>(
   entries: readonly BatchSetTuple<T>[],
   onEvict?: (key: string, reason: 'expired' | 'lru' | 'weight') => void,
 ): void {
-  for (const tuple of entries) {
-    writeCacheEntry(storage, maxSize, defaultTtl, events, tuple[0], tuple[1], tuple[2], onEvict);
+  for (const [key, data, ttlOrOpts] of entries) {
+    writeCacheEntry(storage, maxSize, defaultTtl, events, key, data, ttlOrOpts, onEvict);
   }
 }
 

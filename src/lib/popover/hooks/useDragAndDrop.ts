@@ -3,7 +3,7 @@ import type { DragAxis } from '../types';
 import { computeTiltMatrixInPlace } from '../utils/dragMath';
 import { validateDragOffset } from '../utils/devWarnings';
 import { clamp } from '../utils/math';
-
+import { constant } from '../utils/functional';
 import { isBrowser, isFunction } from '../utils/typeGuards';
 
 /**
@@ -151,7 +151,7 @@ export function usePopoverDragAndDrop({
   const prefersReducedMotion = React.useSyncExternalStore(
     ReducedMotionObserver.subscribe,
     () => ReducedMotionObserver.isReducedMotion,
-    () => false,
+    constant(false),
   );
 
   // 1. Active Drag Spring Rotation Animation Frame Loop

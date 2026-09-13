@@ -7,6 +7,7 @@
 
 import { DISPOSE_SYMBOL } from '../disposable';
 import { Ok, Err, type Result } from '../result';
+import { clamp } from '../math';
 import type { ObjectPoolMetrics, LeakedItemInfo } from './poolTypes';
 import { PoolMetricsTracker } from './poolMetrics';
 import type { ObjectPoolResolvedConfig } from './poolConfig';
@@ -116,7 +117,7 @@ export abstract class ObjectPoolBase<T> {
     return this.storage.capacity;
   }
   get inUse(): number {
-    return Math.max(0, this.tracker.acquired - this.tracker.released);
+    return clamp(this.tracker.acquired - this.tracker.released, 0, Infinity);
   }
   getMetrics(): ObjectPoolMetrics {
     return this.tracker.getSnapshot(this.storage.size, this.storage.capacity);

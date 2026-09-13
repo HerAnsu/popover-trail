@@ -4,6 +4,8 @@
  * @module cache/cacheWeightTracker
  */
 
+import { clamp } from '../math';
+
 export class CacheWeightTracker {
   public readonly capacity: number;
   private totalWeight = 0;
@@ -19,11 +21,11 @@ export class CacheWeightTracker {
   }
 
   public add(weight = 1): void {
-    this.totalWeight += Math.max(0, weight);
+    this.totalWeight += clamp(weight, 0, Infinity);
   }
 
   public remove(weight = 1): void {
-    this.totalWeight = Math.max(0, this.totalWeight - Math.max(0, weight));
+    this.totalWeight = clamp(this.totalWeight - clamp(weight, 0, Infinity), 0, Infinity);
   }
 
   public isOverBudget(): boolean {

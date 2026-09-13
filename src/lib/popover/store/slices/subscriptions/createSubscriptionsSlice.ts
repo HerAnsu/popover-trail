@@ -11,8 +11,7 @@ import { safeCallback } from '../../../utils/safeCallback';
 import { isTrailEntry } from '../../../utils/typeGuards';
 import type { PopoverStore, SubscriptionsSliceActions, TrailEntry } from '../../../types';
 import type { SubscriptionsSliceContext } from '../context';
-
-const NOOP = () => {};
+import { noop } from '../../../utils/functional';
 
 /**
  * Creates the Subscriptions and Event Bus domain slice.
@@ -48,7 +47,7 @@ export function createSubscriptionsSlice<
         prevEntry: TrailEntry<KData, K> | undefined,
       ) => void,
     ) => {
-      if (!subscribeState) return NOOP;
+      if (!subscribeState) return noop;
 
       const selectKey = selectEntryByKey<TData, TPopoverKey>(key);
       let prevEntry = selectKey(get());

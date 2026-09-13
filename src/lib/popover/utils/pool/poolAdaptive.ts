@@ -5,13 +5,15 @@
  * @module utils/pool/poolAdaptive
  */
 
+import { noop } from '../functional';
+
 export interface PoolScheduler {
   schedule(fn: () => void, delayMs: number): () => void;
 }
 
 export const defaultPoolScheduler: PoolScheduler = {
   schedule(fn: () => void, delayMs: number): () => void {
-    if (typeof setTimeout === 'undefined') return () => {};
+    if (typeof setTimeout === 'undefined') return noop;
     const timer = setTimeout(fn, delayMs);
     return () => {
       if (typeof clearTimeout !== 'undefined') clearTimeout(timer);

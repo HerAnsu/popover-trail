@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Object Pool Telemetry and Allocation Tracking.
  * Clean Architecture Layer 1: Core Kernel.
  *
@@ -6,6 +6,7 @@
  */
 
 import type { ObjectPoolMetrics } from './poolTypes';
+import { clamp } from '../math';
 
 export class PoolMetricsTracker {
   allocated = 0;
@@ -35,7 +36,7 @@ export class PoolMetricsTracker {
   }
 
   getSnapshot(available: number, capacity: number): ObjectPoolMetrics {
-    const inUse = Math.max(0, this.acquired - this.released);
+    const inUse = clamp(this.acquired - this.released, 0, Infinity);
     const totalRequests = this.hits + this.misses;
     const hitRate = totalRequests > 0 ? this.hits / totalRequests : 0;
 

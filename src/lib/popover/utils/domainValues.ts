@@ -6,12 +6,13 @@
  */
 
 import { toFiniteNumber } from './stylesTransform';
+import { clamp } from './math';
 
 export class ZIndex {
   public readonly value: number;
 
   private constructor(val: number) {
-    this.value = Math.max(0, Math.floor(toFiniteNumber(val)));
+    this.value = clamp(Math.floor(toFiniteNumber(val)), 0, Infinity);
   }
 
   public static of(val: number): ZIndex {
@@ -23,7 +24,7 @@ export class ZIndex {
   }
 
   public elevate(step = 10): ZIndex {
-    return new ZIndex(this.value + Math.max(0, Math.floor(step)));
+    return new ZIndex(this.value + clamp(Math.floor(toFiniteNumber(step)), 0, Infinity));
   }
 }
 
@@ -31,7 +32,7 @@ export class DurationMs {
   public readonly value: number;
 
   private constructor(val: number) {
-    this.value = Math.max(0, toFiniteNumber(val));
+    this.value = clamp(toFiniteNumber(val), 0, Infinity);
   }
 
   public static of(val: number): DurationMs {

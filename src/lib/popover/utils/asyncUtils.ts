@@ -6,7 +6,8 @@
  */
 
 import { isRecordObject, isFunction } from './typeGuards';
-import { noop } from './functional';
+import { noop, constant } from './functional';
+import { clamp } from './math';
 
 export function isPromise<T>(value: unknown): value is Promise<T> {
   if (value instanceof Promise) return true;
@@ -14,7 +15,7 @@ export function isPromise<T>(value: unknown): value is Promise<T> {
 }
 
 export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
+  return new Promise((resolve) => setTimeout(resolve, clamp(ms, 0, Infinity)));
 }
 
 export function deferMicrotask(fn: () => void): void {
@@ -140,7 +141,7 @@ export function debounce<Args extends readonly unknown[]>(
           fn(...argsToCall);
         }
       },
-      Math.max(0, waitMs),
+      clamp(waitMs, 0, Infinity),
     );
   };
 
@@ -247,7 +248,7 @@ export async function retryAsync<T>(fn: () => Promise<T>, options?: RetryOptions
   const delayMs = options?.delayMs ?? 100;
   const backoffMultiplier = options?.backoffMultiplier ?? 2;
   const maxDelayMs = options?.maxDelayMs ?? 5000;
-  const shouldRetry = options?.shouldRetry ?? (() => true);
+  const shouldRetry = options?.shouldRetry ?? constant(true);
 
   const attempt = async (remainingRetries: number, currentDelay: number): Promise<T> => {
     try {
@@ -264,7 +265,7 @@ export async function retryAsync<T>(fn: () => Promise<T>, options?: RetryOptions
     }
   };
 
-  return attempt(retries, Math.max(0, delayMs));
+  return attempt(retries, clamp(delayMs, 0, Infinity));
 }
 
 

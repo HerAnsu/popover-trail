@@ -6,9 +6,10 @@
  */
 
 import { clamp } from './math';
+import { toFiniteNumber } from './stylesTransform';
 
 function resolveCoords(pt?: { x?: number; y?: number } | null): { x: number; y: number } {
-  return { x: pt?.x ?? 0, y: pt?.y ?? 0 };
+  return { x: toFiniteNumber(pt?.x), y: toFiniteNumber(pt?.y) };
 }
 
 export class Point2D {
@@ -16,8 +17,8 @@ export class Point2D {
   readonly y: number;
 
   constructor(x: number, y: number) {
-    this.x = Number.isFinite(x) ? x : 0;
-    this.y = Number.isFinite(y) ? y : 0;
+    this.x = toFiniteNumber(x);
+    this.y = toFiniteNumber(y);
   }
 
   private static readonly ZERO = new Point2D(0, 0);

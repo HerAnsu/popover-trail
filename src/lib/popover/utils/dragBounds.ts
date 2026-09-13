@@ -7,6 +7,7 @@
 
 import { toFiniteOrDefault } from './typeGuards';
 import { clamp } from './math';
+import { toFiniteNumber } from './stylesTransform';
 
 export interface ClampBounds {
   minX?: number;
@@ -44,8 +45,8 @@ export function clampDragCoordinatesInPlace(
   bounds: ClampBounds | undefined,
   outTarget: { x: number; y: number },
 ): void {
-  const safeX = Number.isFinite(x) ? toFiniteOrDefault(x, 0) : 0;
-  const safeY = Number.isFinite(y) ? toFiniteOrDefault(y, 0) : 0;
+  const safeX = toFiniteNumber(x);
+  const safeY = toFiniteNumber(y);
   if (!bounds) {
     outTarget.x = safeX;
     outTarget.y = safeY;

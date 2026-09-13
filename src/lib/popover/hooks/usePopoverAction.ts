@@ -16,6 +16,7 @@ import { useCrossVersionActionState } from '../utils/react19Adapters';
 import { usePopoverStoreApi } from '../context/usePopoverStore';
 import { wrapAsyncResult, isOk } from '../utils/result';
 import { toError } from '../utils/typeGuards';
+import { isKeyInList, isPopoverActive } from '../utils/predicates';
 import { useLatestRef } from './useHookUtils';
 
 /**
@@ -45,9 +46,9 @@ export function usePopoverAction<TData, TInput = void, TPopoverKey extends strin
   const updateCardData = useCallback(
     (nextData: TData) => {
       store.setState((state) => {
-        const inFloating = state.floating.some((e) => e.key === cardKey);
-        const inTrail = state.trail.some((e) => e.key === cardKey);
-        if (!inFloating && !inTrail) return state;
+        if (!isPopoverActive(state, cardKey)) return state;
+        const inFloating = isKeyInList(state.floating, cardKey);
+        const inTrail = isKeyInList(state.trail, cardKey);
 
         return {
           floating: inFloating

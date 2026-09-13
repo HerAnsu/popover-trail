@@ -15,8 +15,8 @@
  * @returns Number constrained to [min, max].
  */
 export function clamp(value: number, min: number, max: number): number {
-  const safeMin = Number.isFinite(min) ? min : 0;
-  const safeMax = Number.isFinite(max) ? max : safeMin;
+  const safeMin = !Number.isNaN(min) ? min : 0;
+  const safeMax = !Number.isNaN(max) ? max : safeMin;
   const lower = Math.min(safeMin, safeMax);
   const upper = Math.max(safeMin, safeMax);
 

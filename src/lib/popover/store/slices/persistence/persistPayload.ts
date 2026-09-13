@@ -12,6 +12,7 @@ import type {
 } from '../../../types';
 import { EMPTY_ARRAY, emptyRecord } from '../../storeDefaults';
 import { pickRecordKeys } from '../../../utils/cleanObject';
+import { prop } from '../../../utils/functional';
 import {
   PERSIST_SCHEMA_VERSION,
   sanitizePersistedEntries,
@@ -59,7 +60,7 @@ export function buildPersistPayload<TData, TContext, TPopoverKey extends string 
     };
   }
 
-  const keys = new Set<TPopoverKey>(filtered.map(({ key }) => key));
+  const keys = new Set<TPopoverKey>(filtered.map(prop('key')));
   const cleanOffsets = sanitizePersistedOffsets(offsets, keys);
   const cleanPinned = buildCleanPinned(keys, pinnedStates);
 
