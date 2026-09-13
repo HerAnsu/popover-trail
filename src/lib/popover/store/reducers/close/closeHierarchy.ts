@@ -5,6 +5,8 @@
  */
 
 import type { TrailEntry } from '../../../types';
+import { drop } from '../../../utils/arrayUtils';
+import { prop } from '../../../utils/functional';
 
 /**
  * Collects direct keys to close from target index without intermediate array overhead.
@@ -20,12 +22,7 @@ export function getDirectClosedKeys<TData = unknown, TPopoverKey extends string 
     return entry ? [entry.key] : [];
   }
   const trailIndex = index - floating.length;
-  const result: TPopoverKey[] = [];
-  for (let i = trailIndex; i < trail.length; i++) {
-    const entry = trail[i];
-    if (entry) result.push(entry.key);
-  }
-  return result;
+  return drop(trail, trailIndex).map(prop('key'));
 }
 
 /**

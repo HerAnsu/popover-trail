@@ -17,6 +17,7 @@ import {
   isClickableElement,
 } from '../../utils/typeGuards';
 import { getFocusableCardElements, focusParentCard } from './cardKeyboardFocus';
+import { isMatchingKey } from '../../utils/predicates';
 
 export type KeyboardNavEvent =
   | React.KeyboardEvent<HTMLElement>
@@ -77,7 +78,7 @@ export function handleHorizontalArrowNavigation<
       activeEl.click();
     }
   } else if (isArrowLeftKey(e) && !pinned) {
-    const trailIndex = trailList.findIndex((t) => t.key === cardEntry.key);
+    const trailIndex = trailList.findIndex(isMatchingKey(cardEntry.key));
     if (trailIndex > 0) {
       e.preventDefault();
       if (act?.closeByKey) act.closeByKey(cardEntry.key);
@@ -90,7 +91,7 @@ export function handleHorizontalArrowNavigation<
     if (act?.closeByKey) {
       act.closeByKey(cardEntry.key);
     } else if (!pinned) {
-      const trailIndex = trailList.findIndex((t) => t.key === cardEntry.key);
+      const trailIndex = trailList.findIndex(isMatchingKey(cardEntry.key));
       if (trailIndex >= 0) act?.closeFrom(trailIndex);
     }
   }

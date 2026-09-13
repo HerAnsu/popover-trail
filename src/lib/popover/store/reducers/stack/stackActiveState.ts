@@ -19,10 +19,10 @@ function filterZIndexOrder<TPopoverKey extends string = string>(
   order: readonly TPopoverKey[],
   activeKeys: ReadonlySet<TPopoverKey>,
 ): readonly TPopoverKey[] {
-  const isEveryKeyActive = order.every((key) => activeKeys.has(key));
-  if (isEveryKeyActive) return order;
+  const isActive = (key: TPopoverKey) => activeKeys.has(key);
+  if (order.every(isActive)) return order;
 
-  const nextOrder = order.filter((key) => activeKeys.has(key));
+  const nextOrder = order.filter(isActive);
   return nextOrder.length === 0 ? EMPTY_ARRAY : nextOrder;
 }
 

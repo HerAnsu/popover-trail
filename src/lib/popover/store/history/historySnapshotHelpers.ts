@@ -5,10 +5,10 @@
  */
 
 import { EMPTY_ARRAY, ZERO_OFFSET, emptyRecord } from '../hydration/storeDefaults';
-import { shallowEqual } from '../../utils/equality';
+import { shallowEqual, shallowEqualArray } from '../../utils/equality';
 import { isEmptyRecord } from '../../utils/cleanObject';
 import { isDragOffset } from '../../utils/guards/geometryGuards';
-import { and, pipe, prop } from '../../utils/functional';
+import { and, prop } from '../../utils/functional';
 import type { HistorySnapshot } from './historyTypes';
 
 export function cloneNonEmptyRecord<K extends string = string, V = unknown>(
@@ -26,11 +26,7 @@ export function cloneNonEmptyArray<T>(arr?: readonly T[]): readonly T[] {
 }
 
 export function areKeysEqual<T>(a: readonly T[], b: readonly T[]): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
+  return shallowEqualArray(a, b);
 }
 
 export function areOffsetsEqual(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
@@ -60,9 +56,9 @@ function areEntriesKeyEqual(
 ): boolean {
   return (
     aList === bList ||
-    areKeysEqual(
-      pipe(aList, (list) => list.map(prop('key'))),
-      pipe(bList, (list) => list.map(prop('key'))),
+    shallowEqualArray(
+      aList.map(prop('key')),
+      bList.map(prop('key')),
     )
   );
 }

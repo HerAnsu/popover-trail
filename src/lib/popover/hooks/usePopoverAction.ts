@@ -16,7 +16,9 @@ import { useCrossVersionActionState } from '../utils/react19Adapters';
 import { usePopoverStoreApi } from '../context/usePopoverStore';
 import { wrapAsyncResult, isOk } from '../utils/result';
 import { toError } from '../utils/typeGuards';
-import { isKeyInList, isPopoverActive } from '../utils/predicates';
+import { isPopoverActive } from '../utils/predicates';
+import { findEntryInStore } from '../utils/collections';
+import { updateEntryInLists } from '../store/reducers/stack/stackReducers';
 import { useLatestRef } from './useHookUtils';
 
 /**
@@ -47,21 +49,12 @@ export function usePopoverAction<TData, TInput = void, TPopoverKey extends strin
     (nextData: TData) => {
       store.setState((state) => {
         if (!isPopoverActive(state, cardKey)) return state;
-        const inFloating = isKeyInList(state.floating, cardKey);
-        const inTrail = isKeyInList(state.trail, cardKey);
+        const entry = findEntryInStore(state.floating, state.trail, cardKey);
+        if (!entry) return state;
 
-        return {
-          floating: inFloating
-            ? state.floating.map((e) =>
-                e.key === cardKey ? { ...e, data: nextData, isLoading: false } : e,
-              )
-            : state.floating,
-          trail: inTrail
-            ? state.trail.map((e) =>
-                e.key === cardKey ? { ...e, data: nextData, isLoading: false } : e,
-              )
-            : state.trail,
-        };
+        const updatedEntry = { ...entry, data: nextData, isLoading: false };
+        const patch = updateEntryInLists(state.floating, state.trail, cardKey, updatedEntry);
+        return { ...state, ...patch };
       });
     },
     [store, cardKey],

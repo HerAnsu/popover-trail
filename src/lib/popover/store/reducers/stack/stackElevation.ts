@@ -9,14 +9,7 @@ import type { PopoverDAG } from '../../../utils/dag';
 import { EMPTY_OBJECT } from '../../storeDefaults';
 import { getAllDescendants } from './descendants';
 import { getActiveKeys } from './recordFilter';
-
-function isOrderUnchanged<TPopoverKey extends string>(
-  prevOrder: readonly TPopoverKey[],
-  nextOrder: readonly TPopoverKey[],
-): boolean {
-  if (prevOrder.length !== nextOrder.length) return false;
-  return prevOrder.every((key, index) => key === nextOrder[index]);
-}
+import { shallowEqualArray } from '../../../utils/equality';
 
 /**
  * Pure state reducer elevating target popover key and its subtree to front of stacking order.
@@ -45,7 +38,7 @@ export function bringToFrontPatch<TData, TContext, TPopoverKey extends string = 
     }
   }
 
-  if (isOrderUnchanged(state.zIndexOrder, nextOrder)) {
+  if (shallowEqualArray(state.zIndexOrder, nextOrder)) {
     return EMPTY_OBJECT;
   }
 
