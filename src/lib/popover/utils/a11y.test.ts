@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { resolvePopoverAriaAttributes, resolveTriggerAriaAttributes } from './a11y';
+import {
+  resolvePopoverAriaAttributes,
+  resolveTriggerAriaAttributes,
+  resolveActionAriaLabel,
+} from './a11y';
 
 describe('a11y utils', () => {
   it('resolves modal dialog attributes for unpinned card', () => {
@@ -25,5 +29,12 @@ describe('a11y utils', () => {
     expect(attrs['aria-haspopup']).toBe('dialog');
     expect(attrs['aria-expanded']).toBe(true);
     expect(attrs['aria-controls']).toBe('popover-card-profile');
+  });
+
+  it('resolves capitalized action aria label via resolveActionAriaLabel', () => {
+    expect(resolveActionAriaLabel('close')).toBe('Close popover');
+    expect(resolveActionAriaLabel('pin')).toBe('Pin popover');
+    expect(resolveActionAriaLabel('unpin')).toBe('Unpin popover');
+    expect(resolveActionAriaLabel('expand', 'card')).toBe('Expand card');
   });
 });

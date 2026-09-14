@@ -12,6 +12,7 @@ import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
 import { getPolymorphicProps } from '../../utils/componentUtils';
 import { isArrowLeftKey, isArrowRightKey } from '../../utils/typeGuards';
 import { clamp } from '../../utils/math';
+import { truncate } from '../../utils/stringUtils';
 
 export interface PopoverTimelineStepBaseProps {
   index?: number;
@@ -19,6 +20,7 @@ export interface PopoverTimelineStepBaseProps {
   stepKey?: string;
   active?: boolean;
   label?: string;
+  maxLabelLength?: number;
   children?: ReactNode;
 }
 
@@ -34,6 +36,7 @@ function PopoverTimelineStepInner<E extends ElementType = 'button'>({
   stepKey,
   active,
   label,
+  maxLabelLength,
   children,
   className,
   onClick,
@@ -45,7 +48,8 @@ function PopoverTimelineStepInner<E extends ElementType = 'button'>({
 
   const effectiveIndex = index ?? stepIndex ?? 0;
   const isCurrent = active ?? timeline.currentIndex === effectiveIndex;
-  const effectiveKey = stepKey ?? label ?? `step-${effectiveIndex}`;
+  const displayLabel = label && maxLabelLength ? truncate(label, maxLabelLength) : label;
+  const effectiveKey = stepKey ?? displayLabel ?? `step-${effectiveIndex}`;
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     timeline.jumpToStep(effectiveIndex);
@@ -74,7 +78,7 @@ function PopoverTimelineStepInner<E extends ElementType = 'button'>({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       {...restProps}>
-      {children ?? label ?? effectiveKey}
+      {children ?? displayLabel ?? effectiveKey}
     </Component>
   );
 }

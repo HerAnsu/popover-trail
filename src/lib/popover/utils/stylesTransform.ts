@@ -5,6 +5,11 @@
  * @module utils/stylesTransform
  */
 
+import { toFiniteNumber } from './math';
+import { ensurePrefix } from './stringUtils';
+
+export { toFiniteNumber };
+
 const DEFAULT_PERSPECTIVE_PX = 1000;
 
 export function hashTransformCoordinates(
@@ -25,7 +30,12 @@ export function hashTransformCoordinates(
   return h ^ (h >>> 16);
 }
 
-export { toFiniteNumber } from './math';
+/**
+ * Ensures custom CSS variable has canonical --pt- prefix.
+ */
+export function buildPopoverCssVar(name: string): string {
+  return ensurePrefix(name, '--pt-');
+}
 
 export function buildTransformString(
   translateX: number,

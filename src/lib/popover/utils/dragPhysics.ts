@@ -6,7 +6,7 @@
  */
 
 import { toFiniteOrDefault, isNonNegativeFinite } from './typeGuards';
-import { clamp } from './math';
+import { clamp, lerp } from './math';
 
 export function normalizeDragDelta(
   deltaX: number,
@@ -71,5 +71,5 @@ export function computeTiltMatrix(
 }
 
 export function applyDragFriction(delta: number, friction = 0.5): number {
-  return delta * (1 - clamp(friction, 0, 1));
+  return lerp(delta, 0, clamp(friction, 0, 1));
 }

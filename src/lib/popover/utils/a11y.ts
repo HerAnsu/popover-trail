@@ -6,6 +6,14 @@
  */
 
 import type { TrailEntry } from '../types';
+import { capitalize } from './stringUtils';
+
+/**
+ * Resolves an action label for accessibility with capitalized verb.
+ */
+export function resolveActionAriaLabel(action: string, entity = 'popover'): string {
+  return `${capitalize(action)} ${entity}`.trim();
+}
 
 export function resolvePopoverAriaAttributes(
   entry: Pick<TrailEntry, 'key' | 'ariaDescribedby'>,

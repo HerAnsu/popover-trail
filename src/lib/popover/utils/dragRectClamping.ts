@@ -6,7 +6,7 @@
  */
 
 import { isBrowser } from './typeGuards';
-import { clamp } from './math';
+import { clamp, normalizeRatio } from './math';
 import type { DragTransform2D, DragNodeRect, DragBoundsRect } from './dragBounds';
 
 export function clampCoordinateToBounds(
@@ -53,4 +53,15 @@ export function clampToContainerBounds(
     right: containerRect.right,
     bottom: containerRect.bottom,
   });
+}
+
+/**
+ * Calculates normalized proximity ratio (0.0 to 1.0) of a position between boundary bounds.
+ */
+export function computeBoundaryProximityRatio(
+  currentPos: number,
+  minBound: number,
+  maxBound: number,
+): number {
+  return normalizeRatio(currentPos, minBound, maxBound);
 }

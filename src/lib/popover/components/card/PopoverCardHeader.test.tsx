@@ -99,4 +99,17 @@ describe('PopoverCardHeader component', () => {
     expect(vnode.props.style?.gap).toBe('16px');
     expect(vnode.props.style?.display).toBe('flex');
   });
+
+  it('truncates title when maxTitleLength is specified', () => {
+    const vnode = PopoverCardHeader({
+      title: 'Very Long Popover Title Heading',
+      maxTitleLength: 15,
+    });
+    const titleElement = vnode.props.children[0];
+
+    expect(titleElement).not.toBeNull();
+    if (React.isValidElement<{ children?: string }>(titleElement)) {
+      expect(titleElement.props.children).toBe(`${'Very Long Popover Title Heading'.slice(0, 12)}...`);
+    }
+  });
 });

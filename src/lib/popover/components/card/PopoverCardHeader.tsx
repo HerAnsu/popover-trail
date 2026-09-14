@@ -7,12 +7,14 @@
 
 import { type ReactNode, type CSSProperties } from 'react';
 import { clsx } from '../../utils/clsx';
+import { truncate } from '../../utils/stringUtils';
 import { PopoverCardHandle } from './PopoverCardHandle';
 import { PopoverCardPinButton } from './PopoverCardPinButton';
 import { PopoverCardCloseButton } from './PopoverCardCloseButton';
 
 export interface PopoverCardHeaderProps {
   readonly title?: ReactNode;
+  readonly maxTitleLength?: number;
   readonly showPin?: boolean;
   readonly showClose?: boolean;
   readonly children?: ReactNode;
@@ -29,17 +31,21 @@ const DEFAULT_HEADER_STYLE: CSSProperties = {
 
 export function PopoverCardHeader({
   title,
+  maxTitleLength,
   showPin = true,
   showClose = true,
   children,
   className,
   style,
 }: PopoverCardHeaderProps) {
+  const renderedTitle =
+    typeof title === 'string' && maxTitleLength ? truncate(title, maxTitleLength) : title;
+
   return (
     <PopoverCardHandle
       className={clsx('pt-card-header', className)}
       style={{ ...DEFAULT_HEADER_STYLE, ...style }}>
-      {title ? <span className="pt-card-title">{title}</span> : null}
+      {renderedTitle ? <span className="pt-card-title">{renderedTitle}</span> : null}
       {children}
       <div className="pt-card-header-actions" style={{ display: 'flex', gap: '4px' }}>
         {showPin ? <PopoverCardPinButton /> : null}

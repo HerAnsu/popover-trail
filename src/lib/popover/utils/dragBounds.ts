@@ -88,4 +88,5 @@ export {
   clampCoordinateToBounds,
   clampToWindowBounds,
   clampToContainerBounds,
+  computeBoundaryProximityRatio,
 } from './dragRectClamping';

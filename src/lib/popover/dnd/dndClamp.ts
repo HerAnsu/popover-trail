@@ -9,4 +9,5 @@ export {
   clampCoordinateToBounds,
   clampToWindowBounds,
   clampToContainerBounds,
+  computeBoundaryProximityRatio,
 } from '../utils/dragMath';

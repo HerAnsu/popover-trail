@@ -151,4 +151,15 @@ describe('PopoverTimelineStep component', () => {
     expect(el.type).toBe('li');
     expect(el.props.type).toBeUndefined();
   });
+
+  it('truncates label when maxLabelLength is provided', () => {
+    const el = renderStep({
+      index: 0,
+      label: 'Very Long Step Label In Timeline',
+      maxLabelLength: 15,
+    });
+
+    expect(el.props.children).toBe(`${'Very Long Step Label In Timeline'.slice(0, 12)}...`);
+    expect(el.props['data-key']).toBe(`${'Very Long Step Label In Timeline'.slice(0, 12)}...`);
+  });
 });

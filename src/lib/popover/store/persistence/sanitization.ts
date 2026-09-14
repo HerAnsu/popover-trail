@@ -14,14 +14,12 @@ function cleanEntry<TData, TPopoverKey extends string = string>(
   if (!entry.dataPromise && !entry.onError && !entry.onPin && !entry.onClose && !entry.onOpen) {
     return entry;
   }
-  const clean: TrailEntry<TData, TPopoverKey> = {
-    ...entry,
-    dataPromise: undefined,
-    onError: undefined,
-    onPin: undefined,
-    onClose: undefined,
-    onOpen: undefined,
-  };
+  const clean: TrailEntry<TData, TPopoverKey> = { ...entry };
+  delete clean.dataPromise;
+  delete clean.onError;
+  delete clean.onPin;
+  delete clean.onClose;
+  delete clean.onOpen;
   return clean;
 }
 

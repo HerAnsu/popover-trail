@@ -9,6 +9,7 @@ import { useCallback, type ReactNode, type ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverCardScope } from './PopoverCardScopeContext';
 import { CardActionButtonBase, type CardActionButtonBaseProps } from './CardActionButtonBase';
+import { resolveActionAriaLabel } from '../../utils/a11y';
 
 export type PopoverCardCloseButtonProps<E extends ElementType = 'button'> = PolymorphicProps<
   E,
@@ -24,7 +25,7 @@ export function PopoverCardCloseButton<E extends ElementType = 'button'>(
   return (
     <CardActionButtonBase<E>
       {...(props as CardActionButtonBaseProps<E>)}
-      ariaLabel="Close popover"
+      ariaLabel={resolveActionAriaLabel('close')}
       onAction={handleClose}>
       {props.children ?? '✕'}
     </CardActionButtonBase>
