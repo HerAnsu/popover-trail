@@ -69,12 +69,42 @@
         "types": "./dist/dnd.d.cts",
         "default": "./dist/dnd.cjs"
       }
+    },
+    "./store": {
+      "import": {
+        "types": "./dist/store.d.ts",
+        "default": "./dist/store.js"
+      },
+      "require": {
+        "types": "./dist/store.d.cts",
+        "default": "./dist/store.cjs"
+      }
+    },
+    "./schema": {
+      "import": {
+        "types": "./dist/schema.d.ts",
+        "default": "./dist/schema.js"
+      },
+      "require": {
+        "types": "./dist/schema.d.cts",
+        "default": "./dist/schema.cjs"
+      }
+    },
+    "./utils": {
+      "import": {
+        "types": "./dist/utils.d.ts",
+        "default": "./dist/utils.js"
+      },
+      "require": {
+        "types": "./dist/utils.d.cts",
+        "default": "./dist/utils.cjs"
+      }
     }
   },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:lib": "tsup && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist && node -e \"fs.copyFileSync('dist/index.d.ts','dist/index.d.cts'); fs.copyFileSync('dist/dnd.d.ts','dist/dnd.d.cts')\"",
+    "build:lib": "tsup && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist && node -e \"['index','dnd','store','schema','utils'].forEach(n => fs.copyFileSync('dist/'+n+'.d.ts', 'dist/'+n+'.d.cts'))\"",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt --write src",

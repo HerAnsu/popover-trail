@@ -39,10 +39,11 @@ Complete technical specification for components, hooks, schema builders, core en
    - [usePopoverHydration](#usepopoverhydration)
    - [useIsPopoverOpen and state selectors](#useispopoveropen-and-state-selectors)
    - [Utility and adapter hooks](#utility-and-adapter-hooks)
-7. [DND sub-package (popover-trail/dnd)](#7-dnd-sub-package-popover-traildnd)
-   - [PopoverCanvas](#popovercanvas)
-   - [PopoverCard (DND version)](#popovercard-dnd-version)
-   - [usePopoverDraggableCard](#usepopoverdraggablecard)
+7. [Modular sub-packages (popover-trail/*)](#7-modular-sub-packages-popover-trail)
+   - [DND sub-package (popover-trail/dnd)](#dnd-sub-package-popover-traildnd)
+   - [Headless Store sub-package (popover-trail/store)](#headless-store-sub-package-popover-trailstore)
+   - [Typed Schema sub-package (popover-trail/schema)](#typed-schema-sub-package-popover-trailschema)
+   - [Pure Utilities sub-package (popover-trail/utils)](#pure-utilities-sub-package-popover-trailutils)
 8. [Core engines and architecture](#8-core-engines-and-architecture)
    - [Transactions and atomic batching](#transactions-and-atomic-batching)
    - [Persistence and cross-tab synchronization](#persistence-and-cross-tab-synchronization)
@@ -1281,6 +1282,71 @@ High-level pre-bound card component that wraps `<dialog>` with focus locking (`r
 ### `usePopoverDraggableCard`
 
 Composite hook binding Floating UI positioning, `@dnd-kit/core` dragging, spring physics tilt, and focus lock into a single card handle.
+
+---
+
+### Headless Store sub-package (`popover-trail/store`)
+
+Isolated, zero-UI state machine and orchestration subsystem. Implements pure Zustand stores, CQRS event buses, FSM transitions, ACID transactions, and history journals without importing React DOM or Floating UI.
+
+```typescript
+import { createPopoverStore, PopoverTransitionScheduler } from 'popover-trail/store';
+
+const store = createPopoverStore({
+  maxTrailLength: 10,
+  enablePersistence: true,
+});
+
+// Full access to actions, selectors, and dispatchers
+store.getState().actions.openRoot('profile-popover');
+```
+
+---
+
+### Typed Schema sub-package (`popover-trail/schema`)
+
+Declarative schema builder and static type inference engine for defining popover topologies, route parameters, and async hydration contracts.
+
+```typescript
+import { createPopoverSchema, defineSchemaNode } from 'popover-trail/schema';
+
+export const userProfileNode = defineSchemaNode({
+  key: 'user-profile',
+  placement: 'bottom-start',
+  allowDragWhenPinned: true,
+});
+
+export const appSchema = createPopoverSchema([userProfileNode]);
+```
+
+---
+
+### Pure Utilities sub-package (`popover-trail/utils`)
+
+Tree-shakable Layer 1 algorithms: monadic Result algebra, QuadTree 2D spatial indexing, DAG cycle detection, vector math, and object manipulation utilities with zero UI or state dependencies.
+
+```typescript
+import {
+  Ok,
+  Err,
+  isOk,
+  clamp,
+  lerp,
+  QuadTree,
+  DAGCycleDetector,
+  compactRecord,
+  omitRecordKeys,
+  partition,
+  unique,
+  pipe,
+} from 'popover-trail/utils';
+
+// Result monad pattern
+const result = Ok({ id: 'user-1' });
+
+// 2D QuadTree collision query
+const tree = new QuadTree({ x: 0, y: 0, width: 1920, height: 1080 });
+```
 
 ---
 
