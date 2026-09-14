@@ -7,6 +7,7 @@
 
 import { type ReactNode, type ElementType } from 'react';
 import { clsx } from '../../utils/clsx';
+import { compact } from '../../utils/collections';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
 import type { PopoverTimelineItem, UsePopoverTimelineResult } from '../../hooks/usePopoverTimeline';
@@ -46,14 +47,15 @@ function renderTimelineStepListChildren<TData>(
   timeline: UsePopoverTimelineResult<TData>,
 ): ReactNode {
   if (typeof children !== 'function') return children;
+  const safeHistory = compact(timeline.history);
   if (isContextRenderProp(children)) {
     return children({
-      history: timeline.history,
+      history: safeHistory,
       currentIndex: timeline.currentIndex,
       timeline,
     });
   }
-  return timeline.history.map((item, idx) => children(item, idx === timeline.currentIndex, idx));
+  return safeHistory.map((item, idx) => children(item, idx === timeline.currentIndex, idx));
 }
 
 export function PopoverTimelineStepList<E extends ElementType = 'ol', TData = unknown>({

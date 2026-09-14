@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import type { PopoverTransitionStatus, TrailEntry } from '../../types';
 import { isTransitionStatus } from '../../utils/typeGuards';
 import { DEFAULT_BASE_Z_INDEX, EMPTY_ARRAY } from '../../constants';
-
+import { groupBy } from '../../utils/collections';
 
 export function resolveTransitionClassName(
   status: string | undefined,
@@ -75,5 +75,14 @@ export function resolveCardButtonControls<TData = unknown, TPopoverKey extends s
     enableDrag: cardFeatures?.enableDrag ?? entry.buttonControls?.enableDrag ?? true,
     customButtons: entry.buttonControls?.customButtons ?? EMPTY_ARRAY,
   };
+}
+
+/**
+ * Groups active popover entries by their stackGroup identifier for layered z-index assignment.
+ */
+export function groupEntriesByStackGroup<TData = unknown, TPopoverKey extends string = string>(
+  entries: readonly TrailEntry<TData, TPopoverKey>[],
+): Record<string, readonly TrailEntry<TData, TPopoverKey>[]> {
+  return groupBy(entries, (entry) => entry.stackGroup ?? 'default');
 }
 

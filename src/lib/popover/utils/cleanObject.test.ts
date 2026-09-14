@@ -90,6 +90,7 @@ describe('cleanObject', () => {
     const input = { keyA: 'valA', keyB: 'valB' };
     const inverted = invertRecord(input);
     expect(inverted).toEqual({ valA: 'keyA', valB: 'keyB' });
+    expect(invertRecord(['alpha', 'beta'])).toEqual({ alpha: 0, beta: 1 });
     expect(invertRecord(null)).toEqual({});
     expect(invertRecord({})).toEqual({});
   });

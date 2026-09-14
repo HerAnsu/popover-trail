@@ -10,6 +10,7 @@ import { EMPTY_OBJECT } from '../../storeDefaults';
 import { getAllDescendants } from './descendants';
 import { getActiveKeys } from './recordFilter';
 import { shallowEqualArray } from '../../../utils/equality';
+import { unique } from '../../../utils/collections';
 
 /**
  * Pure state reducer elevating target popover key and its subtree to front of stacking order.
@@ -27,7 +28,7 @@ export function bringToFrontPatch<TData, TContext, TPopoverKey extends string = 
     dag,
   );
 
-  const keysToElevate: TPopoverKey[] = [key, ...descendants];
+  const keysToElevate: readonly TPopoverKey[] = unique([key, ...descendants]);
   const elevateSet = new Set<TPopoverKey>(keysToElevate);
 
   const activeKeys = getActiveKeys<TData, TPopoverKey>(state.floating, state.trail);

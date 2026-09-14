@@ -233,14 +233,23 @@ export function compactRecord<K extends string | number, V>(
  * @param record - Source record with unique string or number values.
  * @returns A new inverted record.
  */
-export function invertRecord<K extends string, V extends string | number>(
-  record?: Record<K, V> | null,
+export function invertRecord<K extends string | number, V extends string | number>(
+  record?: Record<K, V> | Partial<Record<K, V>> | readonly V[] | null,
 ): Record<V, K> {
   const result: Record<string, K> = {};
   if (!record || isEmptyRecord(record)) return result as Record<V, K>;
+  if (Array.isArray(record)) {
+    for (let i = 0; i < record.length; i++) {
+      const val = record[i];
+      if (val !== undefined && val !== null && !isUnsafeKey(String(val))) {
+        Reflect.set(result, String(val), i);
+      }
+    }
+    return result as Record<V, K>;
+  }
   for (const key in record) {
     if (Object.hasOwn(record, key) && !isUnsafeKey(key)) {
-      const val = record[key];
+      const val = (record as Record<string, V>)[key];
       if (val !== undefined && val !== null && !isUnsafeKey(String(val))) {
         Reflect.set(result, String(val), key);
       }

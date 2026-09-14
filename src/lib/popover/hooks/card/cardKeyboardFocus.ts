@@ -7,6 +7,8 @@
 
 import { FOCUSABLE_ELEMENTS_SELECTOR } from '../../constants';
 import { isDOM, escapeCssIdentifier } from '../../utils/typeGuards';
+import { compact } from '../../utils/collections';
+import { first } from '../../utils/arrayUtils';
 
 export function getFocusableCardElements(cardEl: HTMLElement | null): HTMLElement[] {
   if (!cardEl) return [];
@@ -20,10 +22,13 @@ export function focusParentCard(parentKey: string): boolean {
   if (!isDOM() || !parentKey) return false;
   const escapedKey = escapeCssIdentifier(parentKey);
 
-  const parentCard =
-    document.querySelector<HTMLElement>(`#popover-card-${escapedKey}`) ??
-    document.querySelector<HTMLElement>(`[data-key="${escapedKey}"]`) ??
-    document.querySelector<HTMLElement>(`[aria-labelledby="title-${escapedKey}"]`);
+  const parentCard = first(
+    compact([
+      document.querySelector<HTMLElement>(`#popover-card-${escapedKey}`),
+      document.querySelector<HTMLElement>(`[data-key="${escapedKey}"]`),
+      document.querySelector<HTMLElement>(`[aria-labelledby="title-${escapedKey}"]`),
+    ]),
+  );
 
   if (!parentCard) return false;
 
