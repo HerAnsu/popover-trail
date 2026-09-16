@@ -19,9 +19,7 @@ export { useFocusTrap, type UseFocusTrapOptions } from './useFocusTrap';
 // DAG Graph Topology
 export {
   usePopoverDAG,
-  useGeodesicPath,
   useBreadcrumbPath,
-  usePathToRoot,
   usePopoverParents,
   usePopoverChildren,
   type UsePopoverDAGResult,

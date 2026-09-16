@@ -8,7 +8,7 @@
 import { useMemo, useCallback } from 'react';
 import type { Modifier } from '@dnd-kit/core';
 import type { TrailEntry } from '../types';
-import { clampToWindowBounds, clampToContainerBounds } from './dndClamp';
+import { clampToViewport, clampToContainer } from './dndClamp';
 import { createMagneticSnapModifier, type SnapTargetRect } from './dndSnap';
 
 export interface UseCanvasModifiersOptions {
@@ -53,13 +53,13 @@ export function useCanvasModifiers({
     }
     if (restrictToWindow) {
       list.push(({ transform, activeNodeRect }) =>
-        activeNodeRect ? clampToWindowBounds(transform, activeNodeRect) : transform,
+        activeNodeRect ? clampToViewport(transform, activeNodeRect) : transform,
       );
     }
     if (restrictToContainer) {
       list.push(({ transform, activeNodeRect }) => {
         if (!activeNodeRect || !containerRef.current) return transform;
-        return clampToContainerBounds(
+        return clampToContainer(
           transform,
           activeNodeRect,
           containerRef.current.getBoundingClientRect(),

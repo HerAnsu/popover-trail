@@ -23,7 +23,7 @@ import {
   ZERO_OFFSET,
 } from '../constants';
 import { compact } from '../utils/collections';
-import { invertRecord } from '../utils/cleanObject';
+import { invertObject } from '../utils/cleanObject';
 import { toFiniteNumber } from '../utils/stylesTransform';
 import { usePopoverTrail, usePopoverFloating } from '../hooks/usePopoverSelectors';
 import { usePopoverStore, usePopoverStoreApi, usePopoverActions } from '../context/usePopoverStore';
@@ -66,7 +66,7 @@ export function PopoverCanvas<TData = unknown>({
       ...trail.map((entry, idx) => ({ entry, isPinned: false, index: floating.length + idx })),
     ];
     if (zIndexOrder.length === 0) return raw;
-    const orderIndex = invertRecord(compact(zIndexOrder));
+    const orderIndex = invertObject(compact(zIndexOrder));
     return raw.sort(
       (a, b) =>
         (orderIndex[a.entry.key] !== undefined ? Number(orderIndex[a.entry.key]) : a.index) -

@@ -6,7 +6,7 @@ import {
   togglePinState,
   pushNestedState,
   bringToFrontPatch,
-  filterRecord,
+  filterByAllowedKeys,
 } from './index';
 import { createMockStoreState } from '../../testing/createMockStoreState';
 
@@ -40,10 +40,10 @@ describe('reducerEdgeCases module', () => {
     expect(bringToFrontPatch(state, 'inactive-key')).toEqual({});
   });
 
-  it('sanitizes prototype pollution keys in filterRecord', () => {
+  it('sanitizes prototype pollution keys in filterByAllowedKeys', () => {
     const record: Record<string, number> = { normal: 1, ['__proto__']: 2 };
     const allowed = new Set(['normal', '__proto__']);
-    const filtered = filterRecord(record, allowed);
+    const filtered = filterByAllowedKeys(record, allowed);
     expect(filtered.normal).toBe(1);
     expect(Object.hasOwn(filtered, '__proto__')).toBe(false);
   });

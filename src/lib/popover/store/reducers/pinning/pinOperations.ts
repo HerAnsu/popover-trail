@@ -12,7 +12,7 @@ import type {
   PopoverRect,
 } from '../../../types';
 import { EMPTY_OBJECT, ZERO_OFFSET } from '../../storeDefaults';
-import { omitRecordKey } from '../../../utils/cleanObject';
+import { omitKey } from '../../../utils/cleanObject';
 import { getCleanupStatePatch, filterOutEntryKey, elevateKeyInOrder } from '../stack';
 import { toFloatingEntry, toTrailEntry } from './pinGeometry';
 
@@ -66,7 +66,7 @@ export function unpinFloatingEntry<TData, TContext, TPopoverKey extends string =
 
   const nextFloating = filterOutEntryKey(state.floating, key);
   const nextTrail: TrailEntry<TData, TPopoverKey>[] = [...state.trail, toTrailEntry(entry)];
-  const nextOffsets = omitRecordKey(state.offsets, key);
+  const nextOffsets = omitKey(state.offsets, key);
   const nextPinned: Partial<Record<TPopoverKey, boolean>> = { ...state.pinnedStates, [key]: false };
 
   const cleanupPatch = getCleanupStatePatch<TData, TContext, TPopoverKey>(

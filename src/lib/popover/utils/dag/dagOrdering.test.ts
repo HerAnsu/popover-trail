@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PopoverDAG } from './dagCore';
-import { safeComputeLinearExtension } from './dagOrdering';
+import { safeTopologicalSort } from './dagOrdering';
 import type { InternalDAGNode } from './dagTypes';
 
 describe('PopoverDAG Ordering and Teardown Plan', () => {
@@ -19,29 +19,29 @@ describe('PopoverDAG Ordering and Teardown Plan', () => {
     expect(teardownWithRoot).toEqual(['dialog-1', 'submenu-1', 'menu-1', 'root']);
   });
 
-  it('computes geodesic path from root to target node for breadcrumbs', () => {
+  it('computes breadcrumbs from root to target node', () => {
     const dag = new PopoverDAG();
     dag.addNode('home');
     dag.addNode('settings', 'home');
     dag.addNode('security', 'settings');
     dag.addNode('2fa', 'security');
 
-    const path = dag.getGeodesicPath('2fa');
+    const path = dag.getBreadcrumbs('2fa');
     expect(path).toEqual(['home', 'settings', 'security', '2fa']);
   });
 
-  it('returns empty geodesic path for non-existent node', () => {
+  it('returns empty breadcrumbs for non-existent node', () => {
     const dag = new PopoverDAG();
-    expect(dag.getGeodesicPath('ghost')).toEqual([]);
+    expect(dag.getBreadcrumbs('ghost')).toEqual([]);
   });
 
-  it('safeComputeLinearExtension returns Ok with topological order when acyclic', () => {
+  it('safeTopologicalSort returns Ok with topological order when acyclic', () => {
     const dag = new PopoverDAG();
     dag.addNode('A');
     dag.addNode('B', 'A');
     dag.addNode('C', 'B');
 
-    const result = dag.safeComputeLinearExtension();
+    const result = dag.safeTopologicalSort();
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.indexOf('A')).toBeLessThan(result.data.indexOf('B'));
@@ -74,7 +74,7 @@ describe('PopoverDAG Ordering and Teardown Plan', () => {
     expect(dag.getMaxDepth()).toBe(2);
   });
 
-  it('safeComputeLinearExtension returns Err with DAGCycleError when cycle exists', () => {
+  it('safeTopologicalSort returns Err with DAGCycleError when cycle exists', () => {
     const nodes = new Map<string, InternalDAGNode<string>>();
     nodes.set('A', {
       key: 'A',
@@ -89,7 +89,7 @@ describe('PopoverDAG Ordering and Teardown Plan', () => {
       depth: 1,
     });
 
-    const result = safeComputeLinearExtension(nodes);
+    const result = safeTopologicalSort(nodes);
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.type).toBe('DAG_CYCLE_ERROR');

@@ -17,7 +17,7 @@ export type TrailDAGActions<
   TPopoverKey extends string = string,
 > = Pick<
   TrailSliceActions<TData, TContext, TPopoverKey>,
-  'addEdge' | 'removeEdge' | 'getParents' | 'getChildren' | 'getGeodesicPath' | 'getDAG'
+  'addEdge' | 'removeEdge' | 'getParents' | 'getChildren' | 'getBreadcrumbs' | 'getDAG'
 >;
 
 function updateEntryParents<TData, TPopoverKey extends string>(
@@ -79,9 +79,8 @@ export function createTrailDAGActions<
     getChildren: (key: TPopoverKey): ReadonlySet<TPopoverKey> =>
       popoverDAG?.getChildren(key) ?? EMPTY_SET,
 
-    getGeodesicPath: (key: TPopoverKey): readonly TPopoverKey[] =>
-      popoverDAG?.getGeodesicPath(key) ?? EMPTY_ARRAY,
-
+    getBreadcrumbs: (key: TPopoverKey): readonly TPopoverKey[] =>
+      popoverDAG?.getBreadcrumbs(key) ?? EMPTY_ARRAY,
 
     getDAG: (): PopoverDAG<TPopoverKey> | undefined => popoverDAG,
   };

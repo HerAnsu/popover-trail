@@ -45,7 +45,7 @@ export function computeTeardownPlan<TPopoverKey extends string>(
 }
 
 /**
- * Topologically sorts popover nodes (parents before children) using Kahn's algorithm.
+ * Topologically sorts DAG nodes using Kahn's algorithm (parents before children).
  *
  * @remarks
  * Uses a ring buffer queue to process nodes in $O(V + E)$ time without heap allocations.
@@ -55,7 +55,7 @@ export function computeTeardownPlan<TPopoverKey extends string>(
  * @param nodes - Internal DAG node dictionary.
  * @returns Array of keys in topological order.
  */
-export function computeLinearExtension<TPopoverKey extends string>(
+export function topologicalSort<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
 ): TPopoverKey[] {
   // Step 1: Compute in-degrees (number of incoming directed parent edges)
@@ -91,21 +91,15 @@ export function computeLinearExtension<TPopoverKey extends string>(
 }
 
 /**
- * Topologically sorts DAG nodes (parents before children).
- * Alias for {@link computeLinearExtension}.
- */
-export const topologicalSort = computeLinearExtension;
-
-/**
  * Topologically sorts popover nodes, returning an error Result if an illegal cycle is detected.
  *
  * @remarks
- * Unlike `computeLinearExtension`, this function will not return a partial or corrupted order.
+ * Unlike standard topologicalSort, this function will not return a partial or corrupted order.
  * If a cycle is detected, it returns `Err(DAGCycleError)` listing all keys trapped in the cycle.
  *
  * @example
  * ```ts
- * const result = safeComputeLinearExtension(dagNodes);
+ * const result = safeTopologicalSort(dagNodes);
  * if (isOk(result)) {
  *   console.log('Topological order:', result.value);
  * } else {
@@ -117,7 +111,7 @@ export const topologicalSort = computeLinearExtension;
  * @param nodes - Internal DAG node dictionary.
  * @returns `Ok(order)` on successful sort, or `Err(DAGCycleError)` if cycles exist.
  */
-export function safeComputeLinearExtension<TPopoverKey extends string>(
+export function safeTopologicalSort<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
 ): TopologicalSortResult<TPopoverKey> {
   const inDegree = new Map<TPopoverKey, number>();
@@ -161,12 +155,6 @@ export function safeComputeLinearExtension<TPopoverKey extends string>(
 }
 
 /**
- * Safely computes topological order, returning an Err Result if an illegal cycle is detected.
- * Alias for {@link safeComputeLinearExtension}.
- */
-export const safeTopologicalSort = safeComputeLinearExtension;
-
-/**
  * Computes z-index stacking order so child popovers always render above their parents.
  *
  * @remarks
@@ -201,9 +189,3 @@ export function computeTopologicalZIndex<TPopoverKey extends string>(
   });
   return result;
 }
-
-/**
- * Assigns integer z-index stacking layers to the popover hierarchy.
- * Alias for {@link computeTopologicalZIndex}.
- */
-export const computeStackingZIndex = computeTopologicalZIndex;

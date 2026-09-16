@@ -28,12 +28,6 @@ export function defineSchemaNode<TData, TParentData = unknown, TContext = unknow
 }
 
 /**
- * Creates a strongly typed popover schema node definition.
- * Alias for {@link defineSchemaNode}.
- */
-export const createSchemaNode = defineSchemaNode;
-
-/**
  * Extracts declared allowed child keys from a schema node.
  *
  * @param node - Popover schema node.

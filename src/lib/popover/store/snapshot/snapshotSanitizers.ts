@@ -8,7 +8,7 @@ import { SNAPSHOT_VERSION, type PopoverSnapshotData } from './snapshotManagerTyp
 import { isPlainObject } from '../../utils/guards/objectGuards';
 import { isArray } from '../../utils/guards/arrayGuards';
 import { ZERO_OFFSET } from '../../constants';
-import { filterRecord } from '../../utils/cleanObject';
+import { filterObject } from '../../utils/cleanObject';
 
 import { isUnsafeKey } from '../../utils/safeKeys';
 import { toFiniteNumber } from '../../utils/math';
@@ -35,7 +35,7 @@ export function sanitizePayloads<TData>(
   payloads?: Record<string, TData>,
 ): Record<string, TData> | undefined {
   if (!payloads || typeof payloads !== 'object') return undefined;
-  return filterRecord(payloads, (v) => typeof v !== 'function' && v !== null && v !== undefined);
+  return filterObject(payloads, (v) => typeof v !== 'function' && v !== null && v !== undefined);
 }
 
 export function isValidSnapshot<TData>(val: unknown): val is PopoverSnapshotData<TData> {

@@ -81,7 +81,7 @@ describe('dagActions in trail slice', () => {
     store.getState().pushNested(0, { key: 'step1' });
     store.getState().pushNested(1, { key: 'step2' });
 
-    const path = store.getState().getGeodesicPath('step2');
+    const path = store.getState().getBreadcrumbs('step2');
     expect(path).toEqual(['root', 'step1', 'step2']);
 
     const rootChildren = store.getState().getChildren('root');

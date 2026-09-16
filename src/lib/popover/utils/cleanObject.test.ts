@@ -1,38 +1,37 @@
 import { describe, it, expect } from 'vitest';
 import {
-  omitRecordKey,
-  omitRecordKeys,
-  toOmittedRecordKeys,
-  pickRecordKeys,
+  omitKey,
+  omitKeys,
+  pickKeys,
   safeAssign,
   isEmptyRecord,
-  mapRecordValues,
-  filterRecord,
-  compactRecord,
-  invertRecord,
-  freezeDeep,
+  mapValues,
+  filterObject,
+  compactObject,
+  invertObject,
+  deepFreeze,
 } from './cleanObject';
 
 describe('cleanObject', () => {
   it('omits key from record without mutation', () => {
     const original = { a: 1, b: 2, c: 3 };
-    const result = omitRecordKey(original, 'b');
+    const result = omitKey(original, 'b');
     expect(result).toEqual({ a: 1, c: 3 });
     expect(original).toEqual({ a: 1, b: 2, c: 3 });
   });
 
   it('returns original reference when key is absent', () => {
     const original: Record<string, number> = { a: 1 };
-    expect(omitRecordKey(original, 'b')).toBe(original);
+    expect(omitKey(original, 'b')).toBe(original);
   });
 
-  it('omits multiple keys via omitRecordKeys / toOmittedRecordKeys', () => {
+  it('omits multiple keys via omitKeys', () => {
     const original = { a: 1, b: 2, c: 3, d: 4 };
-    const result = omitRecordKeys(original, ['b', 'd']);
+    const result = omitKeys(original, ['b', 'd']);
     expect(result).toEqual({ a: 1, c: 3 });
-    expect(toOmittedRecordKeys(original, new Set(['a', 'c']))).toEqual({ b: 2, d: 4 });
-    expect(omitRecordKeys(original, [])).toBe(original);
-    expect(omitRecordKeys(null, ['a'])).toEqual({});
+    expect(omitKeys(original, new Set(['a', 'c']))).toEqual({ b: 2, d: 4 });
+    expect(omitKeys(original, [])).toBe(original);
+    expect(omitKeys(null, ['a'])).toEqual({});
   });
 
   it('safely assigns without prototype pollution', () => {
@@ -46,13 +45,13 @@ describe('cleanObject', () => {
 
   it('picks only specified keys safely ignoring missing or polluted keys', () => {
     const original = { a: 1, b: 2, c: 3 };
-    const picked = pickRecordKeys(original, ['a', 'c']);
+    const picked = pickKeys(original, ['a', 'c']);
     expect(picked).toEqual({ a: 1, c: 3 });
 
     const withPollution = JSON.parse('{"valid": 42, "__proto__": {"bad": true}}') as {
       valid: number;
     };
-    const pickedSafe = pickRecordKeys(withPollution, ['valid', '__proto__']);
+    const pickedSafe = pickKeys(withPollution, ['valid', '__proto__']);
     expect(pickedSafe).toEqual({ valid: 42 });
     expect('bad' in Object.prototype).toBe(false);
   });
@@ -66,38 +65,38 @@ describe('cleanObject', () => {
 
   it('maps record values while preserving prototype safety', () => {
     const record = { a: 1, b: 2, c: 3 };
-    const mapped = mapRecordValues(record, (v) => v * 10);
+    const mapped = mapValues(record, (v) => v * 10);
     expect(mapped).toEqual({ a: 10, b: 20, c: 30 });
-    expect(mapRecordValues({}, (v) => v)).toEqual({});
+    expect(mapValues({}, (v) => v)).toEqual({});
   });
 
   it('filters record entries while preserving prototype safety', () => {
     const record = { a: 1, b: 2, c: 3, d: 4 };
-    const filtered = filterRecord(record, (v) => v % 2 === 0);
+    const filtered = filterObject(record, (v) => v % 2 === 0);
     expect(filtered).toEqual({ b: 2, d: 4 });
-    expect(filterRecord({}, () => true)).toEqual({});
+    expect(filterObject({}, () => true)).toEqual({});
   });
 
-  it('compactRecord removes null and undefined entries', () => {
+  it('compactObject removes null and undefined entries', () => {
     const input = { a: 1, b: null, c: undefined, d: 'valid', e: 0, f: false };
-    const output = compactRecord(input);
+    const output = compactObject(input);
     expect(output).toEqual({ a: 1, d: 'valid', e: 0, f: false });
-    expect(compactRecord(null)).toEqual({});
-    expect(compactRecord({})).toEqual({});
+    expect(compactObject(null)).toEqual({});
+    expect(compactObject({})).toEqual({});
   });
 
-  it('invertRecord reverses keys and values safely', () => {
+  it('invertObject reverses keys and values safely', () => {
     const input = { keyA: 'valA', keyB: 'valB' };
-    const inverted = invertRecord(input);
+    const inverted = invertObject(input);
     expect(inverted).toEqual({ valA: 'keyA', valB: 'keyB' });
-    expect(invertRecord(['alpha', 'beta'])).toEqual({ alpha: 0, beta: 1 });
-    expect(invertRecord(null)).toEqual({});
-    expect(invertRecord({})).toEqual({});
+    expect(invertObject(['alpha', 'beta'])).toEqual({ alpha: 0, beta: 1 });
+    expect(invertObject(null)).toEqual({});
+    expect(invertObject({})).toEqual({});
   });
 
-  it('freezeDeep recursively freezes nested objects and arrays', () => {
+  it('deepFreeze recursively freezes nested objects and arrays', () => {
     const obj = { nested: { prop: 42 }, arr: [1, 2, 3] };
-    const frozen = freezeDeep(obj);
+    const frozen = deepFreeze(obj);
     expect(Object.isFrozen(frozen)).toBe(true);
     expect(Object.isFrozen(frozen.nested)).toBe(true);
     expect(Object.isFrozen(frozen.arr)).toBe(true);

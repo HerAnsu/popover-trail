@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { clampCoordinateToBounds, clampToWindowBounds, clampToContainerBounds } from './dndClamp';
+import { clampCoordinateToBounds, clampToViewport, clampToContainer } from './dndClamp';
 
 describe('dndClamp utilities', () => {
   const origWin = globalThis.window;
@@ -36,12 +36,6 @@ describe('dndClamp utilities', () => {
   it('clamps transform to boundary limits when exceeding margins', () => {
     const bounds = { left: 50, top: 50, right: 300, bottom: 300 };
 
-    // Node at left: 100, width: 100.
-    // minX = 50 - 100 = -50
-    // maxX = 300 - 100 - 100 = 100
-    // minY = 50 - 100 = -50
-    // maxY = 300 - 100 - 100 = 100
-
     const tooFarLeft = { x: -200, y: 0, scaleX: 1, scaleY: 1 };
     expect(clampCoordinateToBounds(tooFarLeft, baseNodeRect, bounds).x).toBe(-50);
 
@@ -61,7 +55,7 @@ describe('dndClamp utilities', () => {
     globalThis.document = {} as unknown as Document;
 
     const transform = { x: 1500, y: 1200, scaleX: 1, scaleY: 1 };
-    const result = clampToWindowBounds(transform, baseNodeRect);
+    const result = clampToViewport(transform, baseNodeRect);
 
     // maxX = 1024 - 100 - 100 = 824
     // maxY = 768 - 100 - 100 = 568
@@ -74,7 +68,7 @@ describe('dndClamp utilities', () => {
     globalThis.document = undefined as unknown as Document;
 
     const transform = { x: 2500, y: 2000, scaleX: 1, scaleY: 1 };
-    const result = clampToWindowBounds(transform, baseNodeRect);
+    const result = clampToViewport(transform, baseNodeRect);
 
     // maxX = 1920 - 100 - 100 = 1720
     // maxY = 1080 - 100 - 100 = 880
@@ -86,7 +80,7 @@ describe('dndClamp utilities', () => {
     const containerRect = { left: 50, top: 50, right: 400, bottom: 400 };
     const transform = { x: -300, y: 600, scaleX: 1, scaleY: 1 };
 
-    const result = clampToContainerBounds(transform, baseNodeRect, containerRect);
+    const result = clampToContainer(transform, baseNodeRect, containerRect);
 
     // minX = 50 - 100 = -50
     // maxY = 400 - 100 - 100 = 200

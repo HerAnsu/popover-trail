@@ -79,9 +79,3 @@ export function safeJsonParse<T = unknown>(
     return null;
   }
 }
-
-/**
- * Parses a JSON string safely without throwing.
- * Alias for {@link safeJsonParse}.
- */
-export const parseJson = safeJsonParse;

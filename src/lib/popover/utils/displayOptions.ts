@@ -6,7 +6,7 @@
  */
 
 import type { OpenRootOptions, OpenNestedOptions, TrailEntry } from '../types';
-import { pickRecordKeys } from './cleanObject';
+import { pickKeys } from './cleanObject';
 
 export const DISPLAY_OPTION_KEYS = [
   'collision',
@@ -55,7 +55,7 @@ export function extractDisplayOptions<TData = unknown, TPopoverKey extends strin
     | null,
 ): OpenRootOptions & OpenNestedOptions {
   if (!entry) return {};
-  return pickRecordKeys(
+  return pickKeys(
     entry as Partial<Record<DisplayOptionKey, unknown>>,
     DISPLAY_OPTION_KEYS_SET,
   ) as OpenRootOptions & OpenNestedOptions;

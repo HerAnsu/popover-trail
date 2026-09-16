@@ -7,7 +7,7 @@
 import type { TrailEntry } from '../../../types';
 import { hasKeyIn } from '../../../utils/predicates';
 import { not } from '../../../utils/functional';
-import { toOmittedRecordKeys } from '../../../utils/cleanObject';
+import { omitKeys } from '../../../utils/cleanObject';
 import { emptyRecord } from '../../storeDefaults';
 
 /**
@@ -30,5 +30,5 @@ export function omitRemovedRecordKeys<V, K extends string = string>(
   removedKeys: ReadonlySet<K>,
 ): Readonly<Partial<Record<K, V>>> {
   if (!record || removedKeys.size === 0) return record ?? emptyRecord<K, V>();
-  return toOmittedRecordKeys(record, removedKeys);
+  return omitKeys(record, removedKeys);
 }

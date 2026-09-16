@@ -14,12 +14,12 @@ import type {
 } from './dagTypes';
 import { wouldCreateCycle } from './dagCycle';
 import { insertDAGNode, connectDAGEdge, disconnectDAGEdge, deleteDAGNode } from './dagMutation';
-import { traverseDescendantKeys, traverseAncestorKeys, getGeodesicPath } from './dagTraversal';
+import { traverseDescendantKeys, traverseAncestorKeys, getBreadcrumbs } from './dagTraversal';
 import {
   computeTopologicalZIndex,
   computeTeardownPlan,
-  computeLinearExtension,
-  safeComputeLinearExtension,
+  topologicalSort,
+  safeTopologicalSort,
 } from './dagOrdering';
 import { findRoots, findLeaves, computeMaxDepth } from './dagMetrics';
 import { exportDAGSnapshot, importDAGSnapshot } from './dagSnapshot';
@@ -131,22 +131,14 @@ export class PopoverDAG<TPopoverKey extends string = string> {
    */
   getTopologicalOrderForBranch(rootKey: TPopoverKey): TPopoverKey[] {
     const desc = this.getDescendantKeys(rootKey);
-    return computeLinearExtension(this.nodes).filter((k) => k === rootKey || desc.has(k));
-  }
-
-  /**
-   * Computes a cycle-safe topological sort returning a `Result`.
-   */
-  safeComputeLinearExtension(): TopologicalSortResult<TPopoverKey> {
-    return safeComputeLinearExtension(this.nodes);
+    return topologicalSort(this.nodes).filter((k) => k === rootKey || desc.has(k));
   }
 
   /**
    * Safely computes topological order, returning an Err Result if an illegal cycle is detected.
-   * Alias for {@link safeComputeLinearExtension}.
    */
   safeTopologicalSort(): TopologicalSortResult<TPopoverKey> {
-    return this.safeComputeLinearExtension();
+    return safeTopologicalSort(this.nodes);
   }
 
   /**
@@ -191,14 +183,6 @@ export class PopoverDAG<TPopoverKey extends string = string> {
   }
 
   /**
-   * Assigns integer z-index stacking layers to the popover hierarchy.
-   * Alias for {@link getTopologicalZIndexOrder}.
-   */
-  getStackingZIndexOrder(baseZIndex = 1000): Map<TPopoverKey, number> {
-    return this.getTopologicalZIndexOrder(baseZIndex);
-  }
-
-  /**
    * Computes a bottom-up teardown sequence ordered from deepest leaves to root.
    */
   getTeardownPlan(rootKey: TPopoverKey, includeRoot = false): TPopoverKey[] {
@@ -206,15 +190,7 @@ export class PopoverDAG<TPopoverKey extends string = string> {
   }
 
   /**
-   * Extracts the unique geodesic path from the root anchor to the specified target node.
-   */
-  getGeodesicPath(targetKey: TPopoverKey): TPopoverKey[] {
-    return getGeodesicPath(this.nodes, targetKey);
-  }
-
-  /**
    * Returns the breadcrumb trail from root anchor to the target popover.
-   * Alias for {@link getGeodesicPath}.
    *
    * @example
    * ```ts
@@ -223,15 +199,7 @@ export class PopoverDAG<TPopoverKey extends string = string> {
    * ```
    */
   getBreadcrumbs(targetKey: TPopoverKey): TPopoverKey[] {
-    return this.getGeodesicPath(targetKey);
-  }
-
-  /**
-   * Returns the path from root anchor to target popover.
-   * Alias for {@link getGeodesicPath}.
-   */
-  getPathToRoot(targetKey: TPopoverKey): TPopoverKey[] {
-    return this.getGeodesicPath(targetKey);
+    return getBreadcrumbs(this.nodes, targetKey);
   }
 
   /** Serializes the entire graph topology into a portable snapshot envelope. */

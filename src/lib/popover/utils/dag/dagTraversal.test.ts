@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PopoverDAG } from './dagCore';
-import { visitDescendants, traverseAncestorKeys, getGeodesicPath } from './dagTraversal';
+import { visitDescendants, traverseAncestorKeys, getBreadcrumbs } from './dagTraversal';
 import type { InternalDAGNode } from './dagTypes';
 
 describe('dagTraversal algorithms', () => {
@@ -44,21 +44,21 @@ describe('dagTraversal algorithms', () => {
     expect(ancestors.size).toBe(4);
   });
 
-  it('computes geodesic path from root to leaf', () => {
+  it('computes breadcrumbs path from root to leaf', () => {
     const dag = new PopoverDAG();
     dag.addNode('root');
     dag.addNode('step1', 'root');
     dag.addNode('step2', 'step1');
 
     const internalNodes = (dag as unknown as { nodes: Map<string, InternalDAGNode<string>> }).nodes;
-    expect(getGeodesicPath(internalNodes, 'step2')).toEqual(['root', 'step1', 'step2']);
+    expect(getBreadcrumbs(internalNodes, 'step2')).toEqual(['root', 'step1', 'step2']);
 
-    const path = dag.getGeodesicPath('step2');
+    const path = dag.getBreadcrumbs('step2');
     expect(path).toEqual(['root', 'step1', 'step2']);
   });
 
-  it('returns empty array for non-existent node in geodesic path', () => {
+  it('returns empty array for non-existent node in breadcrumbs path', () => {
     const dag = new PopoverDAG();
-    expect(dag.getGeodesicPath('unknown')).toEqual([]);
+    expect(dag.getBreadcrumbs('unknown')).toEqual([]);
   });
 });

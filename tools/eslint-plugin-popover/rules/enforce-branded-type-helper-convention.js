@@ -30,7 +30,9 @@ export default {
           !node.id.name.startsWith('validate') &&
           !node.id.name.startsWith('find') &&
           !node.id.name.startsWith('has') &&
-          !node.id.name.startsWith('hash')
+          !node.id.name.startsWith('hash') &&
+          !node.id.name.startsWith('omit') &&
+          !node.id.name.startsWith('pick')
         ) {
           context.report({
             node,

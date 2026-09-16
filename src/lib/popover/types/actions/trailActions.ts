@@ -46,6 +46,6 @@ export interface TrailSliceActions<
   removeEdge: (parentKey: TPopoverKey, childKey: TPopoverKey) => void;
   getParents: (key: TPopoverKey) => ReadonlySet<TPopoverKey>;
   getChildren: (key: TPopoverKey) => ReadonlySet<TPopoverKey>;
-  getGeodesicPath: (key: TPopoverKey) => readonly TPopoverKey[];
+  getBreadcrumbs: (key: TPopoverKey) => readonly TPopoverKey[];
   getDAG: () => PopoverDAG<TPopoverKey> | undefined;
 }

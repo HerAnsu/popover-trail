@@ -311,15 +311,16 @@ export {
   normalizeRatio,
 } from './utils/math';
 export {
-  omitRecordKey,
-  pickRecordKeys,
+  omitKey,
+  omitKeys,
+  pickKeys,
   safeAssign,
   isEmptyRecord,
-  mapRecordValues,
-  filterRecord,
-  compactRecord,
-  invertRecord,
-  freezeDeep,
+  mapValues,
+  filterObject,
+  compactObject,
+  invertObject,
+  deepFreeze,
 } from './utils/cleanObject';
 export {
   setUnion,

@@ -9,8 +9,8 @@ import {
   normalizeRatio,
   QuadTree,
   boxesIntersect,
-  compactRecord,
-  omitRecordKeys,
+  compactObject,
+  omitKeys,
   safeAssign,
   partition,
   unique,
@@ -54,9 +54,9 @@ describe('popover-trail/utils subpath entrypoint', () => {
   });
 
   it('exports object and record manipulation utilities', () => {
-    expect(compactRecord({ a: 1, b: undefined, c: null })).toEqual({ a: 1 });
+    expect(compactObject({ a: 1, b: undefined, c: null })).toEqual({ a: 1 });
     const rec: Record<string, number> = { a: 1, b: 2, c: 3 };
-    expect(omitRecordKeys(rec, ['b'])).toEqual({ a: 1, c: 3 });
+    expect(omitKeys(rec, ['b'])).toEqual({ a: 1, c: 3 });
     expect(safeAssign({}, { a: 1 })).toEqual({ a: 1 });
   });
 

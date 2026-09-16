@@ -17,7 +17,7 @@ import { isUnsafeKey } from './safeKeys';
  * @param keyToOmit - Key to exclude from the new record.
  * @returns A new record with the key omitted, or the original record if unchanged.
  */
-export function toOmittedRecordKey<T, K extends string = string>(
+export function omitKey<T, K extends string = string>(
   record: Partial<Record<K, T>>,
   keyToOmit: K,
 ): Partial<Record<K, T>> {
@@ -35,14 +35,6 @@ export function toOmittedRecordKey<T, K extends string = string>(
   return result;
 }
 
-export const omitRecordKey = toOmittedRecordKey;
-
-/**
- * Omits a single key from an object.
- * Alias for {@link omitRecordKey}.
- */
-export const omitKey = toOmittedRecordKey;
-
 /**
  * Creates a shallow copy of a record omitting multiple specified keys.
  *
@@ -52,7 +44,7 @@ export const omitKey = toOmittedRecordKey;
  * @param keysToOmit - Set or array of keys to exclude.
  * @returns A new record with the keys omitted.
  */
-export function toOmittedRecordKeys<T, K extends string = string>(
+export function omitKeys<T, K extends string = string>(
   record?: Partial<Record<K, T>> | null,
   keysToOmit?: ReadonlySet<K> | readonly K[] | null,
 ): Partial<Record<K, T>> {
@@ -70,14 +62,6 @@ export function toOmittedRecordKeys<T, K extends string = string>(
   }
   return result;
 }
-
-export const omitRecordKeys = toOmittedRecordKeys;
-
-/**
- * Omits multiple keys from an object.
- * Alias for {@link omitRecordKeys}.
- */
-export const omitKeys = toOmittedRecordKeys;
 
 /**
  * Safely assigns source properties to a target object protecting against prototype pollution.
@@ -114,7 +98,7 @@ export function safeAssign<T extends object, S extends object>(
  * @param keysToPick - Set or array of keys to include.
  * @returns A new record containing only the picked keys.
  */
-export function pickRecordKeys<T, K extends string = string>(
+export function pickKeys<T, K extends string = string>(
   record: Partial<Record<K, T>>,
   keysToPick: ReadonlySet<K> | readonly K[],
 ): Partial<Record<K, T>> {
@@ -132,12 +116,6 @@ export function pickRecordKeys<T, K extends string = string>(
   }
   return result;
 }
-
-/**
- * Picks specified keys from an object.
- * Alias for {@link pickRecordKeys}.
- */
-export const pickKeys = pickRecordKeys;
 
 /**
  * Checks whether a record contains zero own enumerable properties.
@@ -165,7 +143,7 @@ export function isEmptyRecord(record?: object | null): boolean {
  * @param fn - Value transformer function.
  * @returns A new record with transformed values.
  */
-export function mapRecordValues<K extends string | number, V, R>(
+export function mapValues<K extends string | number, V, R>(
   record: Partial<Record<K, V>>,
   fn: (value: V, key: K) => R,
 ): Partial<Record<K, R>> {
@@ -183,12 +161,6 @@ export function mapRecordValues<K extends string | number, V, R>(
 }
 
 /**
- * Maps the values of an object using a transformer function.
- * Alias for {@link mapRecordValues}.
- */
-export const mapValues = mapRecordValues;
-
-/**
  * Filters a record based on a key-value predicate evaluation.
  * Protects against prototype pollution by skipping unsafe keys.
  *
@@ -198,15 +170,15 @@ export const mapValues = mapRecordValues;
  * @param predicate - Entry filter function.
  * @returns A new record containing only entries that satisfied the predicate.
  */
-export function filterRecord<K extends string | number, V>(
+export function filterObject<K extends string | number, V>(
   record: Record<K, V>,
   predicate: (value: V, key: K) => boolean,
 ): Record<K, V>;
-export function filterRecord<K extends string | number, V>(
+export function filterObject<K extends string | number, V>(
   record: Partial<Record<K, V>>,
   predicate: (value: V, key: K) => boolean,
 ): Partial<Record<K, V>>;
-export function filterRecord<K extends string | number, V>(
+export function filterObject<K extends string | number, V>(
   record: Partial<Record<K, V>>,
   predicate: (value: V, key: K) => boolean,
 ): Partial<Record<K, V>> {
@@ -224,12 +196,6 @@ export function filterRecord<K extends string | number, V>(
 }
 
 /**
- * Filters an object using a predicate.
- * Alias for {@link filterRecord}.
- */
-export const filterObject = filterRecord;
-
-/**
  * Removes null and undefined values from a record, returning a clean partial record.
  * Protects against prototype pollution by skipping unsafe keys.
  *
@@ -238,7 +204,7 @@ export const filterObject = filterRecord;
  * @param record - Source record.
  * @returns A new record containing only defined, non-null values.
  */
-export function compactRecord<K extends string | number, V>(
+export function compactObject<K extends string | number, V>(
   record?: Partial<Record<K, V | null | undefined>> | null,
 ): Partial<Record<K, V>> {
   if (!record || isEmptyRecord(record)) return {};
@@ -255,12 +221,6 @@ export function compactRecord<K extends string | number, V>(
 }
 
 /**
- * Compacts an object by removing null and undefined properties.
- * Alias for {@link compactRecord}.
- */
-export const compactObject = compactRecord;
-
-/**
  * Inverts keys and values of a record ({ a: 'x' } -> { x: 'a' }).
  * Protects against prototype pollution by skipping unsafe keys and values.
  *
@@ -269,7 +229,7 @@ export const compactObject = compactRecord;
  * @param record - Source record with unique string or number values.
  * @returns A new inverted record.
  */
-export function invertRecord<K extends string | number, V extends string | number>(
+export function invertObject<K extends string | number, V extends string | number>(
   record?: Record<K, V> | Partial<Record<K, V>> | readonly V[] | null,
 ): Record<V, K> {
   const result: Record<string, K> = {};
@@ -295,35 +255,23 @@ export function invertRecord<K extends string | number, V extends string | numbe
 }
 
 /**
- * Inverts the keys and values of an object.
- * Alias for {@link invertRecord}.
- */
-export const invertObject = invertRecord;
-
-/**
  * Recursively freezes an object and its nested properties, preventing runtime mutations.
  *
  * @template T - Object type.
  * @param obj - Target object to freeze deeply.
  * @returns Deeply frozen object.
  */
-export function freezeDeep<T>(obj: T): Readonly<T> {
+export function deepFreeze<T>(obj: T): Readonly<T> {
   if (obj === null || typeof obj !== 'object') return obj;
   for (const key of Object.keys(obj)) {
     if (!isUnsafeKey(key)) {
       const val = Reflect.get(obj, key);
       if (typeof val === 'object' && val !== null && !Object.isFrozen(val)) {
-        freezeDeep(val);
+        deepFreeze(val);
       }
     }
   }
   return Object.freeze(obj);
 }
-
-/**
- * Deeply freezes an object and its nested properties.
- * Alias for {@link freezeDeep}.
- */
-export const deepFreeze = freezeDeep;
 
 

@@ -12,21 +12,17 @@ import {
   computeBoundaryProximityRatio,
 } from '../utils/dragMath';
 
-export {
-  clampCoordinateToBounds,
-  clampToWindowBounds,
-  clampToContainerBounds,
-  computeBoundaryProximityRatio,
-};
-
 /**
  * Clamps coordinates within window/viewport bounds.
- * Alias for {@link clampToWindowBounds}.
  */
 export const clampToViewport = clampToWindowBounds;
 
 /**
  * Clamps coordinates within container element bounds.
- * Alias for {@link clampToContainerBounds}.
  */
 export const clampToContainer = clampToContainerBounds;
+
+export {
+  clampCoordinateToBounds,
+  computeBoundaryProximityRatio,
+};

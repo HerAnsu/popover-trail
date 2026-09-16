@@ -18,12 +18,8 @@ export interface UsePopoverDAGResult<TPopoverKey extends string = RegisteredKeys
   readonly getParents: (key: TPopoverKey) => ReadonlySet<TPopoverKey>;
   /** Retrieves all direct child keys opened by a popover. */
   readonly getChildren: (key: TPopoverKey) => ReadonlySet<TPopoverKey>;
-  /** Retrieves the ordered path from root anchor down to the target popover. */
-  readonly getGeodesicPath: (key: TPopoverKey) => readonly TPopoverKey[];
-  /** Alias for {@link getGeodesicPath}. Returns breadcrumb trail keys. */
+  /** Retrieves the ordered breadcrumb path from root anchor down to the target popover. */
   readonly getBreadcrumbs: (key: TPopoverKey) => readonly TPopoverKey[];
-  /** Alias for {@link getGeodesicPath}. */
-  readonly getPathToRoot: (key: TPopoverKey) => readonly TPopoverKey[];
   /** Adds a directed cascade edge (parent -> child), returning false if it would create a cycle. */
   readonly addEdge: (parentKey: TPopoverKey, childKey: TPopoverKey) => boolean;
   /** Removes a directed cascade edge between parent and child. */
@@ -52,9 +48,7 @@ export function usePopoverDAG<
       dag,
       getParents: actions.getParents,
       getChildren: actions.getChildren,
-      getGeodesicPath: actions.getGeodesicPath,
-      getBreadcrumbs: actions.getGeodesicPath,
-      getPathToRoot: actions.getGeodesicPath,
+      getBreadcrumbs: actions.getBreadcrumbs,
       addEdge: actions.addEdge,
       removeEdge: actions.removeEdge,
     }),
@@ -67,14 +61,14 @@ export function usePopoverDAG<
  *
  * @example
  * ```tsx
- * const trailPath = useGeodesicPath('subitem-card');
+ * const trailPath = useBreadcrumbPath('subitem-card');
  * // ['root', 'item-card', 'subitem-card']
  * ```
  *
  * @param key - Identifier of the target popover.
  * @returns Readonly array of keys from root to target.
  */
-export function useGeodesicPath<
+export function useBreadcrumbPath<
   TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
   TPopoverKey extends string = RegisteredKeys,
@@ -85,25 +79,13 @@ export function useGeodesicPath<
       (s) => {
         void s.trail;
         void s.floating;
-        return actions.getGeodesicPath(key);
+        return actions.getBreadcrumbs(key);
       },
       [actions, key],
     ),
     shallowEqualArray,
   );
 }
-
-/**
- * Returns the breadcrumb trail from root anchor down to the target popover.
- * Alias for {@link useGeodesicPath}.
- */
-export const useBreadcrumbPath = useGeodesicPath;
-
-/**
- * Returns the path from root anchor to target popover.
- * Alias for {@link useGeodesicPath}.
- */
-export const usePathToRoot = useGeodesicPath;
 
 export function usePopoverParents<
   TData = RegisteredDataMap[RegisteredKeys],

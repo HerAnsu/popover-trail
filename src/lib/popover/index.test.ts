@@ -36,9 +36,9 @@ describe('index entry point exports', () => {
     expect(PopoverLib.matchEntryState).toBeDefined();
     expect(PopoverLib.defineStoreSlice).toBeDefined();
     expect(PopoverLib.createPopoverEvent).toBeDefined();
-    expect(PopoverLib.compactRecord).toBeDefined();
-    expect(PopoverLib.invertRecord).toBeDefined();
-    expect(PopoverLib.freezeDeep).toBeDefined();
+    expect(PopoverLib.compactObject).toBeDefined();
+    expect(PopoverLib.invertObject).toBeDefined();
+    expect(PopoverLib.deepFreeze).toBeDefined();
     expect(PopoverLib.distance2D).toBeDefined();
     expect(PopoverLib.distanceSquared2D).toBeDefined();
     expect(PopoverLib.lerpPoint2D).toBeDefined();

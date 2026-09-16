@@ -6,7 +6,7 @@
 
 import type { DragOffset, PopoverStateData, StatePatch, TrailEntry } from '../../../types';
 import { EMPTY_ARRAY, emptyRecord } from '../../storeDefaults';
-import { filterRecord, getActiveKeys } from './recordFilter';
+import { filterByAllowedKeys, getActiveKeys } from './recordFilter';
 
 export interface ActiveStateSlices<TPopoverKey extends string = string> {
   readonly activeKeys: Set<TPopoverKey>;
@@ -39,9 +39,9 @@ export function collectActiveStateSlices<
   nextTrail: readonly TrailEntry<TData, TPopoverKey>[],
 ): ActiveStateSlices<TPopoverKey> {
   const activeKeys = getActiveKeys(state.floating, nextTrail);
-  const nextOffsets = filterRecord<DragOffset, TPopoverKey>(state.offsets, activeKeys);
-  const nextPinnedStates = filterRecord<boolean, TPopoverKey>(state.pinnedStates, activeKeys);
-  const nextCounters = filterRecord<number, TPopoverKey>(
+  const nextOffsets = filterByAllowedKeys<DragOffset, TPopoverKey>(state.offsets, activeKeys);
+  const nextPinnedStates = filterByAllowedKeys<boolean, TPopoverKey>(state.pinnedStates, activeKeys);
+  const nextCounters = filterByAllowedKeys<number, TPopoverKey>(
     state.nestedHydrationRequestCounters ?? emptyRecord(),
     activeKeys,
   );
@@ -65,12 +65,12 @@ export function getCleanupStatePatch<
   counters?: Readonly<Partial<Record<TPopoverKey, number>>>,
 ): StatePatch<TData, TContext, TPopoverKey> {
   const activeKeys = getActiveKeys(nextFloating, nextTrail);
-  const nextOffsets = filterRecord<DragOffset, TPopoverKey>(offsets, activeKeys);
-  const nextPinned = filterRecord<boolean, TPopoverKey>(
+  const nextOffsets = filterByAllowedKeys<DragOffset, TPopoverKey>(offsets, activeKeys);
+  const nextPinned = filterByAllowedKeys<boolean, TPopoverKey>(
     pinnedStates ?? emptyRecord<TPopoverKey, boolean>(),
     activeKeys,
   );
-  const nextCounters = filterRecord<number, TPopoverKey>(
+  const nextCounters = filterByAllowedKeys<number, TPopoverKey>(
     counters ?? emptyRecord<TPopoverKey, number>(),
     activeKeys,
   );

@@ -108,7 +108,7 @@ export function traverseAncestorKeys<TPopoverKey extends string>(
  *
  * @example
  * ```ts
- * const breadcrumbs = getGeodesicPath(dagNodes, 'nestedMenuSubitem');
+ * const breadcrumbs = getBreadcrumbs(dagNodes, 'nestedMenuSubitem');
  * // => ['rootMenu', 'subMenu', 'nestedMenuSubitem']
  * ```
  *
@@ -116,7 +116,7 @@ export function traverseAncestorKeys<TPopoverKey extends string>(
  * @param targetKey - Leaf or target popover key.
  * @returns Array of keys tracing the path from root to target, or empty array if target not in DAG.
  */
-export function getGeodesicPath<TPopoverKey extends string>(
+export function getBreadcrumbs<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
   targetKey: TPopoverKey,
 ): TPopoverKey[] {
@@ -136,21 +136,3 @@ export function getGeodesicPath<TPopoverKey extends string>(
   }
   return path.toArray();
 }
-
-/**
- * Returns the path from the root anchor down to the target popover.
- * Alias for {@link getGeodesicPath}.
- */
-export const getPathFromRoot = getGeodesicPath;
-
-/**
- * Returns the breadcrumb trail from the root anchor down to the target popover.
- * Alias for {@link getGeodesicPath}.
- */
-export const getBreadcrumbs = getGeodesicPath;
-
-/**
- * Returns the path from root to target popover.
- * Alias for {@link getGeodesicPath}.
- */
-export const getPathToRoot = getGeodesicPath;

@@ -6,7 +6,7 @@
 
 import type { TrailEntry } from '../../../types';
 import { isUnsafeKey } from '../../../utils/safeKeys';
-import { pickRecordKeys } from '../../../utils/cleanObject';
+import { pickKeys } from '../../../utils/cleanObject';
 import { emptyRecord } from '../../storeDefaults';
 
 function shouldPreserveRecord<V, K extends string>(
@@ -28,7 +28,7 @@ function shouldPreserveRecord<V, K extends string>(
 /**
  * Pure Record filtering keeping only allowed keys without allocating intermediate objects when possible.
  */
-export function filterRecord<V, K extends string = string>(
+export function filterByAllowedKeys<V, K extends string = string>(
   record: Readonly<Partial<Record<K, V>>> | undefined,
   allowedKeys: ReadonlySet<K>,
 ): Readonly<Partial<Record<K, V>>> {
@@ -36,7 +36,7 @@ export function filterRecord<V, K extends string = string>(
   if (shouldPreserveRecord(record, allowedKeys)) {
     return record;
   }
-  return pickRecordKeys(record, allowedKeys);
+  return pickKeys(record, allowedKeys);
 }
 
 /**
