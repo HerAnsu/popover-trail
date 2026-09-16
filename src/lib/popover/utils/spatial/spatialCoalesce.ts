@@ -1,4 +1,4 @@
-﻿/**
+/**
  * QuadTree Node Coalescing & Branch Shrinkage.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
  *
@@ -8,6 +8,19 @@
 import type { QuadItem } from '../guards/spatialGuards';
 import type { QuadTree } from './quadTreeCore';
 
+/**
+ * Checks whether subdivided child quadrant nodes can be collapsed back into their parent.
+ *
+ * @remarks
+ * Child quadrants can collapse if:
+ * 1. None of the child quadrants have their own subdivided children (leaf level).
+ * 2. The combined number of items in the parent and all child nodes does not exceed `maxItems`.
+ *
+ * @param nodes - Array of 4 child quadrant nodes.
+ * @param parentItemCount - Number of items currently stored at the parent level.
+ * @param maxItems - Node capacity limit.
+ * @returns `true` if quadrants can safely collapse back into the parent.
+ */
 export function canCoalesceQuadNodes<TId extends string>(
   nodes: readonly QuadTree<TId>[],
   parentItemCount: number,
@@ -23,6 +36,18 @@ export function canCoalesceQuadNodes<TId extends string>(
   return true;
 }
 
+/**
+ * Pragmatic alias for `canCoalesceQuadNodes`.
+ */
+export const canCollapseQuadNodes = canCoalesceQuadNodes;
+
+/**
+ * Merges and deduplicates items from all child quadrants and the parent into a single list.
+ *
+ * @param nodes - Subdivided child quadrant nodes.
+ * @param parentItems - Items stored at the parent level.
+ * @returns Consolidated deduplicated item list.
+ */
 export function collectCoalescedItems<TId extends string>(
   nodes: readonly QuadTree<TId>[],
   parentItems: readonly QuadItem<TId>[],
@@ -41,6 +66,22 @@ export function collectCoalescedItems<TId extends string>(
   return merged;
 }
 
+/**
+ * Pragmatic alias for `collectCoalescedItems`.
+ */
+export const collectCollapsedItems = collectCoalescedItems;
+
+/**
+ * Attempts to collapse child quadrants back into the parent if the combined item count is within capacity.
+ *
+ * @remarks
+ * If conditions are met, pulls all items into the returned array, clears child nodes, and truncates `nodes.length = 0`.
+ *
+ * @param nodes - Mutable array of child quadrant nodes.
+ * @param items - Mutable array of parent items.
+ * @param maxItems - Capacity limit for a single node.
+ * @returns Consolidated array of items if collapsed, or `null` if the node cannot be collapsed.
+ */
 export function tryCoalesceQuadTree<TId extends string>(
   nodes: QuadTree<TId>[],
   items: QuadItem<TId>[],
@@ -52,3 +93,8 @@ export function tryCoalesceQuadTree<TId extends string>(
   nodes.length = 0;
   return merged;
 }
+
+/**
+ * Pragmatic alias for `tryCoalesceQuadTree`.
+ */
+export const tryCollapseQuadTree = tryCoalesceQuadTree;

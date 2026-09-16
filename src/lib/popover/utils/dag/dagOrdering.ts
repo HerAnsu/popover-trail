@@ -91,6 +91,11 @@ export function computeLinearExtension<TPopoverKey extends string>(
 }
 
 /**
+ * Pragmatic alias for `computeLinearExtension`. Topologically sorts DAG nodes (parents before children).
+ */
+export const topologicalSort = computeLinearExtension;
+
+/**
  * Topologically sorts popover nodes, returning an error Result if an illegal cycle is detected.
  *
  * @remarks
@@ -155,6 +160,11 @@ export function safeComputeLinearExtension<TPopoverKey extends string>(
 }
 
 /**
+ * Pragmatic alias for `safeComputeLinearExtension`. Safely computes topological order with cycle detection.
+ */
+export const safeTopologicalSort = safeComputeLinearExtension;
+
+/**
  * Computes z-index stacking order so child popovers always render above their parents.
  *
  * @remarks
@@ -189,3 +199,8 @@ export function computeTopologicalZIndex<TPopoverKey extends string>(
   });
   return result;
 }
+
+/**
+ * Pragmatic alias for `computeTopologicalZIndex`. Assigns z-index stacking layers to popover hierarchy.
+ */
+export const computeStackingZIndex = computeTopologicalZIndex;

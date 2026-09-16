@@ -38,6 +38,11 @@ export function toOmittedRecordKey<T, K extends string = string>(
 export const omitRecordKey = toOmittedRecordKey;
 
 /**
+ * Pragmatic alias for `omitRecordKey`. Omits a single key from an object.
+ */
+export const omitKey = toOmittedRecordKey;
+
+/**
  * Creates a shallow copy of a record omitting multiple specified keys.
  *
  * @template T - Value type of the record.
@@ -66,6 +71,11 @@ export function toOmittedRecordKeys<T, K extends string = string>(
 }
 
 export const omitRecordKeys = toOmittedRecordKeys;
+
+/**
+ * Pragmatic alias for `omitRecordKeys`. Omits multiple keys from an object.
+ */
+export const omitKeys = toOmittedRecordKeys;
 
 /**
  * Safely assigns source properties to a target object protecting against prototype pollution.
@@ -122,6 +132,11 @@ export function pickRecordKeys<T, K extends string = string>(
 }
 
 /**
+ * Pragmatic alias for `pickRecordKeys`.
+ */
+export const pickKeys = pickRecordKeys;
+
+/**
  * Checks whether a record contains zero own enumerable properties.
  * Executes in O(1) without heap allocation (unlike Object.keys(record).length === 0).
  *
@@ -165,6 +180,11 @@ export function mapRecordValues<K extends string | number, V, R>(
 }
 
 /**
+ * Pragmatic alias for `mapRecordValues`.
+ */
+export const mapValues = mapRecordValues;
+
+/**
  * Filters a record based on a key-value predicate evaluation.
  * Protects against prototype pollution by skipping unsafe keys.
  *
@@ -200,6 +220,11 @@ export function filterRecord<K extends string | number, V>(
 }
 
 /**
+ * Pragmatic alias for `filterRecord`.
+ */
+export const filterObject = filterRecord;
+
+/**
  * Removes null and undefined values from a record, returning a clean partial record.
  * Protects against prototype pollution by skipping unsafe keys.
  *
@@ -223,6 +248,11 @@ export function compactRecord<K extends string | number, V>(
   }
   return result;
 }
+
+/**
+ * Pragmatic alias for `compactRecord`.
+ */
+export const compactObject = compactRecord;
 
 /**
  * Inverts keys and values of a record ({ a: 'x' } -> { x: 'a' }).
@@ -259,6 +289,11 @@ export function invertRecord<K extends string | number, V extends string | numbe
 }
 
 /**
+ * Pragmatic alias for `invertRecord`.
+ */
+export const invertObject = invertRecord;
+
+/**
  * Recursively freezes an object and its nested properties, preventing runtime mutations.
  *
  * @template T - Object type.
@@ -277,5 +312,10 @@ export function freezeDeep<T>(obj: T): Readonly<T> {
   }
   return Object.freeze(obj);
 }
+
+/**
+ * Pragmatic alias for `freezeDeep`.
+ */
+export const deepFreeze = freezeDeep;
 
 

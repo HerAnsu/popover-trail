@@ -8,6 +8,19 @@
 import { RingBuffer } from '../buffer';
 import type { InternalDAGNode } from './dagTypes';
 
+/**
+ * Iteratively traverses all descendant keys of a parent node in depth-first order.
+ *
+ * @remarks
+ * Uses an explicit array stack to prevent call-stack overflows on deep hierarchies.
+ * Traversal terminates early if `visitor` returns `false`.
+ *
+ * @param nodes - Kernel DAG node dictionary.
+ * @param parentKey - Starting root key of the cascade branch.
+ * @param visitor - Callback invoked for each visited descendant key. Return `false` to abort early.
+ * @param visited - Optional set tracking visited keys to guard against cycles.
+ * @returns `false` if stopped early by the visitor callback, `true` otherwise.
+ */
 export function visitDescendants<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
   parentKey: TPopoverKey,
@@ -32,6 +45,14 @@ export function visitDescendants<TPopoverKey extends string>(
   return true;
 }
 
+/**
+ * Collects all descendant keys of a parent node into a target Set.
+ *
+ * @param nodes - Kernel DAG node dictionary.
+ * @param parentKey - Starting parent key.
+ * @param outSet - Mutable set into which descendant keys are inserted.
+ * @returns The populated `outSet`.
+ */
 export function traverseDescendantKeys<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
   parentKey: TPopoverKey,
@@ -48,6 +69,14 @@ export function traverseDescendantKeys<TPopoverKey extends string>(
   return outSet;
 }
 
+/**
+ * Collects all ancestor keys above a target node up to the root anchors.
+ *
+ * @param nodes - Kernel DAG node dictionary.
+ * @param childKey - Starting target child key.
+ * @param outSet - Mutable set to collect ancestor keys into (defaults to new Set).
+ * @returns The populated `outSet` containing all ancestor keys.
+ */
 export function traverseAncestorKeys<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
   childKey: TPopoverKey,
@@ -70,6 +99,23 @@ export function traverseAncestorKeys<TPopoverKey extends string>(
   return outSet;
 }
 
+/**
+ * Computes the unique breadcrumb trail path from the root anchor down to the target popover.
+ *
+ * @remarks
+ * Backtracks via `parentKey` pointers until reaching a root node without a parent.
+ * Returns an array ordered from root ancestor to target: `[root, intermediate, ..., target]`.
+ *
+ * @example
+ * ```ts
+ * const breadcrumbs = getGeodesicPath(dagNodes, 'nestedMenuSubitem');
+ * // => ['rootMenu', 'subMenu', 'nestedMenuSubitem']
+ * ```
+ *
+ * @param nodes - Kernel DAG node dictionary.
+ * @param targetKey - Leaf or target popover key.
+ * @returns Array of keys tracing the path from root to target, or empty array if target not in DAG.
+ */
 export function getGeodesicPath<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
   targetKey: TPopoverKey,
@@ -90,3 +136,18 @@ export function getGeodesicPath<TPopoverKey extends string>(
   }
   return path.toArray();
 }
+
+/**
+ * Pragmatic alias for `getGeodesicPath`. Returns the path from root to target popover.
+ */
+export const getPathFromRoot = getGeodesicPath;
+
+/**
+ * Pragmatic alias for `getGeodesicPath`. Returns the breadcrumb trail to the target popover.
+ */
+export const getBreadcrumbs = getGeodesicPath;
+
+/**
+ * Pragmatic alias for `getGeodesicPath`.
+ */
+export const getPathToRoot = getGeodesicPath;

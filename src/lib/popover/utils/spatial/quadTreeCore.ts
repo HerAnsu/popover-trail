@@ -64,30 +64,55 @@ export class QuadTree<TId extends string = string> {
     this.level = isNonNegativeFinite(level) ? level : 0;
   }
 
+  /**
+   * Returns items stored directly in this QuadTree node (not including subdivided child quadrants).
+   */
   public getItems(): readonly QuadItem<TId>[] {
     return this.items;
   }
+
+  /**
+   * Returns the four subdivided child quadrant nodes (`[ne, nw, sw, se]`), or an empty array if not subdivided.
+   */
   public getNodes(): readonly QuadTree<TId>[] {
     return this.nodes;
   }
+
+  /**
+   * Maximum capacity threshold of items before this node subdivides into 4 quadrants.
+   */
   public get maxItemsCapacity(): number {
     return this.maxItems;
   }
+
+  /**
+   * Maximum tree depth limit to prevent infinite recursive subdivisions.
+   */
   public get maxLevelsLimit(): number {
     return this.maxLevels;
   }
+
+  /**
+   * Total count of all items stored in this node and all descendant quadrant subtrees.
+   */
   public get size(): number {
     let count = this.items.length;
     for (const n of this.nodes) count += n.size;
     return count;
   }
 
+  /**
+   * Empties all items and recursively clears all child quadrant subtrees.
+   */
   public clear(): void {
     this.items = [];
     for (const n of this.nodes) n.clear();
     this.nodes = [];
   }
 
+  /**
+   * Splits this quadrant node into four sub-quadrants: North-East, North-West, South-West, South-East.
+   */
   private split(): void {
     const next = this.level + 1;
     const newNodes = splitQuadTreeNodes(
@@ -101,6 +126,11 @@ export class QuadTree<TId extends string = string> {
     this.nodes.push(...newNodes);
   }
 
+  /**
+   * Attempts to collapse empty or sparsely populated child quadrants back into this parent node.
+   *
+   * @returns `true` if child quadrants were collapsed, `false` otherwise.
+   */
   public coalesce(): boolean {
     const merged = tryCoalesceQuadTree(this.nodes, this.items, this.maxItems);
     if (!merged) return false;
@@ -108,6 +138,18 @@ export class QuadTree<TId extends string = string> {
     return true;
   }
 
+  /**
+   * Pragmatic alias for `coalesce()`. Collapses child quadrants if combined item count fits in parent.
+   */
+  public collapse(): boolean {
+    return this.coalesce();
+  }
+
+  /**
+   * Inserts an item into the QuadTree, subdividing into quadrants if capacity is exceeded.
+   *
+   * @param item - Spatial item containing an `id` and `bounds` rectangle.
+   */
   public insert(item?: QuadItem<TId> | Partial<QuadItem<TId>> | null): void {
     this.items = insertQuadTreeItem(
       this.nodes,
@@ -121,18 +163,42 @@ export class QuadTree<TId extends string = string> {
     );
   }
 
+  /**
+   * Removes an item by its unique ID, coalescing empty child quadrants if appropriate.
+   *
+   * @param id - Identifier of the item to remove.
+   * @returns `true` if the item was found and removed, `false` otherwise.
+   */
   public remove(id: TId): boolean {
     const res = removeQuadTreeItem(this.nodes, this.items, id);
     if (res) this.coalesce();
     return res;
   }
 
+  /**
+   * Updates an existing item's spatial bounding box.
+   *
+   * @param id - Identifier of the item.
+   * @param newBounds - Updated bounding box.
+   * @returns `true` if updated, `false` if the item was not found.
+   */
   public update(id: TId, newBounds: BoundingBox): boolean {
     if (!this.remove(id)) return false;
     this.insert({ id, bounds: newBounds });
     return true;
   }
 
+  /**
+   * Traverses all items intersecting the `target` box, executing `visitor` for each.
+   *
+   * @remarks
+   * If `visitor` returns `false`, traversal stops early.
+   *
+   * @param target - Search bounding box.
+   * @param visitor - Callback invoked for each intersecting item.
+   * @param seen - Optional set to deduplicate items spanning quadrant boundaries.
+   * @returns `false` if stopped early, `true` otherwise.
+   */
   public visit(
     target: BoundingBox,
     visitor: (item: QuadItem<TId>) => boolean | void,
@@ -145,6 +211,14 @@ export class QuadTree<TId extends string = string> {
         );
   }
 
+  /**
+   * Retrieves all items that intersect with the specified bounding box.
+   *
+   * @param returnItems - Optional array to collect results into (reusable to avoid allocations).
+   * @param bounds - Optional search box (defaults to entire tree bounds).
+   * @param seen - Optional set for tracking visited IDs.
+   * @returns Array containing intersecting items.
+   */
   public retrieve(
     returnItems: QuadItem<TId>[] = [],
     bounds?: BoundingBox,
@@ -159,10 +233,40 @@ export class QuadTree<TId extends string = string> {
     return returnItems;
   }
 
+  /**
+   * Pragmatic alias for `retrieve()`. Queries all items intersecting the given bounding box.
+   *
+   * @example
+   * ```ts
+   * const overlappingCards = tree.query(viewportBounds);
+   * ```
+   *
+   * @param bounds - Optional search box (defaults to entire tree bounds).
+   * @param out - Optional output array to avoid heap allocations.
+   * @returns Array of intersecting items.
+   */
+  public query(bounds?: BoundingBox, out: QuadItem<TId>[] = []): QuadItem<TId>[] {
+    return this.retrieve(out, bounds);
+  }
+
+  /**
+   * Checks whether any item in the tree intersects with the `target` bounding box.
+   *
+   * @param target - Target bounding box to test.
+   * @param excludeId - Optional ID to ignore (e.g. self collision check).
+   * @returns `true` if an intersection exists, `false` otherwise.
+   */
   public hasCollision(target: BoundingBox, excludeId?: TId): boolean {
     return hasCollisionInNodes(this.nodes, this.items, this.bounds, target, excludeId);
   }
 
+  /**
+   * Finds the first item intersecting the `target` box that matches the optional predicate.
+   *
+   * @param target - Search bounding box.
+   * @param predicate - Optional filter function.
+   * @returns First matching item or `undefined`.
+   */
   public findFirst(
     target: BoundingBox,
     predicate?: (item: QuadItem<TId>) => boolean,
@@ -189,6 +293,13 @@ export class QuadTree<TId extends string = string> {
     return ok(item);
   }
 
+  /**
+   * Finds the nearest item in the tree to a 2D coordinate point within an optional max distance.
+   *
+   * @param point - Target 2D point (x, y).
+   * @param maxDistance - Optional maximum search radius in pixels.
+   * @returns Nearest item or `undefined`.
+   */
   public nearest(point: Point2D, maxDistance?: number): QuadItem<TId> | undefined {
     return findNearestQuadItem(this, point, maxDistance);
   }

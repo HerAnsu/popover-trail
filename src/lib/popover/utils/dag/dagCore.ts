@@ -142,6 +142,13 @@ export class PopoverDAG<TPopoverKey extends string = string> {
   }
 
   /**
+   * Pragmatic alias for `safeComputeLinearExtension`. Returns topological order or cycle error.
+   */
+  safeTopologicalSort(): TopologicalSortResult<TPopoverKey> {
+    return this.safeComputeLinearExtension();
+  }
+
+  /**
    * Returns all root nodes in the graph (nodes having an in-degree of 0 with no parents).
    */
   getRoots(): readonly TPopoverKey[] {
@@ -183,6 +190,13 @@ export class PopoverDAG<TPopoverKey extends string = string> {
   }
 
   /**
+   * Pragmatic alias for `getTopologicalZIndexOrder`. Assigns stacking z-index layers.
+   */
+  getStackingZIndexOrder(baseZIndex = 1000): Map<TPopoverKey, number> {
+    return this.getTopologicalZIndexOrder(baseZIndex);
+  }
+
+  /**
    * Computes a bottom-up teardown sequence ordered from deepest leaves to root.
    */
   getTeardownPlan(rootKey: TPopoverKey, includeRoot = false): TPopoverKey[] {
@@ -194,6 +208,26 @@ export class PopoverDAG<TPopoverKey extends string = string> {
    */
   getGeodesicPath(targetKey: TPopoverKey): TPopoverKey[] {
     return getGeodesicPath(this.nodes, targetKey);
+  }
+
+  /**
+   * Pragmatic alias for `getGeodesicPath`. Returns the breadcrumb trail from root to target popover.
+   *
+   * @example
+   * ```ts
+   * const trail = dag.getBreadcrumbs('settings-dialog');
+   * // ['main-menu', 'user-profile', 'settings-dialog']
+   * ```
+   */
+  getBreadcrumbs(targetKey: TPopoverKey): TPopoverKey[] {
+    return this.getGeodesicPath(targetKey);
+  }
+
+  /**
+   * Pragmatic alias for `getGeodesicPath`.
+   */
+  getPathToRoot(targetKey: TPopoverKey): TPopoverKey[] {
+    return this.getGeodesicPath(targetKey);
   }
 
   /** Serializes the entire graph topology into a portable snapshot envelope. */

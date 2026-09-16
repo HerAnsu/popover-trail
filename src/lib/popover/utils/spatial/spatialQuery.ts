@@ -9,6 +9,25 @@ import { type BoundingBox, type QuadItem, boxesIntersect } from '../guards/spati
 import { getQuadrantIndex } from './spatialBounds';
 import type { QuadTree } from './quadTreeCore';
 
+/**
+ * Traverses items in the QuadTree intersecting with the target bounding box, invoking a visitor callback.
+ *
+ * @remarks
+ * Uses hierarchical bounding box pruning:
+ * 1. If the target box fits entirely into a single sub-quadrant, execution recurses into that quadrant only.
+ * 2. Otherwise, iterates child quadrants and visits any whose bounds intersect with the target box.
+ * 3. Tests items stored directly in this node and calls `visitor` for those that intersect and have not been visited yet (`seen` Set).
+ *
+ * Traversal terminates early if `visitor` returns `false`.
+ *
+ * @param nodes - Child quadrant subtrees.
+ * @param items - Items stored at this node level.
+ * @param parentBounds - Boundary of this node.
+ * @param target - Target query rectangle.
+ * @param visitor - Callback receiving intersecting items. Return `false` to abort early.
+ * @param seen - Mutable set tracking visited item IDs to prevent duplicates.
+ * @returns `false` if aborted early, `true` otherwise.
+ */
 export function visitQuadTreeItems<TId extends string>(
   nodes: readonly QuadTree<TId>[],
   items: readonly QuadItem<TId>[],
@@ -39,6 +58,16 @@ export function visitQuadTreeItems<TId extends string>(
   return true;
 }
 
+/**
+ * Collects all items in the QuadTree intersecting with the target bounding box into an array.
+ *
+ * @param nodes - Child quadrant subtrees.
+ * @param items - Items stored at this node level.
+ * @param parentBounds - Boundary of this node.
+ * @param target - Target query rectangle.
+ * @param returnItems - Array into which intersecting items are pushed.
+ * @param seen - Mutable set tracking visited item IDs.
+ */
 export function queryQuadTreeItems<TId extends string>(
   nodes: readonly QuadTree<TId>[],
   items: readonly QuadItem<TId>[],
