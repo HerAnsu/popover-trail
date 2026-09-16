@@ -4,7 +4,6 @@ import {
   normalizeDragDeltaInto,
   computeTiltMatrix,
   computeTiltMatrixInPlace,
-  computeRawTiltAngles,
   applyDragFriction,
 } from './dragPhysics';
 
@@ -46,7 +45,7 @@ describe('dragPhysics', () => {
       expect(res.rotationX).toBe(-1);
       expect(res.rotationY).toBe(2);
 
-      const raw = computeRawTiltAngles(-10, -30, 20, 0.2);
+      const raw = computeTiltMatrix(-10, -30, 20, 0.2);
       expect(raw.rotationX).toBe(6);
       expect(raw.rotationY).toBe(-2);
     });

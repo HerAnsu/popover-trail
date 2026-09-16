@@ -26,6 +26,9 @@ export class FixedPool<T> {
     this.head = this.capacity;
   }
 
+  /**
+   * Borrows an instance from the pool. If the pool is exhausted, creates a new instance via factory.
+   */
   acquire(): T {
     if (this.head > 0) {
       const item = this.slots[--this.head];
@@ -34,6 +37,12 @@ export class FixedPool<T> {
     return this.factory();
   }
 
+  /**
+   * Returns a borrowed instance back to the pool after running the optional reset callback.
+   *
+   * @param item - Instance to return.
+   * @returns `true` if returned, `false` if rejected (null, undefined, or pool at capacity).
+   */
   release(item?: T | null): boolean {
     if (item === null || item === undefined || this.head >= this.capacity) {
       return false;
@@ -43,6 +52,12 @@ export class FixedPool<T> {
     return true;
   }
 
+  /**
+   * Scoped execution helper: acquires an instance, passes it to `fn`, and automatically releases it.
+   *
+   * @param fn - Work function receiving the pooled item.
+   * @returns The result of `fn`.
+   */
   runWith<R>(fn: (item: T) => R): R {
     return runWithItem(
       () => this.acquire(),

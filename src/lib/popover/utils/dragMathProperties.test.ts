@@ -7,7 +7,6 @@ import {
   normalizeDragDeltaInto,
   computeTiltMatrix,
   computeTiltMatrixInPlace,
-  computeRawTiltAngles,
   type ClampBounds,
 } from './dragMath';
 
@@ -94,12 +93,9 @@ describe('I_FiniteFloat: Finite Float Guarantee Property Tests', () => {
         float64Arb,
         (deltaX, deltaY, maxAngle, sensitivity) => {
           const tilt = computeTiltMatrix(deltaX, deltaY, maxAngle, sensitivity);
-          const rawTilt = computeRawTiltAngles(deltaX, deltaY, maxAngle, sensitivity);
 
           expect(Number.isFinite(tilt.rotationX)).toBe(true);
           expect(Number.isFinite(tilt.rotationY)).toBe(true);
-          expect(Number.isFinite(rawTilt.rotationX)).toBe(true);
-          expect(Number.isFinite(rawTilt.rotationY)).toBe(true);
 
           const outTilt = { rotationX: 0, rotationY: 0 };
           computeTiltMatrixInPlace(deltaX, deltaY, maxAngle, sensitivity, outTilt);
