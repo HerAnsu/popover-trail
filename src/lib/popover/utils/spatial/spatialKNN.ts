@@ -72,7 +72,8 @@ export function findNearestQuadItem<TId extends string = string>(
 }
 
 /**
- * Pragmatic alias for `findNearestQuadItem`.
+ * Finds the nearest item in the QuadTree to a 2D coordinate point.
+ * Alias for {@link findNearestQuadItem}.
  */
 export const findNearestItem = findNearestQuadItem;
 

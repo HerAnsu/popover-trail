@@ -158,6 +158,7 @@ export function selectLowestEnergyPlacement(
 }
 
 /**
- * Pragmatic alias for `selectLowestEnergyPlacement`. Finds the optimal placement position among candidates.
+ * Finds the candidate position with the lowest collision energy and anchor distance.
+ * Alias for {@link selectLowestEnergyPlacement}.
  */
 export const findBestPlacementPosition = selectLowestEnergyPlacement;

@@ -134,12 +134,14 @@ export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatr
 }
 
 /**
- * Pragmatic alias for invertMatrix2DResult. Inverts an affine transformation matrix safely.
+ * Safely inverts a 2D affine transformation matrix.
+ * Alias for {@link invertMatrix2DResult}.
  */
 export const tryInvertMatrix = invertMatrix2DResult;
 
 /**
- * Pragmatic alias for invertMatrix2DResult.
+ * Safely inverts a 2D affine transformation matrix.
+ * Alias for {@link invertMatrix2DResult}.
  */
 export const invertMatrix = invertMatrix2DResult;
 

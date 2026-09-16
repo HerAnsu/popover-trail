@@ -138,16 +138,19 @@ export function getGeodesicPath<TPopoverKey extends string>(
 }
 
 /**
- * Pragmatic alias for `getGeodesicPath`. Returns the path from root to target popover.
+ * Returns the path from the root anchor down to the target popover.
+ * Alias for {@link getGeodesicPath}.
  */
 export const getPathFromRoot = getGeodesicPath;
 
 /**
- * Pragmatic alias for `getGeodesicPath`. Returns the breadcrumb trail to the target popover.
+ * Returns the breadcrumb trail from the root anchor down to the target popover.
+ * Alias for {@link getGeodesicPath}.
  */
 export const getBreadcrumbs = getGeodesicPath;
 
 /**
- * Pragmatic alias for `getGeodesicPath`.
+ * Returns the path from root to target popover.
+ * Alias for {@link getGeodesicPath}.
  */
 export const getPathToRoot = getGeodesicPath;

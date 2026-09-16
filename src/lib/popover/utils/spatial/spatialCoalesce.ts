@@ -37,7 +37,8 @@ export function canCoalesceQuadNodes<TId extends string>(
 }
 
 /**
- * Pragmatic alias for `canCoalesceQuadNodes`.
+ * Checks whether subdivided child quadrant nodes can be collapsed into their parent.
+ * Alias for {@link canCoalesceQuadNodes}.
  */
 export const canCollapseQuadNodes = canCoalesceQuadNodes;
 
@@ -67,7 +68,8 @@ export function collectCoalescedItems<TId extends string>(
 }
 
 /**
- * Pragmatic alias for `collectCoalescedItems`.
+ * Consolidates all child items into a single deduplicated array.
+ * Alias for {@link collectCoalescedItems}.
  */
 export const collectCollapsedItems = collectCoalescedItems;
 
@@ -95,6 +97,7 @@ export function tryCoalesceQuadTree<TId extends string>(
 }
 
 /**
- * Pragmatic alias for `tryCoalesceQuadTree`.
+ * Attempts to collapse child quadrants back into the parent node if within capacity.
+ * Alias for {@link tryCoalesceQuadTree}.
  */
 export const tryCollapseQuadTree = tryCoalesceQuadTree;

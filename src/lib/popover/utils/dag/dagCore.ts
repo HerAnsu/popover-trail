@@ -142,7 +142,8 @@ export class PopoverDAG<TPopoverKey extends string = string> {
   }
 
   /**
-   * Pragmatic alias for `safeComputeLinearExtension`. Returns topological order or cycle error.
+   * Safely computes topological order, returning an Err Result if an illegal cycle is detected.
+   * Alias for {@link safeComputeLinearExtension}.
    */
   safeTopologicalSort(): TopologicalSortResult<TPopoverKey> {
     return this.safeComputeLinearExtension();
@@ -190,7 +191,8 @@ export class PopoverDAG<TPopoverKey extends string = string> {
   }
 
   /**
-   * Pragmatic alias for `getTopologicalZIndexOrder`. Assigns stacking z-index layers.
+   * Assigns integer z-index stacking layers to the popover hierarchy.
+   * Alias for {@link getTopologicalZIndexOrder}.
    */
   getStackingZIndexOrder(baseZIndex = 1000): Map<TPopoverKey, number> {
     return this.getTopologicalZIndexOrder(baseZIndex);
@@ -211,7 +213,8 @@ export class PopoverDAG<TPopoverKey extends string = string> {
   }
 
   /**
-   * Pragmatic alias for `getGeodesicPath`. Returns the breadcrumb trail from root to target popover.
+   * Returns the breadcrumb trail from root anchor to the target popover.
+   * Alias for {@link getGeodesicPath}.
    *
    * @example
    * ```ts
@@ -224,7 +227,8 @@ export class PopoverDAG<TPopoverKey extends string = string> {
   }
 
   /**
-   * Pragmatic alias for `getGeodesicPath`.
+   * Returns the path from root anchor to target popover.
+   * Alias for {@link getGeodesicPath}.
    */
   getPathToRoot(targetKey: TPopoverKey): TPopoverKey[] {
     return this.getGeodesicPath(targetKey);

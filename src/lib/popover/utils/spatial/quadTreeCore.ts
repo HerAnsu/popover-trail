@@ -139,7 +139,8 @@ export class QuadTree<TId extends string = string> {
   }
 
   /**
-   * Pragmatic alias for `coalesce()`. Collapses child quadrants if combined item count fits in parent.
+   * Collapses child quadrants back into this parent node if within capacity.
+   * Alias for {@link coalesce}.
    */
   public collapse(): boolean {
     return this.coalesce();
@@ -234,7 +235,8 @@ export class QuadTree<TId extends string = string> {
   }
 
   /**
-   * Pragmatic alias for `retrieve()`. Queries all items intersecting the given bounding box.
+   * Queries all items intersecting the given bounding box.
+   * Alias for {@link retrieve}.
    *
    * @example
    * ```ts

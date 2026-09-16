@@ -38,7 +38,8 @@ export function toOmittedRecordKey<T, K extends string = string>(
 export const omitRecordKey = toOmittedRecordKey;
 
 /**
- * Pragmatic alias for `omitRecordKey`. Omits a single key from an object.
+ * Omits a single key from an object.
+ * Alias for {@link omitRecordKey}.
  */
 export const omitKey = toOmittedRecordKey;
 
@@ -73,7 +74,8 @@ export function toOmittedRecordKeys<T, K extends string = string>(
 export const omitRecordKeys = toOmittedRecordKeys;
 
 /**
- * Pragmatic alias for `omitRecordKeys`. Omits multiple keys from an object.
+ * Omits multiple keys from an object.
+ * Alias for {@link omitRecordKeys}.
  */
 export const omitKeys = toOmittedRecordKeys;
 
@@ -132,7 +134,8 @@ export function pickRecordKeys<T, K extends string = string>(
 }
 
 /**
- * Pragmatic alias for `pickRecordKeys`.
+ * Picks specified keys from an object.
+ * Alias for {@link pickRecordKeys}.
  */
 export const pickKeys = pickRecordKeys;
 
@@ -180,7 +183,8 @@ export function mapRecordValues<K extends string | number, V, R>(
 }
 
 /**
- * Pragmatic alias for `mapRecordValues`.
+ * Maps the values of an object using a transformer function.
+ * Alias for {@link mapRecordValues}.
  */
 export const mapValues = mapRecordValues;
 
@@ -220,7 +224,8 @@ export function filterRecord<K extends string | number, V>(
 }
 
 /**
- * Pragmatic alias for `filterRecord`.
+ * Filters an object using a predicate.
+ * Alias for {@link filterRecord}.
  */
 export const filterObject = filterRecord;
 
@@ -250,7 +255,8 @@ export function compactRecord<K extends string | number, V>(
 }
 
 /**
- * Pragmatic alias for `compactRecord`.
+ * Compacts an object by removing null and undefined properties.
+ * Alias for {@link compactRecord}.
  */
 export const compactObject = compactRecord;
 
@@ -289,7 +295,8 @@ export function invertRecord<K extends string | number, V extends string | numbe
 }
 
 /**
- * Pragmatic alias for `invertRecord`.
+ * Inverts the keys and values of an object.
+ * Alias for {@link invertRecord}.
  */
 export const invertObject = invertRecord;
 
@@ -314,7 +321,8 @@ export function freezeDeep<T>(obj: T): Readonly<T> {
 }
 
 /**
- * Pragmatic alias for `freezeDeep`.
+ * Deeply freezes an object and its nested properties.
+ * Alias for {@link freezeDeep}.
  */
 export const deepFreeze = freezeDeep;
 
