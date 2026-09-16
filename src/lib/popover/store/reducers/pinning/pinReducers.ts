@@ -12,7 +12,17 @@ import { findEntryIndex } from '../stack';
 import { pinTrailEntry, unpinFloatingEntry } from './pinOperations';
 
 /**
- * Pure state reducer computing next state when updating drag coordinates for a popover card.
+ * Computes the state patch when updating the drag or docking offset for a popover card.
+ *
+ * @remarks
+ * Validates finite float coordinates to prevent NaN or Infinite coordinate corruptions.
+ * Checks for value equality (`isDragOffsetEqual`) to return `EMPTY_OBJECT` if unchanged,
+ * preventing unnecessary store revisions or re-renders.
+ *
+ * @param state - Current store state snapshot.
+ * @param key - Identifier of the dragged popover.
+ * @param offset - New 2D drag offset coordinates `{ x, y }`.
+ * @returns State patch with updated `offsets`, or empty object if coordinates are identical/invalid.
  */
 export function updateOffsetState<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
@@ -35,7 +45,16 @@ export function updateOffsetState<TData, TContext, TPopoverKey extends string = 
 }
 
 /**
- * Pure state reducer computing next state when toggling between floating (pinned) and cascade (trail) modes.
+ * Computes the state patch when toggling a popover between floating (pinned) and cascade (trail) modes.
+ *
+ * @remarks
+ * - If the card is currently floating/pinned, transitions it back into the active trail.
+ * - If the card is currently in the active trail, detaches it into the pinned floating stack.
+ *
+ * @param state - Current store state snapshot.
+ * @param key - Identifier of the popover to toggle.
+ * @param rect - Optional bounding rectangle captured at the moment of pinning to preserve exact coordinates.
+ * @returns State patch transitioning the card between floating and trail collections.
  */
 export function togglePinState<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,

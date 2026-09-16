@@ -5,7 +5,19 @@
  */
 
 /**
- * Stringifies arbitrary values safely guarding against circular references and undefined.
+ * Serializes arbitrary values into a JSON string, safely guarding against circular references.
+ *
+ * @remarks
+ * Uses a `WeakSet` to track visited objects and omit cycles, preventing `TypeError: Converting circular structure to JSON`.
+ * Returns `'null'` on unhandled serialization errors or `undefined` inputs.
+ *
+ * @example
+ * ```ts
+ * const json = safeJsonStringify({ a: 1, nested: { b: 2 } });
+ * ```
+ *
+ * @param value - Value to serialize.
+ * @returns Safe JSON string representation or `'null'`.
  */
 export function safeJsonStringify(value: unknown): string {
   if (value === undefined) return 'null';
@@ -25,8 +37,30 @@ export function safeJsonStringify(value: unknown): string {
 }
 
 /**
- * Safely parses JSON strings into typed data structures returning null on failure or invalid input.
- * Supports optional runtime type guard for guaranteed type safety.
+ * Serializes a value safely to JSON.
+ * Alias for {@link safeJsonStringify}.
+ */
+export const serializeJson = safeJsonStringify;
+
+/**
+ * Safely parses a JSON string into a typed data structure without throwing exceptions.
+ *
+ * @remarks
+ * Returns `null` on syntax errors, non-string inputs, or empty strings.
+ * If an optional `guard` predicate is provided, validates that the parsed value conforms to type `T`.
+ *
+ * @example
+ * ```ts
+ * const user = safeJsonParse(rawString, isUser);
+ * if (user) {
+ *   console.log(user.name);
+ * }
+ * ```
+ *
+ * @template T - Expected output type.
+ * @param raw - Input string to parse.
+ * @param guard - Optional runtime type guard validating the parsed output.
+ * @returns Parsed value of type `T`, or `null` on syntax or validation failure.
  */
 export function safeJsonParse<T = unknown>(
   raw: unknown,
@@ -46,4 +80,8 @@ export function safeJsonParse<T = unknown>(
   }
 }
 
-export const serializeJson = safeJsonStringify;
+/**
+ * Parses a JSON string safely without throwing.
+ * Alias for {@link safeJsonParse}.
+ */
+export const parseJson = safeJsonParse;

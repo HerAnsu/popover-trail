@@ -14,7 +14,17 @@ import { filterRetainedEntries, omitRemovedRecordKeys } from './closeFilter';
 export { getRemovedKeysForClose } from './closeCalculation';
 
 /**
- * Pure state reducer computing next state when closing popover cards from a target index.
+ * Computes the state patch when closing popover cards from a specific depth index.
+ *
+ * @remarks
+ * Recursively calculates all keys to remove (including DAG reachable descendants),
+ * filters retained floating and trail entries, and cleans up associated offsets,
+ * pinned states, hydration counters, and z-index ordering.
+ *
+ * @param state - Current store state snapshot.
+ * @param index - Unified index of the card to close.
+ * @param dag - Optional DAG instance to identify hierarchical descendants.
+ * @returns State patch with pruned entries and cleaned-up metadata.
  */
 export function closeFromState<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
@@ -53,7 +63,16 @@ export function closeFromState<TData, TContext, TPopoverKey extends string = str
 }
 
 /**
- * Direct key-addressed pure reducer for closing a popover card.
+ * Computes the state patch for closing a popover card identified by key.
+ *
+ * @remarks
+ * Finds the unified index of `targetKey` across floating and trail entries,
+ * then delegates to {@link closeFromState} to remove the card and its cascade descendants.
+ *
+ * @param state - Current store state snapshot.
+ * @param targetKey - Identifier of the popover card to close.
+ * @param dag - Optional DAG instance to identify hierarchical descendants.
+ * @returns State patch for the closure, or empty object if key was not found.
  */
 export function closeByTargetKeyState<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,

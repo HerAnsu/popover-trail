@@ -189,41 +189,119 @@ export class PopoverQueryBus<
     return mapResult(this.getEntryResult(key), (entry) => entry.data ?? null);
   }
 
+  /**
+   * Retrieves the current drag/docking coordinate offset for the given popover key.
+   *
+   * @param key - Registered popover key.
+   * @returns Drag offset { x, y } in pixels, or { x: 0, y: 0 } if unset.
+   */
   public getOffset(key: TPopoverKey): DragOffset {
     return this.getStoreState().offsets[key] ?? ZERO_OFFSET;
   }
 
+  /**
+   * Checks whether a popover is currently open (in active trail or floating stack).
+   *
+   * @param key - Registered popover key.
+   * @returns `true` if active, `false` otherwise.
+   */
   public isOpen(key: TPopoverKey): boolean {
     return isPopoverActive(this.getStoreState(), key);
   }
 
+  /**
+   * Alias for {@link isOpen}.
+   */
   public hasEntry(key: TPopoverKey): boolean {
     return this.isOpen(key);
   }
+
+  /**
+   * Checks whether a popover is pinned into floating mode.
+   *
+   * @param key - Registered popover key.
+   * @returns `true` if pinned, `false` otherwise.
+   */
   public isPinned(key: TPopoverKey): boolean {
     return Boolean(this.getStoreState().pinnedStates[key]);
   }
+
+  /**
+   * Checks whether the popover is the topmost entry in stacking and focus order.
+   *
+   * @param key - Registered popover key.
+   * @returns `true` if on top, `false` otherwise.
+   */
   public isTopmost(key: TPopoverKey): boolean {
     return last(this.getStoreState().zIndexOrder) === key;
   }
+
+  /**
+   * Checks whether an async data resolver is currently loading for the given popover.
+   *
+   * @param key - Registered popover key.
+   * @returns `true` if loading, `false` otherwise.
+   */
   public isLoading(key: TPopoverKey): boolean {
     return this.getEntry(key)?.isLoading ?? false;
   }
+
+  /**
+   * Retrieves the error object if the popover's async resolver failed.
+   *
+   * @param key - Registered popover key.
+   * @returns Error instance if failed, or `null` otherwise.
+   */
   public getError(key: TPopoverKey): Error | null {
     return this.getEntry(key)?.error ?? null;
   }
+
+  /**
+   * Retrieves the parent popover key in the active cascade hierarchy.
+   *
+   * @param key - Target popover key.
+   * @returns Parent key or `undefined` if root or not found.
+   */
   public getParent(key: TPopoverKey): TPopoverKey | undefined {
     return selectParentKey<TPopoverKey>(key)(this.getStoreState());
   }
+
+  /**
+   * Retrieves keys of all child popovers opened directly by the specified popover.
+   *
+   * @param key - Parent popover key.
+   * @returns Readonly array of child keys.
+   */
   public getChildren(key: TPopoverKey): readonly TPopoverKey[] {
     return selectChildrenKeys<TPopoverKey, TData>(key)(this.getStoreState());
   }
+
+  /**
+   * Retrieves the breadcrumb trail keys leading from root down to the specified popover.
+   *
+   * @param key - Target popover key.
+   * @returns Array of keys in root-to-target order.
+   */
   public getBreadcrumbs(key: TPopoverKey): readonly TPopoverKey[] {
     return selectBreadcrumbs<TPopoverKey, TData>(key)(this.getStoreState());
   }
+
+  /**
+   * Retrieves the zero-indexed cascade nesting depth of the specified popover (0 = root).
+   *
+   * @param key - Target popover key.
+   * @returns Integer depth tier, or -1 if popover is not in the active trail.
+   */
   public getDepth(key: TPopoverKey): number {
     return selectPopoverDepth<TPopoverKey>(key)(this.getStoreState());
   }
+
+  /**
+   * Retrieves the cascade trail branch entries leading from root down to the specified popover.
+   *
+   * @param key - Target popover key.
+   * @returns Array of TrailEntry objects along the branch.
+   */
   public getBranch(key: TPopoverKey): readonly TrailEntry<TData, TPopoverKey>[] {
     return selectTrailBranch<TPopoverKey, TData>(key)(this.getStoreState());
   }

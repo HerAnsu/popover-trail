@@ -49,12 +49,12 @@ export class PopoverCommandBus<
     this.getActions().openRoot(ownerId, entry);
   }
   /** Pushes a nested child popover card at a specific cascade depth tier. */
-  openNested(i: number, e: TrailEntry<TData, TPopoverKey>): void {
-    this.getActions().pushNested(i, e);
+  openNested(depthIndex: number, entry: TrailEntry<TData, TPopoverKey>): void {
+    this.getActions().pushNested(depthIndex, entry);
   }
   /** Alias for `openNested`. */
-  pushNested(i: number, e: TrailEntry<TData, TPopoverKey>): void {
-    this.getActions().pushNested(i, e);
+  pushNested(depthIndex: number, entry: TrailEntry<TData, TPopoverKey>): void {
+    this.getActions().pushNested(depthIndex, entry);
   }
 
   /** Opens root popover card resolving payload asynchronously via registered data resolver. */
@@ -68,28 +68,28 @@ export class PopoverCommandBus<
 
   /** Opens child popover resolving payload asynchronously. */
   async openNestedWithResolver(
-    parent: TPopoverKey,
+    parentKey: TPopoverKey,
     key: TPopoverKey,
     options?: OpenNestedOptions,
   ): Promise<void> {
-    await this.getActions().openNestedWithResolver(parent, key, options);
+    await this.getActions().openNestedWithResolver(parentKey, key, options);
   }
 
   /** Closes a specific popover and automatically tears down its reachable descendant subgraph. */
-  close(k: TPopoverKey, opts?: { transition?: boolean }): void {
-    this.getActions().closeByKey(k, opts);
+  close(key: TPopoverKey, options?: { transition?: boolean }): void {
+    this.getActions().closeByKey(key, options);
   }
   /** Closes a popover by key with optional exit transition scheduling. */
-  closeByKey(k: TPopoverKey, opts?: { transition?: boolean }): void {
-    this.getActions().closeByKey(k, opts);
+  closeByKey(key: TPopoverKey, options?: { transition?: boolean }): void {
+    this.getActions().closeByKey(key, options);
   }
   /** Dismisses the topmost focused popover. */
-  closeTopmost(opts?: { transition?: boolean }): void {
-    this.getActions().closeTopmost(opts);
+  closeTopmost(options?: { transition?: boolean }): void {
+    this.getActions().closeTopmost(options);
   }
   /** Closes all active trail popovers, leaving pinned floating cards intact. */
-  clearTrail(opts?: { transition?: boolean }): void {
-    this.getActions().clearTrail(opts);
+  clearTrail(options?: { transition?: boolean }): void {
+    this.getActions().clearTrail(options);
   }
   /** Closes all active popovers (both trail and pinned floating cards). */
   clearAll(): void {
