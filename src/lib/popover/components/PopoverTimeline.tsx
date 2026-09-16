@@ -2,6 +2,24 @@
  * Visual History Timeline & Navigation Component for popover-trail.
  * Clean Architecture Layer 4: Presentation & UI Components.
  *
+ * Provides accessible timeline navigation across the state history journal,
+ * allowing users to step backward, forward, and inspect previous cascade states.
+ *
+ * Compound subcomponents:
+ * - `PopoverTimeline.StepList`: Ordered list of historical steps.
+ * - `PopoverTimeline.Step`: Individual step item showing key and active state.
+ * - `PopoverTimeline.UndoButton`: Steps backward to the previous state.
+ * - `PopoverTimeline.RedoButton`: Steps forward to the next state.
+ *
+ * @example
+ * ```tsx
+ * <PopoverTimeline>
+ *   <PopoverTimeline.UndoButton>Undo</PopoverTimeline.UndoButton>
+ *   <PopoverTimeline.StepList />
+ *   <PopoverTimeline.RedoButton>Redo</PopoverTimeline.RedoButton>
+ * </PopoverTimeline>
+ * ```
+ *
  * @module PopoverTimeline
  */
 
@@ -36,7 +54,9 @@ export type {
 };
 
 export interface PopoverTimelineBaseProps {
+  /** Optional custom CSS class name. */
   className?: string;
+  /** React children or render prop receiving timeline scope. */
   children?: ReactNode | ((scope: PopoverTimelineScope) => ReactNode);
 }
 

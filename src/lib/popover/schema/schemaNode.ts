@@ -10,6 +10,14 @@ import type { PopoverSchemaNode } from './schemaTypes';
 /**
  * Identity factory enforcing typed schema node configuration with metadata.
  *
+ * @example
+ * ```ts
+ * const userNode = defineSchemaNode({
+ *   children: ['profile', 'settings'],
+ *   resolver: async (key, parentData) => fetchUser(key),
+ * });
+ * ```
+ *
  * @param node - Popover schema node configuration.
  * @returns Strongly typed schema node.
  */
@@ -18,6 +26,12 @@ export function defineSchemaNode<TData, TParentData = unknown, TContext = unknow
 ): PopoverSchemaNode<TData, TParentData, TContext> {
   return node;
 }
+
+/**
+ * Creates a strongly typed popover schema node definition.
+ * Alias for {@link defineSchemaNode}.
+ */
+export const createSchemaNode = defineSchemaNode;
 
 /**
  * Extracts declared allowed child keys from a schema node.

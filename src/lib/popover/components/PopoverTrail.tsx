@@ -2,6 +2,26 @@
  * Declarative PopoverTrail Container Component.
  * Clean Architecture Layer 4: Presentation & UI Components.
  *
+ * Automatically renders all active floating (pinned) and cascading trail popovers
+ * into a portal target, executing the provided `renderCard` callback for each entry.
+ *
+ * @example
+ * ```tsx
+ * <PopoverTrail
+ *   renderCard={(entry, index, isPinned) => (
+ *     <PopoverCard key={entry.key} entry={entry} index={index} isPinned={isPinned}>
+ *       <PopoverCard.Header title={entry.key}>
+ *         <PopoverCard.PinButton />
+ *         <PopoverCard.CloseButton />
+ *       </PopoverCard.Header>
+ *       <PopoverCard.Content>
+ *         <p>Card content</p>
+ *       </PopoverCard.Content>
+ *     </PopoverCard>
+ *   )}
+ * />
+ * ```
+ *
  * @module components/PopoverTrail
  */
 
@@ -11,8 +31,11 @@ import { usePopoverTrail, usePopoverFloating } from '../hooks/usePopoverSelector
 import type { TrailEntry } from '../types';
 
 export interface PopoverTrailProps<TData = unknown> {
+  /** Render callback invoked for each active popover card entry. */
   renderCard: (entry: TrailEntry<TData>, index: number, isPinned: boolean) => ReactNode;
+  /** Optional filter predicate to selectively include or exclude certain entries. */
   filter?: (entry: TrailEntry<TData>, index: number) => boolean;
+  /** Custom portal container DOM node or ref. Defaults to document.body. */
   container?: HTMLElement | (() => HTMLElement | null) | React.RefObject<HTMLElement | null>;
 }
 

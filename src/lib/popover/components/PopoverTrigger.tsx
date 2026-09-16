@@ -2,6 +2,30 @@
  * Declarative Headless Trigger Component for Popover Stack Spawning and Cascading.
  * Clean Architecture Layer 4: Presentation & UI Components.
  *
+ * Provides accessible click, hover, and keyboard event handlers to toggle or cascade popovers.
+ * Automatically determines whether it acts as a root trigger or a nested child trigger
+ * based on contextual popover ancestry.
+ *
+ * @example
+ * ```tsx
+ * // Simple button trigger
+ * <PopoverTrigger popoverKey="profile-menu" placement="bottom-start">
+ *   <button type="button">Open Profile</button>
+ * </PopoverTrigger>
+ * ```
+ *
+ * @example
+ * ```tsx
+ * // Render prop with dynamic ARIA attributes
+ * <PopoverTrigger popoverKey="user-card">
+ *   {(props) => (
+ *     <button type="button" {...props}>
+ *       User Details {props['aria-expanded'] ? '▲' : '▼'}
+ *     </button>
+ *   )}
+ * </PopoverTrigger>
+ * ```
+ *
  * @module components/PopoverTrigger
  */
 

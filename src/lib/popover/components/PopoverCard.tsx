@@ -2,6 +2,28 @@
  * Polymorphic Compound PopoverCard Component.
  * Clean Architecture Layer 4: Presentation & UI Components.
  *
+ * Serves as the visual card container for a popover item in the trail or floating stack.
+ *
+ * Compound subcomponents:
+ * - `PopoverCard.Header`: Optional header bar with integrated title and actions.
+ * - `PopoverCard.Handle`: Drag handle for repositioning floating cards.
+ * - `PopoverCard.PinButton`: Toggles between cascading trail and floating pinned state.
+ * - `PopoverCard.CloseButton`: Dismisses the popover card and its child branch.
+ * - `PopoverCard.Content`: Main body container for popover contents.
+ *
+ * @example
+ * ```tsx
+ * <PopoverCard entry={entry} index={index} isPinned={isPinned}>
+ *   <PopoverCard.Header title="Card Details">
+ *     <PopoverCard.PinButton />
+ *     <PopoverCard.CloseButton />
+ *   </PopoverCard.Header>
+ *   <PopoverCard.Content>
+ *     <p>Card body content</p>
+ *   </PopoverCard.Content>
+ * </PopoverCard>
+ * ```
+ *
  * @module components/PopoverCard
  */
 
