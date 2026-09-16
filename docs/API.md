@@ -1334,8 +1334,14 @@ import {
   lerp,
   QuadTree,
   DAGCycleDetector,
-  compactRecord,
-  omitRecordKeys,
+  topologicalSort,
+  getBreadcrumbs,
+  omitKey,
+  omitKeys,
+  pickKeys,
+  compactObject,
+  deepFreeze,
+  parseJson,
   partition,
   unique,
   pipe,
@@ -1346,6 +1352,10 @@ const result = Ok({ id: 'user-1' });
 
 // 2D QuadTree collision query
 const tree = new QuadTree({ x: 0, y: 0, width: 1920, height: 1080 });
+
+// Object manipulation with intuitive aliases
+const cleaned = omitKey({ a: 1, b: 2 }, 'b'); // { a: 1 }
+const picked = pickKeys({ a: 1, b: 2, c: 3 }, ['a', 'c']); // { a: 1, c: 3 }
 ```
 
 ---
