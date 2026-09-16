@@ -134,18 +134,6 @@ export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatr
 }
 
 /**
- * Safely inverts a 2D affine transformation matrix.
- * Alias for {@link invertMatrix2DResult}.
- */
-export const tryInvertMatrix = invertMatrix2DResult;
-
-/**
- * Safely inverts a 2D affine transformation matrix.
- * Alias for {@link invertMatrix2DResult}.
- */
-export const invertMatrix = invertMatrix2DResult;
-
-/**
  * Transforms a 2D point in-place using matrix multiplication without heap allocations.
  *
  * @param p - Source 2D point.

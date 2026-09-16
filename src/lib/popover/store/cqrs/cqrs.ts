@@ -67,5 +67,3 @@ export function createCQRSBuses<
     [Symbol.dispose]: dispose,
   };
 }
-
-export const createPopoverCQRSBuses = createCQRSBuses;

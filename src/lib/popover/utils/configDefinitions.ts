@@ -26,13 +26,6 @@ export function definePopoverResolver<TData = unknown, TContext = unknown>(
   return resolver;
 }
 
-/** Alias for `definePopoverResolver` for backward compatibility. */
-export function createPopoverResolver<TData = unknown, TContext = unknown>(
-  resolver: PopoverResolver<TData, TContext>,
-): PopoverResolver<TData, TContext> {
-  return definePopoverResolver(resolver);
-}
-
 /**
  * Identity helper for defining a `PopoverDisplayOptions` configuration object with full autocompletion.
  */

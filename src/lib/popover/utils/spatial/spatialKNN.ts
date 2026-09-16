@@ -72,12 +72,6 @@ export function findNearestQuadItem<TId extends string = string>(
 }
 
 /**
- * Finds the nearest item in the QuadTree to a 2D coordinate point.
- * Alias for {@link findNearestQuadItem}.
- */
-export const findNearestItem = findNearestQuadItem;
-
-/**
  * Computes magnetic snapping coordinates for a moving bounding box against static obstacles.
  *
  * @remarks

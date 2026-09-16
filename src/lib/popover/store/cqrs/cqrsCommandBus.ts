@@ -49,10 +49,6 @@ export class PopoverCommandBus<
     this.getActions().openRoot(ownerId, entry);
   }
   /** Pushes a nested child popover card at a specific cascade depth tier. */
-  openNested(depthIndex: number, entry: TrailEntry<TData, TPopoverKey>): void {
-    this.getActions().pushNested(depthIndex, entry);
-  }
-  /** Alias for `openNested`. */
   pushNested(depthIndex: number, entry: TrailEntry<TData, TPopoverKey>): void {
     this.getActions().pushNested(depthIndex, entry);
   }
@@ -75,10 +71,6 @@ export class PopoverCommandBus<
     await this.getActions().openNestedWithResolver(parentKey, key, options);
   }
 
-  /** Closes a specific popover and automatically tears down its reachable descendant subgraph. */
-  close(key: TPopoverKey, options?: { transition?: boolean }): void {
-    this.getActions().closeByKey(key, options);
-  }
   /** Closes a popover by key with optional exit transition scheduling. */
   closeByKey(key: TPopoverKey, options?: { transition?: boolean }): void {
     this.getActions().closeByKey(key, options);

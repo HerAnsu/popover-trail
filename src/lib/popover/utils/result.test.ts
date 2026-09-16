@@ -13,7 +13,6 @@ import {
   unwrapOr,
   unwrapOrElse,
   unwrap,
-  andThen,
   matchResult,
   tapResult,
   tapErr,
@@ -120,15 +119,15 @@ describe('result monad utility', () => {
     expect(errMatch).toBe('Failed network_failure');
   });
 
-  it('supports unwrapOrElse, andThen, tapResult, tapErr', () => {
+  it('supports unwrapOrElse, flatMapResult, tapResult, tapErr', () => {
     const ok = Ok(42);
     const err = Err('boom');
 
     expect(unwrapOrElse(ok, () => 99)).toBe(42);
     expect(unwrapOrElse(err, (e) => (e === 'boom' ? 100 : 0))).toBe(100);
 
-    expect(andThen(ok, (x) => Ok(x * 2))).toEqual(Ok(84));
-    expect(andThen(err, (x: number) => Ok(x * 2))).toEqual(err);
+    expect(flatMapResult(ok, (x) => Ok(x * 2))).toEqual(Ok(84));
+    expect(flatMapResult(err, (x: number) => Ok(x * 2))).toEqual(err);
 
     let tappedVal = 0;
     tapResult(ok, (v) => {

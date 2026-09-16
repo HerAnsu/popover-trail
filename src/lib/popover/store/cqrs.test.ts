@@ -92,13 +92,12 @@ describe('cqrs module', () => {
     expect(queryBus.isPinned('pinned-1')).toBe(true);
     expect(queryBus.getOffset('pinned-1')).toEqual({ x: 15, y: 30 });
     expect(queryBus.getOffset('unknown')).toEqual({ x: 0, y: 0 });
-    expect(queryBus.activeCount).toBe(3);
+    expect(queryBus.totalCount).toBe(3);
     expect(queryBus.isIdle).toBe(false);
-    expect(queryBus.discriminatedStatus).toBe('active-trail');
+    expect(queryBus.status).toBe('active-trail');
     expect(queryBus.root?.key).toBe('root-1');
-    expect(queryBus.hasEntry('root-1')).toBe(true);
     expect(queryBus.isOpen('root-1')).toBe(true);
-    expect(queryBus.hasEntry('missing')).toBe(false);
+    expect(queryBus.isOpen('missing')).toBe(false);
     expect(queryBus.isLoading('root-1')).toBe(false);
     expect(queryBus.getError('root-1')).toBeNull();
     expect(queryBus.getData('root-1')).toBeNull();
@@ -137,7 +136,7 @@ describe('cqrs module', () => {
     commandBus.openRoot('owner-1', testEntry);
     expect(mockActions.openRoot).toHaveBeenCalledWith('owner-1', testEntry);
 
-    commandBus.openNested(0, testEntry);
+    commandBus.pushNested(0, testEntry);
     expect(mockActions.pushNested).toHaveBeenCalledWith(0, testEntry);
 
     await commandBus.openRootWithResolver('card-res');
@@ -150,7 +149,7 @@ describe('cqrs module', () => {
       undefined,
     );
 
-    commandBus.close('root-1');
+    commandBus.closeByKey('root-1');
     expect(mockActions.closeByKey).toHaveBeenCalledWith('root-1', undefined);
 
     commandBus.closeTopmost();
@@ -197,7 +196,7 @@ describe('cqrs module', () => {
     expect(mockActions.clear).toHaveBeenCalled();
 
     commandBus.batch((bus) => {
-      bus.close('root-1');
+      bus.closeByKey('root-1');
     });
     expect(mockActions.batchUpdates).toHaveBeenCalled();
   });

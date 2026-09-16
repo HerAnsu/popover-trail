@@ -58,7 +58,6 @@ export type {
   ValidatedAnchorRef,
   AnchorEventLike,
   UsePopoverResult,
-  DiscriminatedUsePopoverResult,
   ClosedUsePopoverResult,
   OpenUsePopoverResult,
 } from './types/storeTypes';
@@ -244,7 +243,6 @@ export {
   mapResult,
   mapErr,
   flatMapResult,
-  andThen,
   unwrapOr,
   unwrapOrElse,
   unwrap,

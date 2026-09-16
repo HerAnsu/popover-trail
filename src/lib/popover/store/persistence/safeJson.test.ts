@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { safeJsonStringify, safeJsonParse, serializeJson } from './safeJson';
+import { safeJsonStringify, safeJsonParse } from './safeJson';
 
 interface UserPayload {
   readonly name: string;
@@ -17,7 +17,7 @@ describe('safeJson module', () => {
     expect(safeJsonStringify(42)).toBe('42');
     expect(safeJsonStringify('test')).toBe('"test"');
     expect(safeJsonStringify(null)).toBe('null');
-    expect(serializeJson({ key: 'val' })).toBe('{"key":"val"}');
+    expect(safeJsonStringify({ key: 'val' })).toBe('{"key":"val"}');
   });
 
   it('safely handles circular references and returns valid JSON', () => {

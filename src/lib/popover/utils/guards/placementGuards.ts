@@ -62,9 +62,7 @@ export function isResponsiveMode(val: unknown): val is PopoverResponsiveMode {
 }
 
 /** Validates whether a value is a valid layout strategy. */
-export function isPopoverLayoutStrategy(val: unknown): val is PopoverLayoutStrategy {
+export function isLayoutStrategy(val: unknown): val is PopoverLayoutStrategy {
   return typeof val === 'string' && LAYOUT_STRATEGIES.has(val);
 }
 
-/** Alias for isPopoverLayoutStrategy */
-export const isLayoutStrategy = isPopoverLayoutStrategy;

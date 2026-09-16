@@ -6,7 +6,6 @@ import {
   getEntryState,
   createPopoverKey,
   definePopoverResolver,
-  createPopoverResolver,
   isVirtualElementAnchor,
   isEventAnchor,
   toValidatedAnchorRef,
@@ -124,9 +123,7 @@ describe('typeGuards utility', () => {
 
     it('defines resolver callback', () => {
       const fn = definePopoverResolver(async () => 'data');
-      const fn2 = createPopoverResolver(async () => 'data');
       expect(typeof fn).toBe('function');
-      expect(typeof fn2).toBe('function');
     });
   });
 

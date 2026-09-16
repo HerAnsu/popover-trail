@@ -37,12 +37,6 @@ export function safeJsonStringify(value: unknown): string {
 }
 
 /**
- * Serializes a value safely to JSON.
- * Alias for {@link safeJsonStringify}.
- */
-export const serializeJson = safeJsonStringify;
-
-/**
  * Safely parses a JSON string into a typed data structure without throwing exceptions.
  *
  * @remarks

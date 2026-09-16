@@ -92,10 +92,6 @@ export class PopoverQueryBus<
   get totalCount(): number {
     return selectTotalActiveCount(this.getStoreState());
   }
-  /** Alias for totalCount. */
-  get activeCount(): number {
-    return this.totalCount;
-  }
   /** `true` if no popovers are currently open. */
   get isIdle(): boolean {
     return selectIsIdle(this.getStoreState());
@@ -112,13 +108,9 @@ export class PopoverQueryBus<
   get snapshot(): HistorySnapshot<TData, TPopoverKey> {
     return createHistorySnapshot(this.getStoreState());
   }
-  /** Discrete discriminated operational state: `'idle' | 'active-trail' | 'pinned-only'`. */
+  /** Discrete operational state: `'idle' | 'active-trail' | 'pinned-only'`. */
   get status(): 'idle' | 'active-trail' | 'pinned-only' {
     return selectDiscriminatedStatus(this.getStoreState());
-  }
-  /** Alias for status. */
-  get discriminatedStatus(): 'idle' | 'active-trail' | 'pinned-only' {
-    return this.status;
   }
 
   /**
@@ -207,13 +199,6 @@ export class PopoverQueryBus<
    */
   public isOpen(key: TPopoverKey): boolean {
     return isPopoverActive(this.getStoreState(), key);
-  }
-
-  /**
-   * Alias for {@link isOpen}.
-   */
-  public hasEntry(key: TPopoverKey): boolean {
-    return this.isOpen(key);
   }
 
   /**

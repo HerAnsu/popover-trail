@@ -139,14 +139,6 @@ export class QuadTree<TId extends string = string> {
   }
 
   /**
-   * Collapses child quadrants back into this parent node if within capacity.
-   * Alias for {@link coalesce}.
-   */
-  public collapse(): boolean {
-    return this.coalesce();
-  }
-
-  /**
    * Inserts an item into the QuadTree, subdividing into quadrants if capacity is exceeded.
    *
    * @param item - Spatial item containing an `id` and `bounds` rectangle.
@@ -232,23 +224,6 @@ export class QuadTree<TId extends string = string> {
         queryQuadTreeItems(this.nodes, this.items, this.bounds, b, returnItems, s),
       );
     return returnItems;
-  }
-
-  /**
-   * Queries all items intersecting the given bounding box.
-   * Alias for {@link retrieve}.
-   *
-   * @example
-   * ```ts
-   * const overlappingCards = tree.query(viewportBounds);
-   * ```
-   *
-   * @param bounds - Optional search box (defaults to entire tree bounds).
-   * @param out - Optional output array to avoid heap allocations.
-   * @returns Array of intersecting items.
-   */
-  public query(bounds?: BoundingBox, out: QuadItem<TId>[] = []): QuadItem<TId>[] {
-    return this.retrieve(out, bounds);
   }
 
   /**

@@ -37,12 +37,6 @@ export function canCoalesceQuadNodes<TId extends string>(
 }
 
 /**
- * Checks whether subdivided child quadrant nodes can be collapsed into their parent.
- * Alias for {@link canCoalesceQuadNodes}.
- */
-export const canCollapseQuadNodes = canCoalesceQuadNodes;
-
-/**
  * Merges and deduplicates items from all child quadrants and the parent into a single list.
  *
  * @param nodes - Subdivided child quadrant nodes.
@@ -68,12 +62,6 @@ export function collectCoalescedItems<TId extends string>(
 }
 
 /**
- * Consolidates all child items into a single deduplicated array.
- * Alias for {@link collectCoalescedItems}.
- */
-export const collectCollapsedItems = collectCoalescedItems;
-
-/**
  * Attempts to collapse child quadrants back into the parent if the combined item count is within capacity.
  *
  * @remarks
@@ -95,9 +83,3 @@ export function tryCoalesceQuadTree<TId extends string>(
   nodes.length = 0;
   return merged;
 }
-
-/**
- * Attempts to collapse child quadrants back into the parent node if within capacity.
- * Alias for {@link tryCoalesceQuadTree}.
- */
-export const tryCollapseQuadTree = tryCoalesceQuadTree;

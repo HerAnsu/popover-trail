@@ -7,7 +7,7 @@
 import type { PopoverActions, PopoverPersistConfig } from '../../../types';
 import { isRecordObject } from '../../../utils/typeGuards';
 import { generateTabId } from '../../../utils/uuid';
-import { safeJsonParse, serializeJson } from '../../persistence';
+import { safeJsonParse, safeJsonStringify } from '../../persistence';
 import type { SliceContext } from '../context';
 import { destroyStoreResources } from './destroy';
 import { buildPersistPayload } from './persistPayload';
@@ -31,7 +31,7 @@ export function createPersistenceSlice<TData, TContext, TPopoverKey extends stri
 
       const state = get();
       const payload = buildPersistPayload(state, tabId, config);
-      const serialize = config?.serialize ?? serializeJson;
+      const serialize = config?.serialize ?? safeJsonStringify;
       const key = config?.key ?? storageKey;
 
       try {

@@ -6,7 +6,7 @@ import {
   isErrorEntry,
   getEntryState,
   createPopoverKey,
-  createPopoverResolver,
+  definePopoverResolver,
   createVirtualElement,
   isOpenRootEvent,
   isPinEvent,
@@ -1216,7 +1216,7 @@ describe('createPopoverStore', () => {
       expect(store.getState().trail[0]?.buttonControls?.enablePin).toBe(true);
     });
 
-    it('should validate isLoadingEntry, isErrorEntry, getEntryState, createPopoverKey, and createPopoverResolver helpers', () => {
+    it('should validate isLoadingEntry, isErrorEntry, getEntryState, createPopoverKey, and definePopoverResolver helpers', () => {
       const loadingEntry: TrailEntry<{ name: string }> = {
         key: 'k1',
         isLoading: true,
@@ -1262,7 +1262,7 @@ describe('createPopoverStore', () => {
       const brandedKey = createPopoverKey('custom-key');
       expect(brandedKey).toBe('custom-key');
 
-      const customResolver = createPopoverResolver((key) => ({ resolvedKey: key }));
+      const customResolver = definePopoverResolver((key) => ({ resolvedKey: key }));
       expect(customResolver('test')).toEqual({ resolvedKey: 'test' });
     });
 

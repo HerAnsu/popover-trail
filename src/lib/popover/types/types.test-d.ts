@@ -7,7 +7,6 @@ import {
   type DiscriminatedTrailEntry,
   type PopoverRect,
   type UsePopoverResult,
-  type DiscriminatedUsePopoverResult,
   type PopoverEventMap,
   type PopoverEventHandlerMap,
   type Register,
@@ -111,9 +110,8 @@ describe('Type-Level Static Assertions (test-d)', () => {
     expectTypeOf<PopoverRect>().toHaveProperty('height');
   });
 
-  it('verifies UsePopoverResult and DiscriminatedUsePopoverResult', () => {
+  it('verifies UsePopoverResult', () => {
     expectTypeOf<UsePopoverResult<string>>().toHaveProperty('isOpen');
-    expectTypeOf<DiscriminatedUsePopoverResult<string>>().toHaveProperty('isOpen');
   });
 
   it('verifies UsePopoverResult discriminated narrowing on isOpen', () => {

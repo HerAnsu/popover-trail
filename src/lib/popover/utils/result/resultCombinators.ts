@@ -50,11 +50,6 @@ export function flatMapResult<T, U, E>(
 }
 
 /**
- * Functional alias for `flatMapResult`. Chains another Result computation.
- */
-export const andThen = flatMapResult;
-
-/**
  * Transforms the error of an `ErrResult` using a mapping function.
  * If the result is an `OkResult`, returns it unchanged.
  *

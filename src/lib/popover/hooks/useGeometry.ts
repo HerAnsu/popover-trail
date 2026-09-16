@@ -49,14 +49,6 @@ export interface UsePopoverGeometryResult {
     top: number;
     left: number;
   };
-  /**
-   * Screen coordinates for the popover card.
-   * Alias for {@link finalLayoutPos}.
-   */
-  position: {
-    top: number;
-    left: number;
-  };
   /** Ref callback to attach to the floating card DOM node. */
   setFloating: (node: HTMLElement | null) => void;
 }
@@ -193,7 +185,6 @@ export function usePopoverGeometry({
 
   return {
     finalLayoutPos,
-    position: finalLayoutPos,
     setFloating: refs.setFloating,
   };
 }

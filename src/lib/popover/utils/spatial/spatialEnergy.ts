@@ -156,9 +156,3 @@ export function selectLowestEnergyPlacement(
   }
   return bestPos;
 }
-
-/**
- * Finds the candidate position with the lowest collision energy and anchor distance.
- * Alias for {@link selectLowestEnergyPlacement}.
- */
-export const findBestPlacementPosition = selectLowestEnergyPlacement;
