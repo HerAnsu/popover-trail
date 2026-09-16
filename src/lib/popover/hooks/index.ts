@@ -20,6 +20,8 @@ export { useFocusTrap, type UseFocusTrapOptions } from './useFocusTrap';
 export {
   usePopoverDAG,
   useGeodesicPath,
+  useBreadcrumbPath,
+  usePathToRoot,
   usePopoverParents,
   usePopoverChildren,
   type UsePopoverDAGResult,

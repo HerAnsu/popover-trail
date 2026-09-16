@@ -23,6 +23,37 @@ export {
   type CardKeyboardNavigationOptions,
 } from './card/useCardKeyboardNav';
 
+/**
+ * Hook coordinating styling, positioning, focus containment, keyboard navigation, and transitions for a popover card.
+ *
+ * @remarks
+ * Encapsulates all lifecycle logic for an individual popover card:
+ * - Computes combined DOM styles including z-index stacking and floating positioning.
+ * - Manages focus trapping and initial focus on mount.
+ * - Handles Escape key dismissal and arrow key navigation along the trail cascade.
+ * - Manages hover open/close timers when configured.
+ *
+ * @example
+ * ```tsx
+ * function MyPopoverCard({ entry, index, isPinned }) {
+ *   const { ref, style, isTop, handlePinToggle } = usePopoverCard({
+ *     entry,
+ *     index,
+ *     isPinned,
+ *   });
+ *
+ *   return (
+ *     <div ref={ref} style={style} className={isTop ? 'active-card' : 'card'}>
+ *       <h3>{entry.title}</h3>
+ *       <button onClick={handlePinToggle}>Pin</button>
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @param options - Card configuration options (entry, index, isPinned, placement).
+ * @returns Object with DOM ref, styles, transition classes, and event interaction handlers.
+ */
 export function usePopoverCard<
   TData = unknown,
   TContext = unknown,
