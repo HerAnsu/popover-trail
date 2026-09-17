@@ -25,6 +25,13 @@ import {
  *
  * @template B - Brand discriminator name.
  * @param brandName - Entity name for error reporting and brand identification.
+ *
+ * @example
+ * ```typescript
+ * const tokenIdentity = createBrandedIdentity('AuthToken');
+ * const token = tokenIdentity.toBrand('xyz-123');
+ * const valid = tokenIdentity.isBrand(token);
+ * ```
  */
 export function createBrandedIdentity<B extends string>(brandName: B) {
   return {
@@ -40,10 +47,26 @@ export function createBrandedIdentity<B extends string>(brandName: B) {
 }
 
 const popoverKeyIdentity = createBrandedIdentity('PopoverKey');
-/** Smart constructor for `PopoverKey`. Validates non-empty trimmed string. */
+/**
+ * Smart constructor for `PopoverKey`. Validates non-empty trimmed string.
+ *
+ * @example
+ * ```typescript
+ * const key = toPopoverKey('menu-settings');
+ * ```
+ */
 export const toPopoverKey: <K extends string = string>(key: K) => PopoverKey<K> =
   popoverKeyIdentity.toBrand;
-/** Type guard predicate checking if a value is a valid non-empty PopoverKey. */
+/**
+ * Type guard predicate checking if a value is a valid non-empty PopoverKey.
+ *
+ * @example
+ * ```typescript
+ * if (isPopoverKey(candidate)) {
+ *   store.open(candidate);
+ * }
+ * ```
+ */
 export const isPopoverKey: (value: unknown) => value is PopoverKey = popoverKeyIdentity.isBrand;
 
 const parentKeyIdentity = createBrandedIdentity('ParentKey');

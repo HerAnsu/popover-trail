@@ -5,6 +5,21 @@
  * @module utils/invariant
  */
 
+/**
+ * Fail-fast invariant assertion guard.
+ * Validates that `condition` is truthy, throwing a formatted descriptive error if false.
+ * Narrowing predicate for TypeScript control flow analysis.
+ *
+ * @param condition - Candidate truthy condition to assert.
+ * @param messageOrFactory - Diagnostic message string or error factory function.
+ * @throws {Error} If condition evaluates to falsy.
+ *
+ * @example
+ * ```typescript
+ * invariant(store != null, 'Store must be initialized before dispatching actions');
+ * invariant(entry.depth <= 10, () => new RangeError('Cascade depth exceeded'));
+ * ```
+ */
 export function invariant(
   condition: unknown,
   messageOrFactory: string | (() => Error | string),

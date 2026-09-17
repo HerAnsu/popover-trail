@@ -23,6 +23,12 @@ import {
  *
  * @param ms - Raw or branded duration in milliseconds.
  * @returns Validated DurationMs brand.
+ *
+ * @example
+ * ```typescript
+ * const duration = toDurationMs(200); // => 200 as DurationMs
+ * const fallback = toDurationMs(-10); // => 0 as DurationMs
+ * ```
  */
 export function toDurationMs(ms: DurationMs | Unbrand<DurationMs>): DurationMs {
   const safe = Number.isFinite(ms) && ms >= 0 ? ms : 0;
@@ -35,6 +41,12 @@ export function toDurationMs(ms: DurationMs | Unbrand<DurationMs>): DurationMs {
  *
  * @param ts - Optional raw or branded timestamp in milliseconds.
  * @returns Validated TimestampMs brand.
+ *
+ * @example
+ * ```typescript
+ * const now = toTimestampMs();
+ * const past = toTimestampMs(1600000000000);
+ * ```
  */
 export function toTimestampMs(ts?: TimestampMs | Unbrand<TimestampMs>): TimestampMs {
   const safe = typeof ts === 'number' && Number.isFinite(ts) ? ts : Date.now();
@@ -47,6 +59,12 @@ export function toTimestampMs(ts?: TimestampMs | Unbrand<TimestampMs>): Timestam
  *
  * @param depth - Raw or branded depth number.
  * @returns Validated ZIndexDepth brand.
+ *
+ * @example
+ * ```typescript
+ * const zIndex = toZIndexDepth(1005);
+ * const clamped = toZIndexDepth(-5); // => 0
+ * ```
  */
 export function toZIndexDepth(depth: ZIndexDepth | Unbrand<ZIndexDepth>): ZIndexDepth {
   const safe = Number.isFinite(depth) && depth >= 0 ? Math.floor(depth) : 0;
@@ -59,6 +77,11 @@ export function toZIndexDepth(depth: ZIndexDepth | Unbrand<ZIndexDepth>): ZIndex
  *
  * @param x - Raw or branded horizontal viewport coordinate.
  * @returns Validated ViewportX brand.
+ *
+ * @example
+ * ```typescript
+ * const posX = toViewportX(120.5);
+ * ```
  */
 export function toViewportX(x: ViewportX | Unbrand<ViewportX>): ViewportX {
   const safe = Number.isFinite(x) ? x : 0;
@@ -71,6 +94,11 @@ export function toViewportX(x: ViewportX | Unbrand<ViewportX>): ViewportX {
  *
  * @param y - Raw or branded vertical viewport coordinate.
  * @returns Validated ViewportY brand.
+ *
+ * @example
+ * ```typescript
+ * const posY = toViewportY(340);
+ * ```
  */
 export function toViewportY(y: ViewportY | Unbrand<ViewportY>): ViewportY {
   const safe = Number.isFinite(y) ? y : 0;
@@ -83,6 +111,11 @@ export function toViewportY(y: ViewportY | Unbrand<ViewportY>): ViewportY {
  *
  * @param id - Raw or branded numeric task identifier.
  * @returns Validated WorkerTaskId brand (defaults to 1 if non-positive or non-integer).
+ *
+ * @example
+ * ```typescript
+ * const taskId = toWorkerTaskId(101);
+ * ```
  */
 export function toWorkerTaskId(id: WorkerTaskId | Unbrand<WorkerTaskId>): WorkerTaskId {
   const safe = Number.isSafeInteger(id) && id > 0 ? id : 1;
@@ -94,6 +127,13 @@ export function toWorkerTaskId(id: WorkerTaskId | Unbrand<WorkerTaskId>): Worker
  *
  * @param value - Unknown input to check.
  * @returns True if value is a positive safe integer.
+ *
+ * @example
+ * ```typescript
+ * if (isWorkerTaskId(payload.taskId)) {
+ *   console.log('Valid task ID');
+ * }
+ * ```
  */
 export function isWorkerTaskId(value: unknown): value is WorkerTaskId {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
@@ -105,6 +145,11 @@ export function isWorkerTaskId(value: unknown): value is WorkerTaskId {
  *
  * @param seq - Raw or branded numeric sequence counter.
  * @returns Validated CausalSequence brand (defaults to 0 if negative or non-integer).
+ *
+ * @example
+ * ```typescript
+ * const seq = toCausalSequence(42);
+ * ```
  */
 export function toCausalSequence(seq: CausalSequence | Unbrand<CausalSequence>): CausalSequence {
   const safe = Number.isSafeInteger(seq) && seq >= 0 ? seq : 0;
@@ -116,6 +161,13 @@ export function toCausalSequence(seq: CausalSequence | Unbrand<CausalSequence>):
  *
  * @param value - Unknown input to check.
  * @returns True if value is a non-negative safe integer.
+ *
+ * @example
+ * ```typescript
+ * if (isCausalSequence(envelope.seq)) {
+ *   processEnvelope(envelope);
+ * }
+ * ```
  */
 export function isCausalSequence(value: unknown): value is CausalSequence {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
@@ -127,6 +179,11 @@ export function isCausalSequence(value: unknown): value is CausalSequence {
  *
  * @param capacity - Raw or branded capacity integer.
  * @returns Validated HistoryCapacity brand.
+ *
+ * @example
+ * ```typescript
+ * const cap = toHistoryCapacity(50);
+ * ```
  */
 export function toHistoryCapacity(
   capacity: HistoryCapacity | Unbrand<HistoryCapacity>,
@@ -140,6 +197,13 @@ export function toHistoryCapacity(
  *
  * @param value - Unknown input to check.
  * @returns True if value is a safe integer >= 1.
+ *
+ * @example
+ * ```typescript
+ * if (isHistoryCapacity(config.capacity)) {
+ *   setJournalCapacity(config.capacity);
+ * }
+ * ```
  */
 export function isHistoryCapacity(value: unknown): value is HistoryCapacity {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1;

@@ -20,6 +20,21 @@ function ensureNode<K extends string>(
   return node;
 }
 
+/**
+ * Inserts a new node or updates an existing node's primary parent in the DAG.
+ * Resolves reparenting cycles automatically before edge commitment.
+ *
+ * @template K - Key identifier type.
+ * @param nodes - Internal DAG node dictionary.
+ * @param key - Unique key of the node to insert.
+ * @param parentKey - Optional parent key to connect under.
+ *
+ * @example
+ * ```typescript
+ * insertDAGNode(dagNodes, 'user-menu');
+ * insertDAGNode(dagNodes, 'profile-card', 'user-menu');
+ * ```
+ */
 export function insertDAGNode<K extends string>(
   nodes: Map<K, InternalDAGNode<K>>,
   key: K,
@@ -46,6 +61,21 @@ export function insertDAGNode<K extends string>(
   }
 }
 
+/**
+ * Connects a directed edge from `parentKey` to `childKey`.
+ * Rejects connection and returns `false` if the edge would introduce a cycle.
+ *
+ * @template K - Key identifier type.
+ * @param nodes - Internal DAG node dictionary.
+ * @param parentKey - Starting parent node key.
+ * @param childKey - Target child node key.
+ * @returns True if the edge was safely connected, false if rejected due to cycle prevention.
+ *
+ * @example
+ * ```typescript
+ * const connected = connectDAGEdge(dagNodes, 'menu-a', 'submenu-b');
+ * ```
+ */
 export function connectDAGEdge<K extends string>(
   nodes: Map<K, InternalDAGNode<K>>,
   parentKey: K,
@@ -61,6 +91,20 @@ export function connectDAGEdge<K extends string>(
   return true;
 }
 
+/**
+ * Disconnects a directed edge from `parentKey` to `childKey`.
+ * Reassigns the child's primary parent pointer to a remaining parent if applicable.
+ *
+ * @template K - Key identifier type.
+ * @param nodes - Internal DAG node dictionary.
+ * @param parentKey - Starting parent node key.
+ * @param childKey - Target child node key.
+ *
+ * @example
+ * ```typescript
+ * disconnectDAGEdge(dagNodes, 'menu-a', 'submenu-b');
+ * ```
+ */
 export function disconnectDAGEdge<K extends string>(
   nodes: Map<K, InternalDAGNode<K>>,
   parentKey: K,
@@ -74,6 +118,18 @@ export function disconnectDAGEdge<K extends string>(
   }
 }
 
+/**
+ * Removes a node and severs all connected incoming parent edges and outgoing child edges.
+ *
+ * @template K - Key identifier type.
+ * @param nodes - Internal DAG node dictionary.
+ * @param key - Key of the node to remove.
+ *
+ * @example
+ * ```typescript
+ * deleteDAGNode(dagNodes, 'profile-card');
+ * ```
+ */
 export function deleteDAGNode<K extends string>(nodes: Map<K, InternalDAGNode<K>>, key: K): void {
   const node = nodes.get(key);
   if (!node) return;
