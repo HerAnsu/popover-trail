@@ -17,6 +17,12 @@ import { toFiniteOrDefault, isNonNegativeFinite } from '../guards/numberGuards';
  *
  * @param bounds - Raw or optional input bounding box.
  * @returns Sanitized `BoundingBox` with safe finite numbers.
+ *
+ * @example
+ * ```typescript
+ * const clean = sanitizeSpatialBounds({ x: NaN, y: 10, width: -5, height: 100 });
+ * // => { x: 0, y: 10, width: 0, height: 100 }
+ * ```
  */
 export function sanitizeSpatialBounds(bounds?: BoundingBox): BoundingBox {
   const w = bounds?.width;
@@ -78,6 +84,15 @@ export const Quadrant = {
  * @param bounds - Target rectangle to evaluate.
  * @param parentBounds - Enclosing quadrant boundary of the parent node.
  * @returns Matching `QuadrantIndex` (0..3) if completely contained, or `Quadrant.None` (-1) if straddling.
+ *
+ * @example
+ * ```typescript
+ * const quadrant = getQuadrantIndex(
+ *   { x: 10, y: 10, width: 20, height: 20 },
+ *   { x: 0, y: 0, width: 100, height: 100 }
+ * );
+ * // => Quadrant.NW (1)
+ * ```
  */
 export function getQuadrantIndex(bounds: BoundingBox, parentBounds: BoundingBox): SpatialQuadrant {
   const vMid = parentBounds.x + parentBounds.width / 2;

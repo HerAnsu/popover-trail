@@ -2,6 +2,18 @@
  * Accessible Portal Wrapper Component with Isomorphic Hydration.
  * Clean Architecture Layer 4: Presentation & UI Components.
  *
+ * Renders popovers into a detached DOM node (defaults to `document.body`) while preserving
+ * React event propagation and hydration safety during SSR.
+ *
+ * @example
+ * ```tsx
+ * <PopoverPortal>
+ *   <div className="custom-overlay">
+ *     <PopoverCard entry={entry} index={0} isPinned={false} />
+ *   </div>
+ * </PopoverPortal>
+ * ```
+ *
  * @module components/PopoverPortal
  */
 

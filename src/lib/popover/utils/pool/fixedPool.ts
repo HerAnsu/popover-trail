@@ -11,6 +11,19 @@ import { type PoolCapacity, toPoolCapacity } from './poolBranded';
 import { tryResetItem } from './poolOperations';
 import { runWithItem } from './poolScope';
 
+/**
+ * Fixed-capacity, pre-allocated monomorphic slab pool for sub-microsecond, zero-GC execution paths.
+ *
+ * @template T - Type of pooled resource.
+ *
+ * @example
+ * ```typescript
+ * const pool = new FixedPool(() => ({ x: 0, y: 0 }), 16, (pt) => { pt.x = 0; pt.y = 0; });
+ * const pt = pool.acquire();
+ * pt.x = 100;
+ * pool.release(pt);
+ * ```
+ */
 export class FixedPool<T> {
   private readonly slots: T[];
   private head = 0;
@@ -18,6 +31,18 @@ export class FixedPool<T> {
   private readonly factory: () => T;
   private readonly reset?: (item: T) => void;
 
+  /**
+   * Constructs a new FixedPool.
+   *
+   * @param factory - Resource instantiation factory.
+   * @param capacity - Fixed maximum capacity (default: 32).
+   * @param reset - Optional callback to reset item state upon release.
+   *
+   * @example
+   * ```typescript
+   * const pool = new FixedPool(() => new Float32Array(4), 8);
+   * ```
+   */
   constructor(factory: () => T, capacity: number | PoolCapacity = 32, reset?: (item: T) => void) {
     this.factory = factory;
     this.reset = reset;
@@ -28,6 +53,13 @@ export class FixedPool<T> {
 
   /**
    * Borrows an instance from the pool. If the pool is exhausted, creates a new instance via factory.
+   *
+   * @returns An acquired instance from the pool or freshly created.
+   *
+   * @example
+   * ```typescript
+   * const item = pool.acquire();
+   * ```
    */
   acquire(): T {
     if (this.head > 0) {
@@ -42,6 +74,11 @@ export class FixedPool<T> {
    *
    * @param item - Instance to return.
    * @returns `true` if returned, `false` if rejected (null, undefined, or pool at capacity).
+   *
+   * @example
+   * ```typescript
+   * pool.release(item);
+   * ```
    */
   release(item?: T | null): boolean {
     if (item === null || item === undefined || this.head >= this.capacity) {
@@ -55,8 +92,17 @@ export class FixedPool<T> {
   /**
    * Scoped execution helper: acquires an instance, passes it to `fn`, and automatically releases it.
    *
+   * @template R - Return value type of work function.
    * @param fn - Work function receiving the pooled item.
    * @returns The result of `fn`.
+   *
+   * @example
+   * ```typescript
+   * const distance = pool.runWith((pt) => {
+   *   pt.x = 3; pt.y = 4;
+   *   return Math.hypot(pt.x, pt.y);
+   * });
+   * ```
    */
   runWith<R>(fn: (item: T) => R): R {
     return runWithItem(

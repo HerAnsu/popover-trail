@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Registry Manager for Pluggable Layout Positioning Strategies.
  * Clean Architecture Layer 2: Headless State Management.
  *
@@ -18,6 +18,15 @@ const fixedCenterLayoutStrategy = new FixedCenterLayoutStrategy();
 const dockedBottomLayoutStrategy = new DockedBottomLayoutStrategy();
 const dockedTopLayoutStrategy = new DockedTopLayoutStrategy();
 
+/**
+ * Central registry managing pluggable layout positioning strategies.
+ *
+ * @example
+ * ```typescript
+ * const strategy = globalLayoutStrategyRegistry.get('floating-ui');
+ * const pos = strategy.computePosition(params);
+ * ```
+ */
 export class LayoutStrategyRegistry {
   private readonly strategies = new Map<string, PopoverLayoutStrategyEngine>();
 

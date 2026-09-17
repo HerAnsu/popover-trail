@@ -47,6 +47,22 @@ function isWorkerTaskMessage<TContext>(data: unknown): data is WorkerTaskMessage
   return typeof data === 'object' && data !== null && 'id' in data && typeof data.id === 'number';
 }
 
+/**
+ * Initializes and registers an RPC message router inside a Web Worker thread for async data fetching.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Optional context object type.
+ * @param handler - Worker resolver function receiving key, parentData, and context.
+ *
+ * @example
+ * ```typescript
+ * // In worker.ts:
+ * definePopoverWorkerRPC(async (key, parentData) => {
+ *   const res = await fetch(`/api/popovers/${key}`);
+ *   return res.json();
+ * });
+ * ```
+ */
 export function definePopoverWorkerRPC<TData = unknown, TContext = unknown>(
   handler: (key: string, parentData?: unknown, context?: TContext) => MaybePromise<TData>,
 ): void {

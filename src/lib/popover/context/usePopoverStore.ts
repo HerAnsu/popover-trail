@@ -47,6 +47,11 @@ export function usePopoverStoreApi<
  * @param equalityFn - Optional custom equality function to prevent redundant re-renders.
  * @returns The selected state slice.
  * @throws {Error} If called outside a `<PopoverProvider>`.
+ *
+ * @example
+ * ```tsx
+ * const activeCount = usePopoverStore((state) => state.trail.length);
+ * ```
  */
 export function usePopoverStore<
   TSelected,
@@ -96,6 +101,12 @@ export function usePopoverStore<
  * @template TContext - The type of global shared context.
  * @template TPopoverKey - Union of valid popover keys.
  * @returns Object containing dispatch actions.
+ *
+ * @example
+ * ```tsx
+ * const actions = usePopoverActions();
+ * const handleCloseAll = () => actions.closeAll();
+ * ```
  */
 export function usePopoverActions<
   TData = RegisteredDataMap[RegisteredKeys],

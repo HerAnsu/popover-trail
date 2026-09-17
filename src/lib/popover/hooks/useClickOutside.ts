@@ -24,6 +24,23 @@ export interface UseClickOutsideOptions<
   };
 }
 
+/**
+ * Capture-phase click-outside listener hook for PopoverProvider.
+ * Automatically clears active non-pinned cards when user clicks outside the popover hierarchy.
+ *
+ * @param options - Configuration including store instance and clickOutside options.
+ *
+ * @example
+ * ```tsx
+ * useClickOutside({
+ *   store,
+ *   clickOutside: {
+ *     enabled: true,
+ *     ignoreClass: 'ignore-popover-dismiss',
+ *   },
+ * });
+ * ```
+ */
 export function useClickOutside<TData = unknown, TContext = unknown>({
   store,
   clickOutside,

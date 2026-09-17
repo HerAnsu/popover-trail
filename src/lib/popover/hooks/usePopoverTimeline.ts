@@ -56,6 +56,25 @@ export interface UsePopoverTimelineResult<TData = unknown> {
  *
  * @template TData - The type of resolved data payload.
  * @returns Timeline step items, active step index, undo/redo triggers, and jumpToStep callback.
+ *
+ * @example
+ * ```tsx
+ * function MyTimeline() {
+ *   const { history, currentIndex, canUndo, canRedo, undo, redo, jumpToStep } = usePopoverTimeline();
+ *
+ *   return (
+ *     <div className="timeline-nav">
+ *       <button disabled={!canUndo} onClick={undo}>Undo</button>
+ *       <button disabled={!canRedo} onClick={redo}>Redo</button>
+ *       {history.map((step) => (
+ *         <button key={step.stepIndex} onClick={() => jumpToStep(step.stepIndex)}>
+ *           Step {step.stepIndex + 1}: {step.primaryKey}
+ *         </button>
+ *       ))}
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<TData> {
   const actions = usePopoverActions<TData>();

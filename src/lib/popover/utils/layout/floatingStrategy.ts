@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Relative Floating UI Layout Strategy for Side and Alignment Offsets.
  * Clean Architecture Layer 1: Core Kernel Geometry.
  *
@@ -26,9 +26,28 @@ const PLACEMENT_OFFSET_STRATEGIES: Record<
   'left-end': (t, o) => new Point2D(t.left - o, t.bottom),
 };
 
+/**
+ * Relative floating positioning layout strategy for anchor-relative cascading popovers.
+ *
+ * @example
+ * ```typescript
+ * const strategy = new RelativeFloatingLayoutStrategy();
+ * const pos = strategy.computePosition({
+ *   triggerRect: new RectBounds(100, 100, 50, 30),
+ *   placement: 'bottom-start',
+ *   offset: 8,
+ * });
+ * ```
+ */
 export class RelativeFloatingLayoutStrategy implements PopoverLayoutStrategyEngine {
   readonly id = 'floating-ui';
 
+  /**
+   * Computes the 2D position for a popover relative to its anchor trigger.
+   *
+   * @param params - Positioning context including trigger bounds, placement, and offset.
+   * @returns 2D Point representing top-left coordinate.
+   */
   computePosition(params: LayoutStrategyParams): Point2D {
     const trigger = params.triggerRect;
     if (!trigger) return new Point2D(0, 0);
