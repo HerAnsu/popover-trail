@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import type { TrailEntry } from '../../types';
 import type { ResolverPipelineDependencies } from './resolverTypes';
 import { handleResolverError } from './resolverResultHandler';
-import { invokeResolverSafely } from './resolverArity';
+import { invokeResolver } from './resolverArity';
 
 describe('resolver/executionErrors', () => {
   const makeEntry = (key: string): TrailEntry<unknown, string> =>
@@ -46,7 +46,7 @@ describe('resolver/executionErrors', () => {
   it('supports positional and object arity conventions and handles destructuring mismatch', () => {
     const ctrl = new AbortController();
     const positional = vi.fn((key: string) => `pos-${key}`);
-    expect(invokeResolverSafely(positional, 'k1', null, undefined, ctrl.signal)).toBe('pos-k1');
+    expect(invokeResolver(positional, 'k1', null, undefined, ctrl.signal)).toBe('pos-k1');
 
     const objectStyle = vi.fn((params: { key: string }) => {
       if (typeof params !== 'object' || params === null) {
@@ -54,6 +54,6 @@ describe('resolver/executionErrors', () => {
       }
       return `obj-${params.key}`;
     });
-    expect(invokeResolverSafely(objectStyle, 'k2', null, undefined, ctrl.signal)).toBe('obj-k2');
+    expect(invokeResolver(objectStyle, 'k2', null, undefined, ctrl.signal)).toBe('obj-k2');
   });
 });

@@ -7,9 +7,9 @@
 import type { PopoverResolver, TrailEntry } from '../../types';
 import { isPromise } from '../../utils/storeHelpers';
 import { dispatchStoreEvent } from '../eventBus';
-import { invokeResolverSafely } from './resolverArity';
+import { invokeResolver } from './resolverArity';
 import { handleResolverError } from './resolverResultHandler';
-import { executeTrackedInFlight } from './inFlightRunner';
+import { trackInFlight } from './inFlightRunner';
 import type {
   ResolverPipelineDependencies,
   ResolvePopoverEntryParams,
@@ -81,7 +81,7 @@ export function startInFlightResolver<
   const cleanup = () => removeController(controllerKey, controller);
 
   try {
-    const res = invokeResolverSafely(
+    const res = invokeResolver(
       activeResolver,
       key,
       parentData,
@@ -90,7 +90,7 @@ export function startInFlightResolver<
     );
 
     if (isPromise(res)) {
-      void executeTrackedInFlight(inFlightPromises, key, async () => {
+      void trackInFlight(inFlightPromises, key, async () => {
         try {
           return await res;
         } finally {

@@ -8,7 +8,7 @@ import React, { useCallback, type ReactNode, type ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverCardScope } from './PopoverCardScopeContext';
 import { CardActionButtonBase, type CardActionButtonBaseProps } from './CardActionButtonBase';
-import { resolveActionAriaLabel } from '../../utils/a11y';
+import { resolveActionLabel } from '../../utils/a11y';
 
 export type PopoverCardPinButtonProps<E extends ElementType = 'button'> = PolymorphicProps<
   E,
@@ -36,7 +36,7 @@ export function PopoverCardPinButton<E extends ElementType = 'button'>(
   return (
     <CardActionButtonBase<E>
       {...(props as CardActionButtonBaseProps<E>)}
-      ariaLabel={resolveActionAriaLabel(isPinned ? 'unpin' : 'pin')}
+      ariaLabel={resolveActionLabel(isPinned ? 'unpin' : 'pin')}
       onAction={handleTogglePin}
       aria-pressed={isPinned}>
       {props.children ?? (isPinned ? '📌' : '📍')}

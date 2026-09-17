@@ -5,7 +5,7 @@
  */
 
 /**
- * Executes an async task while maintaining in-flight map registration with identity-guarded removal.
+ * Runs an async task while maintaining in-flight map registration with identity-guarded removal.
  * Prevents late-settling asynchronous operations from evicting newly initiated in-flight promises.
  *
  * @template TData - Resolved data type returned by the promise.
@@ -17,12 +17,12 @@
  *
  * @example
  * ```typescript
- * const promise = executeTrackedInFlight(inFlightMap, 'card-1', async () => {
+ * const promise = trackInFlight(inFlightMap, 'card-1', async () => {
  *   return await fetchData();
  * });
  * ```
  */
-export function executeTrackedInFlight<TData, TPopoverKey extends string = string>(
+export function trackInFlight<TData, TPopoverKey extends string = string>(
   inFlightPromises: Map<TPopoverKey | string, Promise<TData>>,
   key: TPopoverKey | string,
   task: () => Promise<TData>,

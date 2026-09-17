@@ -1,20 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import {
-  resolvePopoverAriaAttributes,
-  resolveTriggerAriaAttributes,
-  resolveActionAriaLabel,
+  resolvePopoverAria,
+  resolveTriggerAria,
+  resolveActionLabel,
 } from './a11y';
 
 describe('a11y utils', () => {
   it('resolves modal dialog attributes for unpinned card', () => {
-    const attrs = resolvePopoverAriaAttributes({ key: 'user' }, false);
+    const attrs = resolvePopoverAria({ key: 'user' }, false);
     expect(attrs.role).toBe('dialog');
     expect(attrs['aria-modal']).toBe(true);
     expect(attrs['aria-label']).toBe('Popover user');
   });
 
   it('resolves non-modal dialog attributes for pinned card', () => {
-    const attrs = resolvePopoverAriaAttributes(
+    const attrs = resolvePopoverAria(
       { key: 'user', ariaDescribedby: 'desc-1' },
       true,
       'User Details',
@@ -25,16 +25,16 @@ describe('a11y utils', () => {
   });
 
   it('resolves trigger attributes', () => {
-    const attrs = resolveTriggerAriaAttributes('profile', true);
+    const attrs = resolveTriggerAria('profile', true);
     expect(attrs['aria-haspopup']).toBe('dialog');
     expect(attrs['aria-expanded']).toBe(true);
     expect(attrs['aria-controls']).toBe('popover-card-profile');
   });
 
-  it('resolves capitalized action aria label via resolveActionAriaLabel', () => {
-    expect(resolveActionAriaLabel('close')).toBe('Close popover');
-    expect(resolveActionAriaLabel('pin')).toBe('Pin popover');
-    expect(resolveActionAriaLabel('unpin')).toBe('Unpin popover');
-    expect(resolveActionAriaLabel('expand', 'card')).toBe('Expand card');
+  it('resolves capitalized action aria label via resolveActionLabel', () => {
+    expect(resolveActionLabel('close')).toBe('Close popover');
+    expect(resolveActionLabel('pin')).toBe('Pin popover');
+    expect(resolveActionLabel('unpin')).toBe('Unpin popover');
+    expect(resolveActionLabel('expand', 'card')).toBe('Expand card');
   });
 });

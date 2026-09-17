@@ -8,7 +8,7 @@
 import type { PopoverCache } from '../../types';
 import { isPromise } from '../../utils/storeHelpers';
 import { isObjectRecord } from '../../utils/guards/objectGuards';
-import { getSyncCachedData } from './pipelineCache';
+import { readSyncCache } from './pipelineCache';
 
 function invokeCacheMethod(cache: unknown, method: string, arg: unknown): void {
   if (isObjectRecord(cache)) {
@@ -75,7 +75,7 @@ export class ResolverCacheManager<TData = unknown, TPopoverKey extends string = 
    * ```
    */
   public readSync(key: TPopoverKey): TData | undefined {
-    return getSyncCachedData(this.cache, key);
+    return readSyncCache(this.cache, key);
   }
 
   /**

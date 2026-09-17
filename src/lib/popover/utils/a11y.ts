@@ -9,7 +9,7 @@ import type { TrailEntry } from '../types';
 import { capitalize } from './stringUtils';
 
 /**
- * Resolves an action label for accessibility with capitalized verb.
+ * Resolves an action label for accessibility with a capitalized verb.
  *
  * @param action - Action verb (e.g. 'close', 'pin', 'expand').
  * @param entity - Target entity noun (default: 'popover').
@@ -17,11 +17,11 @@ import { capitalize } from './stringUtils';
  *
  * @example
  * ```typescript
- * resolveActionAriaLabel('close'); // "Close popover"
- * resolveActionAriaLabel('pin', 'card'); // "Pin card"
+ * resolveActionLabel('close'); // "Close popover"
+ * resolveActionLabel('pin', 'card'); // "Pin card"
  * ```
  */
-export function resolveActionAriaLabel(action: string, entity = 'popover'): string {
+export function resolveActionLabel(action: string, entity = 'popover'): string {
   return `${capitalize(action)} ${entity}`.trim();
 }
 
@@ -35,11 +35,11 @@ export function resolveActionAriaLabel(action: string, entity = 'popover'): stri
  *
  * @example
  * ```typescript
- * const aria = resolvePopoverAriaAttributes(entry, false, 'User Settings');
+ * const aria = resolvePopoverAria(entry, false, 'User Settings');
  * // { role: 'dialog', 'aria-modal': true, 'aria-label': 'User Settings', ... }
  * ```
  */
-export function resolvePopoverAriaAttributes(
+export function resolvePopoverAria(
   entry: Pick<TrailEntry, 'key' | 'ariaDescribedby'>,
   isPinned: boolean,
   userAriaLabel?: string,
@@ -66,11 +66,11 @@ export function resolvePopoverAriaAttributes(
  *
  * @example
  * ```typescript
- * const triggerAria = resolveTriggerAriaAttributes('profile-1', true);
+ * const triggerAria = resolveTriggerAria('profile-1', true);
  * // { 'aria-haspopup': 'dialog', 'aria-expanded': true, 'aria-controls': 'popover-card-profile-1' }
  * ```
  */
-export function resolveTriggerAriaAttributes(
+export function resolveTriggerAria(
   popoverKey: string,
   isOpen: boolean,
 ): {

@@ -10,7 +10,20 @@ import type { PopoverDAG } from './dagCore';
 import { isArray } from '../guards/arrayGuards';
 import { partition } from '../collections';
 
-export function exportDAGSnapshot<TPopoverKey extends string>(
+/**
+ * Serializes the DAG node dictionary into a serializable snapshot envelope.
+ *
+ * @template TPopoverKey - Node key identifier type.
+ * @param nodes - Internal DAG node dictionary.
+ * @returns Serialized DAGSnapshot containing node keys, parent connections, and depths.
+ *
+ * @example
+ * ```typescript
+ * const snapshot = exportSnapshot(dagNodes);
+ * localStorage.setItem('dag_state', JSON.stringify(snapshot));
+ * ```
+ */
+export function exportSnapshot<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
 ): DAGSnapshot<TPopoverKey> {
   const list = [];
@@ -24,7 +37,25 @@ export function exportDAGSnapshot<TPopoverKey extends string>(
   return { nodes: list };
 }
 
-export function importDAGSnapshot<TPopoverKey extends string>(
+/**
+ * Hydrates a target `PopoverDAG` instance from a serialized snapshot envelope.
+ *
+ * Clears the target DAG and recreates all nodes and multi-parent directed edges.
+ *
+ * @template TPopoverKey - Node key identifier type.
+ * @param snapshot - Snapshot object to import, or null/undefined.
+ * @param targetDAG - Target PopoverDAG instance to hydrate into.
+ * @returns True if import succeeded, false if snapshot was null or invalid.
+ *
+ * @example
+ * ```typescript
+ * const restored = importSnapshot(snapshot, targetDAG);
+ * if (restored) {
+ *   console.log('DAG successfully restored with size:', targetDAG.size);
+ * }
+ * ```
+ */
+export function importSnapshot<TPopoverKey extends string>(
   snapshot: DAGSnapshot<TPopoverKey> | null | undefined,
   targetDAG: PopoverDAG<TPopoverKey>,
 ): boolean {

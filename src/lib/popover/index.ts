@@ -564,7 +564,7 @@ export {
 } from './utils/branded';
 export { useCrossVersionActionState, useCrossVersionOptimistic } from './utils/react19Adapters';
 export { Slot, mergeProps, type SlotProps } from './utils/slot';
-export { resolvePopoverAriaAttributes, resolveTriggerAriaAttributes } from './utils/a11y';
+export { resolvePopoverAria, resolveTriggerAria } from './utils/a11y';
 export { FocusTrap, type FocusTrapProps } from './components/FocusTrap';
 export {
   PopoverCardHeader,

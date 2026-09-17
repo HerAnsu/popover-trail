@@ -7,7 +7,7 @@
 import type { PopoverActions, TrailEntry } from '../../../types';
 import { openRootState } from '../../reducers/open';
 import { DEFAULT_OWNER_ID, ROOT_CONTROLLER_KEY } from '../../constants';
-import { stopEventPropagation } from '../../../utils/domGuards';
+import { stopPropagation } from '../../../utils/domGuards';
 import { first } from '../../../utils/arrayUtils';
 import { prop } from '../../../utils/functional';
 import type { SliceContext } from '../context';
@@ -37,7 +37,7 @@ export function createResolverOpenRootAction<
   } = deps;
 
   return async (key, anchorEvent, options) => {
-    stopEventPropagation(anchorEvent);
+    stopPropagation(anchorEvent);
     const state = get();
     const { floating, trail, ownerId } = state;
     const finalOwnerId = options?.ownerId ?? ownerId ?? DEFAULT_OWNER_ID;

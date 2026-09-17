@@ -9,7 +9,7 @@ import { isAbortError } from '../../../utils/typeGuards';
 import { isPromise } from '../../../utils/storeHelpers';
 import type { SliceContext } from '../context';
 import { createResolverInvalidationAction } from './invalidation';
-import { invokeResolverSafely } from './helpers';
+import { invokeResolver } from './helpers';
 
 const awaitSafeAbort = async <T>(promise: Promise<T>): Promise<T | undefined> => {
   try {
@@ -64,7 +64,7 @@ export function createResolverPrefetchActions<
         const parentKey = findEntryByKey(key)?.parentKey;
         const effectiveParentData =
           parentData ?? (parentKey ? findEntryByKey(parentKey)?.data : undefined) ?? undefined;
-        const res = await invokeResolverSafely<TData, TContext>(
+        const res = await invokeResolver<TData, TContext>(
           resolveData,
           key,
           effectiveParentData,

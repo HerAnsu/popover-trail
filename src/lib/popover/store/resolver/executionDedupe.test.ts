@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { startInFlightResolver } from './inFlightLauncher';
-import { executeTrackedInFlight } from './inFlightRunner';
+import { trackInFlight } from './inFlightRunner';
 import type { ResolverPipelineDependencies } from './resolverTypes';
 
 describe('resolver/executionDedupe', () => {
@@ -43,7 +43,7 @@ describe('resolver/executionDedupe', () => {
     const map = new Map<string, Promise<number>>();
 
     let releaseFirst!: (v: number) => void;
-    const first = executeTrackedInFlight(
+    const first = trackInFlight(
       map,
       'k',
       () =>
@@ -53,7 +53,7 @@ describe('resolver/executionDedupe', () => {
     );
 
     let releaseSecond!: (v: number) => void;
-    const second = executeTrackedInFlight(
+    const second = trackInFlight(
       map,
       'k',
       () =>

@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { PopoverDAG } from './dagCore';
-import { visitDescendants, traverseAncestorKeys, getBreadcrumbs } from './dagTraversal';
+import {
+  visitDescendants,
+  collectAncestors,
+  collectDescendants,
+  getBreadcrumbs,
+} from './dagTraversal';
 import type { InternalDAGNode } from './dagTypes';
 
 describe('dagTraversal algorithms', () => {
@@ -25,7 +30,22 @@ describe('dagTraversal algorithms', () => {
     expect(visited).not.toContain('D');
   });
 
-  it('traverses all multi-parent ancestors via traverseAncestorKeys', () => {
+  it('collects all reachable descendants via collectDescendants', () => {
+    const dag = new PopoverDAG();
+    dag.addNode('root');
+    dag.addNode('child1', 'root');
+    dag.addNode('child2', 'root');
+    dag.addNode('grandchild', 'child1');
+
+    const internalNodes = (dag as unknown as { nodes: Map<string, InternalDAGNode<string>> }).nodes;
+    const descendants = collectDescendants(internalNodes, 'root', new Set<string>());
+    expect(descendants.size).toBe(3);
+    expect(descendants.has('child1')).toBe(true);
+    expect(descendants.has('child2')).toBe(true);
+    expect(descendants.has('grandchild')).toBe(true);
+  });
+
+  it('traverses all multi-parent ancestors via collectAncestors', () => {
     const dag = new PopoverDAG();
     dag.addEdge('RootA', 'Mid1');
     dag.addEdge('RootB', 'Mid2');
@@ -33,7 +53,7 @@ describe('dagTraversal algorithms', () => {
     dag.addEdge('Mid2', 'Target');
 
     const internalNodes = (dag as unknown as { nodes: Map<string, InternalDAGNode<string>> }).nodes;
-    const directAncestors = traverseAncestorKeys(internalNodes, 'Target');
+    const directAncestors = collectAncestors(internalNodes, 'Target');
     expect(directAncestors.size).toBe(4);
 
     const ancestors = dag.getAncestors('Target');

@@ -46,14 +46,23 @@ export function visitDescendants<TPopoverKey extends string>(
 }
 
 /**
- * Collects all descendant keys of a parent node into a target Set.
+ * Collects all reachable descendant keys of a parent node into a target Set.
  *
+ * Traverses downward using depth-first search, adding all reachable keys into `outSet`.
+ *
+ * @template TPopoverKey - Node key identifier type.
  * @param nodes - Kernel DAG node dictionary.
  * @param parentKey - Starting parent key.
  * @param outSet - Mutable set into which descendant keys are inserted.
  * @returns The populated `outSet`.
+ *
+ * @example
+ * ```typescript
+ * const descendants = collectDescendants(dagNodes, 'main-menu', new Set());
+ * console.log('Descendants count:', descendants.size);
+ * ```
  */
-export function traverseDescendantKeys<TPopoverKey extends string>(
+export function collectDescendants<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
   parentKey: TPopoverKey,
   outSet: Set<TPopoverKey>,
@@ -70,14 +79,25 @@ export function traverseDescendantKeys<TPopoverKey extends string>(
 }
 
 /**
- * Collects all ancestor keys above a target node up to the root anchors.
+ * Collects all reachable ancestor keys above a target child node up to root anchors.
  *
+ * Traverses upward using depth-first search, adding all reachable ancestor keys into `outSet`.
+ *
+ * @template TPopoverKey - Node key identifier type.
  * @param nodes - Kernel DAG node dictionary.
  * @param childKey - Starting target child key.
  * @param outSet - Mutable set to collect ancestor keys into (defaults to new Set).
  * @returns The populated `outSet` containing all ancestor keys.
+ *
+ * @example
+ * ```typescript
+ * const ancestors = collectAncestors(dagNodes, 'flyout-submenu');
+ * if (ancestors.has('main-menu')) {
+ *   console.log('main-menu is an ancestor of flyout-submenu');
+ * }
+ * ```
  */
-export function traverseAncestorKeys<TPopoverKey extends string>(
+export function collectAncestors<TPopoverKey extends string>(
   nodes: Map<TPopoverKey, InternalDAGNode<TPopoverKey>>,
   childKey: TPopoverKey,
   outSet: Set<TPopoverKey> = new Set<TPopoverKey>(),

@@ -100,16 +100,16 @@ function isStopPropagationLike(e: unknown): e is { stopPropagation: () => void }
 }
 
 /**
- * Safely stops event propagation if the object supports `stopPropagation`.
+ * Safely stops event propagation if the candidate provides a `stopPropagation` method.
  *
- * @param e - Unknown event candidate.
+ * @param e - Unknown event candidate (safely handles null/undefined).
  *
  * @example
  * ```typescript
- * stopEventPropagation(event);
+ * stopPropagation(event);
  * ```
  */
-export function stopEventPropagation(e: unknown): void {
+export function stopPropagation(e: unknown): void {
   if (isStopPropagationLike(e)) {
     e.stopPropagation();
   }

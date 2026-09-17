@@ -22,10 +22,10 @@ import type { CacheResolutionAttemptArgs } from './resolverTypes';
  *
  * @example
  * ```typescript
- * const data = getSyncCachedData(cache, 'card-1');
+ * const data = readSyncCache(cache, 'card-1');
  * ```
  */
-export function getSyncCachedData<TData>(
+export function readSyncCache<TData>(
   activeCache: PopoverCache<TData> | undefined,
   key: string,
 ): TData | undefined {
@@ -82,7 +82,7 @@ export function tryResolveFromCacheOrState<
 >(args: CacheResolutionAttemptArgs<TData, TContext, TPopoverKey>, startTime?: number): boolean {
   const { cache, storeCache, key, forceRefresh, existingEntry } = args;
   const effectiveCache = cache ?? storeCache ?? undefined;
-  const cachedData = getSyncCachedData(effectiveCache, key);
+  const cachedData = readSyncCache(effectiveCache, key);
 
   if (cachedData !== undefined) {
     commitSuccessPayload(cachedData, args, startTime);

@@ -38,9 +38,23 @@ export function notifyEntryOpen<TData, TPopoverKey extends string>(
 }
 
 /**
- * Invokes the configured data resolver safely with error guards.
+ * Invokes the configured data resolver callback with cancellation signal and error guards.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @param resolver - Target resolver function.
+ * @param key - Popover key to resolve.
+ * @param parentData - Optional parent node data payload.
+ * @param context - Shared context value.
+ * @param signal - AbortSignal for request cancellation.
+ * @returns Promise resolving to the retrieved data.
+ *
+ * @example
+ * ```typescript
+ * const data = await invokeResolver(resolver, 'card-1', parentData, context, signal);
+ * ```
  */
-export async function invokeResolverSafely<TData, TContext>(
+export async function invokeResolver<TData, TContext>(
   resolver: PopoverResolver<TData, TContext> | undefined,
   key: string,
   parentData: TData | undefined,

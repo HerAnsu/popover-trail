@@ -4,6 +4,7 @@ import {
   isClickInsidePortal,
   isClickOnIgnoredTrigger,
   findNextFocusable,
+  stopPropagation,
 } from './domGuards';
 import { DATA_POPOVER_PORTAL } from '../constants';
 
@@ -47,5 +48,16 @@ describe('domGuards utility', () => {
       querySelectorAll: () => [],
     } as unknown as HTMLElement;
     expect(findNextFocusable(mockContainer)).toBeNull();
+  });
+
+  it('safely stops propagation on events that support it', () => {
+    let stopped = false;
+    stopPropagation({ stopPropagation: () => { stopped = true; } });
+    expect(stopped).toBe(true);
+
+    // Safely handles primitives or null
+    expect(() => stopPropagation(null)).not.toThrow();
+    expect(() => stopPropagation(undefined)).not.toThrow();
+    expect(() => stopPropagation({})).not.toThrow();
   });
 });

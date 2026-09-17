@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { PopoverCache, TrailEntry } from '../../types';
-import { getSyncCachedData, tryResolveFromCacheOrState } from './pipelineCache';
+import { readSyncCache, tryResolveFromCacheOrState } from './pipelineCache';
 
 describe('resolver/pipelineCache', () => {
   const makeEntry = (key: string, data?: unknown): TrailEntry<unknown, string> =>
@@ -43,10 +43,10 @@ describe('resolver/pipelineCache', () => {
     };
   };
 
-  it('reads synchronous cache hits and ignores undefined or promises in getSyncCachedData', () => {
-    expect(getSyncCachedData(undefined, 'k1')).toBeUndefined();
-    expect(getSyncCachedData(makeCache(42), 'k1')).toBe(42);
-    expect(getSyncCachedData(makeCache(Promise.resolve(42)), 'k1')).toBeUndefined();
+  it('reads synchronous cache hits and ignores undefined or promises in readSyncCache', () => {
+    expect(readSyncCache(undefined, 'k1')).toBeUndefined();
+    expect(readSyncCache(makeCache(42), 'k1')).toBe(42);
+    expect(readSyncCache(makeCache(Promise.resolve(42)), 'k1')).toBeUndefined();
   });
 
   it('commits cached data through insertStatePatch and reports resolution', () => {

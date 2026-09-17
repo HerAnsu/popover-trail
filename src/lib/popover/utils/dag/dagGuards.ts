@@ -8,7 +8,18 @@
 import type { DAGNode } from './dagTypes';
 
 /**
- * Validates whether an unknown value conforms to a DAGNode structure.
+ * Validates whether an unknown value conforms to a valid `DAGNode` structure.
+ *
+ * @template TPopoverKey - Node key identifier type.
+ * @param val - Unknown candidate value to validate.
+ * @returns True if value is a valid DAGNode record.
+ *
+ * @example
+ * ```typescript
+ * if (isDAGNode(item)) {
+ *   console.log('Valid DAG node at depth:', item.depth);
+ * }
+ * ```
  */
 export function isDAGNode<TPopoverKey extends string = string>(
   val: unknown,
@@ -30,9 +41,20 @@ export function isDAGNode<TPopoverKey extends string = string>(
 }
 
 /**
- * Checks whether a given DAG node is a root node (has no parents and depth 0).
+ * Checks whether a given DAG node is a root anchor (has no incoming parent edges and depth 0).
+ *
+ * @template TPopoverKey - Node key identifier type.
+ * @param node - Target DAG node to check.
+ * @returns True if the node has zero parents and depth 0.
+ *
+ * @example
+ * ```typescript
+ * if (isRootNode(node)) {
+ *   console.log('Node is a root anchor');
+ * }
+ * ```
  */
-export function isRootDAGNode<TPopoverKey extends string = string>(
+export function isRootNode<TPopoverKey extends string = string>(
   node: DAGNode<TPopoverKey>,
 ): boolean {
   const hasNoParents = node.parentKeys ? node.parentKeys.size === 0 : node.parentKey === undefined;
@@ -40,9 +62,20 @@ export function isRootDAGNode<TPopoverKey extends string = string>(
 }
 
 /**
- * Checks whether a given DAG node is a leaf node (has no children).
+ * Checks whether a given DAG node is a leaf (has no outgoing child edges).
+ *
+ * @template TPopoverKey - Node key identifier type.
+ * @param node - Target DAG node to check.
+ * @returns True if the node has zero children.
+ *
+ * @example
+ * ```typescript
+ * if (isLeafNode(node)) {
+ *   console.log('Node is an outermost leaf popover');
+ * }
+ * ```
  */
-export function isLeafDAGNode<TPopoverKey extends string = string>(
+export function isLeafNode<TPopoverKey extends string = string>(
   node: DAGNode<TPopoverKey>,
 ): boolean {
   return node.childrenKeys.size === 0;

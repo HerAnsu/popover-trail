@@ -6,7 +6,7 @@
 
 import type { StoreApi } from 'zustand/vanilla';
 import type { StoreState, TrailEntry } from '../../types';
-import { invokeResolverSafely } from './resolverArity';
+import { invokeResolver } from './resolverArity';
 
 /**
  * Options for background prefetching.
@@ -47,12 +47,12 @@ function getPrefetchContext<TData, TContext>(
  *
  * @example
  * ```typescript
- * const data = await prefetchPopoverData(store, 'preview-card', {
+ * const data = await prefetchData(store, 'preview-card', {
  *   parentData: rootItem,
  * });
  * ```
  */
-export async function prefetchPopoverData<TData, TContext, TPopoverKey extends string = string>(
+export async function prefetchData<TData, TContext, TPopoverKey extends string = string>(
   store: StoreApi<StoreState<TData, TContext, TPopoverKey>>,
   key: TPopoverKey,
   options?: PrefetchOptions<TData, TContext>,
@@ -64,7 +64,7 @@ export async function prefetchPopoverData<TData, TContext, TPopoverKey extends s
   const { parentData, activeContext } = getPrefetchContext<TData, TContext>(options, context);
 
   try {
-    return await invokeResolverSafely(
+    return await invokeResolver(
       resolveData,
       key,
       parentData,
@@ -92,10 +92,10 @@ export async function prefetchPopoverData<TData, TContext, TPopoverKey extends s
  *
  * @example
  * ```typescript
- * await retryPopoverResolution(store, 'failed-card');
+ * await retryResolution(store, 'failed-card');
  * ```
  */
-export async function retryPopoverResolution<TData, TContext, TPopoverKey extends string = string>(
+export async function retryResolution<TData, TContext, TPopoverKey extends string = string>(
   store: StoreApi<StoreState<TData, TContext, TPopoverKey>>,
   key: TPopoverKey,
   _entry?: TrailEntry<TData, TPopoverKey>,

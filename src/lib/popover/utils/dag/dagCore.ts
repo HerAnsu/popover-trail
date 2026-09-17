@@ -14,7 +14,7 @@ import type {
 } from './dagTypes';
 import { wouldCreateCycle } from './dagCycle';
 import { insertDAGNode, connectDAGEdge, disconnectDAGEdge, deleteDAGNode } from './dagMutation';
-import { traverseDescendantKeys, traverseAncestorKeys, getBreadcrumbs } from './dagTraversal';
+import { collectDescendants, collectAncestors, getBreadcrumbs } from './dagTraversal';
 import {
   computeTopologicalZIndex,
   computeTeardownPlan,
@@ -22,7 +22,7 @@ import {
   safeTopologicalSort,
 } from './dagOrdering';
 import { findRoots, findLeaves, computeMaxDepth } from './dagMetrics';
-import { exportDAGSnapshot, importDAGSnapshot } from './dagSnapshot';
+import { exportSnapshot, importSnapshot } from './dagSnapshot';
 import { EMPTY_SET } from '../../types/branded';
 
 
@@ -113,7 +113,7 @@ export class PopoverDAG<TPopoverKey extends string = string> {
 
   /** Traverses and populates all reachable descendant keys into a provided output set. */
   getDescendantKeysInto(parentKey: TPopoverKey, outSet: Set<TPopoverKey>): Set<TPopoverKey> {
-    return traverseDescendantKeys(this.nodes, parentKey, outSet);
+    return collectDescendants(this.nodes, parentKey, outSet);
   }
 
   /** Returns the set of all transitive reachable descendant keys from the specified parent. */
@@ -123,7 +123,7 @@ export class PopoverDAG<TPopoverKey extends string = string> {
 
   /** Returns the set of all ancestor keys leading to the specified child. */
   getAncestors(childKey: TPopoverKey, outSet: Set<TPopoverKey> = new Set()): Set<TPopoverKey> {
-    return traverseAncestorKeys(this.nodes, childKey, outSet);
+    return collectAncestors(this.nodes, childKey, outSet);
   }
 
   /** Returns the direct parent keys of the specified node. */
@@ -215,11 +215,11 @@ export class PopoverDAG<TPopoverKey extends string = string> {
 
   /** Serializes the entire graph topology into a portable snapshot envelope. */
   exportSnapshot(): DAGSnapshot<TPopoverKey> {
-    return exportDAGSnapshot(this.nodes);
+    return exportSnapshot(this.nodes);
   }
 
   /** Hydrates the graph topology from a serialized snapshot envelope. */
   importSnapshot(snapshot: DAGSnapshot<TPopoverKey>): boolean {
-    return importDAGSnapshot(snapshot, this);
+    return importSnapshot(snapshot, this);
   }
 }

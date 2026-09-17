@@ -94,4 +94,4 @@ export async function resolvePopoverEntry<
   });
 }
 
-export { invokeResolverSafely } from './resolverArity';
+export { invokeResolver } from './resolverArity';

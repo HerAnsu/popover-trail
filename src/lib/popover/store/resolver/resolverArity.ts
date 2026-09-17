@@ -20,7 +20,7 @@ function assertResolverFunction(resolver: unknown): asserts resolver is Function
   if (typeof resolver === 'function') return;
   throw createPopoverError(
     PopoverErrorCode.INVALID_TRANSITION,
-    `invokeResolverSafely: resolver must be a function, received ${typeof resolver}.`,
+    `invokeResolver: resolver must be a function, received ${typeof resolver}.`,
     'Provide a valid resolver callback function to PopoverProvider or schema.',
   );
 }
@@ -76,7 +76,7 @@ function invokeByConvention<TData, TContext>(
  *
  * @example
  * ```typescript
- * const data = await invokeResolverSafely(
+ * const data = await invokeResolver(
  *   resolver,
  *   'user-1',
  *   null,
@@ -85,7 +85,7 @@ function invokeByConvention<TData, TContext>(
  * );
  * ```
  */
-export function invokeResolverSafely<TData, TContext>(
+export function invokeResolver<TData, TContext>(
   resolver: AnyResolverFn<TData, TContext>,
   key: string,
   parentData: Maybe<TData>,

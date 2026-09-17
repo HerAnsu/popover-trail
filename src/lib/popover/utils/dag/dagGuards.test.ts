@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isDAGNode, isRootDAGNode, isLeafDAGNode } from './dagGuards';
+import { isDAGNode, isRootNode, isLeafNode } from './dagGuards';
 import type { DAGNode } from './dagTypes';
 
 describe('dagGuards', () => {
@@ -40,14 +40,14 @@ describe('dagGuards', () => {
       depth: 0,
     };
 
-    expect(isRootDAGNode(rootNode)).toBe(true);
-    expect(isRootDAGNode(leafNode)).toBe(false);
+    expect(isRootNode(rootNode)).toBe(true);
+    expect(isRootNode(leafNode)).toBe(false);
 
-    expect(isLeafDAGNode(leafNode)).toBe(true);
-    expect(isLeafDAGNode(rootNode)).toBe(false);
+    expect(isLeafNode(leafNode)).toBe(true);
+    expect(isLeafNode(rootNode)).toBe(false);
 
     // Isolated node is both root and leaf
-    expect(isRootDAGNode(isolatedNode)).toBe(true);
-    expect(isLeafDAGNode(isolatedNode)).toBe(true);
+    expect(isRootNode(isolatedNode)).toBe(true);
+    expect(isLeafNode(isolatedNode)).toBe(true);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { StoreApi } from 'zustand/vanilla';
 import type { StoreState } from '../../types';
-import { prefetchPopoverData, retryPopoverResolution } from './prefetchPipeline';
+import { prefetchData, retryResolution } from './prefetchPipeline';
 
 describe('resolver/prefetchPipeline', () => {
   const createMockStore = (stateOverrides: Partial<StoreState<unknown, unknown, string>> = {}) => {
@@ -33,7 +33,7 @@ describe('resolver/prefetchPipeline', () => {
     }));
     const { store } = createMockStore({ resolveData, context: { test: true } });
 
-    const result = await prefetchPopoverData(store, 'item-1', { parentData: 'parent-payload' });
+    const result = await prefetchData(store, 'item-1', { parentData: 'parent-payload' });
 
     expect(result).toEqual({
       key: 'item-1',
@@ -45,7 +45,7 @@ describe('resolver/prefetchPipeline', () => {
 
   it('returns undefined if no resolver is configured', async () => {
     const { store } = createMockStore({ resolveData: undefined });
-    const result = await prefetchPopoverData(store, 'any-key');
+    const result = await prefetchData(store, 'any-key');
     expect(result).toBeUndefined();
   });
 
@@ -53,15 +53,15 @@ describe('resolver/prefetchPipeline', () => {
     const failingResolver = vi.fn().mockRejectedValue(new Error('Network failure'));
     const { store } = createMockStore({ resolveData: failingResolver });
 
-    const result = await prefetchPopoverData(store, 'fail-key');
+    const result = await prefetchData(store, 'fail-key');
     expect(result).toBeUndefined();
   });
 
-  it('retryPopoverResolution delegates directly to store retryPopover method', async () => {
+  it('retryResolution delegates directly to store retryPopover method', async () => {
     const { store, retryPopover } = createMockStore();
     const mockEntry = { key: 'retry-k', isLoading: false, error: null } as never;
 
-    await retryPopoverResolution(store, 'retry-k', mockEntry);
+    await retryResolution(store, 'retry-k', mockEntry);
     expect(retryPopover).toHaveBeenCalledWith('retry-k');
   });
 });
