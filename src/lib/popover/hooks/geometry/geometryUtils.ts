@@ -6,9 +6,9 @@
 
 export {
   getViewportBounds,
-  resolveMiddlewareExtraProps,
-  calculateAutoPlacement,
-  calculateResponsivePosition,
+  resolveMiddlewareProps,
+  resolveAutoPlacement,
+  resolveResponsivePosition,
 } from './viewportGeometry';
 
 export { applySpatialCollisionNudge } from './collisionGeometry';

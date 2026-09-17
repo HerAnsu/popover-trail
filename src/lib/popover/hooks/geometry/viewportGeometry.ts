@@ -35,12 +35,18 @@ export function getViewportBounds(): { width: number; height: number } {
 }
 
 /**
- * Pure helper to extract middleware extra properties into a safe record object.
+ * Extracts middleware extra properties into a safe record object.
  *
- * @param option - Raw configuration option.
+ * @param option - Raw configuration option or boolean toggle.
  * @returns Shallow copy record if option is an object, or empty record.
+ *
+ * @example
+ * ```typescript
+ * const extraProps = resolveMiddlewareProps({ padding: 16 });
+ * // returns { padding: 16 }
+ * ```
  */
-export function resolveMiddlewareExtraProps(option: unknown): Record<string, unknown> {
+export function resolveMiddlewareProps(option: unknown): Record<string, unknown> {
   return isRecordObject(option) ? { ...option } : {};
 }
 
@@ -54,11 +60,12 @@ export function resolveMiddlewareExtraProps(option: unknown): Record<string, unk
  * @returns Resolved placement or undefined.
  *
  * @example
- * ```ts
- * const p = calculateAutoPlacement('auto', buttonRect); // 'left' if button on right half of screen
+ * ```typescript
+ * const placement = resolveAutoPlacement('auto', buttonRect);
+ * // returns 'left' if button is on the right half of the screen
  * ```
  */
-export function calculateAutoPlacement(
+export function resolveAutoPlacement(
   placement: Placement | 'auto' | undefined,
   anchorRect: DOMRect | PopoverRect | null | undefined,
 ): Placement | undefined {
@@ -85,11 +92,11 @@ export function calculateAutoPlacement(
  * @returns Computed `{ top, left }` position or `null` if standard floating placement applies.
  *
  * @example
- * ```ts
- * const pos = calculateResponsivePosition('bottom-sheet', true, undefined, 375, 812);
+ * ```typescript
+ * const pos = resolveResponsivePosition('bottom-sheet', true, undefined, 375, 812);
  * ```
  */
-export function calculateResponsivePosition(
+export function resolveResponsivePosition(
   effectiveResponsiveMode: string | undefined,
   isMobileViewport: boolean,
   layoutStrategy: string | undefined,

@@ -21,6 +21,28 @@ import {
 } from '../constants';
 import { useLatestRef } from '../hooks/useHookUtils';
 
+/**
+ * Synchronizes incoming React provider props directly into the Zustand store configuration state.
+ *
+ * Runs an effect when provider props change, dispatching an atomic `updateConfig` patch
+ * to keep the headless store aligned with declarative React configuration.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TSlices - Array of custom slice descriptors.
+ * @param store - Vanilla Zustand store instance.
+ * @param props - Root PopoverProvider props.
+ * @param activeResolver - Data resolver function.
+ *
+ * @example
+ * ```tsx
+ * function PopoverProviderInternal({ children, ...props }) {
+ *   const store = useCreatePopoverStore(props);
+ *   usePopoverPropSync(store, props, props.resolveData);
+ *   return <PopoverStoreContext.Provider value={store}>{children}</PopoverStoreContext.Provider>;
+ * }
+ * ```
+ */
 export function usePopoverPropSync<
   TData = unknown,
   TContext = unknown,

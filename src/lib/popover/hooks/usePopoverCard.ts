@@ -10,8 +10,8 @@ import { useCardFocusManagement } from './card/useCardFocusManagement';
 import {
   useCardStoreSlice,
   useCardMountingTransition,
-  resolveEffectiveBaseZIndex,
-  resolveTransitionClassName,
+  resolveBaseZIndex,
+  resolveTransitionClass,
 } from './card/useCardStoreSlice';
 import { useCardPositioning } from './card/useCardPositioning';
 import { useCardInteractions } from './card/useCardInteractions';
@@ -69,7 +69,7 @@ export function usePopoverCard<
 
   useCardMountingTransition(entry.key, entry.transitionStatus, actions);
 
-  const transitionClassName = resolveTransitionClassName(
+  const transitionClassName = resolveTransitionClass(
     entry.transitionStatus,
     {
       mounting: entry.mountingClassName,
@@ -83,7 +83,7 @@ export function usePopoverCard<
     },
   );
 
-  const effectiveBaseZIndex = resolveEffectiveBaseZIndex(
+  const baseZIndex = resolveBaseZIndex(
     entry,
     slice.zIndexBaseMap,
     slice.baseZIndex,
@@ -95,7 +95,7 @@ export function usePopoverCard<
     placement,
     offset: slice.offset,
     zIndex: slice.zIndex,
-    effectiveBaseZIndex,
+    baseZIndex,
   });
 
   useCardFocusManagement(entry, ref);

@@ -27,7 +27,7 @@ export interface UseCardPositioningOptions {
   /** Relative stack z-index order. */
   zIndex: number;
   /** Computed base z-index. */
-  effectiveBaseZIndex: number;
+  baseZIndex: number;
 }
 
 /**
@@ -44,7 +44,7 @@ export interface UseCardPositioningOptions {
  *   isPinned,
  *   offset,
  *   zIndex,
- *   effectiveBaseZIndex,
+ *   baseZIndex,
  * });
  * return <div ref={setCombinedRef} style={style}>...</div>;
  * ```
@@ -56,7 +56,7 @@ export function useCardPositioning({
   placement = 'bottom',
   offset,
   zIndex,
-  effectiveBaseZIndex,
+  baseZIndex,
 }: UseCardPositioningOptions) {
   const ref = useRef<HTMLElement | null>(null);
 
@@ -76,7 +76,7 @@ export function useCardPositioning({
     dragX: 0,
     dragY: 0,
     rotation: 0,
-    zIndex: zIndex + effectiveBaseZIndex,
+    zIndex: zIndex + baseZIndex,
   });
 
   const setCombinedRef = useCallback(

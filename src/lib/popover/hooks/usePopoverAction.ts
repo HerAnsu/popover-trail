@@ -36,6 +36,27 @@ import { useLatestRef } from './useHookUtils';
  * @param action - Async function taking previous state and input parameters.
  * @param options - Configuration options for initial data, optimistic values, and callbacks.
  * @returns Tuple of current action state, dispatch function, and isPending boolean.
+ *
+ * @example
+ * ```tsx
+ * function EditCard({ cardKey }: { cardKey: string }) {
+ *   const [state, updateName, isPending] = usePopoverAction(
+ *     cardKey,
+ *     async (prev, newName: string) => {
+ *       const updated = await saveNameToServer(newName);
+ *       return { status: 'success', data: updated };
+ *     },
+ *     { optimisticData: (prev, newName) => ({ name: newName }) }
+ *   );
+ *
+ *   return (
+ *     <div>
+ *       <span>{state.data?.name}</span>
+ *       <button disabled={isPending} onClick={() => updateName('Alice')}>Save</button>
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function usePopoverAction<TData, TInput = void, TPopoverKey extends string = string>(
   cardKey: TPopoverKey,

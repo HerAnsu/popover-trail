@@ -37,6 +37,31 @@ function resolveActiveCache<TData>(
   return undefined;
 }
 
+/**
+ * Hook providing direct reactive access to the popover data cache.
+ *
+ * Exposes methods to retrieve, insert, mutate, invalidate by key/prefix/tag,
+ * and monitor cache telemetry metrics.
+ *
+ * @template TData - Stored cache data payload type.
+ * @param customCache - Optional external cache implementation overriding the store cache.
+ * @returns Cache control methods and accessor API.
+ *
+ * @example
+ * ```tsx
+ * function CacheManager() {
+ *   const { get, set, invalidate, getStats } = usePopoverCache<UserProfile>();
+ *   const cachedUser = get('user-123');
+ *
+ *   return (
+ *     <div>
+ *       <button onClick={() => invalidate('user-123')}>Clear Cache</button>
+ *       <span>Hits: {getStats()?.hits ?? 0}</span>
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
 export function usePopoverCache<TData = unknown>(
   customCache?: PopoverCache<TData>,
 ): UsePopoverCacheResult<TData> {

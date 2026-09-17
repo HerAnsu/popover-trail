@@ -21,6 +21,7 @@ import {
   usePopoverIsLoading,
   usePopoverError,
   usePopoverIsIdle,
+  usePopoverActiveCount,
 } from './usePopoverSelectors';
 
 describe('usePopoverSelectors module', () => {
@@ -52,5 +53,6 @@ describe('usePopoverSelectors module', () => {
     expect(typeof usePopoverIsLoading).toBe('function');
     expect(typeof usePopoverError).toBe('function');
     expect(typeof usePopoverIsIdle).toBe('function');
+    expect(typeof usePopoverActiveCount).toBe('function');
   });
 });

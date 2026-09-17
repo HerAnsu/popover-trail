@@ -15,9 +15,9 @@ import { getPopoverStyles } from '../utils/styles';
 import { extractNumericStyle } from '../utils/typeGuards';
 import type { UsePopoverDraggableCardOptions, UsePopoverDraggableCardResult } from './dndTypes';
 import {
-  isDragOperationPermitted,
-  resolveTiltParameters,
-  resolveDragTransformState,
+  isDragPermitted,
+  resolveTiltConfig,
+  resolveDragTransform,
 } from './dndCardConfig';
 
 /**
@@ -61,7 +61,7 @@ export function usePopoverDraggableCard(
     tiltSensitivity = 8,
   } = options;
   const card = usePopoverCard({ entry, index, isPinned, placement });
-  const isDragAllowed = isDragOperationPermitted(
+  const isDragAllowed = isDragPermitted(
     entry,
     enableDrag,
     card.buttonControls.enableDrag,
@@ -74,7 +74,7 @@ export function usePopoverDraggableCard(
   });
 
   const domRef = useRef<HTMLDivElement | null>(null);
-  const tilt = resolveTiltParameters(entry, enableTilt, maxTiltAngle, tiltSensitivity);
+  const tilt = resolveTiltConfig(entry, enableTilt, maxTiltAngle, tiltSensitivity);
 
   const physics = usePopoverDragAndDrop({
     isDragging: isDragAllowed ? isDragging : false,
@@ -89,7 +89,7 @@ export function usePopoverDraggableCard(
   });
 
   const offset = usePopoverOffset(entry.key);
-  const dragTransforms = resolveDragTransformState(isDragAllowed, offset, physics);
+  const dragTransforms = resolveDragTransform(isDragAllowed, offset, physics);
 
   const style = getPopoverStyles({
     finalLayoutPos: {

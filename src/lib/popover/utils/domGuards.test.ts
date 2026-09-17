@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  getMemoizedEscapedSelector,
+  escapeSelector,
   isClickInsidePortal,
   isClickOnIgnoredTrigger,
   findNextFocusable,
@@ -9,8 +9,8 @@ import { DATA_POPOVER_PORTAL } from '../constants';
 
 describe('domGuards utility', () => {
   it('memoizes escaped selectors', () => {
-    const escaped1 = getMemoizedEscapedSelector('item:1');
-    const escaped2 = getMemoizedEscapedSelector('item:1');
+    const escaped1 = escapeSelector('item:1');
+    const escaped2 = escapeSelector('item:1');
     expect(escaped1).toBe(escaped2);
     expect(escaped1).toBe('item:1');
   });

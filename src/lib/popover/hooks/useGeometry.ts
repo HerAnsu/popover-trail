@@ -4,16 +4,16 @@ import { usePopoverCollisionConfig } from './usePopoverSelectors';
 import type { PopoverPlacement, PopoverRect, TrailEntry } from '../types';
 import {
   getViewportBounds,
-  calculateResponsivePosition,
+  resolveResponsivePosition,
   resolveUnpinnedPosition,
 } from './geometry/geometryUtils';
 import {
-  buildFloatingMiddlewareList,
+  buildFloatingMiddleware,
   useVirtualAnchorElement,
   useFloatingResizeObserver,
   useMobileViewport,
   useGeometryStoreConfig,
-  useCollisionMergedConfig,
+  useMergedCollisionConfig,
   useFloatingUpdater,
   usePopoverFloatingSetup,
 } from './geometry/useFloatingSetup';
@@ -107,7 +107,7 @@ export function usePopoverGeometry({
     mobileBreakpoint,
   } = useGeometryStoreConfig();
 
-  const { padding, flipOption, shiftOption, sizeOption, boundaryOption } = useCollisionMergedConfig(
+  const { padding, flipOption, shiftOption, sizeOption, boundaryOption } = useMergedCollisionConfig(
     entry?.collision,
     globalCollision,
   );
@@ -116,7 +116,7 @@ export function usePopoverGeometry({
 
   const middleware = useMemo(
     () =>
-      buildFloatingMiddlewareList(
+      buildFloatingMiddleware(
         entry?.offset ?? defaultOffset ?? 8,
         flipOption,
         shiftOption,
@@ -167,7 +167,7 @@ export function usePopoverGeometry({
 
     const { width: winWidth, height: winHeight } = getViewportBounds();
 
-    const responsivePos = calculateResponsivePosition(
+    const responsivePos = resolveResponsivePosition(
       effectiveResponsiveMode,
       isMobileViewport,
       layoutStrategy,

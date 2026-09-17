@@ -18,11 +18,21 @@ import {
 import type { PopoverRect } from '../../types';
 import { usePopoverStore } from '../../context/usePopoverStore';
 import { shallowEqual } from '../../utils/equality';
-import { calculateAutoPlacement } from './geometryUtils';
+import { resolveAutoPlacement } from './geometryUtils';
 
 export * from './floatingMiddleware';
 export * from './floatingObserver';
 
+/**
+ * Reads geometry configuration options from the popover store slice with shallow equality.
+ *
+ * @returns Object with `cascadeOffsetStep`, `defaultOffset`, `responsiveMode`, and `mobileBreakpoint`.
+ *
+ * @example
+ * ```tsx
+ * const { cascadeOffsetStep, defaultOffset } = useGeometryStoreConfig();
+ * ```
+ */
 export function useGeometryStoreConfig() {
   return usePopoverStore(
     (state) => ({
@@ -35,6 +45,25 @@ export function useGeometryStoreConfig() {
   );
 }
 
+/**
+ * Initializes and coordinates Floating UI hooks with auto-placement heuristics and auto-updating.
+ *
+ * @param placement - Preferred placement or 'auto'.
+ * @param anchorRect - Virtual or DOM anchor rectangle.
+ * @param isPinned - Whether card is pinned (disables autoUpdate).
+ * @param middleware - Array of configured Floating UI middleware.
+ * @returns Floating UI hook result augmented with `resolvedAutoPlacement`.
+ *
+ * @example
+ * ```tsx
+ * const { refs, x, y, update, placement } = usePopoverFloatingSetup(
+ *   'auto',
+ *   anchorRect,
+ *   false,
+ *   middlewareList,
+ * );
+ * ```
+ */
 export function usePopoverFloatingSetup(
   placement: Placement | 'auto' | undefined,
   anchorRect: DOMRect | PopoverRect | null | undefined,
@@ -47,7 +76,7 @@ export function usePopoverFloatingSetup(
   >,
 ) {
   const resolvedAutoPlacement = useMemo(
-    () => calculateAutoPlacement(placement, anchorRect),
+    () => resolveAutoPlacement(placement, anchorRect),
     [placement, anchorRect],
   );
 

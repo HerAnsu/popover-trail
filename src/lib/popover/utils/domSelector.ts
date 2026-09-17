@@ -8,19 +8,21 @@
 const selectorEscapeCache = new Map<string, string>();
 
 /**
- * Returns a CSS-escaped selector string, caching results in a bounded LRU-like Map.
- * Uses native `CSS.escape` when available.
+ * Escapes a string value for safe use within CSS selectors.
+ *
+ * Caches results in an internal bounded Map to avoid repetitive `CSS.escape` overhead.
+ * Falls back to the raw string if `CSS.escape` is unavailable in the environment (e.g. SSR).
  *
  * @param val - Value to escape for use in CSS selectors.
  * @returns Escaped selector string.
  *
  * @example
  * ```typescript
- * const selector = getMemoizedEscapedSelector('user:123/special');
+ * const selector = escapeSelector('user:123/special');
  * const element = document.querySelector(`[data-key="${selector}"]`);
  * ```
  */
-export function getMemoizedEscapedSelector(val: string): string {
+export function escapeSelector(val: string): string {
   let escaped = selectorEscapeCache.get(val);
   if (escaped === undefined) {
     escaped =

@@ -16,6 +16,27 @@ import {
 
 export type { UsePopoverCacheValueOptions, UsePopoverCacheValueResult };
 
+/**
+ * Reactive hook subscribing to a single cache key with SWR resolution and background updates.
+ *
+ * @template TData - Resolved data payload type.
+ * @param key - Cache identifier string.
+ * @param fetcher - Optional async fetch function to resolve the value.
+ * @param opts - Cache options (initialData, TTL, deduplication, revalidation triggers).
+ * @returns Result object with data, isLoading flag, error, and revalidate method.
+ *
+ * @example
+ * ```tsx
+ * function UserGreeting({ userId }: { userId: string }) {
+ *   const { data: user, isLoading } = usePopoverCacheValue(
+ *     `user-${userId}`,
+ *     () => fetchUser(userId),
+ *   );
+ *   if (isLoading) return <span>Loading...</span>;
+ *   return <span>Hello, {user?.name}!</span>;
+ * }
+ * ```
+ */
 export function usePopoverCacheValue<TData = unknown>(
   key: string,
   fetcher?: () => Promise<TData>,

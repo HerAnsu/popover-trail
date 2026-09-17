@@ -15,6 +15,32 @@ import {
   type UsePopoverCacheQueryResult,
 } from './usePopoverCacheQueryTypes';
 
+/**
+ * Reactive data query hook with SWR caching, automatic revalidation, and discriminated state transitions.
+ *
+ * Automatically tracks 'idle' | 'loading' | 'success' | 'error' lifecycle statuses.
+ *
+ * @template TData - Resolved data payload type.
+ * @param key - Cache identifier string.
+ * @param fetcher - Optional async fetch function to populate the cache.
+ * @param opts - SWR query options including TTL, deduping, and revalidation triggers.
+ * @returns Query state discriminated union along with mutate and revalidate functions.
+ *
+ * @example
+ * ```tsx
+ * function UserQueryView({ userId }: { userId: string }) {
+ *   const { status, data, isLoading } = usePopoverCacheQuery(
+ *     `user-${userId}`,
+ *     () => fetchUser(userId),
+ *     { ttlMs: 60_000 }
+ *   );
+ *
+ *   if (isLoading) return <Spinner />;
+ *   if (status === 'error') return <div>Error loading user</div>;
+ *   return <div>User: {data?.name}</div>;
+ * }
+ * ```
+ */
 export function usePopoverCacheQuery<TData = unknown>(
   key: string,
   fetcher?: () => Promise<TData>,

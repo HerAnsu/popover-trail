@@ -8,7 +8,7 @@
 import { useCallback, useMemo, type KeyboardEvent, type RefObject } from 'react';
 import type { PopoverActions, TrailEntry } from '../../types';
 import { handleCardKeyboard } from './useCardKeyboardNav';
-import { resolveCardButtonControls } from './cardResolvers';
+import { resolveButtonControls } from './cardResolvers';
 
 /**
  * Configuration options for attaching interactive handlers and listeners to a popover card.
@@ -100,7 +100,7 @@ export function useCardInteractions<
     [actions, enableArrowNavigation, entry, floatingCount, isPinned, trail, cardRef],
   );
 
-  const buttonControls = useMemo(() => resolveCardButtonControls(entry), [entry]);
+  const buttonControls = useMemo(() => resolveButtonControls(entry), [entry]);
 
   return { handlePinToggle, onMouseEnter, onMouseLeave, onKeyDown, buttonControls };
 }

@@ -23,11 +23,11 @@ import { groupBy } from '../../utils/collections';
  *
  * @example
  * ```ts
- * const cls = resolveTransitionClassName('mounting', { mounting: 'fade-in' }, { mounting: 'enter' });
+ * const cls = resolveTransitionClass('mounting', { mounting: 'fade-in' }, { mounting: 'enter' });
  * // returns 'fade-in'
  * ```
  */
-export function resolveTransitionClassName(
+export function resolveTransitionClass(
   status: string | undefined,
   entryClasses: { mounting?: string; unmounting?: string; mounted?: string },
   globalClasses: { mounting?: string; unmounting?: string; mounted?: string },
@@ -100,10 +100,10 @@ export function useCardMountingTransition<TPopoverKey extends string = string>(
  *
  * @example
  * ```ts
- * const baseZ = resolveEffectiveBaseZIndex(entry, { modal: 2000 }, 1000);
+ * const baseZ = resolveBaseZIndex(entry, { modal: 2000 }, 1000);
  * ```
  */
-export function resolveEffectiveBaseZIndex<TData = unknown, TPopoverKey extends string = string>(
+export function resolveBaseZIndex<TData = unknown, TPopoverKey extends string = string>(
   entry: TrailEntry<TData, TPopoverKey>,
   zIndexBaseMap?: Record<string, number> | null,
   baseZIndex?: number,
@@ -127,10 +127,10 @@ export function resolveEffectiveBaseZIndex<TData = unknown, TPopoverKey extends 
  *
  * @example
  * ```ts
- * const controls = resolveCardButtonControls(entry, { enablePin: false });
+ * const controls = resolveButtonControls(entry, { enablePin: false });
  * ```
  */
-export function resolveCardButtonControls<TData = unknown, TPopoverKey extends string = string>(
+export function resolveButtonControls<TData = unknown, TPopoverKey extends string = string>(
   entry: TrailEntry<TData, TPopoverKey>,
   cardFeatures?: { enablePin?: boolean; enableClose?: boolean; enableDrag?: boolean },
 ) {
@@ -152,13 +152,14 @@ export function resolveCardButtonControls<TData = unknown, TPopoverKey extends s
  *
  * @example
  * ```ts
- * const grouped = groupEntriesByStackGroup(activeEntries);
+ * const grouped = groupByStackGroup(activeEntries);
  * const modalEntries = grouped['modal'] ?? [];
  * ```
  */
-export function groupEntriesByStackGroup<TData = unknown, TPopoverKey extends string = string>(
+export function groupByStackGroup<TData = unknown, TPopoverKey extends string = string>(
   entries: readonly TrailEntry<TData, TPopoverKey>[],
 ): Record<string, readonly TrailEntry<TData, TPopoverKey>[]> {
   return groupBy(entries, (entry) => entry.stackGroup ?? 'default');
 }
+
 

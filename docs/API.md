@@ -1202,7 +1202,7 @@ Fine-grained selector hooks:
 - `usePopoverIsLoading(key)`: Boolean loading status.
 - `usePopoverError(key)`: Error object if resolution failed.
 - `usePopoverRootEntry()`: Returns root popover entry from trail.
-- `usePopoverTotalActiveCount()`: Returns total count of active popovers.
+- `usePopoverActiveCount()`: Returns total count of active popovers.
 - `usePopoverIsIdle()`: `true` when 0 popovers are active.
 - `usePopoverParentKey(key)`: Returns parent key or `undefined` if root.
 - `usePopoverChildrenKeys(key)`: Returns direct child keys spawned from `key`.

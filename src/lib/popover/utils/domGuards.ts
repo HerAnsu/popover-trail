@@ -7,12 +7,12 @@
 
 import { isElementLike } from './typeGuards';
 import { getEventPath } from './domEvents';
-import { getMemoizedEscapedSelector } from './domSelector';
+import { escapeSelector } from './domSelector';
 import { first, last } from './arrayUtils';
 import { and } from './functional';
 import { DATA_POPOVER_PORTAL, DATA_POPOVER_IGNORE_OUTSIDE } from '../constants';
 
-export { getMemoizedEscapedSelector };
+export { escapeSelector };
 
 /**
  * Checks whether a DOM event originated inside a popover portal element.

@@ -41,7 +41,7 @@ describe('useCardPositioning', () => {
       placement: 'top-start',
       offset: { x: 5, y: 10 },
       zIndex: 3,
-      effectiveBaseZIndex: 1000,
+      baseZIndex: 1000,
     });
 
     expect(usePopoverGeometry).toHaveBeenCalledWith({
@@ -81,7 +81,7 @@ describe('useCardPositioning', () => {
       placement: 'right',
       offset: { x: 0, y: 0 },
       zIndex: 0,
-      effectiveBaseZIndex: 500,
+      baseZIndex: 500,
     });
 
     expect(usePopoverGeometry).toHaveBeenCalledWith(
@@ -105,7 +105,7 @@ describe('useCardPositioning', () => {
       isPinned: false,
       offset: { x: 0, y: 0 },
       zIndex: 1,
-      effectiveBaseZIndex: 100,
+      baseZIndex: 100,
     });
 
     expect(usePopoverGeometry).toHaveBeenCalledWith(
