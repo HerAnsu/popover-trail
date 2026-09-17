@@ -1,6 +1,19 @@
 /**
- * Topological DAG Ordering, Teardown Plans, and Stacking Z-Index.
+ * Topological DAG Ordering, Subtree Teardown Plans, and Z-Index Stacking.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
+ *
+ * @remarks
+ * **Contributor Architectural Guide**:
+ * - **Poset Linear Extension**: The active cascade DAG forms a strict partially ordered set (poset) $(V, \prec)$.
+ *   Topological algorithms compute an order-preserving linear extension $\mathcal{L}: (V, \prec) \to (V, <)$
+ *   satisfying $\forall u, v \in V, \; u \prec v \implies \mathcal{L}(u) < \mathcal{L}(v)$.
+ * - **Deterministic Subtree Pruning**: Closing a parent node $r$ initiates a bottom-up teardown plan
+ *   $\mathcal{T}(r) = \{ v \in V \mid v \in \text{Reach}(r) \}$. Descendants are torn down in reverse topological order,
+ *   guaranteeing zero orphaned portals or unlinked dialogs in the DOM.
+ * - **Z-Index Bijective Stacking**: The visual stacking order maintains strict correspondence with cascade
+ *   ancestry ($\mathcal{Z}: V \to \{1, \dots, |V|\}$), ensuring child popovers always render in front of their triggers.
+ * - **Zero-GC Hot Path**: Employs `RingBuffer` for $O(1)$ amortized queue operations and `sharedSetPool` for
+ *   visited tracking, eliminating heap allocations during rapid cascading transitions.
  *
  * @module utils/dag/dagOrdering
  */
@@ -11,12 +24,16 @@ import { Ok, Err } from '../result';
 import type { InternalDAGNode, TopologicalSortResult } from './dagTypes';
 
 /**
- * Computes a bottom-up teardown order for a popover and all its descendants.
+ * Computes a bottom-up teardown order for a popover subtree and all its transitive descendants.
  *
  * @remarks
- * Uses post-order depth-first traversal so child popovers are closed before their
- * parents, preventing orphan popovers. Uses an internal pool (`sharedSetPool`)
- * to avoid allocations during close operations.
+ * **Contributor Note**:
+ * - **Teardown Invariant**: Children MUST close before parents. This function traverses via post-order DFS
+ *   so that the deepest leaf popovers are collected at the start of the returned array, followed by intermediate
+ *   parents, ending at `rootKey` (if `includeRoot` is true).
+ * - **DOM Portals**: Ensures that inner event listeners and DOM dialog portals unmount cleanly before the parent
+ *   container is unmounted from the DOM.
+ * - **Memory**: Uses `sharedSetPool.use` to borrow a pre-allocated `Set<TPopoverKey>`, producing zero GC pressure.
  *
  * @template TPopoverKey - Node identifier type.
  * @param nodes - Internal DAG node dictionary.
@@ -48,8 +65,13 @@ export function computeTeardownPlan<TPopoverKey extends string>(
  * Topologically sorts DAG nodes using Kahn's algorithm (parents before children).
  *
  * @remarks
- * Uses a ring buffer queue to process nodes in $O(V + E)$ time without heap allocations.
- * If the graph has disconnected or cyclic components, any remaining nodes are appended at the end.
+ * **Contributor Note**:
+ * - **Algorithm**: Kahn's in-degree reduction algorithm with BFS traversal.
+ * - **Zero-GC Queue**: Implemented using a bounded `RingBuffer<TPopoverKey>` rather than standard JS `Array.shift()`.
+ *   This avoids $O(N)$ array element shifting and eliminates GC allocations during high-frequency layout computations.
+ * - **Fault-Tolerant Rendering Fallback**: If an unexpected cycle occurs due to race conditions or external mutations,
+ *   unvisited nodes are appended at the end of the array. This ensures presentation layers render all active popovers
+ *   rather than dropping elements. For strict validation, use `safeTopologicalSort()`.
  *
  * @template TPopoverKey - Node identifier type.
  * @param nodes - Internal DAG node dictionary.
@@ -94,18 +116,12 @@ export function topologicalSort<TPopoverKey extends string>(
  * Topologically sorts popover nodes, returning an error Result if an illegal cycle is detected.
  *
  * @remarks
- * Unlike standard topologicalSort, this function will not return a partial or corrupted order.
- * If a cycle is detected, it returns `Err(DAGCycleError)` listing all keys trapped in the cycle.
- *
- * @example
- * ```ts
- * const result = safeTopologicalSort(dagNodes);
- * if (isOk(result)) {
- *   console.log('Topological order:', result.data);
- * } else {
- *   console.error('Cycle detected in keys:', result.error.cycleKeys);
- * }
- * ```
+ * **Contributor Note**:
+ * - **Soundness Contract**: Unlike `topologicalSort()`, this function enforces strict graph invariants.
+ *   If `order.length !== nodes.size`, it aborts without returning a partial ordering, returning `Err(DAGCycleError)`
+ *   containing the exact list of cyclic nodes.
+ * - **Intended Usage**: Used in transaction validation gates, state snapshot exports, and property tests
+ *   to verify $\mathcal{I}_{\text{Acyclic}}$.
  *
  * @template TPopoverKey - Node identifier type.
  * @param nodes - Internal DAG node dictionary.
@@ -155,11 +171,14 @@ export function safeTopologicalSort<TPopoverKey extends string>(
 }
 
 /**
- * Computes z-index stacking order so child popovers always render above their parents.
+ * Computes stacking z-index values so child popovers always render above their parents.
  *
  * @remarks
- * Traverses from root anchors down the cascade, assigning strictly increasing integer
- * z-index values starting from `baseZIndex`.
+ * **Contributor Note**:
+ * - **Invariant $\mathcal{I}_{\text{ZBijection}}$**: Assigns strictly monotonic integer z-indices starting from `baseZIndex`.
+ * - **Root-First Ordering**: Roots (in-degree 0) are visited first via post-order DFS, guaranteeing
+ *   $\forall u, v \in V, \; u \prec v \implies \text{zIndex}(u) < \text{zIndex}(v)$.
+ * - **Zero-GC Visited Set**: Uses `sharedSetPool.use` to avoid Set allocation on high-frequency stacking updates.
  *
  * @template TPopoverKey - Node identifier type.
  * @param nodes - Kernel DAG node dictionary.

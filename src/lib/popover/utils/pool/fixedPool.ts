@@ -1,6 +1,18 @@
 /**
- * High-Performance Preallocated Monomorphic Slab Pool for Sub-Microsecond Paths.
+ * High-Performance Pre-allocated Monomorphic Slab Pool Engine.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
+ *
+ * @remarks
+ * **Contributor Architectural Guide**:
+ * - **Zero-GC Invariant**: High-frequency execution paths (pointer drag events, quadtree queries, RAF updates)
+ *   must avoid heap allocations. `FixedPool` pre-allocates contiguous slots and manages borrowing via an integer `head` pointer.
+ * - **Monomorphic V8 Optimization**: Objects produced by the uniform `factory` retain stable hidden classes (shapes),
+ *   maximizing inline-cache (IC) hit rates in V8/SpiderMonkey JIT engines.
+ * - **Exhaustion Strategy**: When concurrency exceeds `capacity` (`head === 0`), `acquire()` transparently creates
+ *   an ad-hoc instance via `factory()`. Upon `release()`, if the pool is already at capacity, surplus instances
+ *   are safely dropped to avoid unbounded memory growth.
+ * - **Contributor Usage Contract**: Always wrap borrowed items in `runWith()` or `try { ... } finally { pool.release(item); }`.
+ *   Never retain stale references to released objects, as their properties are cleared or reused by subsequent borrowers.
  *
  * @module utils/pool/fixedPool
  */
@@ -15,14 +27,6 @@ import { runWithItem } from './poolScope';
  * Fixed-capacity, pre-allocated monomorphic slab pool for sub-microsecond, zero-GC execution paths.
  *
  * @template T - Type of pooled resource.
- *
- * @example
- * ```typescript
- * const pool = new FixedPool(() => ({ x: 0, y: 0 }), 16, (pt) => { pt.x = 0; pt.y = 0; });
- * const pt = pool.acquire();
- * pt.x = 100;
- * pool.release(pt);
- * ```
  */
 export class FixedPool<T> {
   private readonly slots: T[];

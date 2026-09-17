@@ -1,6 +1,16 @@
 /**
- * Spatial Boundary Validation and Quadrant Indexing.
+ * Spatial Boundary Validation and Quadrant Indexing for 2D QuadTrees.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
+ *
+ * @remarks
+ * **Contributor Architectural Guide**:
+ * - **Axis-Aligned Bounding Box (AABB)**: Every popover card $v \in V$ is bounded by an orthogonal rectangle
+ *   $B(v) = [x, y, w, h] \subset \mathbb{R}^2$.
+ * - **Quadrant Spatial Partitioning**: Partitions the 2D bounding area into four orthogonal sub-quadrants:
+ *   North-East (0), North-West (1), South-West (2), South-East (3).
+ * - **Boundary Straddling Invariant**: Any item whose bounding box intersects either the vertical midpoint
+ *   $vMid = x + w/2$ or horizontal midpoint $hMid = y + h/2$ cannot be contained strictly in a child quadrant
+ *   and must remain stored at the current tree depth (`Quadrant.None` = -1).
  *
  * @module utils/spatial/spatialBounds
  */

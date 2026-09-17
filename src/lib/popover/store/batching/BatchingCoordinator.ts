@@ -2,8 +2,18 @@
  * Batching Coordination Lifecycle Engine for Store Subscriptions.
  * Clean Architecture Layer 2: Headless State Management & Orchestration.
  *
- * Enforces transactional isolation and microtask coalescing invariants:
- * δ_batch(S, [a1, ..., an]) = δ*(S, [a1, ..., an])
+ * @remarks
+ * **Contributor Architectural Guide**:
+ * - **Transactional Atomicity Invariant**: Compound batch transactions $\mathcal{B} = [a_1, \dots, a_m]$
+ *   must behave as a single atomic transition:
+ *   $$\delta_{\text{batch}}(\mathcal{S}, \mathcal{B}) = \delta^*(\mathcal{S}, \mathcal{B})$$
+ *   External subscribers are notified exactly once with `(currentState, initialBatchState)`, suppressing intermediate render spikes.
+ * - **Re-entrancy & Nesting Depth**: `batchDepth` tracks nested batch calls (`batch(() => { batch(...) })`).
+ *   Subscribers are only notified when the outermost batch concludes (`batchDepth === 0`).
+ * - **Microtask Coalescing**: When updates occur outside an explicit `batch()` wrapper, if `autoBatchMicrotasks`
+ *   is true, the coordinator defers notification to microtask timing (`queueMicrotask`), coalescing synchronous mutations.
+ * - **Rollback Protection**: `initialBatchState` preserves the pre-transaction baseline snapshot.
+ *   If an invariant fails during execution, the rollback controller restores this exact snapshot.
  *
  * @module store/batching/BatchingCoordinator
  */

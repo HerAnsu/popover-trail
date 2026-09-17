@@ -1,6 +1,21 @@
 /**
- * 2D Affine Transformation Matrix & Geometry Normalization.
+ * 2D Affine Transformation Matrix & Geometry Normalization Engine.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
+ *
+ * @remarks
+ * **Contributor Architectural Guide**:
+ * - **Coordinate Spaces**: Coordinates are partitioned into Global Screen Space, Viewport Anchor Space,
+ *   and Matrix-Transformed Container Space. When nesting popovers inside CSS transformed elements
+ *   (`transform: scale(...) translate(...)`), screen coordinates must be normalized via inverse affine projection:
+ *   $$P_{\text{local}} = M^{-1} \cdot P_{\text{screen}}$$
+ * - **3x3 Homogeneous Matrix Representation**:
+ *   $$\begin{pmatrix} x' \\ y' \\ 1 \end{pmatrix} = \begin{pmatrix} a & c & e \\ b & d & f \\ 0 & 0 & 1 \end{pmatrix} \begin{pmatrix} x \\ y \\ 1 \end{pmatrix} = \begin{pmatrix} ax + cy + e \\ bx + dy + f \\ 1 \end{pmatrix}$$
+ *   Stored compactly as a 6-element numeric tuple `readonly [a, b, c, d, e, f]`.
+ * - **Singular Matrix Safeguard**: Determinant $\det(M) = ad - bc$. If $|\det(M)| < 10^{-12}$ or non-finite,
+ *   inversion returns `null` or `Err(SingularMatrixError)` rather than producing `NaN` or `Infinity`.
+ * - **Zero-GC Allocation Invariant**: During pointer drag loops and layout synchronization, contributors
+ *   MUST use `transformPoint2DInto` and `transformAABBInto` with pre-allocated target buffers to guarantee
+ *   $\text{Alloc}(\text{Frame}) = 0 \text{ bytes}$.
  *
  * @module utils/spatial/spatialAffine
  */
@@ -136,6 +151,13 @@ export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatr
 /**
  * Transforms a 2D point in-place using matrix multiplication without heap allocations.
  *
+ * @remarks
+ * **Contributor Note**:
+ * - **Zero-GC Hot Path**: Modifies the `out` mutable buffer in-place. Must be used across all pointer dragging,
+ *   touch events, and scroll tracking loops to satisfy $\text{Alloc}(\text{Frame}) = 0$.
+ * - **Finite Float Guarantee $\mathcal{I}_{\text{FiniteFloat}}$**: If matrix transformation produces `NaN`
+ *   or $\pm\infty$ due to invalid inputs, the coordinate is sanitized to `0`.
+ *
  * @param p - Source 2D point.
  * @param m - Affine matrix.
  * @param out - Pre-allocated target object to receive the transformed coordinates.
@@ -149,6 +171,9 @@ export function transformPoint2DInto(p: Point2D, m: Matrix2D, out: { x: number; 
 
 /**
  * Transforms a 2D point $P = (x, y)$ by an affine transformation matrix $M$.
+ *
+ * @remarks
+ * Allocates a new Point2D. For high-frequency frame loops, prefer `transformPoint2DInto()`.
  *
  * @param p - 2D point to transform.
  * @param m - Affine transformation matrix.
@@ -177,6 +202,12 @@ export function inverseTransformPoint2D(p: Point2D, m: Matrix2D): Point2D {
 
 /**
  * Computes the axis-aligned bounding box of a transformed rectangle in-place without heap allocations.
+ *
+ * @remarks
+ * **Contributor Note**:
+ * - **AABB Enclosing Envelope**: Transforms all four orthogonal vertices of `box` through the affine matrix $M$,
+ *   then calculates the minimal enclosing axis-aligned boundary $[\min(x), \min(y), \max(x) - \min(x), \max(y) - \min(y)]$.
+ * - **Zero-GC Invariant**: Mutates `out` directly without intermediate object allocations.
  *
  * @param box - Source bounding box.
  * @param m - Affine matrix.

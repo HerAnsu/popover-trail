@@ -1,6 +1,20 @@
 /**
- * 2D QuadTree Core Class Implementation.
+ * 2D QuadTree Hierarchical Spatial Index Engine.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
+ *
+ * @remarks
+ * **Contributor Architectural Guide**:
+ * - **Hierarchical Spatial Partitioning**: Recursively divides 2D space into four quadrants ($NE, NW, SW, SE$).
+ *   Reduces pairwise collision testing from $O(N^2)$ to $O(N \log N)$ during cascade placement and drag operations.
+ * - **Asymptotic Complexity**:
+ *   - Insertion / Deletion: $O(\log N)$ average, bounded by `maxLevels` depth.
+ *   - Range Queries: $O(K + \log N)$ where $K$ is the number of overlapping items. Non-intersecting quadrants are pruned.
+ *   - K-Nearest Neighbors (KNN): Branch-and-bound euclidean distance search with dynamic radius shrinkage.
+ * - **Automatic Coalescing**: When items are removed and the total count across child quadrants falls below `maxItems`,
+ *   subtrees are pruned and coalesced back into the parent node to prevent sparse memory fragmentation.
+ * - **Zero-GC Hot Path**: Range queries and collision checks borrow deduplication sets from `sharedSetPool`
+ *   via `withPooledSeen()`, eliminating allocation overhead during dragging and animations.
+ * - **RAII Lifecycle**: Conforms to `[DISPOSE_SYMBOL]` for deterministic recursive teardown.
  *
  * @module utils/spatial/quadTreeCore
  */
@@ -33,11 +47,6 @@ export interface SpatialNotFoundError {
 
 /**
  * 2D QuadTree spatial index for fast rectangular bounding box queries.
- *
- * @remarks
- * Recursively partitions 2D space into four quadrants to speed up collision detection,
- * viewport overlap testing, and finding nearest neighboring popovers without checking
- * every card on screen. Supports `Symbol.dispose` for clean memory release.
  *
  * @template TId - Domain identifier type for indexed items (defaults to string).
  */
