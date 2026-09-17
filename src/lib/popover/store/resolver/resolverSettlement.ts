@@ -33,7 +33,24 @@ function resolveStatePatch<TData, TContext, TPopoverKey extends string>(
 }
 
 /**
- * Commits a resolved or error entry into active floating/trail lists or root state patch.
+ * Commits a settled popover entry (resolved data or error) into active floating/trail lists or root state patch.
+ *
+ * Checks whether the key already exists in active popover lists. If active, updates the existing entry in place
+ * while preserving layout and pin states. Otherwise, generates a state patch via `params.insertStatePatch`.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param state - Current store state snapshot.
+ * @param key - Popover key identifier.
+ * @param targetEntry - Settled TrailEntry instance with resolved data or error.
+ * @param params - Optional resolution parameters containing insertion patch factory.
+ * @returns StatePatch updating the store.
+ *
+ * @example
+ * ```typescript
+ * const patch = commitResolverSettlement(state, 'card-1', resolvedEntry, params);
+ * ```
  */
 export function commitResolverSettlement<TData, TContext, TPopoverKey extends string>(
   state: StoreState<TData, TContext, TPopoverKey>,

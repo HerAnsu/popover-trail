@@ -25,7 +25,21 @@ function assertNotAborted(signal: AbortSignal, message: string, cause?: unknown)
 }
 
 /**
- * Middleware: L1 Synchronous Cache lookup and write-through.
+ * Middleware: L1 Synchronous Cache lookup and write-through interceptor.
+ *
+ * Checks `cacheManager.readSync(key)` before invoking `next()`. If cached, returns immediately without running `next()`.
+ * Upon successful `next()` completion, commits the data to cache via `cacheManager.writeSync(key, data)`.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param cacheManager - Cache manager to read from and write to.
+ * @returns Resolver middleware function.
+ *
+ * @example
+ * ```typescript
+ * const middleware = withL1Cache(cacheManager);
+ * ```
  */
 export function withL1Cache<TData, TContext = unknown, TPopoverKey extends string = string>(
   cacheManager: ResolverCacheManager<TData, TPopoverKey>,
@@ -40,7 +54,20 @@ export function withL1Cache<TData, TContext = unknown, TPopoverKey extends strin
 }
 
 /**
- * Middleware: In-Flight Promise Deduplication per key.
+ * Middleware: In-Flight Promise Deduplication interceptor per popover key.
+ *
+ * Ensures concurrent requests for the same key share a single running Promise.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param promiseCache - InFlightPromiseCache instance.
+ * @returns Resolver middleware function.
+ *
+ * @example
+ * ```typescript
+ * const middleware = withInFlightDeduplication(inFlightCache);
+ * ```
  */
 export function withInFlightDeduplication<
   TData,
@@ -53,7 +80,20 @@ export function withInFlightDeduplication<
 }
 
 /**
- * Middleware: AbortSignal validation before and after dispatch.
+ * Middleware: AbortSignal validation before and after resolution dispatch.
+ *
+ * Throws an `AbortError` if `params.signal` is already aborted before execution or becomes aborted during resolution.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param errorCause - Optional error cause to attach to the AbortError.
+ * @returns Resolver middleware function.
+ *
+ * @example
+ * ```typescript
+ * const middleware = withAbortSignal();
+ * ```
  */
 export function withAbortSignal<TData, TContext = unknown, TPopoverKey extends string = string>(
   errorCause?: unknown,
@@ -68,7 +108,23 @@ export function withAbortSignal<TData, TContext = unknown, TPopoverKey extends s
 }
 
 /**
- * Middleware: Compose multiple middleware functions into a single pipeline handler.
+ * Composes multiple resolver middleware functions into a single pipeline handler.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param baseResolver - Core resolver handler at the end of the chain.
+ * @param middlewares - Array of middleware functions applied in order.
+ * @returns Composed resolver handler function.
+ *
+ * @example
+ * ```typescript
+ * const composedHandler = composeResolverPipeline(baseResolver, [
+ *   withAbortSignal(),
+ *   withL1Cache(cacheManager),
+ *   withInFlightDeduplication(inFlightCache),
+ * ]);
+ * ```
  */
 export function composeResolverPipeline<
   TData,

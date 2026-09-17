@@ -59,7 +59,31 @@ function invokeByConvention<TData, TContext>(
 }
 
 /**
- * Safely invokes a resolver function with automatic positional/object arity detection and caching.
+ * Safely invokes a resolver callback with automatic arity and signature convention detection.
+ *
+ * Supports both traditional positional parameter signatures `(key, parentData, context, signal)`
+ * and modern object destructuring signatures `({ key, parentData, context, signal })`.
+ * Dynamically detects the preferred calling convention on first run and caches it in a `WeakMap` for subsequent calls.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @param resolver - Resolver callback function to invoke.
+ * @param key - Popover key identifier.
+ * @param parentData - Optional data payload of the parent popover.
+ * @param context - Ambient application or store context.
+ * @param signal - AbortSignal for network or lifecycle cancellation.
+ * @returns Resolved data or Promise of data.
+ *
+ * @example
+ * ```typescript
+ * const data = await invokeResolverSafely(
+ *   resolver,
+ *   'user-1',
+ *   null,
+ *   ctx,
+ *   abortController.signal,
+ * );
+ * ```
  */
 export function invokeResolverSafely<TData, TContext>(
   resolver: AnyResolverFn<TData, TContext>,

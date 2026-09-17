@@ -37,6 +37,24 @@ async function disposeResourceAsync(r: AsyncScopeDisposable | ScopeDisposable): 
   }
 }
 
+/**
+ * Executes a scoped computation with a disposable resource, guaranteeing resource teardown in a `finally` block.
+ *
+ * @template TResource - Disposable resource type conforming to `ScopeDisposable`.
+ * @template TReturn - Return value of the computation.
+ * @param resource - Disposable resource to manage.
+ * @param fn - Callback receiving the active resource.
+ * @returns Resulting value of `fn(resource)`.
+ *
+ * @example
+ * ```typescript
+ * const count = using(new CompositeDisposable(), (scope) => {
+ *   scope.add(createTimerDisposable(t1));
+ *   return 42;
+ * });
+ * // scope is guaranteed to be disposed here
+ * ```
+ */
 export function using<TResource extends ScopeDisposable, TReturn>(
   resource: TResource,
   fn: (res: TResource) => TReturn,
@@ -48,6 +66,25 @@ export function using<TResource extends ScopeDisposable, TReturn>(
   }
 }
 
+/**
+ * Asynchronously executes a scoped computation with an async (or sync) disposable resource,
+ * guaranteeing asynchronous teardown in a `finally` block.
+ *
+ * @template TResource - Resource type conforming to `AsyncScopeDisposable` or `ScopeDisposable`.
+ * @template TReturn - Return value of the asynchronous computation.
+ * @param resource - Async or sync disposable resource to manage.
+ * @param fn - Asynchronous computation callback receiving the active resource.
+ * @returns Promise resolving to the value returned by `fn(resource)`.
+ *
+ * @example
+ * ```typescript
+ * const data = await usingAsync(new AsyncCompositeDisposable(), async (scope) => {
+ *   scope.add(asyncResource);
+ *   return await fetchData();
+ * });
+ * // scope is asynchronously disposed here
+ * ```
+ */
 export async function usingAsync<TResource extends AsyncScopeDisposable | ScopeDisposable, TReturn>(
   resource: TResource,
   fn: (res: TResource) => Promise<TReturn>,

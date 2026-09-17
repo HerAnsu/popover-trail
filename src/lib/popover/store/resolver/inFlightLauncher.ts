@@ -31,6 +31,31 @@ function handleLaunchError<TData, TContext, TPopoverKey extends string>(
 
 /**
  * Initiates an in-flight resolution tracking its AbortController and handling sync/async branches.
+ *
+ * Dispatches a `resolve_start` event, registers an AbortController, and invokes the resolver safely.
+ * If the resolver returns synchronously, the controller is cleaned up immediately and the result is returned.
+ * If the resolver returns a Promise, the task is tracked in `inFlightPromises` until settlement.
+ *
+ * @template TData - Data type returned by the resolver.
+ * @template TContext - Context passed to the resolver.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param key - Popover key undergoing resolution.
+ * @param controllerKey - Key to track the AbortController under.
+ * @param parentData - Parent popover data if chained in a cascade.
+ * @param activeResolver - Resolver callback function.
+ * @param currentContext - Ambient context value.
+ * @param deps - Pipeline dependencies (controllers, listeners, bus).
+ * @param params - Optional single entry resolution parameters.
+ * @param _buildEntry - Optional builder function to create a new TrailEntry.
+ * @returns ResolverLaunchResult indicating if resolution resolved synchronously, asynchronously, or with error.
+ *
+ * @example
+ * ```typescript
+ * const result = startInFlightResolver(key, ctrlKey, parentData, resolver, ctx, deps);
+ * if (result.isSync) {
+ *   console.log('Resolved synchronously:', result.result);
+ * }
+ * ```
  */
 export function startInFlightResolver<
   TData = unknown,

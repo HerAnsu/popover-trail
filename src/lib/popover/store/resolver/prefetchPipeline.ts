@@ -8,8 +8,16 @@ import type { StoreApi } from 'zustand/vanilla';
 import type { StoreState, TrailEntry } from '../../types';
 import { invokeResolverSafely } from './resolverArity';
 
+/**
+ * Options for background prefetching.
+ *
+ * @template TData - Type of parent popover data.
+ * @template TContext - Type of shared context.
+ */
 export interface PrefetchOptions<TData = unknown, TContext = unknown> {
+  /** Optional context overrides passed to the resolver during prefetch. */
   readonly context?: TContext;
+  /** Optional parent data if the prefetch represents a child popover node. */
   readonly parentData?: TData | null;
 }
 
@@ -24,7 +32,25 @@ function getPrefetchContext<TData, TContext>(
 }
 
 /**
- * Prefetches data for a popover key in the background without modifying active trail stack.
+ * Prefetches data for a popover key in the background without modifying the active trail or stack.
+ *
+ * Executes the resolver with an isolated `AbortController` signal and silently returns the fetched data
+ * or `undefined` on error.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param store - Target Zustand store instance.
+ * @param key - Popover key to prefetch.
+ * @param options - Context and parentData parameters for resolution.
+ * @returns Promise resolving to prefetched data or `undefined`.
+ *
+ * @example
+ * ```typescript
+ * const data = await prefetchPopoverData(store, 'preview-card', {
+ *   parentData: rootItem,
+ * });
+ * ```
  */
 export async function prefetchPopoverData<TData, TContext, TPopoverKey extends string = string>(
   store: StoreApi<StoreState<TData, TContext, TPopoverKey>>,
@@ -53,7 +79,21 @@ export async function prefetchPopoverData<TData, TContext, TPopoverKey extends s
 }
 
 /**
- * Retries failed resolution for a popover entry in the store.
+ * Retries failed data resolution for a popover entry in the store.
+ *
+ * Invokes the store's `retryPopover` action to restart the resolution lifecycle.
+ *
+ * @template TData - Resolved data type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param store - Popover Zustand store instance.
+ * @param key - Popover key to retry.
+ * @param _entry - Optional reference to the current entry.
+ *
+ * @example
+ * ```typescript
+ * await retryPopoverResolution(store, 'failed-card');
+ * ```
  */
 export async function retryPopoverResolution<TData, TContext, TPopoverKey extends string = string>(
   store: StoreApi<StoreState<TData, TContext, TPopoverKey>>,

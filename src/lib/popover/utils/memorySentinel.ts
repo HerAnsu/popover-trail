@@ -29,6 +29,11 @@ if (typeof globalThis !== 'undefined' && typeof FinalizationRegistry !== 'undefi
  *
  * @param target - Object or DOM node instance to monitor.
  * @param popoverKey - Identifying popover key string.
+ *
+ * @example
+ * ```typescript
+ * trackMemoryCleanup(cardElement, 'card-1');
+ * ```
  */
 export function trackMemoryCleanup(target?: object | null, popoverKey?: string | null): void {
   if (!target || !popoverKey || !sentinelRegistry || !isDevEnv()) return;
@@ -40,6 +45,11 @@ export function trackMemoryCleanup(target?: object | null, popoverKey?: string |
  * Unregisters a tracked object from GC monitoring when explicitly unmounted.
  *
  * @param target - Object or DOM node to unregister.
+ *
+ * @example
+ * ```typescript
+ * untrackMemoryCleanup(cardElement);
+ * ```
  */
 export function untrackMemoryCleanup(target?: object | null): void {
   if (!target || !sentinelRegistry) return;

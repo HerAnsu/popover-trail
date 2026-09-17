@@ -20,6 +20,34 @@ export type { ResolverPipelineDependencies, ResolvePopoverEntryParams };
 
 /**
  * Orchestrates the full resolution pipeline for a single popover entry.
+ *
+ * Steps in the pipeline:
+ * 1. Inserts the key into the cascade DAG under parentKey.
+ * 2. Checks L1 cache or existing resolved entry state.
+ * 3. Attempts fast-path synchronous resolution.
+ * 4. If asynchronous, transitions entry into `isLoading: true` and awaits in-flight resolution.
+ * 5. Commits final data or error state.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param get - Store state getter function.
+ * @param params - Single entry resolution options (key, parentKey, rect, options).
+ * @param deps - Pipeline dependencies (DAG, caches, controllers, buses).
+ * @returns Promise resolving when the popover entry state is fully settled.
+ *
+ * @example
+ * ```typescript
+ * await resolvePopoverEntry(get, {
+ *   key: 'card-1',
+ *   parentKey: null,
+ *   rect: triggerRect,
+ *   options: { forceRefresh: false },
+ *   incrementCounter: () => ++counter,
+ *   isStale: (cnt) => cnt !== counter,
+ *   insertStatePatch: (entry) => ({ trail: [entry] }),
+ * }, deps);
+ * ```
  */
 export async function resolvePopoverEntry<
   TData = unknown,

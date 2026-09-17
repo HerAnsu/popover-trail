@@ -13,7 +13,17 @@ export interface MetricDispatcher<TData = unknown, TPopoverKey extends string = 
 }
 
 /**
- * Returns high-resolution timestamp in milliseconds.
+ * Returns a high-resolution timestamp in milliseconds.
+ * Falls back to `Date.now()` if `performance.now()` is unavailable.
+ *
+ * @returns Timestamp in milliseconds.
+ *
+ * @example
+ * ```typescript
+ * const start = getPerformanceTimestamp();
+ * // ... do work ...
+ * const elapsed = getPerformanceTimestamp() - start;
+ * ```
  */
 export function getPerformanceTimestamp(): number {
   return typeof performance !== 'undefined' && typeof performance.now === 'function'
@@ -22,7 +32,22 @@ export function getPerformanceTimestamp(): number {
 }
 
 /**
- * Creates and dispatches a resolution metric through listeners and event bus.
+ * Creates and dispatches a resolution telemetry metric through registered event listeners and event bus.
+ *
+ * @template TData - Resolved data payload type.
+ * @template _TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param dispatcher - Event listener set and event bus carrier.
+ * @param key - Popover key identifier.
+ * @param source - Resolution source ('sync' | 'async' | 'cache' | 'deduped').
+ * @param start - Performance timestamp recorded at start of resolution.
+ * @param success - True if resolution succeeded, false if errored.
+ * @param error - Optional error object if resolution failed.
+ *
+ * @example
+ * ```typescript
+ * recordResolutionMetric(deps, 'card-1', 'async', startTimestamp, true);
+ * ```
  */
 export function recordResolutionMetric<
   TData = unknown,

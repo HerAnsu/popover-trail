@@ -14,6 +14,16 @@ import type { CacheResolutionAttemptArgs } from './resolverTypes';
 
 /**
  * Reads synchronous cached data, ignoring promises or retrieval errors.
+ *
+ * @template TData - Cached data payload type.
+ * @param activeCache - Cache instance (safely handles undefined).
+ * @param key - Popover key to look up.
+ * @returns Cached data value or `undefined` if missing or pending Promise.
+ *
+ * @example
+ * ```typescript
+ * const data = getSyncCachedData(cache, 'card-1');
+ * ```
  */
 export function getSyncCachedData<TData>(
   activeCache: PopoverCache<TData> | undefined,
@@ -47,7 +57,23 @@ function commitSuccessPayload<TData, TContext, TPopoverKey extends string>(
 }
 
 /**
- * Attempts synchronous resolution from L1 cache or existing success state.
+ * Attempts synchronous resolution from L1 cache or existing settled success state in the store.
+ *
+ * Checks if fresh data is already available synchronously in either:
+ * 1. The provided or store cache.
+ * 2. An existing resolved entry (if not bypassing with `forceRefresh: true`).
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param args - Cache resolution attempt arguments.
+ * @param startTime - Optional performance timestamp.
+ * @returns True if resolved from cache or state, false otherwise.
+ *
+ * @example
+ * ```typescript
+ * const resolved = tryResolveFromCacheOrState(attemptArgs, performance.now());
+ * ```
  */
 export function tryResolveFromCacheOrState<
   TData = unknown,

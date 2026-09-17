@@ -29,6 +29,13 @@ function isObjectRecord(val: unknown): val is Record<PropertyKey, unknown> {
  *
  * @param val - Candidate value to evaluate.
  * @returns True if value conforms to ScopeDisposable.
+ *
+ * @example
+ * ```typescript
+ * if (isDisposable(item)) {
+ *   item.dispose();
+ * }
+ * ```
  */
 export function isDisposable(val: unknown): val is ScopeDisposable {
   if (!isObjectRecord(val)) return false;
@@ -41,6 +48,13 @@ export function isDisposable(val: unknown): val is ScopeDisposable {
  *
  * @param val - Candidate value to evaluate.
  * @returns True if value conforms to AsyncScopeDisposable.
+ *
+ * @example
+ * ```typescript
+ * if (isAsyncDisposable(item)) {
+ *   await item.disposeAsync();
+ * }
+ * ```
  */
 export function isAsyncDisposable(val: unknown): val is AsyncScopeDisposable {
   if (!isObjectRecord(val)) return false;
@@ -55,6 +69,11 @@ export function isAsyncDisposable(val: unknown): val is AsyncScopeDisposable {
  * @param disposed - Boolean flag indicating if disposal has occurred.
  * @param contextName - Optional name of the subsystem for debugging.
  * @throws Error if already disposed.
+ *
+ * @example
+ * ```typescript
+ * assertNotDisposed(this.disposed, 'HistoryJournal');
+ * ```
  */
 export function assertNotDisposed(disposed: boolean, contextName?: string): void {
   if (disposed) {
@@ -68,6 +87,13 @@ export function assertNotDisposed(disposed: boolean, contextName?: string): void
  *
  * @param target - Stateful entity carrying an isDisposed indicator.
  * @returns True if entity is in terminal Omega state.
+ *
+ * @example
+ * ```typescript
+ * if (isTerminalOmegaState(store)) {
+ *   return;
+ * }
+ * ```
  */
 export function isTerminalOmegaState(target: { readonly isDisposed?: boolean }): boolean {
   return target.isDisposed === true;

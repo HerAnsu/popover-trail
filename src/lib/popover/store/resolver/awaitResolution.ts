@@ -10,6 +10,30 @@ import type { AwaitInFlightResolutionArgs } from './resolverTypes';
 
 /**
  * Awaits an in-flight promise resolution and commits success or error state patches.
+ *
+ * Checks if the resolution request has become stale prior to committing state changes.
+ * Dispatches performance telemetry and updates the store accordingly.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param args - Structured arguments including the active promise, keys, dependencies, and state builders.
+ * @returns Promise resolving when settlement is committed to the store.
+ *
+ * @example
+ * ```typescript
+ * await awaitInFlightResolution({
+ *   inFlight: promise,
+ *   key: 'item-1',
+ *   requestCounter: 1,
+ *   resolveParams,
+ *   deps,
+ *   storeCache,
+ *   startTime: performance.now(),
+ *   isDeduped: false,
+ *   buildEntry,
+ * });
+ * ```
  */
 export async function awaitInFlightResolution<
   TData = unknown,

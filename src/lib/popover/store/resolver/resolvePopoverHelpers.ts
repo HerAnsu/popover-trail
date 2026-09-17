@@ -24,6 +24,21 @@ export interface ResolutionExecutionContext<TData, TContext, TPopoverKey extends
   readonly startTime: number;
 }
 
+/**
+ * Inserts an initial loading placeholder entry into the store.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param params - Popover resolution parameters.
+ * @param safeSet - Store state mutation dispatcher.
+ * @param existing - Optional existing entry if refreshing.
+ *
+ * @example
+ * ```typescript
+ * insertLoadingEntry(params, safeSet, existingEntry);
+ * ```
+ */
 export function insertLoadingEntry<TData, TContext, TPopoverKey extends string>(
   params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
   safeSet: ResolverPipelineDependencies<TData, TContext, TPopoverKey>['safeSet'],
@@ -36,6 +51,16 @@ export function insertLoadingEntry<TData, TContext, TPopoverKey extends string>(
   );
 }
 
+/**
+ * Extracts the effective active resolver and context from store state and dependencies.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param state - Current store state.
+ * @param deps - Pipeline dependencies.
+ * @returns Tuple containing active resolver function and current context.
+ */
 export function getExecutionEnvironment<TData, TContext, TPopoverKey extends string>(
   state: PopoverStore<TData, TContext, TPopoverKey>,
   deps: ResolverPipelineDependencies<TData, TContext, TPopoverKey>,
@@ -49,6 +74,22 @@ export function getExecutionEnvironment<TData, TContext, TPopoverKey extends str
   };
 }
 
+/**
+ * Creates a memoized entry builder for the given resolution parameters.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param params - Popover resolution parameters.
+ * @param existing - Optional existing entry for property preservation.
+ * @returns Factory function producing fresh `TrailEntry` instances.
+ *
+ * @example
+ * ```typescript
+ * const buildEntry = createEntryBuilder(params, existing);
+ * const resolved = buildEntry(data, null, false);
+ * ```
+ */
 export function createEntryBuilder<TData, TContext, TPopoverKey extends string>(
   params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>,
   existing?: TrailEntry<TData, TPopoverKey>,
@@ -70,6 +111,20 @@ export function createEntryBuilder<TData, TContext, TPopoverKey extends string>(
     );
 }
 
+/**
+ * Attempts to resolve popover data synchronously from L1 cache, pre-existing state, or sync resolver.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param ctx - Complete execution context object.
+ * @returns True if resolution completed synchronously, false if deferred to asynchronous resolution.
+ *
+ * @example
+ * ```typescript
+ * const resolvedSync = tryResolveCacheOrSync(executionContext);
+ * ```
+ */
 export function tryResolveCacheOrSync<TData, TContext, TPopoverKey extends string>(
   ctx: ResolutionExecutionContext<TData, TContext, TPopoverKey>,
 ): boolean {

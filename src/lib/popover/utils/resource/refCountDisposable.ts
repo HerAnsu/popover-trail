@@ -26,24 +26,72 @@ function safelyDispose(d: CleanupItem): void {
   });
 }
 
+/**
+ * Reference-counted disposable container for shared resources (e.g., shared worker connections, event channels).
+ *
+ * The underlying resource remains open until both:
+ * 1. The primary `RefCountDisposable` container has been disposed.
+ * 2. Every acquired handle via `acquire()` has been released.
+ *
+ * @example
+ * ```typescript
+ * const refCounted = new RefCountDisposable(createSharedWorker());
+ *
+ * // Consumer A acquires a handle
+ * const handleA = refCounted.acquire();
+ *
+ * // Primary container marked for disposal (underlying resource still alive because handleA is active)
+ * refCounted.dispose();
+ *
+ * // Consumer A finishes and releases handle -> underlying resource is now torn down!
+ * handleA.dispose();
+ * ```
+ */
 export class RefCountDisposable implements ScopeDisposable {
   private underlying: CleanupItem;
   private refCount = 0;
   private primaryDisposed = false;
   private underlyingDisposed = false;
 
+  /**
+   * Creates a reference-counted container around a shared underlying resource.
+   *
+   * @param underlying - Target resource or teardown callback to manage.
+   */
   constructor(underlying: CleanupItem) {
     this.underlying = underlying;
   }
 
+  /**
+   * Current number of actively held references.
+   */
   get count(): number {
     return this.refCount;
   }
 
+  /**
+   * Indicates whether the underlying shared resource has been permanently destroyed.
+   */
   get isDisposed(): boolean {
     return this.underlyingDisposed;
   }
 
+  /**
+   * Acquires a reference handle to the underlying resource.
+   * Disposing the returned handle decrements the reference count.
+   *
+   * @returns Disposable handle that decrements the reference count on disposal.
+   *
+   * @example
+   * ```typescript
+   * const handle = refCounted.acquire();
+   * try {
+   *   // use shared resource
+   * } finally {
+   *   handle.dispose();
+   * }
+   * ```
+   */
   acquire(): ScopeDisposable & { readonly isDisposed: boolean } {
     if (this.underlyingDisposed) {
       return DISPOSED_DISPOSABLE;
@@ -70,6 +118,11 @@ export class RefCountDisposable implements ScopeDisposable {
     safelyDispose(target);
   }
 
+  /**
+   * Marks the primary container as disposed.
+   * If there are zero active acquired references, the underlying resource is torn down immediately.
+   * Otherwise, teardown is deferred until all active handles are disposed.
+   */
   dispose(): void {
     if (this.primaryDisposed) return;
     this.primaryDisposed = true;

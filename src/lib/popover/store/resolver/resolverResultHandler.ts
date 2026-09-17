@@ -38,7 +38,24 @@ const resolveErrorEntry = <TData, TPopoverKey extends string>(
     : createErrorEntry(key, undefined, null, undefined, error));
 
 /**
- * Handles successful data resolution, updates caches, and dispatches telemetry.
+ * Handles successful data resolution, updates caches, dispatches lifecycle events, records telemetry, and commits state.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param data - Resolved data value.
+ * @param key - Popover key identifier.
+ * @param successEntry - Popover entry configured with resolved data.
+ * @param params - Resolution parameters.
+ * @param deps - Pipeline dependencies.
+ * @param storeCache - Optional store-level cache instance.
+ * @param startTime - Optional timestamp in ms when resolution began.
+ * @param source - Resolution source ('sync' | 'async' | 'deduped').
+ *
+ * @example
+ * ```typescript
+ * handleResolverSuccess(data, 'card-1', entry, params, deps, storeCache, startTime, 'async');
+ * ```
  */
 export function handleResolverSuccess<TData, TContext, TPopoverKey extends string>(
   data: TData,
@@ -61,7 +78,23 @@ export function handleResolverSuccess<TData, TContext, TPopoverKey extends strin
 }
 
 /**
- * Handles resolution errors, invokes custom onError callbacks, and dispatches error telemetry.
+ * Handles resolution errors, invokes custom onError callbacks, dispatches error telemetry, and commits error state.
+ * Silently ignores `AbortError` instances caused by cancellation.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param objErr - Caught error or exception.
+ * @param key - Popover key identifier.
+ * @param deps - Pipeline dependencies.
+ * @param params - Optional resolution parameters.
+ * @param errorEntry - Optional pre-constructed error entry.
+ * @param startTime - Optional timestamp when resolution began.
+ *
+ * @example
+ * ```typescript
+ * handleResolverError(err, 'card-1', deps, params);
+ * ```
  */
 export function handleResolverError<TData, TContext, TPopoverKey extends string>(
   objErr: unknown,

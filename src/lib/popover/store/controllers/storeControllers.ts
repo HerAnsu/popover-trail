@@ -8,6 +8,12 @@ import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { AbortRegistry } from './AbortRegistry';
 import { InFlightPromiseCache } from './InFlightPromiseCache';
 
+/**
+ * Unified controller interface managing network abort controllers and concurrent in-flight promises.
+ *
+ * @template TData - Resolved data type returned by async operations.
+ * @template TPopoverKey - Key identifying individual popover entries.
+ */
 export interface ControllerManager<TData = unknown, TPopoverKey extends string = string> {
   activeControllers: Map<string, AbortController>;
   inFlightPromises: Map<string, Promise<TData>>;
@@ -24,6 +30,23 @@ export interface ControllerManager<TData = unknown, TPopoverKey extends string =
   [Symbol.dispose]: () => void;
 }
 
+/**
+ * Creates a unified `ControllerManager` instance binding `AbortRegistry` and `InFlightPromiseCache`.
+ *
+ * @template TData - Data type returned by async promises.
+ * @template TPopoverKey - Key identifying popover nodes.
+ * @returns Initialized `ControllerManager`.
+ *
+ * @example
+ * ```typescript
+ * const manager = createControllerManager();
+ * const controller = manager.registerController('card-1');
+ * manager.setInFlight('card-1', fetch('/api/data'));
+ *
+ * // Later, abort and clean up:
+ * manager.abortControllersForKeys(['card-1']);
+ * ```
+ */
 export function createControllerManager<
   TData = unknown,
   TPopoverKey extends string = string,
@@ -59,6 +82,23 @@ export function createControllerManager<
   };
 }
 
+/**
+ * Executes an async task while tracking it in an in-flight promises Map.
+ * Automatically cleans up the promise from the Map upon completion.
+ *
+ * @template TData - Output type of task.
+ * @param inFlightPromises - Target map to record running promise.
+ * @param key - Operation key.
+ * @param task - Async task factory function.
+ * @returns Promise resolving to the task result.
+ *
+ * @example
+ * ```typescript
+ * const result = await runTracked(inFlightMap, 'task-key', async () => {
+ *   return await api.call();
+ * });
+ * ```
+ */
 export function runTracked<TData>(
   inFlightPromises: Map<string, Promise<TData>>,
   key: string,

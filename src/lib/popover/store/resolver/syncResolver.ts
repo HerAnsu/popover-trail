@@ -9,7 +9,34 @@ import { startInFlightResolver } from './inFlightLauncher';
 import type { SyncResolutionLaunchArgs } from './resolverTypes';
 
 /**
- * Attempts synchronous resolver execution; commits on success or returns status.
+ * Attempts synchronous resolver execution; commits state on immediate success or returns status.
+ *
+ * Fast-path optimization: if the resolver function returns synchronously (non-promise), the data is committed
+ * immediately to the store without queueing microtasks or dispatching intermediate loading states.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param args - Arguments controlling the resolution attempt.
+ * @returns True if resolution finished (synchronously or with immediate error), false if running asynchronously.
+ *
+ * @example
+ * ```typescript
+ * const finished = tryLaunchSyncResolver({
+ *   key: 'static-item',
+ *   controllerKey: 'static-item',
+ *   parentData: null,
+ *   activeResolver: (k) => staticData[k],
+ *   currentContext: undefined,
+ *   forceRefresh: false,
+ *   requestCounter: 1,
+ *   resolveParams,
+ *   deps,
+ *   storeCache,
+ *   startTime: performance.now(),
+ *   buildEntry,
+ * });
+ * ```
  */
 export function tryLaunchSyncResolver<
   TData = unknown,
