@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { TrailEntry } from '../../types';
 import {
-  handleCardKeyboardNavigation,
+  handleCardKeyboard,
   focusParentCard,
   getFocusableCardElements,
 } from './useCardKeyboardNav';
@@ -39,7 +39,7 @@ describe('useCardKeyboardNav', () => {
       keyboardShortcuts: { 'Mod+k': shortcutHandler },
     };
     const event = { key: 'k', metaKey: true, preventDefault: vi.fn() };
-    handleCardKeyboardNavigation({
+    handleCardKeyboard({
       event,
       cardElement: null,
       entry,
@@ -56,7 +56,7 @@ describe('useCardKeyboardNav', () => {
   it('dismisses card on Escape for both pinned and unpinned cards', () => {
     const entryPinned: TrailEntry = { key: 'p1', isLoading: false, error: null };
     const closeByKey = vi.fn();
-    handleCardKeyboardNavigation({
+    handleCardKeyboard({
       event: { key: 'Escape', preventDefault: vi.fn() },
       cardElement: null,
       entry: entryPinned,
@@ -70,7 +70,7 @@ describe('useCardKeyboardNav', () => {
 
     const entryUnpinned: TrailEntry = { key: 'u1', isLoading: false, error: null };
     const closeFrom = vi.fn();
-    handleCardKeyboardNavigation({
+    handleCardKeyboard({
       event: { key: 'Escape', preventDefault: vi.fn() },
       cardElement: null,
       entry: entryUnpinned,
@@ -88,7 +88,7 @@ describe('useCardKeyboardNav', () => {
     const childEntry: TrailEntry = { key: 'sub', isLoading: false, error: null };
     const closeByKey = vi.fn();
 
-    handleCardKeyboardNavigation(
+    handleCardKeyboard(
       { key: 'ArrowLeft', preventDefault: vi.fn() },
       null,
       childEntry,
@@ -108,7 +108,7 @@ describe('useCardKeyboardNav', () => {
     globalThis.HTMLElement = MockHTMLElement as unknown as typeof HTMLElement;
     globalThis.document = { activeElement: clickable } as unknown as Document;
 
-    handleCardKeyboardNavigation(
+    handleCardKeyboard(
       { key: 'ArrowRight', preventDefault: vi.fn() },
       null,
       childEntry,
@@ -129,7 +129,7 @@ describe('useCardKeyboardNav', () => {
     globalThis.document = { activeElement: el1 } as unknown as Document;
 
     const entry: TrailEntry = { key: 'c', isLoading: false, error: null };
-    handleCardKeyboardNavigation({
+    handleCardKeyboard({
       event: { key: 'ArrowDown', preventDefault: vi.fn() },
       cardElement: card,
       entry,

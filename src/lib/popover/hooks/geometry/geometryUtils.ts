@@ -14,7 +14,7 @@ export {
 export { applySpatialCollisionNudge } from './collisionGeometry';
 
 export {
-  calculateBaseOffsetPosition,
+  baseCascadeOffset,
   computeCascadePosition,
-  resolveUnpinnedLayoutPosition,
+  resolveUnpinnedPosition,
 } from './cascadePosition';

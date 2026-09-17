@@ -28,19 +28,19 @@ export interface Size2D {
 /**
  * Computes the total overlapping intersection area between a candidate bounding box and obstacles.
  *
- * @example
- * ```ts
- * const overlapArea = computeOverlapIntersectionArea(candidateBox, existingCards);
- * if (overlapArea === 0) {
- *   // Completely clear placement with zero collisions
- * }
- * ```
- *
  * @param card - Bounding box of the popover card.
  * @param obstacles - Array of obstacle bounding boxes to test against.
  * @returns Total intersection area in square pixels.
+ *
+ * @example
+ * ```typescript
+ * const overlap = totalOverlapArea(candidateBox, existingCards);
+ * if (overlap === 0) {
+ *   // Clear placement with zero collisions
+ * }
+ * ```
  */
-export function computeOverlapIntersectionArea(
+export function totalOverlapArea(
   card: BoundingBox,
   obstacles: readonly BoundingBox[],
 ): number {
@@ -63,25 +63,24 @@ export function computeOverlapIntersectionArea(
  *
  * Uses `sharedBoxPool` to avoid temporary heap allocations in animation loops.
  *
- * @example
- * ```ts
- * const energy = computeCascadeOverlapEnergy(
- *   { x: 200, y: 150 },
- *   { width: 300, height: 200 },
- *   existingCards,
- *   { x: 180, y: 150 },
- *   0.5,
- * );
- * ```
- *
  * @param position - Candidate top-left coordinate.
  * @param size - Dimensions of the popover card.
  * @param obstacles - Existing obstacle bounding boxes.
  * @param preferredPosition - Desired anchor coordinate.
  * @param lambda - Distance penalty multiplier (default 0.5).
  * @returns Evaluated placement energy score (lower is better).
+ *
+ * @example
+ * ```typescript
+ * const score = cascadePlacementEnergy(
+ *   { x: 200, y: 150 },
+ *   { width: 300, height: 200 },
+ *   existingCards,
+ *   { x: 180, y: 150 },
+ * );
+ * ```
  */
-export function computeCascadeOverlapEnergy(
+export function cascadePlacementEnergy(
   position: Point2D,
   size: Size2D,
   obstacles: readonly BoundingBox[],
@@ -95,7 +94,7 @@ export function computeCascadeOverlapEnergy(
     cardBox.width = size.width;
     cardBox.height = size.height;
     const distSq = distanceSquared2D(position, preferredPosition);
-    return computeOverlapIntersectionArea(cardBox, obstacles) + lambda * distSq;
+    return totalOverlapArea(cardBox, obstacles) + lambda * distSq;
   } finally {
     sharedBoxPool.release(cardBox);
   }
@@ -143,7 +142,7 @@ export function selectLowestEnergyPlacement(
       cardBox.x = pos.x;
       cardBox.y = pos.y;
       const distSq = distanceSquared2D(pos, preferredPosition);
-      const energy = computeOverlapIntersectionArea(cardBox, obstacles) + lambda * distSq;
+      const energy = totalOverlapArea(cardBox, obstacles) + lambda * distSq;
       if (energy < minEnergy) {
         minEnergy = energy;
         bestPos = pos;

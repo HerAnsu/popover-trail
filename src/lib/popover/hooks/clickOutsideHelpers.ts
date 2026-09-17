@@ -9,6 +9,21 @@ import { isPortalOrExcludedTarget, getEventPath, getEventTarget } from '../utils
 import { TriggerRegistry } from '../utils/triggerRegistry';
 import { isElement, isPointerOrMouseEvent, isContainedInPath } from '../utils/typeGuards';
 
+/**
+ * Checks whether an element is located inside a popover card, dialog, or ignored element.
+ *
+ * @param el - DOM element to check.
+ * @param selector - Custom CSS selector representing popovers.
+ * @param ignoreClass - Optional class name indicating an element should be ignored from outside clicks.
+ * @returns True if `el` or any ancestor matches the popover or ignore criteria.
+ *
+ * @example
+ * ```typescript
+ * if (isInsidePopover(eventTarget, '.popover-card', 'ignore-dismiss')) {
+ *   // Event originated inside the popover or an explicit ignore zone
+ * }
+ * ```
+ */
 export function isInsidePopover(el: Element, selector: string, ignoreClass?: string): boolean {
   try {
     if (el.closest(selector) || el.closest('.popover-card,[data-key],[role="dialog"]')) return true;
@@ -21,6 +36,23 @@ export function isInsidePopover(el: Element, selector: string, ignoreClass?: str
   return false;
 }
 
+/**
+ * Determines if a pointer or mouse event should be ignored from triggering click-outside teardowns.
+ *
+ * Checks if the event target is inside a portal container, an excluded boundary,
+ * or matched by an optional user-defined filter function.
+ *
+ * @param e - Triggering DOM event.
+ * @param ignoreFn - Optional consumer callback to suppress outside-click handling.
+ * @returns True if the event should be ignored.
+ *
+ * @example
+ * ```typescript
+ * if (shouldIgnoreEvent(event, (e) => (e.target as Element)?.classList.contains('do-not-close'))) {
+ *   return;
+ * }
+ * ```
+ */
 export function shouldIgnoreEvent(
   e: Event,
   ignoreFn?: (e: PointerEvent | MouseEvent) => boolean,
@@ -30,7 +62,28 @@ export function shouldIgnoreEvent(
   return false;
 }
 
-export function isClickInsidePopoverOrAnchor(
+/**
+ * Checks if an event occurred inside any active popover card, its trigger anchor, or an ignored element.
+ *
+ * Traverses the event propagation path to ensure clicks on nested triggers,
+ * custom portals, or anchor buttons are not mistakenly treated as outside clicks.
+ *
+ * @param e - Triggering DOM event.
+ * @param selector - Popover CSS selector.
+ * @param ignoreClass - Optional CSS class to ignore.
+ * @param ownerId - Popover key identifier to look up registered trigger elements.
+ * @param anchorElement - Explicit trigger anchor DOM element fallback.
+ * @returns True if the click is inside a popover or its associated trigger anchor.
+ *
+ * @example
+ * ```typescript
+ * if (isInsidePopoverOrAnchor(event, '.popover-card', undefined, 'card-1', anchorEl)) {
+ *   // Click was inside the popover or its anchor
+ *   return;
+ * }
+ * ```
+ */
+export function isInsidePopoverOrAnchor(
   e: Event,
   selector: string,
   ignoreClass: string | undefined,

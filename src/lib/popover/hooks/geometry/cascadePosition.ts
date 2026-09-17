@@ -19,12 +19,12 @@ import { applySpatialCollisionNudge } from './collisionGeometry';
  * @returns An object containing `{ baseTop, baseLeft }`.
  *
  * @example
- * ```ts
- * const pos = calculateBaseOffsetPosition(2, 24, 'right', 100, 200);
+ * ```typescript
+ * const pos = baseCascadeOffset(2, 24, 'right', 100, 200);
  * // returns { baseTop: 100, baseLeft: 248 }
  * ```
  */
-export function calculateBaseOffsetPosition(
+export function baseCascadeOffset(
   zIndex: number,
   step: number,
   direction: 'left' | 'right' | 'top' | 'bottom',
@@ -85,7 +85,7 @@ export function computeCascadePosition({
   winHeight: number;
 }): { top: number; left: number } {
   const effectiveDirection = direction ?? 'right';
-  const { baseTop, baseLeft } = calculateBaseOffsetPosition(zIndex, step, effectiveDirection, y, x);
+  const { baseTop, baseLeft } = baseCascadeOffset(zIndex, step, effectiveDirection, y, x);
 
   if (enableSpatialCollision) {
     const { floating: activeFloating, offsets: activeOffsets } = storeApi.getState();
@@ -124,8 +124,8 @@ export function computeCascadePosition({
  * @returns Final layout coordinates `{ top, left }`.
  *
  * @example
- * ```ts
- * const pos = resolveUnpinnedLayoutPosition(
+ * ```typescript
+ * const pos = resolveUnpinnedPosition(
  *   'card-1',
  *   entry,
  *   24,
@@ -140,7 +140,7 @@ export function computeCascadePosition({
  * );
  * ```
  */
-export function resolveUnpinnedLayoutPosition(
+export function resolveUnpinnedPosition(
   id: string,
   entry: TrailEntry | undefined,
   cascadeOffsetStep: number,
@@ -179,3 +179,4 @@ export function resolveUnpinnedLayoutPosition(
     winHeight,
   });
 }
+

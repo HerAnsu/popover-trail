@@ -22,6 +22,11 @@ import { isReactRefObject } from '../utils/guards/reactGuards';
  * @template T - Node element type.
  * @param ref - React ref to assign.
  * @param value - DOM node or value to pass to the ref.
+ *
+ * @example
+ * ```typescript
+ * setRef(forwardedRef, node);
+ * ```
  */
 export function setRef<T>(ref: Ref<T> | undefined | null, value: T | null): void {
   if (typeof ref === 'function') {
@@ -37,6 +42,11 @@ export function setRef<T>(ref: Ref<T> | undefined | null, value: T | null): void
  * @template T - Node element type.
  * @param refs - Sequence of refs to merge.
  * @returns Composed callback ref.
+ *
+ * @example
+ * ```typescript
+ * const combinedRef = mergeRefs(localRef, forwardedRef);
+ * ```
  */
 export function mergeRefs<T>(...refs: (Ref<T> | undefined | null)[]): RefCallback<T> {
   return (node: T | null) => {
@@ -49,6 +59,18 @@ export function mergeRefs<T>(...refs: (Ref<T> | undefined | null)[]): RefCallbac
 /**
  * Merges multiple React refs into a single referentially stable callback ref.
  * Eliminates layout thrashing by avoiding DOM node detach/reattach cycles.
+ *
+ * @param refs - List of refs to merge.
+ * @returns Stable merged callback ref.
+ *
+ * @example
+ * ```tsx
+ * function Card({ forwardedRef }: CardProps) {
+ *   const localRef = useRef<HTMLDivElement>(null);
+ *   const ref = useMergedRef(localRef, forwardedRef);
+ *   return <div ref={ref}>Card Content</div>;
+ * }
+ * ```
  */
 export function useMergedRef<T>(...refs: (Ref<T> | undefined | null)[]): RefCallback<T> {
   const refsRef = useRef(refs);
@@ -109,6 +131,17 @@ export function useStableCallback<T extends (...args: never[]) => unknown>(fn: T
  * @template T - Value type.
  * @param value - Value to keep track of.
  * @returns Ref containing the latest value.
+ *
+ * @example
+ * ```tsx
+ * function EventTrigger({ onClick }: { onClick: () => void }) {
+ *   const onClickRef = useLatestRef(onClick);
+ *   useEffect(() => {
+ *     const timer = setTimeout(() => onClickRef.current(), 1000);
+ *     return () => clearTimeout(timer);
+ *   }, [onClickRef]);
+ * }
+ * ```
  */
 export function useLatestRef<T>(value: T): RefObject<T> {
   const ref = useRef(value);
@@ -125,6 +158,20 @@ export function useLatestRef<T>(value: T): RefObject<T> {
  * Useful in asynchronous flows to prevent state updates on unmounted components.
  *
  * @returns Stable predicate function returning true if mounted.
+ *
+ * @example
+ * ```tsx
+ * function AsyncCard({ loadData }: AsyncCardProps) {
+ *   const isMounted = useIsMounted();
+ *   const [data, setData] = useState(null);
+ *
+ *   useEffect(() => {
+ *     loadData().then(result => {
+ *       if (isMounted()) setData(result);
+ *     });
+ *   }, [loadData, isMounted]);
+ * }
+ * ```
  */
 export function useIsMounted(): () => boolean {
   const isMountedRef = useRef(false);
@@ -145,6 +192,15 @@ export function useIsMounted(): () => boolean {
  * @template T - Value type.
  * @param value - Current value to track.
  * @returns Previous value or undefined on the first render cycle.
+ *
+ * @example
+ * ```tsx
+ * function Counter({ count }: { count: number }) {
+ *   const prevCount = usePrevious(count);
+ *   const hasIncreased = prevCount !== undefined && count > prevCount;
+ *   return <div>{count} {hasIncreased ? '↑' : ''}</div>;
+ * }
+ * ```
  */
 export function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<{ value: T; prev: T | undefined }>({

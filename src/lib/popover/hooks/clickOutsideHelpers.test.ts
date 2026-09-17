@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { isInsidePopover, shouldIgnoreEvent } from './clickOutsideHelpers';
+import {
+  isInsidePopover,
+  shouldIgnoreEvent,
+  isInsidePopoverOrAnchor,
+} from './clickOutsideHelpers';
+import { TriggerRegistry } from '../utils/triggerRegistry';
 
 describe('clickOutsideHelpers', () => {
   it('detects when an element is inside a popover card', () => {
@@ -46,6 +51,41 @@ describe('clickOutsideHelpers', () => {
       expect(shouldIgnoreEvent(event, nonIgnoreFn)).toBe(false);
     } finally {
       globalThis.MouseEvent = originalMouseEvent;
+    }
+  });
+
+  it('detects click inside popover or registered anchor via isInsidePopoverOrAnchor', () => {
+    const anchor = {
+      nodeType: 1,
+      contains: (target: unknown) => target === anchor,
+    } as unknown as HTMLElement;
+    TriggerRegistry.register('p1', anchor);
+
+    try {
+      const eventWithAnchor = {
+        composedPath: () => [anchor],
+        target: anchor,
+      } as unknown as Event;
+
+      expect(isInsidePopoverOrAnchor(eventWithAnchor, '.popover-card', undefined, 'p1', null)).toBe(
+        true,
+      );
+
+      const outsideEl = {
+        nodeType: 1,
+        closest: () => null,
+        classList: { contains: () => false },
+      } as unknown as Element;
+      const outsideEvent = {
+        composedPath: () => [outsideEl],
+        target: outsideEl,
+      } as unknown as Event;
+
+      expect(isInsidePopoverOrAnchor(outsideEvent, '.popover-card', undefined, 'p1', null)).toBe(
+        false,
+      );
+    } finally {
+      TriggerRegistry.unregister('p1');
     }
   });
 });

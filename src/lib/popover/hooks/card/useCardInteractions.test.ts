@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { KeyboardEvent, RefObject } from 'react';
 import type { PopoverActions, TrailEntry } from '../../types';
 import { useCardInteractions } from './useCardInteractions';
-import { handleCardKeyboardNavigation } from './useCardKeyboardNav';
+import { handleCardKeyboard } from './useCardKeyboardNav';
 
 vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>();
@@ -12,7 +12,7 @@ vi.mock('react', async (importOriginal) => {
     useMemo: <T>(fn: () => T): T => fn(),
   };
 });
-vi.mock('./useCardKeyboardNav', () => ({ handleCardKeyboardNavigation: vi.fn() }));
+vi.mock('./useCardKeyboardNav', () => ({ handleCardKeyboard: vi.fn() }));
 
 describe('useCardInteractions', () => {
   const createActions = (): PopoverActions =>
@@ -112,7 +112,7 @@ describe('useCardInteractions', () => {
     } as unknown as KeyboardEvent<HTMLElement>;
     onKeyDown(mockEvent);
 
-    expect(handleCardKeyboardNavigation).toHaveBeenCalledWith({
+    expect(handleCardKeyboard).toHaveBeenCalledWith({
       event: mockEvent,
       cardElement: mockEl,
       entry,

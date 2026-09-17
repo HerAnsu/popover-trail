@@ -3,7 +3,7 @@ import {
   isKeyInList,
   isPopoverActive,
   shouldTrackFloatingGeometry,
-  hasAnimationClassNamesChanged,
+  hasAnimationClassesChanged,
   isNonNullable,
   isDefined,
   isNull,
@@ -38,15 +38,15 @@ describe('predicates utility', () => {
   });
 
   it('detects changes in animation class names', () => {
-    expect(hasAnimationClassNamesChanged(undefined, undefined)).toBe(false);
+    expect(hasAnimationClassesChanged(undefined, undefined)).toBe(false);
     expect(
-      hasAnimationClassNamesChanged(
+      hasAnimationClassesChanged(
         { mountingClassName: 'fade-in' },
         { mountingClassName: 'fade-in' },
       ),
     ).toBe(false);
     expect(
-      hasAnimationClassNamesChanged(
+      hasAnimationClassesChanged(
         { mountingClassName: 'fade-in' },
         { mountingClassName: 'slide-in' },
       ),

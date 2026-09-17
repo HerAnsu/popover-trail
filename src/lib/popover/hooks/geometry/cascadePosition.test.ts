@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import type { StoreApi } from 'zustand';
 import type { TrailEntry, PopoverStore } from '../../types';
 import {
-  calculateBaseOffsetPosition,
+  baseCascadeOffset,
   computeCascadePosition,
-  resolveUnpinnedLayoutPosition,
+  resolveUnpinnedPosition,
 } from './cascadePosition';
 import { applySpatialCollisionNudge } from './collisionGeometry';
 
@@ -23,21 +23,22 @@ describe('cascadePosition', () => {
         }) as unknown as PopoverStore,
     }) as unknown as StoreApi<PopoverStore>;
 
-  describe('calculateBaseOffsetPosition', () => {
+  describe('baseCascadeOffset', () => {
+
     it('calculates offsets for left, right, top, and bottom directions', () => {
-      expect(calculateBaseOffsetPosition(2, 20, 'left', 100, 200)).toEqual({
+      expect(baseCascadeOffset(2, 20, 'left', 100, 200)).toEqual({
         baseTop: 100,
         baseLeft: 160,
       });
-      expect(calculateBaseOffsetPosition(2, 20, 'right', 100, 200)).toEqual({
+      expect(baseCascadeOffset(2, 20, 'right', 100, 200)).toEqual({
         baseTop: 100,
         baseLeft: 240,
       });
-      expect(calculateBaseOffsetPosition(3, 15, 'top', 100, 200)).toEqual({
+      expect(baseCascadeOffset(3, 15, 'top', 100, 200)).toEqual({
         baseTop: 55,
         baseLeft: 200,
       });
-      expect(calculateBaseOffsetPosition(3, 15, 'bottom', 100, 200)).toEqual({
+      expect(baseCascadeOffset(3, 15, 'bottom', 100, 200)).toEqual({
         baseTop: 145,
         baseLeft: 200,
       });
@@ -82,7 +83,7 @@ describe('cascadePosition', () => {
     });
   });
 
-  describe('resolveUnpinnedLayoutPosition', () => {
+  describe('resolveUnpinnedPosition', () => {
     it('returns pinnedLayoutPos immediately when present on the entry', () => {
       const storeApi = createMockStoreApi();
       const entry: TrailEntry = {
@@ -92,7 +93,7 @@ describe('cascadePosition', () => {
         pinnedLayoutPos: { top: 310, left: 420 },
       };
 
-      const result = resolveUnpinnedLayoutPosition(
+      const result = resolveUnpinnedPosition(
         'p1',
         entry,
         20,
@@ -112,7 +113,7 @@ describe('cascadePosition', () => {
     it('derives direction from placement prefixes and handles null x, y coordinates', () => {
       const storeApi = createMockStoreApi();
 
-      const posLeft = resolveUnpinnedLayoutPosition(
+      const posLeft = resolveUnpinnedPosition(
         'c-left',
         undefined,
         10,
@@ -127,7 +128,7 @@ describe('cascadePosition', () => {
       );
       expect(posLeft).toEqual({ top: 0, left: -20 });
 
-      const posTop = resolveUnpinnedLayoutPosition(
+      const posTop = resolveUnpinnedPosition(
         'c-top',
         undefined,
         10,

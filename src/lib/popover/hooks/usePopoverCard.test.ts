@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { handleCardKeyboardNavigation, usePopoverCard } from './usePopoverCard';
+import { handleCardKeyboard, usePopoverCard } from './usePopoverCard';
 import type { TrailEntry } from '../types';
 
 describe('usePopoverCard hook & keyboard navigation', () => {
@@ -16,7 +16,7 @@ describe('usePopoverCard hook & keyboard navigation', () => {
     };
   }
 
-  describe('handleCardKeyboardNavigation', () => {
+  describe('handleCardKeyboard', () => {
     it('executes custom keyboardShortcuts on entry when key matches', () => {
       const shortcutHandler = vi.fn();
       const entry: TrailEntry = {
@@ -31,7 +31,7 @@ describe('usePopoverCard hook & keyboard navigation', () => {
       const event = createMockKeyEvent('Escape');
       const actions = { closeFrom: vi.fn() };
 
-      handleCardKeyboardNavigation(event, null, entry, true, false, [entry], 0, actions);
+      handleCardKeyboard(event, null, entry, true, false, [entry], 0, actions);
 
       expect(event.preventDefault).toHaveBeenCalled();
       expect(shortcutHandler).toHaveBeenCalledWith('card-1');
@@ -44,7 +44,7 @@ describe('usePopoverCard hook & keyboard navigation', () => {
       const event = createMockKeyEvent('ArrowLeft');
       const actions = { closeFrom: vi.fn() };
 
-      handleCardKeyboardNavigation(event, null, entry2, true, false, [entry1, entry2], 0, actions);
+      handleCardKeyboard(event, null, entry2, true, false, [entry1, entry2], 0, actions);
 
       expect(event.preventDefault).toHaveBeenCalled();
       expect(actions.closeFrom).toHaveBeenCalledWith(1);
@@ -55,7 +55,7 @@ describe('usePopoverCard hook & keyboard navigation', () => {
       const event = createMockKeyEvent('Escape');
       const actions = { closeFrom: vi.fn(), closeByKey: vi.fn() };
 
-      handleCardKeyboardNavigation(event, null, entry, true, true, [], 1, actions);
+      handleCardKeyboard(event, null, entry, true, true, [], 1, actions);
 
       expect(event.preventDefault).toHaveBeenCalled();
       expect(actions.closeByKey).toHaveBeenCalledWith('pinned-win');

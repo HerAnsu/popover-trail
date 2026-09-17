@@ -3,7 +3,7 @@ import {
   clampCoordinateToBounds,
   clampToContainer,
   clampToViewport,
-  computeBoundaryProximityRatio,
+  boundaryProximity,
 } from './dragRectClamping';
 import type { DragTransform2D, DragNodeRect, DragBoundsRect } from './dragBounds';
 
@@ -114,16 +114,16 @@ describe('dragRectClamping', () => {
     });
   });
 
-  describe('computeBoundaryProximityRatio', () => {
+  describe('boundaryProximity', () => {
     it('calculates normalized ratio within boundary bounds', () => {
-      expect(computeBoundaryProximityRatio(50, 0, 100)).toBe(0.5);
-      expect(computeBoundaryProximityRatio(0, 0, 100)).toBe(0);
-      expect(computeBoundaryProximityRatio(100, 0, 100)).toBe(1);
+      expect(boundaryProximity(50, 0, 100)).toBe(0.5);
+      expect(boundaryProximity(0, 0, 100)).toBe(0);
+      expect(boundaryProximity(100, 0, 100)).toBe(1);
     });
 
     it('clamps ratio outside range to [0, 1]', () => {
-      expect(computeBoundaryProximityRatio(-20, 0, 100)).toBe(0);
-      expect(computeBoundaryProximityRatio(150, 0, 100)).toBe(1);
+      expect(boundaryProximity(-20, 0, 100)).toBe(0);
+      expect(boundaryProximity(150, 0, 100)).toBe(1);
     });
   });
 });

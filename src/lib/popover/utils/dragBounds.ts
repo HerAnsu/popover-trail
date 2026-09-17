@@ -143,5 +143,5 @@ export {
   clampCoordinateToBounds,
   clampToViewport,
   clampToContainer,
-  computeBoundaryProximityRatio,
+  boundaryProximity,
 } from './dragRectClamping';

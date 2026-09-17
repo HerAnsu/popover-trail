@@ -42,7 +42,7 @@ export {
 export {
   usePopoverCard,
   type UsePopoverCardResult,
-  type CardKeyboardNavigationOptions,
+  type CardKeyboardNavOptions,
 } from './usePopoverCard';
 
 // Cache Hooks

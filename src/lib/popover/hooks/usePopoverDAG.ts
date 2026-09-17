@@ -87,6 +87,23 @@ export function useBreadcrumbPath<
   );
 }
 
+/**
+ * Hook returning a reactive set of all direct parent keys that opened or point to the target popover.
+ *
+ * Uses set equality (`areSetsEqual`) to prevent unnecessary component re-renders
+ * when the parent graph structure has not changed.
+ *
+ * @param key - Target popover key identifier.
+ * @returns Readonly set of parent popover keys.
+ *
+ * @example
+ * ```tsx
+ * function SubMenuIndicator({ menuId }: { menuId: string }) {
+ *   const parents = usePopoverParents(menuId);
+ *   return <span>Opened by {parents.size} ancestor(s)</span>;
+ * }
+ * ```
+ */
 export function usePopoverParents<
   TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
@@ -106,6 +123,29 @@ export function usePopoverParents<
   );
 }
 
+/**
+ * Hook returning a reactive set of all direct child keys opened from the target popover.
+ *
+ * Uses set equality (`areSetsEqual`) to eliminate redundant re-renders when child
+ * nodes are added or removed.
+ *
+ * @param key - Target popover key identifier.
+ * @returns Readonly set of child popover keys.
+ *
+ * @example
+ * ```tsx
+ * function ParentCard({ cardId }: { cardId: string }) {
+ *   const children = usePopoverChildren(cardId);
+ *   const hasActiveChildren = children.size > 0;
+ *
+ *   return (
+ *     <div className={hasActiveChildren ? 'card-expanded' : 'card-leaf'}>
+ *       Card Body
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
 export function usePopoverChildren<
   TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,

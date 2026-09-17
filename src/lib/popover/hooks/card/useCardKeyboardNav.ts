@@ -11,8 +11,8 @@ import { EMPTY_ARRAY } from '../../constants';
 import {
   type KeyboardNavEvent,
   handleCustomShortcuts,
-  handleVerticalArrowNavigation,
-  handleHorizontalArrowNavigation,
+  handleVerticalArrows,
+  handleHorizontalArrows,
 } from './cardKeyboardStrategies';
 
 export { focusParentCard, getFocusableCardElements } from './cardKeyboardFocus';
@@ -21,7 +21,7 @@ export type { KeyboardNavEvent } from './cardKeyboardStrategies';
 /**
  * Options contract for dispatching card keyboard navigation events.
  */
-export interface CardKeyboardNavigationOptions<
+export interface CardKeyboardNavOptions<
   TData = unknown,
   TPopoverKey extends string = string,
 > {
@@ -48,12 +48,12 @@ export interface CardKeyboardNavigationOptions<
 
 function isCardKeyboardNavOptions<TData = unknown, TPopoverKey extends string = string>(
   val: unknown,
-): val is CardKeyboardNavigationOptions<TData, TPopoverKey> {
+): val is CardKeyboardNavOptions<TData, TPopoverKey> {
   return isRecordObject(val) && 'event' in val && isRecordObject(val.event);
 }
 
 function resolveNavParams<TData = unknown, TPopoverKey extends string = string>(
-  eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions<TData, TPopoverKey>,
+  eventOrOptions: KeyboardNavEvent | CardKeyboardNavOptions<TData, TPopoverKey>,
   cardElement?: HTMLElement | null,
   entry?: TrailEntry<TData, TPopoverKey>,
   enableArrowNavigation?: boolean,
@@ -87,14 +87,13 @@ function resolveNavParams<TData = unknown, TPopoverKey extends string = string>(
   };
 }
 
-
 /**
  * Dispatches keyboard navigation events for popover cards.
  * Evaluates custom shortcuts first, followed by vertical and horizontal arrow navigation.
  *
  * @template TData - Stored entry data type.
  * @template TPopoverKey - Branded key type.
- * @param eventOrOptions - Either a full `CardKeyboardNavigationOptions` bundle or an individual `KeyboardNavEvent`.
+ * @param eventOrOptions - Either a full `CardKeyboardNavOptions` bundle or an individual `KeyboardNavEvent`.
  * @param cardElement - Card root HTMLElement when using positional parameters.
  * @param entry - Trail entry when using positional parameters.
  * @param enableArrowNavigation - Boolean toggle for arrow navigation.
@@ -104,8 +103,8 @@ function resolveNavParams<TData = unknown, TPopoverKey extends string = string>(
  * @param actions - Object with `closeFrom` and `closeByKey` dispatchers.
  *
  * @example
- * ```ts
- * handleCardKeyboardNavigation({
+ * ```typescript
+ * handleCardKeyboard({
  *   event: e,
  *   cardElement,
  *   entry,
@@ -117,8 +116,8 @@ function resolveNavParams<TData = unknown, TPopoverKey extends string = string>(
  * });
  * ```
  */
-export function handleCardKeyboardNavigation<TData = unknown, TPopoverKey extends string = string>(
-  eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions<TData, TPopoverKey>,
+export function handleCardKeyboard<TData = unknown, TPopoverKey extends string = string>(
+  eventOrOptions: KeyboardNavEvent | CardKeyboardNavOptions<TData, TPopoverKey>,
   cardElement?: HTMLElement | null,
   entry?: TrailEntry<TData, TPopoverKey>,
   enableArrowNavigation?: boolean,
@@ -142,6 +141,6 @@ export function handleCardKeyboardNavigation<TData = unknown, TPopoverKey extend
   if (!p.e || !p.cardEntry) return;
   if (handleCustomShortcuts(p.e, p.cardEntry)) return;
   if (!p.enableArrow) return;
-  handleVerticalArrowNavigation(p.e, p.cardEl ?? null);
-  handleHorizontalArrowNavigation(p.e, p.cardEntry, p.pinned, p.trailList, p.act);
+  handleVerticalArrows(p.e, p.cardEl ?? null);
+  handleHorizontalArrows(p.e, p.cardEntry, p.pinned, p.trailList, p.act);
 }

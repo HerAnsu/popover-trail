@@ -110,13 +110,14 @@ export function clampToContainer(
  *
  * @example
  * ```typescript
- * const proximity = computeBoundaryProximityRatio(pointerX, 0, window.innerWidth);
+ * const proximity = boundaryProximity(pointerX, 0, window.innerWidth);
  * ```
  */
-export function computeBoundaryProximityRatio(
+export function boundaryProximity(
   currentPos: number,
   minBound: number,
   maxBound: number,
 ): number {
   return normalizeRatio(currentPos, minBound, maxBound);
 }
+

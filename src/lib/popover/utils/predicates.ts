@@ -80,12 +80,12 @@ export function shouldTrackFloatingGeometry(isPinned?: boolean, isDragging?: boo
  *
  * @example
  * ```typescript
- * if (hasAnimationClassNamesChanged(prevClasses, nextClasses)) {
+ * if (hasAnimationClassesChanged(prevClasses, nextClasses)) {
  *   updateClassNames();
  * }
  * ```
  */
-export function hasAnimationClassNamesChanged(
+export function hasAnimationClassesChanged(
   prev?: {
     readonly mountingClassName?: string;
     readonly unmountingClassName?: string;

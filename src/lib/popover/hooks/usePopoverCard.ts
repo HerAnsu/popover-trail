@@ -19,8 +19,8 @@ import type { UsePopoverCardOptions, UsePopoverCardResult } from './card/cardTyp
 
 export type { UsePopoverCardOptions, UsePopoverCardResult } from './card/cardTypes';
 export {
-  handleCardKeyboardNavigation,
-  type CardKeyboardNavigationOptions,
+  handleCardKeyboard,
+  type CardKeyboardNavOptions,
 } from './card/useCardKeyboardNav';
 
 /**

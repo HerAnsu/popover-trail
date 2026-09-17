@@ -7,7 +7,7 @@
 
 import { useCallback, useMemo, type KeyboardEvent, type RefObject } from 'react';
 import type { PopoverActions, TrailEntry } from '../../types';
-import { handleCardKeyboardNavigation } from './useCardKeyboardNav';
+import { handleCardKeyboard } from './useCardKeyboardNav';
 import { resolveCardButtonControls } from './cardResolvers';
 
 /**
@@ -86,7 +86,7 @@ export function useCardInteractions<
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLElement>) => {
-      handleCardKeyboardNavigation({
+      handleCardKeyboard({
         event: e,
         cardElement: cardRef.current,
         entry,

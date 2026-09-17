@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  computeCascadeOverlapEnergy,
-  computeOverlapIntersectionArea,
+  cascadePlacementEnergy,
+  totalOverlapArea,
   selectLowestEnergyPlacement,
 } from './spatialEnergy';
 
@@ -12,7 +12,7 @@ describe('spatialEnergy', () => {
       { x: 0, y: 0, width: 20, height: 20 }, // overlap [10,20] x [10,20] = 100 area
       { x: 40, y: 40, width: 20, height: 20 }, // overlap [40,60] x [40,60] = 400 area
     ];
-    expect(computeOverlapIntersectionArea(card, obstacles)).toBe(500);
+    expect(totalOverlapArea(card, obstacles)).toBe(500);
   });
 
   it('adds lambda-weighted distance penalty from preferred position', () => {
@@ -21,7 +21,7 @@ describe('spatialEnergy', () => {
     const size = { width: 50, height: 50 };
 
     // No obstacles => energy = 0 + 0.5 * 100 = 50
-    const energy = computeCascadeOverlapEnergy(pos, size, [], preferred, 0.5);
+    const energy = cascadePlacementEnergy(pos, size, [], preferred, 0.5);
     expect(energy).toBe(50);
   });
 

@@ -3,7 +3,7 @@ import { sharedPointPool, sharedBoxPool, sharedSetPool } from './spatialPools';
 import { globalPoolRegistry } from './poolRegistry';
 import { createMagneticSnapModifier } from '../../dnd/dndSnap';
 import { isCursorInSafeTriangle } from '../spatial/spatialCorridor';
-import { selectLowestEnergyPlacement, computeCascadeOverlapEnergy } from '../spatial/spatialEnergy';
+import { selectLowestEnergyPlacement, cascadePlacementEnergy } from '../spatial/spatialEnergy';
 import { QuadTree } from '../spatial/quadTreeCore';
 
 describe('Spatial Pools Deep Integration', () => {
@@ -76,7 +76,7 @@ describe('Spatial Pools Deep Integration', () => {
 
     const firstCandidate = candidates[0];
     if (firstCandidate) {
-      const energy = computeCascadeOverlapEnergy(firstCandidate, size, obstacles, preferred);
+      const energy = cascadePlacementEnergy(firstCandidate, size, obstacles, preferred);
       expect(typeof energy).toBe('number');
     }
     expect(sharedBoxPool.inUse).toBe(0);
@@ -119,7 +119,7 @@ describe('Spatial Pools Deep Integration', () => {
         { x: 0, y: 0 },
         { x: 40, y: 40, width: 50, height: 50 },
       );
-      computeCascadeOverlapEnergy({ x: 100, y: 100 }, { width: 50, height: 50 }, [], {
+      cascadePlacementEnergy({ x: 100, y: 100 }, { width: 50, height: 50 }, [], {
         x: 100,
         y: 100,
       });

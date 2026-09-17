@@ -66,11 +66,11 @@ export function handleCustomShortcuts<TData = unknown, TPopoverKey extends strin
  * @param cardEl - Root container element of the card.
  *
  * @example
- * ```ts
- * handleVerticalArrowNavigation(e, cardEl);
+ * ```typescript
+ * handleVerticalArrows(event, cardElement);
  * ```
  */
-export function handleVerticalArrowNavigation(
+export function handleVerticalArrows(
   e: KeyboardNavEvent,
   cardEl: HTMLElement | null,
 ): void {
@@ -101,11 +101,11 @@ export function handleVerticalArrowNavigation(
  * @param act - Action dispatchers to close cards.
  *
  * @example
- * ```ts
- * handleHorizontalArrowNavigation(e, entry, false, trail, actions);
+ * ```typescript
+ * handleHorizontalArrows(event, entry, false, activeTrail, actions);
  * ```
  */
-export function handleHorizontalArrowNavigation<
+export function handleHorizontalArrows<
   TData = unknown,
   TPopoverKey extends string = string,
 >(
