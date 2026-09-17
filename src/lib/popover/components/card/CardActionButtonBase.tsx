@@ -7,7 +7,7 @@
 
 import React, { useCallback, type ReactNode, type ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
-import { getPolymorphicProps } from '../../utils/componentUtils';
+import { resolvePolymorphicProps } from '../../utils/componentUtils';
 import { invokeEventHandlers } from '../trigger/triggerRendering';
 
 export type CardActionButtonBaseProps<E extends ElementType = 'button'> = PolymorphicProps<
@@ -28,7 +28,7 @@ export function CardActionButtonBase<E extends ElementType = 'button'>({
   disabled,
   ...restProps
 }: CardActionButtonBaseProps<E>) {
-  const { Component, buttonProps } = getPolymorphicProps(as);
+  const { Component, buttonProps } = resolvePolymorphicProps(as);
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {

@@ -9,7 +9,7 @@ import React, { type ReactNode, type ElementType } from 'react';
 import { clsx } from '../../utils/clsx';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
-import { getPolymorphicProps } from '../../utils/componentUtils';
+import { resolvePolymorphicProps } from '../../utils/componentUtils';
 
 export type PopoverTimelineUndoButtonProps<E extends ElementType = 'button'> = PolymorphicProps<
   E,
@@ -24,7 +24,7 @@ export function PopoverTimelineUndoButton<E extends ElementType = 'button'>({
   disabled,
   ...restProps
 }: PopoverTimelineUndoButtonProps<E>) {
-  const { Component, buttonProps } = getPolymorphicProps(as);
+  const { Component, buttonProps } = resolvePolymorphicProps(as);
   const { timeline } = usePopoverTimelineScope();
 
   const isDisabled = disabled ?? !timeline.canUndo;

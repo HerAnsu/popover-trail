@@ -9,7 +9,7 @@ import React, { memo, type ReactNode, type ElementType, type KeyboardEvent } fro
 import { clsx } from '../../utils/clsx';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverTimelineScope } from './PopoverTimelineScopeContext';
-import { getPolymorphicProps } from '../../utils/componentUtils';
+import { resolvePolymorphicProps } from '../../utils/componentUtils';
 import { isArrowLeftKey, isArrowRightKey } from '../../utils/typeGuards';
 import { clamp } from '../../utils/math';
 import { truncate } from '../../utils/stringUtils';
@@ -43,7 +43,7 @@ function PopoverTimelineStepInner<E extends ElementType = 'button'>({
   onKeyDown,
   ...restProps
 }: PopoverTimelineStepProps<E>) {
-  const { Component, buttonProps } = getPolymorphicProps(as);
+  const { Component, buttonProps } = resolvePolymorphicProps(as);
   const { timeline } = usePopoverTimelineScope();
 
   const effectiveIndex = index ?? stepIndex ?? 0;
