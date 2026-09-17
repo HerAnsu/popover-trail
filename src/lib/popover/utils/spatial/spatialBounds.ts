@@ -20,11 +20,11 @@ import { toFiniteOrDefault, isNonNegativeFinite } from '../guards/numberGuards';
  *
  * @example
  * ```typescript
- * const clean = sanitizeSpatialBounds({ x: NaN, y: 10, width: -5, height: 100 });
+ * const clean = sanitizeBounds({ x: NaN, y: 10, width: -5, height: 100 });
  * // => { x: 0, y: 10, width: 0, height: 100 }
  * ```
  */
-export function sanitizeSpatialBounds(bounds?: BoundingBox): BoundingBox {
+export function sanitizeBounds(bounds?: BoundingBox): BoundingBox {
   const w = bounds?.width;
   const h = bounds?.height;
   return {

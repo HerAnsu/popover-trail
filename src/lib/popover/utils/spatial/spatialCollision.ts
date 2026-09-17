@@ -7,7 +7,7 @@
 
 import type { BoundingBox, QuadItem } from '../guards/spatialGuards';
 import { withPooledSeen } from './spatialQueryPool';
-import { visitQuadTreeItems } from './spatialQuery';
+import { visitQuadItems } from './spatialQuery';
 import type { QuadTree } from './quadTreeCore';
 
 /**
@@ -36,7 +36,7 @@ export function hasCollisionInNodes<TId extends string>(
 ): boolean {
   return withPooledSeen((seen) => {
     let found = false;
-    visitQuadTreeItems(
+    visitQuadItems(
       nodes,
       items,
       bounds,
@@ -80,7 +80,7 @@ export function findFirstInNodes<TId extends string>(
 ): QuadItem<TId> | undefined {
   return withPooledSeen((seen) => {
     let match: QuadItem<TId> | undefined;
-    visitQuadTreeItems(
+    visitQuadItems(
       nodes,
       items,
       bounds,

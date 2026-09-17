@@ -14,7 +14,7 @@ import type { ObjectPoolResolvedConfig } from './poolConfig';
 import { PoolLeakSentinel } from './poolLeakSentinel';
 import { AdaptiveDrainController } from './poolAdaptive';
 import { PoolStorage } from './poolStorage';
-import { executeAcquire, executeRelease, tryEvictItem, tryResetItem } from './poolOperations';
+import { acquirePooled, releasePooled, tryEvictItem, tryResetItem } from './poolOperations';
 import { type PoolDomainError, createPoolDisposedError } from './poolErrors';
 import { shrinkPoolToFit, warmupPool } from './poolMemory';
 import { assessPoolHealth, type PoolHealthReport } from './poolHealth';
@@ -48,14 +48,14 @@ export abstract class ObjectPoolBase<T> {
   }
   acquire(): T {
     this.adaptive.notifyAcquire();
-    return executeAcquire(this.storage, this.factory, this.tracker, this.sentinel, this.observers);
+    return acquirePooled(this.storage, this.factory, this.tracker, this.sentinel, this.observers);
   }
   acquireResult(): Result<T, PoolDomainError> {
     return this.isDisposed ? Err(createPoolDisposedError()) : Ok(this.acquire());
   }
   release(item?: T | null): void {
     if (
-      executeRelease(
+      releasePooled(
         this.storage,
         item,
         this.reset,

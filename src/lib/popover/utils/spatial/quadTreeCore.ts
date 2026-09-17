@@ -8,16 +8,16 @@
 import { DISPOSE_SYMBOL } from '../disposable';
 import { type BoundingBox, type QuadItem } from '../guards/spatialGuards';
 import { isPositiveFinite, isNonNegativeFinite } from '../guards/numberGuards';
-import { sanitizeSpatialBounds } from './spatialBounds';
+import { sanitizeBounds } from './spatialBounds';
 import {
   findFirstInNodes,
   hasCollisionInNodes,
-  queryQuadTreeItems,
-  visitQuadTreeItems,
+  queryQuadItems,
+  visitQuadItems,
 } from './spatialQuery';
 import { withPooledSeen } from './spatialQueryPool';
 import { findNearestQuadItem } from './spatialKNN';
-import { insertQuadTreeItem, removeQuadTreeItem, splitQuadTreeNodes } from './spatialInsert';
+import { insertQuadItem, removeQuadItem, splitQuadNodes } from './spatialInsert';
 import { tryCoalesceQuadTree } from './spatialCoalesce';
 import type { Point2D } from './spatialEnergy';
 import { Ok, Err, type Result } from '../result';
@@ -71,7 +71,7 @@ export class QuadTree<TId extends string = string> {
    * @param level - Current depth tier of this node (root is 0).
    */
   constructor(bounds: BoundingBox, maxItems = 16, maxLevels = 8, level = 0) {
-    this.bounds = sanitizeSpatialBounds(bounds);
+    this.bounds = sanitizeBounds(bounds);
     this.maxItems = isPositiveFinite(maxItems) ? maxItems : 16;
     this.maxLevels = isPositiveFinite(maxLevels) ? maxLevels : 8;
     this.level = isNonNegativeFinite(level) ? level : 0;
@@ -128,7 +128,7 @@ export class QuadTree<TId extends string = string> {
    */
   private split(): void {
     const next = this.level + 1;
-    const newNodes = splitQuadTreeNodes(
+    const newNodes = splitQuadNodes(
       this.bounds,
       this.maxItems,
       this.maxLevels,
@@ -165,7 +165,7 @@ export class QuadTree<TId extends string = string> {
    * ```
    */
   public insert(item?: QuadItem<TId> | Partial<QuadItem<TId>> | null): void {
-    this.items = insertQuadTreeItem(
+    this.items = insertQuadItem(
       this.nodes,
       this.items,
       this.bounds,
@@ -189,7 +189,7 @@ export class QuadTree<TId extends string = string> {
    * ```
    */
   public remove(id: TId): boolean {
-    const res = removeQuadTreeItem(this.nodes, this.items, id);
+    const res = removeQuadItem(this.nodes, this.items, id);
     if (res) this.coalesce();
     return res;
   }
@@ -228,9 +228,9 @@ export class QuadTree<TId extends string = string> {
     seen?: Set<string>,
   ): boolean {
     return seen
-      ? visitQuadTreeItems(this.nodes, this.items, this.bounds, target, visitor, seen)
+      ? visitQuadItems(this.nodes, this.items, this.bounds, target, visitor, seen)
       : withPooledSeen((s) =>
-          visitQuadTreeItems(this.nodes, this.items, this.bounds, target, visitor, s),
+          visitQuadItems(this.nodes, this.items, this.bounds, target, visitor, s),
         );
   }
 
@@ -253,10 +253,10 @@ export class QuadTree<TId extends string = string> {
     seen?: Set<string>,
   ): QuadItem<TId>[] {
     const b = bounds ?? this.bounds;
-    if (seen) queryQuadTreeItems(this.nodes, this.items, this.bounds, b, returnItems, seen);
+    if (seen) queryQuadItems(this.nodes, this.items, this.bounds, b, returnItems, seen);
     else
       withPooledSeen((s) =>
-        queryQuadTreeItems(this.nodes, this.items, this.bounds, b, returnItems, s),
+        queryQuadItems(this.nodes, this.items, this.bounds, b, returnItems, s),
       );
     return returnItems;
   }

@@ -9,6 +9,28 @@ import { DISPOSE_SYMBOL } from '../disposable';
 import type { Result } from '../result';
 import type { ScopedPooledItem } from './poolTypes';
 
+/**
+ * Executes a function with a borrowed pooled item and guarantees its release via `finally`.
+ *
+ * @template T - Type of pooled resource.
+ * @template R - Return value type of callback function.
+ * @param acquire - Factory callback to borrow the item.
+ * @param release - Teardown callback to return the item.
+ * @param fn - Work callback receiving the borrowed item.
+ * @returns The return value of `fn`.
+ *
+ * @example
+ * ```typescript
+ * const len = runWithItem(
+ *   () => pool.acquire(),
+ *   (item) => pool.release(item),
+ *   (arr) => {
+ *     arr.push('a', 'b');
+ *     return arr.length;
+ *   },
+ * );
+ * ```
+ */
 export function runWithItem<T, R>(
   acquire: () => T,
   release: (item: T) => void,
@@ -22,6 +44,26 @@ export function runWithItem<T, R>(
   }
 }
 
+/**
+ * Executes a function returning a `Result` with a borrowed pooled item, guaranteeing its release.
+ *
+ * @template T - Type of pooled resource.
+ * @template R - Ok result type.
+ * @template E - Err domain error type.
+ * @param acquire - Factory callback to borrow the item.
+ * @param release - Teardown callback to return the item.
+ * @param fn - Work callback returning a `Result`.
+ * @returns The `Result<R, E>` produced by `fn`.
+ *
+ * @example
+ * ```typescript
+ * const res = runWithItemResult(
+ *   () => pool.acquire(),
+ *   (item) => pool.release(item),
+ *   (box) => Ok(box.width * box.height),
+ * );
+ * ```
+ */
 export function runWithItemResult<T, R, E>(
   acquire: () => T,
   release: (item: T) => void,
@@ -35,6 +77,28 @@ export function runWithItemResult<T, R, E>(
   }
 }
 
+/**
+ * Executes an asynchronous function with a borrowed pooled item and guarantees its release.
+ *
+ * @template T - Type of pooled resource.
+ * @template R - Resolved promise value type.
+ * @param acquire - Factory callback to borrow the item.
+ * @param release - Teardown callback to return the item.
+ * @param fn - Async work callback receiving the borrowed item.
+ * @returns Promise resolving to the result of `fn`.
+ *
+ * @example
+ * ```typescript
+ * const count = await runWithItemAsync(
+ *   () => pool.acquire(),
+ *   (item) => pool.release(item),
+ *   async (buffer) => {
+ *     await fillBuffer(buffer);
+ *     return buffer.byteLength;
+ *   },
+ * );
+ * ```
+ */
 export async function runWithItemAsync<T, R>(
   acquire: () => T,
   release: (item: T) => void,
@@ -48,6 +112,22 @@ export async function runWithItemAsync<T, R>(
   }
 }
 
+/**
+ * Creates an explicit resource management wrapper around a pooled item compatible with `using` / `Symbol.dispose`.
+ *
+ * @template T - Type of pooled resource.
+ * @param acquire - Factory callback to borrow the item.
+ * @param release - Teardown callback to return the item.
+ * @returns A `ScopedPooledItem<T>` with idempotent disposal.
+ *
+ * @example
+ * ```typescript
+ * {
+ *   using scoped = createScopedItem(() => pool.acquire(), (i) => pool.release(i));
+ *   scoped.value.x = 100;
+ * } // automatically released at scope exit
+ * ```
+ */
 export function createScopedItem<T>(
   acquire: () => T,
   release: (item: T) => void,

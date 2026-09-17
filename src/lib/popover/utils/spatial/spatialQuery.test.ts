@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
-  visitQuadTreeItems,
-  queryQuadTreeItems,
+  visitQuadItems,
+  queryQuadItems,
   hasCollisionInNodes,
   findFirstInNodes,
 } from './spatialQuery';
@@ -42,7 +42,7 @@ describe('spatialQuery', () => {
 
     // Target is strictly within NW quadrant
     const target = { x: 10, y: 10, width: 50, height: 50 };
-    const completed = visitQuadTreeItems(
+    const completed = visitQuadItems(
       tree.getNodes(),
       tree.getItems(),
       rootBounds,
@@ -66,7 +66,7 @@ describe('spatialQuery', () => {
 
     // Target spans horizontal midline between NW and SW
     const target = { x: 15, y: 30, width: 40, height: 110 };
-    queryQuadTreeItems(tree.getNodes(), tree.getItems(), rootBounds, target, results, seen);
+    queryQuadItems(tree.getNodes(), tree.getItems(), rootBounds, target, results, seen);
 
     const ids = results.map((r) => r.id);
     expect(ids).toContain('nw-1');
@@ -81,7 +81,7 @@ describe('spatialQuery', () => {
     const visitor = vi.fn(() => false);
 
     const target = { x: 0, y: 0, width: 200, height: 200 };
-    const completed = visitQuadTreeItems(
+    const completed = visitQuadItems(
       tree.getNodes(),
       tree.getItems(),
       rootBounds,
@@ -100,7 +100,7 @@ describe('spatialQuery', () => {
     const visited: string[] = [];
 
     const target = { x: 0, y: 0, width: 100, height: 100 };
-    visitQuadTreeItems(
+    visitQuadItems(
       tree.getNodes(),
       tree.getItems(),
       rootBounds,

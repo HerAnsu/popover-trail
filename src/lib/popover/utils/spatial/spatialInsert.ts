@@ -7,7 +7,7 @@
 
 import { type BoundingBox, type QuadItem, isValidQuadItem } from '../guards/spatialGuards';
 import { getQuadrantIndex } from './spatialBounds';
-import { subdivideQuadrantBounds } from './spatialSubdivide';
+import { subdivideBounds } from './spatialSubdivide';
 import type { QuadTree } from './quadTreeCore';
 
 /**
@@ -19,15 +19,20 @@ import type { QuadTree } from './quadTreeCore';
  * @param nextLevel - Depth tier index for the newly created children.
  * @param factory - Factory function to instantiate QuadTree nodes without circular imports.
  * @returns Tuple-like array containing [ne, nw, sw, se] child QuadTree instances.
+ *
+ * @example
+ * ```typescript
+ * const children = splitQuadNodes(bounds, 16, 8, 1, (b, mi, ml, l) => new QuadTree(b, mi, ml, l));
+ * ```
  */
-export function splitQuadTreeNodes<TId extends string>(
+export function splitQuadNodes<TId extends string>(
   bounds: BoundingBox,
   maxItems: number,
   maxLevels: number,
   nextLevel: number,
   factory: (b: BoundingBox, mi: number, ml: number, l: number) => QuadTree<TId>,
 ): QuadTree<TId>[] {
-  const sub = subdivideQuadrantBounds(bounds);
+  const sub = subdivideBounds(bounds);
   return [
     factory(sub.ne, maxItems, maxLevels, nextLevel),
     factory(sub.nw, maxItems, maxLevels, nextLevel),
@@ -57,10 +62,10 @@ export function splitQuadTreeNodes<TId extends string>(
  *
  * @example
  * ```typescript
- * insertQuadTreeItem(nodes, items, bounds, 16, 8, 0, newItem, () => split());
+ * insertQuadItem(nodes, items, bounds, 16, 8, 0, newItem, () => split());
  * ```
  */
-export function insertQuadTreeItem<TId extends string>(
+export function insertQuadItem<TId extends string>(
   nodes: QuadTree<TId>[],
   items: QuadItem<TId>[],
   bounds: BoundingBox,
@@ -108,10 +113,10 @@ export function insertQuadTreeItem<TId extends string>(
  *
  * @example
  * ```typescript
- * const removed = removeQuadTreeItem(nodes, items, 'card-1');
+ * const removed = removeQuadItem(nodes, items, 'card-1');
  * ```
  */
-export function removeQuadTreeItem<TId extends string>(
+export function removeQuadItem<TId extends string>(
   nodes: readonly QuadTree<TId>[],
   items: QuadItem<TId>[],
   id: TId,

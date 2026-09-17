@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { splitQuadTreeNodes, insertQuadTreeItem, removeQuadTreeItem } from './spatialInsert';
+import { splitQuadNodes, insertQuadItem, removeQuadItem } from './spatialInsert';
 import { QuadTree } from './quadTreeCore';
 import type { QuadItem } from '../guards/spatialGuards';
 
@@ -10,7 +10,7 @@ describe('spatialInsert', () => {
     const factory = vi.fn(
       (b: typeof rootBounds, mi: number, ml: number, l: number) => new QuadTree(b, mi, ml, l),
     );
-    const nodes = splitQuadTreeNodes(rootBounds, 4, 3, 1, factory);
+    const nodes = splitQuadNodes(rootBounds, 4, 3, 1, factory);
 
     expect(nodes).toHaveLength(4);
     expect(factory).toHaveBeenCalledTimes(4);
@@ -27,8 +27,8 @@ describe('spatialInsert', () => {
     const nodes: QuadTree<string>[] = [];
     const onSplit = vi.fn();
 
-    expect(insertQuadTreeItem(nodes, items, rootBounds, 2, 2, 0, null, onSplit)).toEqual([]);
-    expect(insertQuadTreeItem(nodes, items, rootBounds, 2, 2, 0, { id: 'bad' }, onSplit)).toEqual(
+    expect(insertQuadItem(nodes, items, rootBounds, 2, 2, 0, null, onSplit)).toEqual([]);
+    expect(insertQuadItem(nodes, items, rootBounds, 2, 2, 0, { id: 'bad' }, onSplit)).toEqual(
       [],
     );
     expect(onSplit).not.toHaveBeenCalled();
@@ -39,7 +39,7 @@ describe('spatialInsert', () => {
     const nodes: QuadTree<string>[] = [];
     let items: QuadItem<string>[] = [];
     const onSplit = () => {
-      const sub = splitQuadTreeNodes(
+      const sub = splitQuadNodes(
         rootBounds,
         2,
         2,
@@ -53,12 +53,12 @@ describe('spatialInsert', () => {
     const straddleItem = { id: 'straddle', bounds: { x: 90, y: 90, width: 40, height: 40 } };
     const seItem = { id: 'se', bounds: { x: 120, y: 120, width: 20, height: 20 } };
 
-    items = insertQuadTreeItem(nodes, items, rootBounds, 2, 2, 0, nwItem, onSplit);
-    items = insertQuadTreeItem(nodes, items, rootBounds, 2, 2, 0, straddleItem, onSplit);
+    items = insertQuadItem(nodes, items, rootBounds, 2, 2, 0, nwItem, onSplit);
+    items = insertQuadItem(nodes, items, rootBounds, 2, 2, 0, straddleItem, onSplit);
     expect(nodes).toHaveLength(0);
 
     // 3rd item triggers split
-    items = insertQuadTreeItem(nodes, items, rootBounds, 2, 2, 0, seItem, onSplit);
+    items = insertQuadItem(nodes, items, rootBounds, 2, 2, 0, seItem, onSplit);
     expect(nodes).toHaveLength(4);
 
     // straddling item remains in parent items; nw and se are in child quadrants
@@ -70,7 +70,7 @@ describe('spatialInsert', () => {
   });
 
   it('routes items directly into existing child quadrants if they fit', () => {
-    const nodes = splitQuadTreeNodes(
+    const nodes = splitQuadNodes(
       rootBounds,
       2,
       2,
@@ -80,7 +80,7 @@ describe('spatialInsert', () => {
     const items: QuadItem<string>[] = [];
     const itemInNE = { id: 'ne-direct', bounds: { x: 120, y: 10, width: 20, height: 20 } };
 
-    const remaining = insertQuadTreeItem(nodes, items, rootBounds, 2, 2, 0, itemInNE, vi.fn());
+    const remaining = insertQuadItem(nodes, items, rootBounds, 2, 2, 0, itemInNE, vi.fn());
     expect(remaining).toHaveLength(0);
     const neNode = nodes[0];
     expect(neNode?.getItems()).toEqual([itemInNE]);
@@ -90,7 +90,7 @@ describe('spatialInsert', () => {
     const items: QuadItem<string>[] = [
       { id: 'parent-item', bounds: { x: 90, y: 90, width: 30, height: 30 } },
     ];
-    const nodes = splitQuadTreeNodes(
+    const nodes = splitQuadNodes(
       rootBounds,
       2,
       2,
@@ -102,12 +102,12 @@ describe('spatialInsert', () => {
       childNode.insert({ id: 'child-item', bounds: { x: 10, y: 10, width: 10, height: 10 } });
     }
 
-    expect(removeQuadTreeItem(nodes, items, '')).toBe(false);
-    expect(removeQuadTreeItem(nodes, items, 'unknown')).toBe(false);
-    expect(removeQuadTreeItem(nodes, items, 'parent-item')).toBe(true);
+    expect(removeQuadItem(nodes, items, '')).toBe(false);
+    expect(removeQuadItem(nodes, items, 'unknown')).toBe(false);
+    expect(removeQuadItem(nodes, items, 'parent-item')).toBe(true);
     expect(items).toHaveLength(0);
 
-    expect(removeQuadTreeItem(nodes, items, 'child-item')).toBe(true);
+    expect(removeQuadItem(nodes, items, 'child-item')).toBe(true);
     expect(childNode?.size).toBe(0);
   });
 });

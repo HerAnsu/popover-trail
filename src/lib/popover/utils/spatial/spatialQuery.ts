@@ -30,12 +30,12 @@ import type { QuadTree } from './quadTreeCore';
  *
  * @example
  * ```typescript
- * visitQuadTreeItems(nodes, items, bounds, targetBox, (item) => {
+ * visitQuadItems(nodes, items, bounds, targetBox, (item) => {
  *   console.log('Intersects with:', item.id);
  * }, new Set());
  * ```
  */
-export function visitQuadTreeItems<TId extends string>(
+export function visitQuadItems<TId extends string>(
   nodes: readonly QuadTree<TId>[],
   items: readonly QuadItem<TId>[],
   parentBounds: BoundingBox,
@@ -78,10 +78,10 @@ export function visitQuadTreeItems<TId extends string>(
  * @example
  * ```typescript
  * const results: QuadItem[] = [];
- * queryQuadTreeItems(nodes, items, bounds, targetBox, results, new Set());
+ * queryQuadItems(nodes, items, bounds, targetBox, results, new Set());
  * ```
  */
-export function queryQuadTreeItems<TId extends string>(
+export function queryQuadItems<TId extends string>(
   nodes: readonly QuadTree<TId>[],
   items: readonly QuadItem<TId>[],
   parentBounds: BoundingBox,
@@ -89,7 +89,7 @@ export function queryQuadTreeItems<TId extends string>(
   returnItems: QuadItem<TId>[],
   seen: Set<string>,
 ): void {
-  visitQuadTreeItems(
+  visitQuadItems(
     nodes,
     items,
     parentBounds,
