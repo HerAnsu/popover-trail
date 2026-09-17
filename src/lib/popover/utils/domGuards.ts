@@ -14,6 +14,20 @@ import { DATA_POPOVER_PORTAL, DATA_POPOVER_IGNORE_OUTSIDE } from '../constants';
 
 export { getMemoizedEscapedSelector };
 
+/**
+ * Checks whether a DOM event originated inside a popover portal element.
+ *
+ * @param e - DOM Event instance.
+ * @param portalKey - Optional specific portal key string to match.
+ * @returns True if the event occurred inside an active portal.
+ *
+ * @example
+ * ```typescript
+ * if (isClickInsidePortal(event, 'portal-main')) {
+ *   // Do not dismiss
+ * }
+ * ```
+ */
 export function isClickInsidePortal(e: Event, portalKey?: string): boolean {
   const path = getEventPath(e);
   for (const target of path) {
@@ -28,6 +42,20 @@ export function isClickInsidePortal(e: Event, portalKey?: string): boolean {
   return false;
 }
 
+/**
+ * Checks whether a click event occurred on the trigger element or on an element marked with `data-popover-ignore-outside`.
+ *
+ * @param e - DOM Event instance.
+ * @param triggerElement - Known trigger element.
+ * @returns True if click should be ignored by outside-click dismiss handlers.
+ *
+ * @example
+ * ```typescript
+ * if (isClickOnIgnoredTrigger(event, triggerButton)) {
+ *   return; // Ignore outside click
+ * }
+ * ```
+ */
 export function isClickOnIgnoredTrigger(e: Event, triggerElement?: HTMLElement | null): boolean {
   if (!triggerElement) return false;
   const path = getEventPath(e);
@@ -38,6 +66,19 @@ export function isClickOnIgnoredTrigger(e: Event, triggerElement?: HTMLElement |
   return false;
 }
 
+/**
+ * Type guard testing whether a value exposes a valid `getBoundingClientRect()` method.
+ *
+ * @param val - Candidate value to test.
+ * @returns True if value has getBoundingClientRect function.
+ *
+ * @example
+ * ```typescript
+ * if (hasBoundingClientRect(target)) {
+ *   const rect = target.getBoundingClientRect();
+ * }
+ * ```
+ */
 export function hasBoundingClientRect(
   val: unknown,
 ): val is { getBoundingClientRect: () => DOMRect } {
@@ -58,6 +99,16 @@ function isStopPropagationLike(e: unknown): e is { stopPropagation: () => void }
   );
 }
 
+/**
+ * Safely stops event propagation if the object supports `stopPropagation`.
+ *
+ * @param e - Unknown event candidate.
+ *
+ * @example
+ * ```typescript
+ * stopEventPropagation(event);
+ * ```
+ */
 export function stopEventPropagation(e: unknown): void {
   if (isStopPropagationLike(e)) {
     e.stopPropagation();
@@ -67,6 +118,19 @@ export function stopEventPropagation(e: unknown): void {
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/**
+ * Finds the first (or last, in reverse mode) keyboard focusable element inside a DOM container.
+ *
+ * @param container - Root DOM element to query.
+ * @param reverse - When true, finds the last focusable element; when false, finds the first.
+ * @returns Focusable HTMLElement or null if none exist.
+ *
+ * @example
+ * ```typescript
+ * const firstInput = findNextFocusable(cardContainer);
+ * firstInput?.focus();
+ * ```
+ */
 export function findNextFocusable(container: HTMLElement, reverse = false): HTMLElement | null {
   const isFocusableElement = and(
     (el: HTMLElement) => el.offsetParent !== null,

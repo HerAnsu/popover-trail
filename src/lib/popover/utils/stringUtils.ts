@@ -10,6 +10,12 @@
  *
  * @param str - Input string.
  * @returns Kebab-cased string.
+ *
+ * @example
+ * ```typescript
+ * kebabCase('popoverCardHeader'); // "popover-card-header"
+ * kebabCase('User_Profile');       // "user-profile"
+ * ```
  */
 export function kebabCase(str: string): string {
   if (!str) return '';
@@ -25,6 +31,12 @@ export function kebabCase(str: string): string {
  *
  * @param str - Input string.
  * @returns CamelCased string.
+ *
+ * @example
+ * ```typescript
+ * camelCase('popover-card-header'); // "popoverCardHeader"
+ * camelCase('user_name');           // "userName"
+ * ```
  */
 export function camelCase(str: string): string {
   if (!str) return '';
@@ -38,6 +50,11 @@ export function camelCase(str: string): string {
  *
  * @param str - Input string.
  * @returns String with first letter capitalized.
+ *
+ * @example
+ * ```typescript
+ * capitalize('popover'); // "Popover"
+ * ```
  */
 export function capitalize(str: string): string {
   if (!str) return '';
@@ -50,6 +67,12 @@ export function capitalize(str: string): string {
  * @param str - Target string.
  * @param prefix - Desired prefix.
  * @returns String with prefix prepended if not already present.
+ *
+ * @example
+ * ```typescript
+ * ensurePrefix('card-1', 'popover-'); // "popover-card-1"
+ * ensurePrefix('popover-card-1', 'popover-'); // "popover-card-1"
+ * ```
  */
 export function ensurePrefix(str: string, prefix: string): string {
   if (!str) return prefix;
@@ -63,6 +86,11 @@ export function ensurePrefix(str: string, prefix: string): string {
  * @param str - Target string.
  * @param suffix - Desired suffix.
  * @returns String with suffix appended if not already present.
+ *
+ * @example
+ * ```typescript
+ * ensureSuffix('data', '.json'); // "data.json"
+ * ```
  */
 export function ensureSuffix(str: string, suffix: string): string {
   if (!str) return suffix;
@@ -77,6 +105,11 @@ export function ensureSuffix(str: string, suffix: string): string {
  * @param maxLength - Maximum allowed length.
  * @param suffix - Ellipsis or marker (defaults to '...').
  * @returns Truncated string.
+ *
+ * @example
+ * ```typescript
+ * truncate('Long popover title here', 12); // "Long popo..."
+ * ```
  */
 export function truncate(str: string, maxLength: number, suffix = '...'): string {
   if (!str || maxLength <= 0) return '';

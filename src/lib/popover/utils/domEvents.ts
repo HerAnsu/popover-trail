@@ -7,6 +7,11 @@ import { first } from './arrayUtils';
  *
  * @param e - DOM Event instance.
  * @returns Array of EventTarget nodes traversed during event propagation.
+ *
+ * @example
+ * ```typescript
+ * const path = getEventPath(event);
+ * ```
  */
 export function getEventPath(e: Event): EventTarget[] {
   if (isFunction(e.composedPath)) {
@@ -20,7 +25,13 @@ export function getEventPath(e: Event): EventTarget[] {
  *
  * @template T - Expected EventTarget or HTMLElement subclass.
  * @param e - DOM Event instance.
+ * @param guard - Optional type guard to validate target.
  * @returns Target element or null if unavailable.
+ *
+ * @example
+ * ```typescript
+ * const button = getEventTarget(event, (node): node is HTMLButtonElement => node instanceof HTMLButtonElement);
+ * ```
  */
 export function getEventTarget<T extends EventTarget = HTMLElement>(
   e: Event,
@@ -41,6 +52,13 @@ export function getEventTarget<T extends EventTarget = HTMLElement>(
  *
  * @param e - DOM Event instance.
  * @returns True if any ancestor in the event path is marked to be ignored.
+ *
+ * @example
+ * ```typescript
+ * if (isPortalOrExcludedTarget(event)) {
+ *   return; // Skip outside dismiss
+ * }
+ * ```
  */
 export function isPortalOrExcludedTarget(e: Event): boolean {
   const path = getEventPath(e);
