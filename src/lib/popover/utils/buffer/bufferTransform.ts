@@ -34,6 +34,21 @@ export function mapRingBuffer<T, U>(
   return result;
 }
 
+/**
+ * Filters elements of a ring buffer using a predicate or type guard into a new RingBuffer.
+ *
+ * @template T - Original item type.
+ * @template S - Filtered subtype.
+ * @param state - Current ring buffer state.
+ * @param pred - Predicate or type guard function.
+ * @param createBuffer - Factory callback to instantiate the result buffer.
+ * @returns A new RingBuffer containing only matching items.
+ *
+ * @example
+ * ```ts
+ * const pinnedOnly = filterRingBuffer(buffer.state, (it) => it.isPinned, createBuf);
+ * ```
+ */
 export function filterRingBuffer<T, S extends T>(
   state: ReadonlyRingBufferState<T>,
   pred: BufferTypeGuard<T, S>,
@@ -60,6 +75,21 @@ function isIterable<T>(val: unknown): val is Iterable<T> {
   return typeof val === 'object' && val !== null && Symbol.iterator in val;
 }
 
+/**
+ * Maps each element using a mapping function and flattens the result into a new RingBuffer.
+ *
+ * @template T - Input item type.
+ * @template U - Output item type.
+ * @param state - Current ring buffer state.
+ * @param fn - Mapping function returning either a single item or an iterable collection.
+ * @param createBuffer - Factory callback to instantiate the result buffer.
+ * @returns A new RingBuffer containing flattened items.
+ *
+ * @example
+ * ```ts
+ * const flattened = flatMapRingBuffer(buffer.state, (card) => card.tags, createBuf);
+ * ```
+ */
 export function flatMapRingBuffer<T, U>(
   state: ReadonlyRingBufferState<T>,
   fn: BufferTransform<T, Iterable<U> | U>,

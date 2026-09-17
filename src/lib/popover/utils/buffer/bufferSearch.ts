@@ -12,6 +12,20 @@ import type { ReadonlyRingBufferState } from './bufferStateTypes';
 export * from './bufferFind';
 export * from './bufferReduce';
 
+/**
+ * Searches for the first occurrence of an item in the ring buffer starting from `fromIndex`.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param item - Value to locate (strict equality `===`).
+ * @param fromIndex - Logical starting index (supports negative relative offsets).
+ * @returns The logical index of the match, or `-1` if not found.
+ *
+ * @example
+ * ```ts
+ * const idx = indexOfInRing(buffer.state, 'entry-1');
+ * ```
+ */
 export function indexOfInRing<T>(
   state: ReadonlyRingBufferState<T>,
   item: T,
@@ -25,6 +39,20 @@ export function indexOfInRing<T>(
   return -1;
 }
 
+/**
+ * Searches backwards for the last occurrence of an item in the ring buffer starting from `fromIndex`.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param item - Value to locate (strict equality `===`).
+ * @param fromIndex - Logical starting index from which to search backwards.
+ * @returns The logical index of the match, or `-1` if not found.
+ *
+ * @example
+ * ```ts
+ * const lastIdx = lastIndexOfInRing(buffer.state, 'target');
+ * ```
+ */
 export function lastIndexOfInRing<T>(
   state: ReadonlyRingBufferState<T>,
   item: T,
@@ -40,6 +68,20 @@ export function lastIndexOfInRing<T>(
   return -1;
 }
 
+/**
+ * Determines whether the ring buffer contains a specified value.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param item - Value to check for inclusion.
+ * @param fromIndex - Logical starting index to begin searching.
+ * @returns `true` if item exists in buffer; `false` otherwise.
+ *
+ * @example
+ * ```ts
+ * if (includesInRing(buffer.state, 'card-key')) { ... }
+ * ```
+ */
 export function includesInRing<T>(
   state: ReadonlyRingBufferState<T>,
   item: T,

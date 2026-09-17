@@ -25,6 +25,19 @@ function searchIndex<T>(
   return -1;
 }
 
+/**
+ * Searches the ring buffer from head to tail for the first element satisfying a predicate.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param pred - Predicate function tested against each element.
+ * @returns Logical index of the first match, or `-1` if none found.
+ *
+ * @example
+ * ```ts
+ * const idx = findIndexInRing(buffer.state, (entry) => entry.key === 'card-1');
+ * ```
+ */
 export function findIndexInRing<T>(
   state: ReadonlyRingBufferState<T>,
   pred: BufferPredicate<T>,
@@ -32,6 +45,19 @@ export function findIndexInRing<T>(
   return searchIndex(state, pred, false);
 }
 
+/**
+ * Searches the ring buffer backwards from tail to head for the first element satisfying a predicate.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param pred - Predicate function tested against each element.
+ * @returns Logical index of the last match, or `-1` if none found.
+ *
+ * @example
+ * ```ts
+ * const idx = findLastIndexInRing(buffer.state, (entry) => entry.isPinned);
+ * ```
+ */
 export function findLastIndexInRing<T>(
   state: ReadonlyRingBufferState<T>,
   pred: BufferPredicate<T>,
@@ -39,6 +65,20 @@ export function findLastIndexInRing<T>(
   return searchIndex(state, pred, true);
 }
 
+/**
+ * Finds the first item in the ring buffer satisfying a type guard or predicate.
+ *
+ * @template T - Stored item type.
+ * @template S - Narrowed subtype.
+ * @param state - Readonly ring buffer state.
+ * @param pred - Predicate or type guard function.
+ * @returns The matching item, or `undefined` if none found.
+ *
+ * @example
+ * ```ts
+ * const item = findInRing(buffer.state, (item) => item.score > 10);
+ * ```
+ */
 export function findInRing<T, S extends T>(
   state: ReadonlyRingBufferState<T>,
   pred: BufferTypeGuard<T, S>,
@@ -55,6 +95,20 @@ export function findInRing<T>(
   return idx === -1 ? undefined : getBufferItem(state, idx);
 }
 
+/**
+ * Finds the last item in the ring buffer satisfying a type guard or predicate.
+ *
+ * @template T - Stored item type.
+ * @template S - Narrowed subtype.
+ * @param state - Readonly ring buffer state.
+ * @param pred - Predicate or type guard function.
+ * @returns The matching item, or `undefined` if none found.
+ *
+ * @example
+ * ```ts
+ * const item = findLastInRing(buffer.state, (item) => item.active);
+ * ```
+ */
 export function findLastInRing<T, S extends T>(
   state: ReadonlyRingBufferState<T>,
   pred: BufferTypeGuard<T, S>,

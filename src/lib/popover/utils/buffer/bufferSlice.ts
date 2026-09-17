@@ -20,6 +20,21 @@ import type { RingBufferOptions, RingBufferState, ReadonlyRingBufferState } from
 import type { RingBuffer } from './ringBufferCore';
 import { clamp } from '../math';
 
+/**
+ * Extracts a shallow array slice of elements from the ring buffer between `start` and `end`.
+ * Supports negative relative indices (e.g. `-1` refers to the last element).
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param start - Starting relative logical index (inclusive, defaults to 0).
+ * @param end - Ending relative logical index (exclusive, defaults to state.count).
+ * @returns An array containing the sliced elements in FIFO order.
+ *
+ * @example
+ * ```ts
+ * const recent = sliceRing(buffer.state, -5); // last 5 items
+ * ```
+ */
 export function sliceRing<T>(
   state: ReadonlyRingBufferState<T>,
   start: BufferRelativeIndex = 0,
@@ -40,6 +55,21 @@ function countBound(count: number, end: number): number {
   return clamp(end < 0 ? count + end : end, 0, count);
 }
 
+/**
+ * Copies elements from the ring buffer into a target array starting at `targetOffset`.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param target - Destination array.
+ * @param targetOffset - Offset index within target array to begin copying (default: 0).
+ * @returns Total number of elements successfully copied.
+ *
+ * @example
+ * ```ts
+ * const target = new Array(10);
+ * const copied = copyRingTo(buffer.state, target, 0);
+ * ```
+ */
 export function copyRingTo<T>(
   state: ReadonlyRingBufferState<T>,
   target: (T | undefined)[],
@@ -53,6 +83,19 @@ export function copyRingTo<T>(
   return n;
 }
 
+/**
+ * Creates an independent clone of the ring buffer preserving options and contents.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state to clone.
+ * @param createBuffer - Factory callback to instantiate the new buffer instance.
+ * @returns A new cloned RingBuffer instance.
+ *
+ * @example
+ * ```ts
+ * const cloned = cloneRing(buffer.state, (opts) => new RingBuffer(opts));
+ * ```
+ */
 export function cloneRing<T>(
   state: ReadonlyRingBufferState<T>,
   createBuffer: (opt: RingBufferOptions<T>) => RingBuffer<T>,
@@ -63,6 +106,19 @@ export function cloneRing<T>(
   return c;
 }
 
+/**
+ * Resizes the underlying buffer array to a new capacity.
+ * If the new capacity is smaller than current item count, oldest elements are evicted.
+ *
+ * @template T - Stored item type.
+ * @param state - Mutable ring buffer state.
+ * @param newCapacity - New capacity integer.
+ *
+ * @example
+ * ```ts
+ * resizeRing(buffer.state, 128);
+ * ```
+ */
 export function resizeRing<T>(
   state: RingBufferState<T>,
   newCapacity: BufferCapacity | number,
@@ -89,6 +145,17 @@ export function resizeRing<T>(
   state.revision = nextRevision(state.revision);
 }
 
+/**
+ * Shrinks the buffer capacity to match the current count of elements, freeing unused array slots.
+ *
+ * @template T - Stored item type.
+ * @param state - Mutable ring buffer state.
+ *
+ * @example
+ * ```ts
+ * shrinkRingToFit(buffer.state);
+ * ```
+ */
 export function shrinkRingToFit<T>(state: RingBufferState<T>): void {
   if (state.capacity > state.count) resizeRing(state, Math.max(1, state.count));
 }
