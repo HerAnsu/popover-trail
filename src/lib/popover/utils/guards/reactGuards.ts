@@ -9,6 +9,17 @@ import * as React from 'react';
 
 /**
  * Type guard checking if `children` is a Render Prop function taking `scope` context.
+ *
+ * @template T - Render prop argument scope type.
+ * @param children - Candidate children prop value.
+ * @returns True if `children` is a function taking scope context.
+ *
+ * @example
+ * ```tsx
+ * if (isRenderProp(children)) {
+ *   return children(cardScope);
+ * }
+ * ```
  */
 export function isRenderProp<T = unknown>(
   children: unknown,
@@ -22,6 +33,17 @@ export interface MutableRefLike<T> {
 
 /**
  * Type guard verifying if an unknown reference object is a mutable React ref object.
+ *
+ * @template T - Current ref element type.
+ * @param ref - Candidate ref object.
+ * @returns True if `ref` has a `.current` property.
+ *
+ * @example
+ * ```typescript
+ * if (isReactRefObject<HTMLElement>(ref)) {
+ *   console.log(ref.current);
+ * }
+ * ```
  */
 export function isReactRefObject<T = unknown>(ref: unknown): ref is MutableRefLike<T> {
   return typeof ref === 'object' && ref !== null && 'current' in ref;
@@ -31,12 +53,28 @@ export interface HasRefProp<T> {
   ref?: React.Ref<T>;
 }
 
+/**
+ * Type guard verifying if an object contains a `ref` property.
+ *
+ * @template T - Element type.
+ * @param val - Candidate object to inspect.
+ * @returns True if `val` contains a `ref` field.
+ */
 export function hasRefProperty<T>(val: unknown): val is HasRefProp<T> {
   return typeof val === 'object' && val !== null && 'ref' in val;
 }
 
 /**
  * Safely extracts a ref from a ReactElement across React 18 and React 19 representations.
+ *
+ * @template T - Element type.
+ * @param element - React element instance.
+ * @returns Ref object or function if present, otherwise undefined.
+ *
+ * @example
+ * ```typescript
+ * const childRef = extractElementRef<HTMLDivElement>(child);
+ * ```
  */
 export function extractElementRef<T = HTMLElement>(
   element: React.ReactElement,
@@ -52,6 +90,16 @@ export function extractElementRef<T = HTMLElement>(
 
 /**
  * Type guard verifying if an unknown event is a React SyntheticEvent.
+ *
+ * @param e - Candidate event object.
+ * @returns True if `e` has `nativeEvent`, `preventDefault`, and `stopPropagation`.
+ *
+ * @example
+ * ```typescript
+ * if (isSyntheticEvent(evt)) {
+ *   evt.stopPropagation();
+ * }
+ * ```
  */
 export function isSyntheticEvent(e: unknown): e is React.SyntheticEvent {
   return (
@@ -70,6 +118,15 @@ interface ReactInternals {
 
 /**
  * Checks if the current execution frame is within an active React component render phase.
+ *
+ * @returns True if React current dispatcher or current owner is populated.
+ *
+ * @example
+ * ```typescript
+ * if (!isCurrentlyRenderingInReact()) {
+ *   // Safe to execute side-effects or schedule updates
+ * }
+ * ```
  */
 export function isCurrentlyRenderingInReact(): boolean {
   if (typeof React === 'undefined' || !React) return false;

@@ -12,6 +12,24 @@ import { validateStoreControllerInstance } from '../devWarnings';
 import { createFluentBuilder } from './fluentBuilder';
 import type { PopoverController } from './controllerTypes';
 
+/**
+ * Factory creating an imperative PopoverController facade bound to a Zustand store.
+ * Provides both direct command dispatchers and a fluent chaining builder (`focus(key)`).
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param store - Target Zustand store instance.
+ * @returns Fully bound PopoverController facade.
+ *
+ * @example
+ * ```typescript
+ * const controller = createPopoverController(store);
+ * controller.focus('user-profile')
+ *   .withData({ name: 'Alice' })
+ *   .pin();
+ * ```
+ */
 export function createPopoverController<
   TData = unknown,
   TContext = unknown,

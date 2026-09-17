@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Fluent Builder Read-Only Query Facade.
  * Clean Architecture Layer 2: Headless State Management & Orchestration.
  *
@@ -17,6 +17,24 @@ import {
 } from './cardQueries';
 import type { PopoverCardFluentBuilder } from './controllerTypes';
 
+/**
+ * Constructs the read-only inspection query methods for a scoped card fluent builder.
+ *
+ * @template TData - Payload data type.
+ * @template TContext - Context type.
+ * @template TPopoverKey - Popover key type.
+ * @param key - Target popover card key.
+ * @param getState - Safe store state accessor.
+ * @returns Object containing all query inspection methods (`isOpen`, `isPinned`, `data`, etc.).
+ *
+ * @example
+ * ```typescript
+ * const queries = createBuilderQueries('profile-card', store.getState);
+ * if (queries.isOpen()) {
+ *   console.log('Depth:', queries.depth());
+ * }
+ * ```
+ */
 export function createBuilderQueries<TData, TContext, TPopoverKey extends string>(
   key: TPopoverKey,
   getState: () => PopoverStore<TData, TContext, TPopoverKey>,

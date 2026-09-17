@@ -18,6 +18,26 @@ import {
 } from './cardMutations';
 import type { PopoverCardFluentBuilder } from './controllerTypes';
 
+/**
+ * Factory creating a fluent chaining builder bound to a specific popover card key.
+ * Allows method chaining for mutation operations (`open`, `withData`, `pin`, `bringToFront`, etc.).
+ *
+ * @template TData - Payload data type.
+ * @template TContext - Context type.
+ * @template TPopoverKey - Popover key type.
+ * @param store - Target Zustand store instance.
+ * @param key - Popover card key to bind.
+ * @param getState - Safe store state accessor function.
+ * @returns PopoverCardFluentBuilder chaining instance.
+ *
+ * @example
+ * ```typescript
+ * const builder = createFluentBuilder(store, 'profile-card', store.getState);
+ * builder
+ *   .withData({ name: 'Alice' })
+ *   .bringToFront();
+ * ```
+ */
 export function createFluentBuilder<
   TData = unknown,
   TContext = unknown,
