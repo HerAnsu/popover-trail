@@ -7,36 +7,12 @@
 
 import { EMPTY_ARRAY } from '../types/branded';
 
-/**
- * Returns the first element of an array, or undefined if empty.
- *
- * @example
- * ```ts
- * first([10, 20, 30]); // => 10
- * first([]);           // => undefined
- * ```
- *
- * @template T - Element type.
- * @param items - Readonly source array.
- * @returns First element or undefined.
- */
+/** Returns the first element of an array, or undefined if empty. */
 export function first<T>(items: readonly T[]): T | undefined {
   return items.at(0);
 }
 
-/**
- * Returns the last element of an array, or undefined if empty.
- *
- * @example
- * ```ts
- * last([10, 20, 30]); // => 30
- * last([]);           // => undefined
- * ```
- *
- * @template T - Element type.
- * @param items - Readonly source array.
- * @returns Last element or undefined.
- */
+/** Returns the last element of an array, or undefined if empty. */
 export function last<T>(items: readonly T[]): T | undefined {
   return items.at(-1);
 }

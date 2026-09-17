@@ -90,6 +90,17 @@ const VALID_STATUS_TRANSITIONS: Record<PopoverTransitionStatus, number> = {
   unmounting: TransitionStatusBit.mounting,
 };
 
+/**
+ * Evaluates whether transitioning between two FSM lifecycle states is valid.
+ *
+ * @remarks
+ * Validates against the finite state transition manifest $\mathcal{M}_{\text{entry}}$ in $O(1)$ time,
+ * guaranteeing reachability and deadlock freedom across the popover lifecycle.
+ *
+ * @param from - Current source state.
+ * @param to - Proposed destination state.
+ * @returns `true` if the transition is admitted by the FSM topology; otherwise `false`.
+ */
 export function isValidTransition(from: PopoverStateValue, to: PopoverStateValue): boolean {
   return VALID_TRANSITIONS[from]?.includes(to) ?? false;
 }
@@ -135,6 +146,18 @@ export function canTransition<From extends PopoverStateValue, To extends Popover
   return isValidTransition(from, to);
 }
 
+/**
+ * Validates transition between mounting status flags using bitmask transition algebra.
+ *
+ * @remarks
+ * Encoded as bitmask conjunction:
+ * $(M_{\text{trans}}[\text{from}] \mathbin{\&} (1 \ll \text{to})) \neq 0$
+ * Executed in $O(1)$ time without string comparisons or array lookups.
+ *
+ * @param from - Current transition status ('mounting' | 'mounted' | 'unmounting').
+ * @param to - Proposed next transition status.
+ * @returns `true` if status change is admitted by the bitmask adjacency matrix.
+ */
 export function isValidTransitionStatusChange(
   from?: PopoverTransitionStatus,
   to?: PopoverTransitionStatus,

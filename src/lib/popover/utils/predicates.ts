@@ -106,75 +106,22 @@ export function hasAnimationClassNamesChanged(
   );
 }
 
-/**
- * Type guard verifying that a value is neither `null` nor `undefined`.
- * Narrowing predicate for array filtering and optional chaining.
- *
- * @template T - Input value type.
- * @param value - Value to inspect.
- * @returns True if value is non-nullable.
- *
- * @example
- * ```typescript
- * const items: (string | null | undefined)[] = ['a', null, 'b', undefined];
- * const clean: string[] = items.filter(isNonNullable); // => ['a', 'b']
- * ```
- */
+/** Type guard verifying that a value is neither `null` nor `undefined`. */
 export function isNonNullable<T>(value: T): value is NonNullable<T> {
   return value !== null && value !== undefined;
 }
 
-/**
- * Type guard asserting that an optional candidate is defined (not `undefined`).
- *
- * @template T - Value type.
- * @param value - Value to inspect.
- * @returns True if value is not `undefined`.
- *
- * @example
- * ```typescript
- * const val: number | undefined = 42;
- * if (isDefined(val)) {
- *   console.log(val.toFixed(2));
- * }
- * ```
- */
+/** Type guard asserting that an optional candidate is defined (not `undefined`). */
 export function isDefined<T>(value: T | undefined): value is T {
   return value !== undefined;
 }
 
-/**
- * Type guard asserting that a nullable candidate is strictly `null`.
- *
- * @template T - Value type.
- * @param value - Value to inspect.
- * @returns True if value is `null`.
- *
- * @example
- * ```typescript
- * if (isNull(entry.parentKey)) {
- *   console.log('Root popover card');
- * }
- * ```
- */
+/** Type guard asserting that a nullable candidate is strictly `null`. */
 export function isNull<T>(value: T | null): value is null {
   return value === null;
 }
 
-/**
- * Type guard asserting that an optional candidate is strictly `undefined`.
- *
- * @template T - Value type.
- * @param value - Value to inspect.
- * @returns True if value is `undefined`.
- *
- * @example
- * ```typescript
- * if (isUndefined(options.timeout)) {
- *   useDefaultTimeout();
- * }
- * ```
- */
+/** Type guard asserting that an optional candidate is strictly `undefined`. */
 export function isUndefined<T>(value: T | undefined): value is undefined {
   return value === undefined;
 }

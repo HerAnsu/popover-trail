@@ -1,3 +1,10 @@
+/**
+ * Drag Handle Subcomponent for Popover Cards.
+ * Clean Architecture Layer 4: Presentation & UI Components.
+ *
+ * @module components/card/PopoverCardHandle
+ */
+
 import { useMemo, type ReactNode, type ElementType } from 'react';
 import type { PolymorphicProps } from '../PopoverCard';
 import { usePopoverCardScope } from './PopoverCardScopeContext';
@@ -8,6 +15,10 @@ export type PopoverCardHandleProps<E extends ElementType = 'header'> = Polymorph
   { children?: ReactNode; asChild?: boolean }
 >;
 
+/**
+ * Drag handle wrapper that binds DnD pointer listeners from the enclosing popover card scope.
+ * Allows users to drag and reposition pinned/floating cards across the viewport canvas.
+ */
 export function PopoverCardHandle<E extends ElementType = 'header'>({
   as,
   asChild,
