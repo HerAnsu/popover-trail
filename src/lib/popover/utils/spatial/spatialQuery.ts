@@ -27,6 +27,13 @@ import type { QuadTree } from './quadTreeCore';
  * @param visitor - Callback receiving intersecting items. Return `false` to abort early.
  * @param seen - Mutable set tracking visited item IDs to prevent duplicates.
  * @returns `false` if aborted early, `true` otherwise.
+ *
+ * @example
+ * ```typescript
+ * visitQuadTreeItems(nodes, items, bounds, targetBox, (item) => {
+ *   console.log('Intersects with:', item.id);
+ * }, new Set());
+ * ```
  */
 export function visitQuadTreeItems<TId extends string>(
   nodes: readonly QuadTree<TId>[],
@@ -67,6 +74,12 @@ export function visitQuadTreeItems<TId extends string>(
  * @param target - Target query rectangle.
  * @param returnItems - Array into which intersecting items are pushed.
  * @param seen - Mutable set tracking visited item IDs.
+ *
+ * @example
+ * ```typescript
+ * const results: QuadItem[] = [];
+ * queryQuadTreeItems(nodes, items, bounds, targetBox, results, new Set());
+ * ```
  */
 export function queryQuadTreeItems<TId extends string>(
   nodes: readonly QuadTree<TId>[],

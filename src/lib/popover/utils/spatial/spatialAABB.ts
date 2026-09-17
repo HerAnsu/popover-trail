@@ -78,7 +78,7 @@ export function boundingUnion(a: BoundingBox, b: BoundingBox): BoundingBox {
 /**
  * Calculates the Intersection-over-Union (IoU) overlap ratio between two bounding boxes.
  *
- * $$\text{IoU} = \frac{\text{Area}(A \cap B)}{\text{Area}(A \cup B)}$$
+ * Formula: `IoU = intersectionArea / unionArea`
  *
  * @param a - First bounding box.
  * @param b - Second bounding box.

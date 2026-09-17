@@ -9,6 +9,29 @@ import { isValidTransition } from './fsmMatrix';
 
 export { buildInitialFSMState, type PopoverFSMOptions } from './fsmInitializer';
 
+/**
+ * Pure state transition reducer for a popover card finite state machine.
+ *
+ * Evaluates incoming events (`OPEN_ROOT`, `PUSH_NESTED`, `RESOLVE_SUCCESS`, `RESOLVE_FAILURE`,
+ * `TOGGLE_PIN`, `CLOSE`, `TRANSITION_END`, `RETRY`) against `isValidTransition`.
+ * If the transition is permitted, returns a new immutable state object with updated context;
+ * otherwise returns the existing state reference unchanged.
+ *
+ * @template TData - Type of data payload associated with the popover.
+ * @template TPopoverKey - String identifier type for the popover key.
+ * @param state - Current FSM state and context.
+ * @param event - Lifecycle event being processed.
+ * @returns Next FSM state (or identical state reference if transition was rejected).
+ *
+ * @example
+ * ```typescript
+ * const next = transitionFSMState(currentState, {
+ *   type: 'RESOLVE_SUCCESS',
+ *   data: { title: 'Product Details' },
+ * });
+ * console.log(next.value); // 'Resolved.Trailing'
+ * ```
+ */
 export function transitionFSMState<TData = unknown, TPopoverKey extends string = string>(
   state: PopoverFSMState<TData, TPopoverKey>,
   event: PopoverFSMEvent<TData, TPopoverKey>,
@@ -61,6 +84,25 @@ export function transitionFSMState<TData = unknown, TPopoverKey extends string =
   }
 }
 
+/**
+ * TypeScript assertion function verifying that a popover FSM is in a specific lifecycle state.
+ *
+ * Throws a descriptive error if the state does not match, or narrows `state` to the expected
+ * discriminant type upon success.
+ *
+ * @template V - Expected state value string literal.
+ * @template TData - Type of data payload in state.
+ * @template TPopoverKey - String identifier type for the popover key.
+ * @param state - State object to assert against.
+ * @param expectedValue - Expected state discriminant (e.g. `'Resolved.Trailing'`).
+ * @throws Error if `state.value !== expectedValue`.
+ *
+ * @example
+ * ```typescript
+ * assertPopoverFSMState(fsmState, 'Resolved.Trailing');
+ * // fsmState.context.data is now safely accessible without optional chaining
+ * ```
+ */
 export function assertPopoverFSMState<
   V extends PopoverStateValue,
   TData = unknown,

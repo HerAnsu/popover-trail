@@ -27,16 +27,28 @@ import { EMPTY_SET } from '../../types/branded';
 
 
 /**
- * Tracks parent-child relationships and manages cascade ordering for popovers.
+ * Directed Acyclic Graph (DAG) managing hierarchical cascade relationships between popovers.
  *
- * @remarks
- * Features:
- * - Prevents circular references when opening nested popovers.
- * - Computes clean bottom-up teardown lists when closing parent popovers.
- * - Sorts z-indices based on depth so nested popovers stay above parents.
- * - Finds direct breadcrumb paths from root to active cards.
+ * Popovers often open in cascading chains (e.g. Navigation Bar -> Dropdown Menu -> Flyout Submenu).
+ * `PopoverDAG` maintains these parent-child links to:
+ * - Prevent circular loops when reparenting or opening nested popovers.
+ * - Compute clean bottom-up teardown sequences so children dismiss before parents.
+ * - Calculate visual stacking order (z-index) based on cascade depth.
+ * - Extract linear breadcrumb trails from root anchors to leaf popovers.
  *
- * @template TPopoverKey - Key identifier for popover nodes.
+ * @template TPopoverKey - String identifier type for popovers.
+ *
+ * @example
+ * ```typescript
+ * const dag = new PopoverDAG();
+ *
+ * dag.addNode('menu');
+ * dag.addNode('submenu', 'menu');
+ * dag.addNode('details', 'submenu');
+ *
+ * const teardownPlan = dag.getTeardownPlan('menu', true);
+ * // => ['details', 'submenu', 'menu']
+ * ```
  */
 export class PopoverDAG<TPopoverKey extends string = string> {
   private readonly nodes = new Map<TPopoverKey, InternalDAGNode<TPopoverKey>>();
@@ -67,10 +79,9 @@ export class PopoverDAG<TPopoverKey extends string = string> {
   }
 
   /**
-   * Adds a directed cascade edge $(from \to to)$ between a parent and child node.
+   * Adds a directed edge (`from` -> `to`) from a parent popover to a child popover.
    *
-   * @remarks
-   * Cycle prevention is strictly enforced: if adding this edge would introduce a cycle,
+   * Cycle prevention is strictly enforced: if adding this edge would create a cyclic dependency,
    * the mutation is rejected and returns `false`.
    */
   addEdge(edge: DAGEdge<TPopoverKey>): boolean;

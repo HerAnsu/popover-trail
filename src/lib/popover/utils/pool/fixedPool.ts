@@ -1,18 +1,6 @@
 /**
- * High-Performance Pre-allocated Monomorphic Slab Pool Engine.
+ * High-Performance Preallocated Monomorphic Slab Pool for Sub-Microsecond Paths.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
- *
- * @remarks
- * **Contributor Architectural Guide**:
- * - **Zero-GC Invariant**: High-frequency execution paths (pointer drag events, quadtree queries, RAF updates)
- *   must avoid heap allocations. `FixedPool` pre-allocates contiguous slots and manages borrowing via an integer `head` pointer.
- * - **Monomorphic V8 Optimization**: Objects produced by the uniform `factory` retain stable hidden classes (shapes),
- *   maximizing inline-cache (IC) hit rates in V8/SpiderMonkey JIT engines.
- * - **Exhaustion Strategy**: When concurrency exceeds `capacity` (`head === 0`), `acquire()` transparently creates
- *   an ad-hoc instance via `factory()`. Upon `release()`, if the pool is already at capacity, surplus instances
- *   are safely dropped to avoid unbounded memory growth.
- * - **Contributor Usage Contract**: Always wrap borrowed items in `runWith()` or `try { ... } finally { pool.release(item); }`.
- *   Never retain stale references to released objects, as their properties are cleared or reused by subsequent borrowers.
  *
  * @module utils/pool/fixedPool
  */
@@ -24,9 +12,32 @@ import { tryResetItem } from './poolOperations';
 import { runWithItem } from './poolScope';
 
 /**
- * Fixed-capacity, pre-allocated monomorphic slab pool for sub-microsecond, zero-GC execution paths.
+ * Pre-allocated object pool designed for zero-allocation, high-frequency interaction loops.
+ *
+ * Rapid user interactions (such as dragging popover cards, tracking pointer hover trails,
+ * and performing QuadTree spatial collision checks) execute on every animation frame.
+ * Creating intermediate objects (points, bounding boxes, or traversal sets) inside those loops
+ * causes garbage collection micro-stutters.
+ *
+ * `FixedPool` maintains a fixed-capacity buffer of reusable objects so that hot execution
+ * paths can acquire and release scratch instances without heap allocations.
  *
  * @template T - Type of pooled resource.
+ *
+ * @example
+ * ```typescript
+ * const pointPool = new FixedPool(
+ *   () => ({ x: 0, y: 0 }),
+ *   16,
+ *   (pt) => { pt.x = 0; pt.y = 0; }
+ * );
+ *
+ * // Borrow an item for a calculation
+ * const pt = pointPool.acquire();
+ * pt.x = 100;
+ * pt.y = 250;
+ * pointPool.release(pt);
+ * ```
  */
 export class FixedPool<T> {
   private readonly slots: T[];
@@ -116,26 +127,44 @@ export class FixedPool<T> {
     );
   }
 
+  /**
+   * Number of available (unborrowed) instances currently resting in the pool.
+   */
   get size(): number {
     return this.head;
   }
 
+  /**
+   * Number of instances currently borrowed from the pool.
+   */
   get inUse(): number {
     return clamp(this.capacity - this.head, 0, Infinity);
   }
 
+  /**
+   * Whether all pool slots are currently returned and available (`size === capacity`).
+   */
   get isFull(): boolean {
     return this.head >= this.capacity;
   }
 
+  /**
+   * Whether the pool is currently exhausted (`size === 0`).
+   */
   get isEmpty(): boolean {
     return this.head === 0;
   }
 
+  /**
+   * Empties the pool by resetting the available items pointer.
+   */
   clear(): void {
     this.head = 0;
   }
 
+  /**
+   * Disposes the pool by clearing all pooled instance references.
+   */
   dispose(): void {
     this.clear();
   }

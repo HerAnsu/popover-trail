@@ -1,20 +1,6 @@
 /**
- * 2D QuadTree Hierarchical Spatial Index Engine.
+ * 2D QuadTree Core Class Implementation.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
- *
- * @remarks
- * **Contributor Architectural Guide**:
- * - **Hierarchical Spatial Partitioning**: Recursively divides 2D space into four quadrants ($NE, NW, SW, SE$).
- *   Reduces pairwise collision testing from $O(N^2)$ to $O(N \log N)$ during cascade placement and drag operations.
- * - **Asymptotic Complexity**:
- *   - Insertion / Deletion: $O(\log N)$ average, bounded by `maxLevels` depth.
- *   - Range Queries: $O(K + \log N)$ where $K$ is the number of overlapping items. Non-intersecting quadrants are pruned.
- *   - K-Nearest Neighbors (KNN): Branch-and-bound euclidean distance search with dynamic radius shrinkage.
- * - **Automatic Coalescing**: When items are removed and the total count across child quadrants falls below `maxItems`,
- *   subtrees are pruned and coalesced back into the parent node to prevent sparse memory fragmentation.
- * - **Zero-GC Hot Path**: Range queries and collision checks borrow deduplication sets from `sharedSetPool`
- *   via `withPooledSeen()`, eliminating allocation overhead during dragging and animations.
- * - **RAII Lifecycle**: Conforms to `[DISPOSE_SYMBOL]` for deterministic recursive teardown.
  *
  * @module utils/spatial/quadTreeCore
  */
@@ -48,7 +34,25 @@ export interface SpatialNotFoundError {
 /**
  * 2D QuadTree spatial index for fast rectangular bounding box queries.
  *
+ * Recursively partitions 2D screen space into four quadrants (`NE`, `NW`, `SW`, `SE`)
+ * to speed up collision detection, overlap tests, and nearest-neighbor searches.
+ * Rather than scanning every active popover card ($O(N)$), spatial queries prune non-overlapping
+ * screen regions to run in $O(\log N)$ time.
+ *
  * @template TId - Domain identifier type for indexed items (defaults to string).
+ *
+ * @example
+ * ```typescript
+ * const tree = new QuadTree({ x: 0, y: 0, width: 1920, height: 1080 });
+ *
+ * // Insert popover cards into spatial index
+ * tree.insert({ id: 'card-1', bounds: { x: 100, y: 100, width: 200, height: 150 } });
+ * tree.insert({ id: 'card-2', bounds: { x: 350, y: 100, width: 200, height: 150 } });
+ *
+ * // Test if candidate popover position collides with any existing card
+ * const collides = tree.hasCollision({ x: 120, y: 120, width: 100, height: 100 });
+ * console.log(collides); // true
+ * ```
  */
 export class QuadTree<TId extends string = string> {
   private items: QuadItem<TId>[] = [];
@@ -151,6 +155,14 @@ export class QuadTree<TId extends string = string> {
    * Inserts an item into the QuadTree, subdividing into quadrants if capacity is exceeded.
    *
    * @param item - Spatial item containing an `id` and `bounds` rectangle.
+   *
+   * @example
+   * ```typescript
+   * tree.insert({
+   *   id: 'popover-1',
+   *   bounds: { x: 100, y: 150, width: 250, height: 180 },
+   * });
+   * ```
    */
   public insert(item?: QuadItem<TId> | Partial<QuadItem<TId>> | null): void {
     this.items = insertQuadTreeItem(
@@ -170,6 +182,11 @@ export class QuadTree<TId extends string = string> {
    *
    * @param id - Identifier of the item to remove.
    * @returns `true` if the item was found and removed, `false` otherwise.
+   *
+   * @example
+   * ```typescript
+   * tree.remove('popover-1');
+   * ```
    */
   public remove(id: TId): boolean {
     const res = removeQuadTreeItem(this.nodes, this.items, id);
@@ -183,6 +200,11 @@ export class QuadTree<TId extends string = string> {
    * @param id - Identifier of the item.
    * @param newBounds - Updated bounding box.
    * @returns `true` if updated, `false` if the item was not found.
+   *
+   * @example
+   * ```typescript
+   * tree.update('popover-1', { x: 120, y: 160, width: 250, height: 180 });
+   * ```
    */
   public update(id: TId, newBounds: BoundingBox): boolean {
     if (!this.remove(id)) return false;
@@ -193,7 +215,6 @@ export class QuadTree<TId extends string = string> {
   /**
    * Traverses all items intersecting the `target` box, executing `visitor` for each.
    *
-   * @remarks
    * If `visitor` returns `false`, traversal stops early.
    *
    * @param target - Search bounding box.
@@ -220,6 +241,11 @@ export class QuadTree<TId extends string = string> {
    * @param bounds - Optional search box (defaults to entire tree bounds).
    * @param seen - Optional set for tracking visited IDs.
    * @returns Array containing intersecting items.
+   *
+   * @example
+   * ```typescript
+   * const overlapping = tree.retrieve([], { x: 50, y: 50, width: 200, height: 200 });
+   * ```
    */
   public retrieve(
     returnItems: QuadItem<TId>[] = [],
@@ -241,6 +267,11 @@ export class QuadTree<TId extends string = string> {
    * @param target - Target bounding box to test.
    * @param excludeId - Optional ID to ignore (e.g. self collision check).
    * @returns `true` if an intersection exists, `false` otherwise.
+   *
+   * @example
+   * ```typescript
+   * const collides = tree.hasCollision(candidateBox, 'current-dragged-card');
+   * ```
    */
   public hasCollision(target: BoundingBox, excludeId?: TId): boolean {
     return hasCollisionInNodes(this.nodes, this.items, this.bounds, target, excludeId);
@@ -252,6 +283,11 @@ export class QuadTree<TId extends string = string> {
    * @param target - Search bounding box.
    * @param predicate - Optional filter function.
    * @returns First matching item or `undefined`.
+   *
+   * @example
+   * ```typescript
+   * const pinnedCard = tree.findFirst(searchArea, (item) => item.id.startsWith('pinned-'));
+   * ```
    */
   public findFirst(
     target: BoundingBox,
@@ -264,6 +300,14 @@ export class QuadTree<TId extends string = string> {
    * Queries the tree for the first item intersecting the target bounding box that satisfies an optional predicate.
    *
    * @returns `Ok(QuadItem)` if found, or `Err(SpatialNotFoundError)` if no matching item exists.
+   *
+   * @example
+   * ```typescript
+   * const result = tree.findFirstResult(searchArea);
+   * if (isOk(result)) {
+   *   console.log('Found card:', result.data.id);
+   * }
+   * ```
    */
   public findFirstResult(
     target: BoundingBox,
@@ -285,6 +329,11 @@ export class QuadTree<TId extends string = string> {
    * @param point - Target 2D point (x, y).
    * @param maxDistance - Optional maximum search radius in pixels.
    * @returns Nearest item or `undefined`.
+   *
+   * @example
+   * ```typescript
+   * const closest = tree.nearest({ x: 400, y: 300 }, 150);
+   * ```
    */
   public nearest(point: Point2D, maxDistance?: number): QuadItem<TId> | undefined {
     return findNearestQuadItem(this, point, maxDistance);
@@ -296,6 +345,11 @@ export class QuadTree<TId extends string = string> {
    * @param point - Target 2D point (x, y).
    * @param maxDistance - Optional maximum Euclidean distance threshold.
    * @returns `Ok(QuadItem)` if a candidate exists within radius, or `Err(SpatialNotFoundError)`.
+   *
+   * @example
+   * ```typescript
+   * const result = tree.nearestResult({ x: 400, y: 300 }, 100);
+   * ```
    */
   public nearestResult(
     point: Point2D,

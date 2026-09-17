@@ -1,21 +1,6 @@
 /**
- * 2D Affine Transformation Matrix & Geometry Normalization Engine.
+ * 2D Affine Transformation Matrix & Geometry Normalization.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
- *
- * @remarks
- * **Contributor Architectural Guide**:
- * - **Coordinate Spaces**: Coordinates are partitioned into Global Screen Space, Viewport Anchor Space,
- *   and Matrix-Transformed Container Space. When nesting popovers inside CSS transformed elements
- *   (`transform: scale(...) translate(...)`), screen coordinates must be normalized via inverse affine projection:
- *   $$P_{\text{local}} = M^{-1} \cdot P_{\text{screen}}$$
- * - **3x3 Homogeneous Matrix Representation**:
- *   $$\begin{pmatrix} x' \\ y' \\ 1 \end{pmatrix} = \begin{pmatrix} a & c & e \\ b & d & f \\ 0 & 0 & 1 \end{pmatrix} \begin{pmatrix} x \\ y \\ 1 \end{pmatrix} = \begin{pmatrix} ax + cy + e \\ bx + dy + f \\ 1 \end{pmatrix}$$
- *   Stored compactly as a 6-element numeric tuple `readonly [a, b, c, d, e, f]`.
- * - **Singular Matrix Safeguard**: Determinant $\det(M) = ad - bc$. If $|\det(M)| < 10^{-12}$ or non-finite,
- *   inversion returns `null` or `Err(SingularMatrixError)` rather than producing `NaN` or `Infinity`.
- * - **Zero-GC Allocation Invariant**: During pointer drag loops and layout synchronization, contributors
- *   MUST use `transformPoint2DInto` and `transformAABBInto` with pre-allocated target buffers to guarantee
- *   $\text{Alloc}(\text{Frame}) = 0 \text{ bytes}$.
  *
  * @module utils/spatial/spatialAffine
  */
@@ -42,37 +27,49 @@ export interface SingularMatrixError {
 
 /**
  * Six-element tuple representing a 2D affine transformation matrix:
+ * `[a, b, c, d, e, f]` matching the standard CSS `matrix(a, b, c, d, e, f)`.
  *
- * $$\begin{pmatrix} a & c & e \\ b & d & f \\ 0 & 0 & 1 \end{pmatrix}$$
- *
- * Mapped to tuple indices: `[a, b, c, d, e, f]` corresponding to:
+ * Mapped to tuple indices:
  * - `m[0] = a`: Horizontal scale / cosine
  * - `m[1] = b`: Vertical skew / sine
  * - `m[2] = c`: Horizontal skew / -sine
  * - `m[3] = d`: Vertical scale / cosine
- * - `m[4] = e`: Horizontal translation ($\Delta x$)
- * - `m[5] = f`: Vertical translation ($\Delta y$)
+ * - `m[4] = e`: Horizontal translation (delta X)
+ * - `m[5] = f`: Vertical translation (delta Y)
  */
 export type Matrix2D = readonly [a: number, b: number, c: number, d: number, e: number, f: number];
 
 /**
- * Standard identity transformation matrix $[1, 0, 0, 1, 0, 0]$ (zero translation, scale 1:1, zero skew).
+ * Standard identity transformation matrix `[1, 0, 0, 1, 0, 0]` (zero translation, scale 1:1, zero skew).
  */
 export const IDENTITY_MATRIX: Matrix2D = Object.freeze([1, 0, 0, 1, 0, 0]);
 
 /**
  * Returns the immutable identity affine matrix singleton.
+ *
+ * @example
+ * ```typescript
+ * const m = identityMatrix(); // [1, 0, 0, 1, 0, 0]
+ * ```
  */
 export function identityMatrix(): Matrix2D {
   return IDENTITY_MATRIX;
 }
 
 /**
- * Computes the matrix multiplication of two 2D affine matrices: $M = M_1 \cdot M_2$.
+ * Multiplies two 2D affine matrices (`m1 * m2`) to compose transformations.
+ *
+ * Useful when combining nested container transforms, such as a scaled modal inside
+ * a translated wrapper.
  *
  * @param m1 - Left-hand matrix operand.
  * @param m2 - Right-hand matrix operand.
  * @returns Resulting composite 2D affine transformation matrix.
+ *
+ * @example
+ * ```typescript
+ * const combined = multiplyMatrix2D(wrapperMatrix, modalMatrix);
+ * ```
  */
 export function multiplyMatrix2D(m1: Matrix2D, m2: Matrix2D): Matrix2D {
   return [
@@ -86,13 +83,21 @@ export function multiplyMatrix2D(m1: Matrix2D, m2: Matrix2D): Matrix2D {
 }
 
 /**
- * Computes the inverse matrix $M^{-1}$ of a 2D affine transformation matrix.
+ * Computes the inverse matrix of a 2D affine transformation matrix.
  *
- * @remarks
- * If $|\det(M)| < 10^{-12}$ or $\det(M)$ is non-finite, returns `null` instead of generating `NaN` or `Infinity`.
+ * Used to convert global screen coordinates into coordinates local to a CSS-transformed container.
+ * If the determinant is close to zero or non-finite (singular matrix), returns `null` to avoid `NaN`.
  *
  * @param m - Matrix to invert.
- * @returns Inverted `Matrix2D` or `null` if singular.
+ * @returns Inverted `Matrix2D` or `null` if the matrix is singular.
+ *
+ * @example
+ * ```typescript
+ * const inv = invertMatrix2D(containerMatrix);
+ * if (inv) {
+ *   const localPoint = transformPoint2D(screenPoint, inv);
+ * }
+ * ```
  */
 export function invertMatrix2D(m: Matrix2D): Matrix2D | null {
   const det = m[0] * m[3] - m[1] * m[2];
@@ -151,16 +156,18 @@ export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatr
 /**
  * Transforms a 2D point in-place using matrix multiplication without heap allocations.
  *
- * @remarks
- * **Contributor Note**:
- * - **Zero-GC Hot Path**: Modifies the `out` mutable buffer in-place. Must be used across all pointer dragging,
- *   touch events, and scroll tracking loops to satisfy $\text{Alloc}(\text{Frame}) = 0$.
- * - **Finite Float Guarantee $\mathcal{I}_{\text{FiniteFloat}}$**: If matrix transformation produces `NaN`
- *   or $\pm\infty$ due to invalid inputs, the coordinate is sanitized to `0`.
+ * Designed for animation loops and pointer tracking where allocating `{ x, y }` objects
+ * would trigger garbage collector pauses.
  *
  * @param p - Source 2D point.
  * @param m - Affine matrix.
  * @param out - Pre-allocated target object to receive the transformed coordinates.
+ *
+ * @example
+ * ```typescript
+ * const scratch = { x: 0, y: 0 };
+ * transformPoint2DInto({ x: 10, y: 20 }, matrix, scratch);
+ * ```
  */
 export function transformPoint2DInto(p: Point2D, m: Matrix2D, out: { x: number; y: number }): void {
   const x = m[0] * p.x + m[2] * p.y + m[4];
@@ -170,14 +177,16 @@ export function transformPoint2DInto(p: Point2D, m: Matrix2D, out: { x: number; 
 }
 
 /**
- * Transforms a 2D point $P = (x, y)$ by an affine transformation matrix $M$.
- *
- * @remarks
- * Allocates a new Point2D. For high-frequency frame loops, prefer `transformPoint2DInto()`.
+ * Transforms a 2D point coordinates by an affine transformation matrix.
  *
  * @param p - 2D point to transform.
  * @param m - Affine transformation matrix.
- * @returns Transformed point coordinates $(x', y')$.
+ * @returns Transformed point coordinates `{ x, y }`.
+ *
+ * @example
+ * ```typescript
+ * const transformed = transformPoint2D({ x: 10, y: 20 }, scaleMatrix);
+ * ```
  */
 export function transformPoint2D(p: Point2D, m: Matrix2D): Point2D {
   const out = { x: 0, y: 0 };
@@ -188,12 +197,16 @@ export function transformPoint2D(p: Point2D, m: Matrix2D): Point2D {
 /**
  * Normalizes a screen coordinate back to local container space using inverse matrix transformation.
  *
- * @remarks
- * If the matrix is singular (uninvertible), the original point $p$ is returned unchanged.
+ * If the matrix is singular (uninvertible), the original point `p` is returned unchanged.
  *
- * @param p - Transformed screen point.
+ * @param p - Transformed screen point (e.g. from mouse event clientX, clientY).
  * @param m - Forward transformation matrix of the container.
- * @returns Normalized local point.
+ * @returns Normalized point in container-local coordinates.
+ *
+ * @example
+ * ```typescript
+ * const localPoint = inverseTransformPoint2D({ x: e.clientX, y: e.clientY }, containerMatrix);
+ * ```
  */
 export function inverseTransformPoint2D(p: Point2D, m: Matrix2D): Point2D {
   const inv = invertMatrix2D(m);
@@ -203,15 +216,15 @@ export function inverseTransformPoint2D(p: Point2D, m: Matrix2D): Point2D {
 /**
  * Computes the axis-aligned bounding box of a transformed rectangle in-place without heap allocations.
  *
- * @remarks
- * **Contributor Note**:
- * - **AABB Enclosing Envelope**: Transforms all four orthogonal vertices of `box` through the affine matrix $M$,
- *   then calculates the minimal enclosing axis-aligned boundary $[\min(x), \min(y), \max(x) - \min(x), \max(y) - \min(y)]$.
- * - **Zero-GC Invariant**: Mutates `out` directly without intermediate object allocations.
- *
  * @param box - Source bounding box.
  * @param m - Affine matrix.
  * @param out - Pre-allocated target object to receive the enclosing envelope.
+ *
+ * @example
+ * ```typescript
+ * const scratchBox = { x: 0, y: 0, width: 0, height: 0 };
+ * transformAABBInto(popoverBox, transformMatrix, scratchBox);
+ * ```
  */
 export function transformAABBInto(
   box: BoundingBox,
@@ -246,6 +259,11 @@ export function transformAABBInto(
  * @param box - Source bounding box.
  * @param m - Affine matrix.
  * @returns New enclosing `BoundingBox`.
+ *
+ * @example
+ * ```typescript
+ * const transformedBounds = transformAABB(cardBounds, scaleAndTranslateMatrix);
+ * ```
  */
 export function transformAABB(box: BoundingBox, m: Matrix2D): BoundingBox {
   const out = { x: 0, y: 0, width: 0, height: 0 };

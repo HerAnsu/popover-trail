@@ -54,16 +54,14 @@ export function computeOverlapIntersectionArea(
 /**
  * Computes the spatial cascade placement penalty ("energy") for a candidate position.
  *
- * @remarks
- * Uses an energy minimization model:
- * $$E(\vec{p}) = \text{OverlapArea}(\vec{p}) + \lambda \cdot \|\vec{p} - \vec{p}_{\text{preferred}}\|^2$$
+ * Evaluates placement quality using a combined penalty score:
+ * `EnergyScore = OverlapArea + (lambda * distanceSquared)`
  *
  * Where:
- * - **OverlapArea**: Total collision area with other popovers/obstacles (heavily penalized).
- * - **Distance penalty**: Quadratic Euclidean distance from preferred position (e.g. anchor trigger),
- *   scaled by the trade-off factor $\lambda$.
+ * - **OverlapArea**: Total pixel intersection area with other popovers (heavily penalized).
+ * - **Distance penalty**: Squared distance from the preferred anchor position, scaled by `lambda`.
  *
- * Zero garbage collection: acquires scratch bounding boxes from `sharedBoxPool`.
+ * Uses `sharedBoxPool` to avoid temporary heap allocations in animation loops.
  *
  * @example
  * ```ts

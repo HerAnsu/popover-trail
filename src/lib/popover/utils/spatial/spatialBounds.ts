@@ -1,16 +1,6 @@
 /**
- * Spatial Boundary Validation and Quadrant Indexing for 2D QuadTrees.
+ * Spatial Boundary Validation and Quadrant Indexing.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
- *
- * @remarks
- * **Contributor Architectural Guide**:
- * - **Axis-Aligned Bounding Box (AABB)**: Every popover card $v \in V$ is bounded by an orthogonal rectangle
- *   $B(v) = [x, y, w, h] \subset \mathbb{R}^2$.
- * - **Quadrant Spatial Partitioning**: Partitions the 2D bounding area into four orthogonal sub-quadrants:
- *   North-East (0), North-West (1), South-West (2), South-East (3).
- * - **Boundary Straddling Invariant**: Any item whose bounding box intersects either the vertical midpoint
- *   $vMid = x + w/2$ or horizontal midpoint $hMid = y + h/2$ cannot be contained strictly in a child quadrant
- *   and must remain stored at the current tree depth (`Quadrant.None` = -1).
  *
  * @module utils/spatial/spatialBounds
  */
@@ -63,15 +53,15 @@ export type SpatialQuadrant = QuadrantIndex | -1;
  * Enumeration mapping for QuadTree sub-node spatial quadrants.
  */
 export const Quadrant = {
-  /** North-East: $[x_{\text{mid}}, x_{\max}] \times [y_{\min}, y_{\text{mid}}]$ */
+  /** North-East (top-right quadrant). */
   NE: 0,
-  /** North-West: $[x_{\min}, x_{\text{mid}}] \times [y_{\min}, y_{\text{mid}}]$ */
+  /** North-West (top-left quadrant). */
   NW: 1,
-  /** South-West: $[x_{\min}, x_{\text{mid}}] \times [y_{\text{mid}}, y_{\max}]$ */
+  /** South-West (bottom-left quadrant). */
   SW: 2,
-  /** South-East: $[x_{\text{mid}}, x_{\max}] \times [y_{\text{mid}}, y_{\max}]$ */
+  /** South-East (bottom-right quadrant). */
   SE: 3,
-  /** Spans across quadrant division boundaries; cannot be placed strictly within a child node. */
+  /** Straddles horizontal or vertical dividing lines; cannot fit completely in any single child quadrant. */
   None: -1,
 } as const;
 

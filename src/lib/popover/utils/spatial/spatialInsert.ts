@@ -54,6 +54,11 @@ export function splitQuadTreeNodes<TId extends string>(
  * @param item - Candidate item to insert.
  * @param onSplit - Callback to create child quadrants when splitting.
  * @returns Array of items that remain at this node level (those that cannot fit in a single child quadrant).
+ *
+ * @example
+ * ```typescript
+ * insertQuadTreeItem(nodes, items, bounds, 16, 8, 0, newItem, () => split());
+ * ```
  */
 export function insertQuadTreeItem<TId extends string>(
   nodes: QuadTree<TId>[],
@@ -100,6 +105,11 @@ export function insertQuadTreeItem<TId extends string>(
  * @param items - Items stored at this node level.
  * @param id - Identifier of the item to remove.
  * @returns `true` if an item was found and removed, `false` otherwise.
+ *
+ * @example
+ * ```typescript
+ * const removed = removeQuadTreeItem(nodes, items, 'card-1');
+ * ```
  */
 export function removeQuadTreeItem<TId extends string>(
   nodes: readonly QuadTree<TId>[],

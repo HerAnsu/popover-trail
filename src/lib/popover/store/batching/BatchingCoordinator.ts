@@ -1,19 +1,7 @@
 /**
- * Batching Coordination Lifecycle Engine for Store Subscriptions.
- * Clean Architecture Layer 2: Headless State Management & Orchestration.
- *
- * @remarks
- * **Contributor Architectural Guide**:
- * - **Transactional Atomicity Invariant**: Compound batch transactions $\mathcal{B} = [a_1, \dots, a_m]$
- *   must behave as a single atomic transition:
- *   $$\delta_{\text{batch}}(\mathcal{S}, \mathcal{B}) = \delta^*(\mathcal{S}, \mathcal{B})$$
- *   External subscribers are notified exactly once with `(currentState, initialBatchState)`, suppressing intermediate render spikes.
- * - **Re-entrancy & Nesting Depth**: `batchDepth` tracks nested batch calls (`batch(() => { batch(...) })`).
- *   Subscribers are only notified when the outermost batch concludes (`batchDepth === 0`).
- * - **Microtask Coalescing**: When updates occur outside an explicit `batch()` wrapper, if `autoBatchMicrotasks`
- *   is true, the coordinator defers notification to microtask timing (`queueMicrotask`), coalescing synchronous mutations.
- * - **Rollback Protection**: `initialBatchState` preserves the pre-transaction baseline snapshot.
- *   If an invariant fails during execution, the rollback controller restores this exact snapshot.
+ * Coordinates batched state updates and subscriber notifications for the popover store.
+ * Groups multiple synchronous mutations into a single subscriber notification cycle
+ * or coalesces them via microtasks to prevent unnecessary re-renders.
  *
  * @module store/batching/BatchingCoordinator
  */
@@ -22,8 +10,27 @@ import type { BatchListener, BatchStateGetter } from './storeBatchingTypes';
 import { notifyBatchSubscribers } from './storeBatchingScheduler';
 
 /**
- * Coordinates batched state dispatches, prevents listener re-entrancy,
- * and coalesces high-frequency synchronous updates into discrete flush cycles.
+ * Manages batch transactions and listener notification cycles for store state updates.
+ *
+ * When multiple popovers open, close, or reposition simultaneously (such as during cascading
+ * teardowns or multi-card drags), triggering subscribers on every micro-mutation causes UI churn.
+ * `BatchingCoordinator` tracks batch nesting depth, suppresses intermediate dispatches,
+ * and notifies all listeners once the outermost batch completes.
+ *
+ * @template TState - Shape of the store state being coordinated.
+ *
+ * @example
+ * ```typescript
+ * const coordinator = new BatchingCoordinator(true);
+ *
+ * // Start batch transaction
+ * coordinator.batchDepth++;
+ * coordinator.isBatchDirty = true;
+ *
+ * // End batch transaction and notify subscribers
+ * coordinator.batchDepth--;
+ * coordinator.flush(() => store.getState());
+ * ```
  */
 export class BatchingCoordinator<TState = unknown> {
   /** Indicates whether the state was modified during an active batch. */
@@ -53,6 +60,12 @@ export class BatchingCoordinator<TState = unknown> {
   /** Whether updates outside explicit batches are automatically coalesced via microtasks. */
   public readonly autoBatchMicrotasks: boolean;
 
+  /**
+   * Initializes a new BatchingCoordinator.
+   *
+   * @param autoBatchMicrotasks - When true, unbatched synchronous store changes are queued
+   * and coalesced into a single microtask notification. Defaults to true.
+   */
   constructor(autoBatchMicrotasks = true) {
     this.autoBatchMicrotasks = autoBatchMicrotasks;
   }
@@ -60,7 +73,15 @@ export class BatchingCoordinator<TState = unknown> {
   /**
    * Flushes pending state changes to all registered batch subscribers.
    *
-   * @param getState - Optional state retrieval function overriding active store getter.
+   * If an explicit batch is still in progress (`batchDepth > 0`) or if the coordinator is disposed,
+   * this call is a no-op. When flushed, subscribers receive both the new state and the pre-batch state.
+   *
+   * @param getState - Optional state retrieval function overriding the active store getter.
+   *
+   * @example
+   * ```typescript
+   * coordinator.flush(() => store.getState());
+   * ```
    */
   public flush(getState?: BatchStateGetter<TState>): void {
     this.isMicrotaskQueued = false;
@@ -80,7 +101,13 @@ export class BatchingCoordinator<TState = unknown> {
   }
 
   /**
-   * Disposes the coordinator, terminating subscriptions and purging listener sets.
+   * Disposes the coordinator, unsubscribing from the underlying store and clearing all listeners.
+   * Once disposed, subsequent flush calls are ignored.
+   *
+   * @example
+   * ```typescript
+   * coordinator.dispose();
+   * ```
    */
   public dispose(): void {
     this.isDisposed = true;

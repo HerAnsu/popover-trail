@@ -1,12 +1,7 @@
 /**
- * High-Performance Store Batching & Microtask Coalescing Engine.
- * Clean Architecture Layer 2: Headless State Management & Orchestration.
- *
- * Implements atomic multi-action batch transactions:
- * δ_batch(S, B) = δ*(S, B)
- *
+ * Store batching and microtask coalescing engine for Zustand store instances.
  * Guarantees that multiple state mutations executed within a transactional
- * boundary produce a single aggregated state change notification and revision increment.
+ * boundary produce a single aggregated state change notification.
  *
  * @module store/batching/storeBatching
  */
@@ -31,8 +26,18 @@ export { batchUpdatesScope } from './storeBatchingScheduler';
  * Creates an isolated BatchingManager instance to control transaction boundaries,
  * coalesce high-frequency microtasks, and suppress duplicate notifications.
  *
- * @param autoBatchMicrotasks - Whether updates outside explicit batches are coalesced via microtasks.
+ * @param autoBatchMicrotasks - Whether updates outside explicit batches are coalesced via microtasks. Defaults to true.
  * @returns An initialized BatchingManager instance implementing ScopeDisposable.
+ *
+ * @example
+ * ```typescript
+ * const batchManager = createBatchingManager();
+ *
+ * batchManager.startBatch();
+ * store.setState({ activeId: 'card-1' });
+ * store.setState({ isPinned: true });
+ * batchManager.endBatch();
+ * ```
  */
 export function createBatchingManager(autoBatchMicrotasks = true): BatchingManager {
   const coord = new BatchingCoordinator(autoBatchMicrotasks);
