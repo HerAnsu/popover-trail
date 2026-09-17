@@ -11,7 +11,6 @@ import { KeyedTimerPool } from '../utils/keyedTimerPool';
 import { clampDragCoordinates } from '../utils/dragMath';
 import { getEntryState, matchEntryState } from '../types/entryTypes';
 import { EMPTY_ARRAY, EMPTY_OBJECT } from './storeDefaults';
-import { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT } from '../types/branded';
 import type { TrailEntry } from '../types';
 
 describe('Formal System Invariant Matrix (I1 - I12 & Item 1.200)', () => {
@@ -189,8 +188,6 @@ describe('Formal System Invariant Matrix (I1 - I12 & Item 1.200)', () => {
     it('reuses frozen singletons across empty store states', () => {
       expect(Object.isFrozen(EMPTY_ARRAY)).toBe(true);
       expect(Object.isFrozen(EMPTY_OBJECT)).toBe(true);
-      expect(Object.isFrozen(EMPTY_READONLY_ARRAY)).toBe(true);
-      expect(Object.isFrozen(EMPTY_READONLY_OBJECT)).toBe(true);
 
       const store = createPopoverStore(dummyResolver);
       expect(store.getState().trail).toBe(EMPTY_ARRAY);

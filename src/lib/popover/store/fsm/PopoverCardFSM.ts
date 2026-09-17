@@ -82,7 +82,10 @@ export class PopoverCardFSM<
   }
 }
 
-export function createPopoverCardFSM<TData = unknown, TPopoverKey extends string = string>(
+/**
+ * Creates an isolated finite state machine interpreter for a single popover card.
+ */
+export function createPopoverFSM<TData = unknown, TPopoverKey extends string = string>(
   keyOrOptions: TPopoverKey | PopoverFSMOptions<TData, TPopoverKey>,
 ): PopoverCardFSM<TData, TPopoverKey> {
   return new PopoverCardFSM(keyOrOptions);

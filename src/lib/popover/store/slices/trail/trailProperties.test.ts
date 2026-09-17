@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { createTrailSlice } from './createTrailSlice';
-import { collectActiveKeySet } from './dagHelpers';
+import { getActiveKeys } from './dagHelpers';
 import { createSliceTestHarness } from '../../../testing';
 
 const keys = ['alpha', 'beta', 'gamma', 'delta', 'epsilon'] as const;
@@ -90,7 +90,7 @@ describe('createTrailSlice property-based invariant test suite', () => {
           harness.actions.closeByKey(targetKey);
 
           const { trail, floating } = harness.getState();
-          const activeKeys = collectActiveKeySet(floating, trail);
+          const activeKeys = getActiveKeys(floating, trail);
 
           expect(activeKeys.has(targetKey)).toBe(false);
           for (const descendant of descendants) {

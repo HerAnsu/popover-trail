@@ -5,7 +5,7 @@
  */
 
 import type { PopoverStateData, TrailEntry } from '../../../types';
-import { findEntryIndex, filterOutEntryKey } from '../stack';
+import { findEntryIndex, filterOutEntry } from '../stack';
 import { take } from '../../../utils/arrayUtils';
 
 function computeFloatingNestedPush<TData, TPopoverKey extends string = string>(
@@ -29,7 +29,7 @@ function computeTrailNestedPush<TData, TPopoverKey extends string = string>(
   const slicedTrail = take(trail, trailIndex + 1);
   const baseTrail =
     findEntryIndex(slicedTrail, finalEntry.key) !== -1
-      ? filterOutEntryKey(slicedTrail, finalEntry.key)
+      ? filterOutEntry(slicedTrail, finalEntry.key)
       : slicedTrail;
 
   return [...baseTrail, finalEntry];

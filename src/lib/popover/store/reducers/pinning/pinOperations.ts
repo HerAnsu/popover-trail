@@ -13,7 +13,7 @@ import type {
 } from '../../../types';
 import { EMPTY_OBJECT, ZERO_OFFSET } from '../../storeDefaults';
 import { omitKey } from '../../../utils/cleanObject';
-import { getCleanupStatePatch, filterOutEntryKey, elevateKeyInOrder } from '../stack';
+import { getCleanupStatePatch, filterOutEntry, elevateKeyInOrder } from '../stack';
 import { toFloatingEntry, toTrailEntry } from './pinGeometry';
 
 /**
@@ -28,7 +28,7 @@ export function pinTrailEntry<TData, TContext, TPopoverKey extends string = stri
   const entry = state.trail[trailIndex];
   if (!entry) return EMPTY_OBJECT;
 
-  const nextTrail = filterOutEntryKey(state.trail, key);
+  const nextTrail = filterOutEntry(state.trail, key);
   const nextFloating: TrailEntry<TData, TPopoverKey>[] = [
     ...state.floating,
     toFloatingEntry(entry, rect),
@@ -64,7 +64,7 @@ export function unpinFloatingEntry<TData, TContext, TPopoverKey extends string =
   const entry = state.floating[floatingIndex];
   if (!entry) return EMPTY_OBJECT;
 
-  const nextFloating = filterOutEntryKey(state.floating, key);
+  const nextFloating = filterOutEntry(state.floating, key);
   const nextTrail: TrailEntry<TData, TPopoverKey>[] = [...state.trail, toTrailEntry(entry)];
   const nextOffsets = omitKey(state.offsets, key);
   const nextPinned: Partial<Record<TPopoverKey, boolean>> = { ...state.pinnedStates, [key]: false };

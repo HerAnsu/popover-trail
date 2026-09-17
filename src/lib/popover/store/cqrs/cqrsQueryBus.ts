@@ -21,7 +21,7 @@ import {
 } from '../selectors/storeSelectors';
 import { DISPOSE_SYMBOL } from '../../utils/disposable';
 import { createHistorySnapshot, type HistorySnapshot } from '../history/history';
-import { ok, err, type Result, mapResult } from '../../utils/result';
+import { Ok, Err, type Result, mapResult } from '../../utils/result';
 import { ZERO_OFFSET } from '../../constants';
 import { first, last } from '../../utils/arrayUtils';
 import { isPopoverActive } from '../../utils/predicates';
@@ -151,13 +151,13 @@ export class PopoverQueryBus<
   ): Result<TrailEntry<ResolveDataFromMap<TDataMap, K, TData>, K>, PopoverNotFoundError<K>> {
     const entry = this.getEntry(key);
     if (!entry) {
-      return err({
+      return Err({
         type: 'popover_not_found',
         key,
         message: `Popover entry with key "${key}" not found in active trail or floating stack.`,
       });
     }
-    return ok(entry);
+    return Ok(entry);
   }
 
   /**

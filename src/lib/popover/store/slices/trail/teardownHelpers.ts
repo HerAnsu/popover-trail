@@ -6,7 +6,7 @@
 
 import type { TrailEntry } from '../../../types';
 import type { Effect } from '../../effects';
-import { collectActiveKeySet } from './dagHelpers';
+import { getActiveKeys } from './dagHelpers';
 import { setDifference } from '../../../utils/setOperations';
 
 /**
@@ -22,7 +22,7 @@ export function collectClosedEntryEffects<
   nextTrail: readonly TrailEntry<TData, TPopoverKey>[],
   nextPinnedStates: Partial<Record<TPopoverKey, boolean>>,
 ): Effect<TData, TPopoverKey, TContext>[] {
-  const activeKeys = collectActiveKeySet(nextFloating, nextTrail);
+  const activeKeys = getActiveKeys(nextFloating, nextTrail);
   const prunedKeysSet = setDifference(removedKeys, activeKeys);
   if (prunedKeysSet.size === 0) return [];
 

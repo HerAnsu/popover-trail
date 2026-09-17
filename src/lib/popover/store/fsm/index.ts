@@ -17,7 +17,6 @@ export * from './fsmRegistry';
 export * from './fsmObserver';
 export * from './fsmGuards';
 
-export { createPopoverCardFSM as createPopoverFSM } from './PopoverCardFSM';
 export type PopoverFSMInitialParam<TData = unknown, TPopoverKey extends string = string> =
   | PopoverStateValue
   | PopoverFSMOptions<TData, TPopoverKey>;

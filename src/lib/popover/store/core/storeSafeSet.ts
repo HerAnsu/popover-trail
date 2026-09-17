@@ -6,7 +6,7 @@
 
 import type { StatePatch, PopoverStore } from '../../types';
 import type { PopoverMiddlewareEngine } from '../storeMiddlewareEngine';
-import { isEmptyOwnObject } from './storeInitState';
+import { isEmptyRecord } from '../../utils/cleanObject';
 
 export type SafeSetFn<TData, TContext, TPopoverKey extends string> = (
   partial:
@@ -32,7 +32,7 @@ export function createSafeSet<
       const nextPatch = middlewareEngine.apply(patch, state);
 
       if (!nextPatch) return state;
-      if (typeof nextPatch === 'object' && isEmptyOwnObject(nextPatch)) return state;
+      if (typeof nextPatch === 'object' && isEmptyRecord(nextPatch)) return state;
 
       const patchWithRevision = {
         ...nextPatch,

@@ -11,10 +11,7 @@ import { getActiveKeys } from '../../reducers/stack/recordFilter';
 import { setDifference } from '../../../utils/setOperations';
 import { prop } from '../../../utils/functional';
 
-/**
- * Collects a unique Set of all active keys from floating and trail collections.
- */
-export const collectActiveKeySet = getActiveKeys;
+export { getActiveKeys };
 
 /**
  * Zero-GC helper to prune DAG nodes directly from entry lists without intermediate array allocations.
@@ -26,7 +23,7 @@ export function pruneDAGNodes<TData, TPopoverKey extends string = string>(
   remainingTrail: readonly TrailEntry<TData, TPopoverKey>[] = EMPTY_ARRAY,
 ): void {
   if (!dag || entriesToPrune.length === 0) return;
-  const activeKeys = collectActiveKeySet(remainingFloating, remainingTrail);
+  const activeKeys = getActiveKeys(remainingFloating, remainingTrail);
   const candidateKeys = new Set<TPopoverKey>(entriesToPrune.map(prop('key')));
   const pruneKeys = setDifference(candidateKeys, activeKeys);
   for (const key of pruneKeys) {

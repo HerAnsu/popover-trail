@@ -31,7 +31,7 @@
 
 import { useContext, useMemo } from 'react';
 import { PopoverCardContext } from '../context/PopoverCardContext';
-import { useIsPopoverOpen } from '../hooks/usePopoverSelectors';
+import { usePopoverIsOpen } from '../hooks/usePopoverSelectors';
 import {
   validatePopoverKey,
   validatePlacement,
@@ -64,7 +64,7 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
   validatePlacement(placement);
   validateHoverDelays(options?.hover?.openDelay, options?.hover?.closeDelay);
   validateCascadeAncestry(popoverKey, parentKey);
-  const isOpen = useIsPopoverOpen(popoverKey);
+  const isOpen = usePopoverIsOpen(popoverKey);
 
   const mergedOptions = useMemo(
     () => ({ placement, offset, ...options }),

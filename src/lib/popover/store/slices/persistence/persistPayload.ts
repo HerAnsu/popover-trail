@@ -14,7 +14,7 @@ import { EMPTY_ARRAY, emptyRecord } from '../../storeDefaults';
 import { compactObject, pickKeys } from '../../../utils/cleanObject';
 import { prop } from '../../../utils/functional';
 import {
-  PERSIST_SCHEMA_VERSION,
+  CURRENT_SCHEMA_VERSION,
   sanitizePersistedEntries,
   sanitizePersistedOffsets,
 } from './serialization';
@@ -50,7 +50,7 @@ export function buildPersistPayload<TData, TContext, TPopoverKey extends string 
 
   if (filtered.length === 0) {
     return {
-      version: PERSIST_SCHEMA_VERSION,
+      version: CURRENT_SCHEMA_VERSION,
       timestamp: Date.now(),
       tabId,
       floating: EMPTY_ARRAY,
@@ -65,7 +65,7 @@ export function buildPersistPayload<TData, TContext, TPopoverKey extends string 
   const cleanPinned = buildCleanPinned(keys, pinnedStates);
 
   return {
-    version: PERSIST_SCHEMA_VERSION,
+    version: CURRENT_SCHEMA_VERSION,
     timestamp: Date.now(),
     tabId,
     floating: sanitizePersistedEntries(filtered),

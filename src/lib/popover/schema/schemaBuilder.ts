@@ -13,9 +13,9 @@ import {
   usePopoverChildrenKeys,
   usePopoverParentKey,
   usePopoverDepth,
-  useIsPopoverOpen,
-  useIsPopoverPinned,
-  useIsPopoverTopMost,
+  usePopoverIsOpen,
+  usePopoverIsPinned,
+  usePopoverIsTopMost,
   usePopoverIsLoading,
 } from '../hooks/usePopoverSelectors';
 import { validateSchemaKey } from '../validators';
@@ -80,9 +80,9 @@ export function createPopoverSchema<
     useChildren: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverChildrenKeys(key),
     useParent: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverParentKey(key),
     useDepth: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverDepth(key),
-    useIsOpen: <K extends SchemaKeys<TSchema>>(key: K) => useIsPopoverOpen(key),
-    useIsPinned: <K extends SchemaKeys<TSchema>>(key: K) => useIsPopoverPinned(key),
-    useIsTopMost: <K extends SchemaKeys<TSchema>>(key: K) => useIsPopoverTopMost(key),
+    useIsOpen: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverIsOpen(key),
+    useIsPinned: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverIsPinned(key),
+    useIsTopMost: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverIsTopMost(key),
     useIsLoading: <K extends SchemaKeys<TSchema>>(key: K) => usePopoverIsLoading(key),
     useActions: createSchemaActionsHook<TSchema, TContext>(definition),
     extend: <TExtra extends PopoverSchemaDefinition>(extra: TExtra) =>

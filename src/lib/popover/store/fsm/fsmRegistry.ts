@@ -5,7 +5,7 @@
  * @module store/fsm/fsmRegistry
  */
 
-import { PopoverCardFSM, createPopoverCardFSM } from './PopoverCardFSM';
+import { PopoverCardFSM, createPopoverFSM } from './PopoverCardFSM';
 import type { PopoverFSMEvent, PopoverStateValue, FSMRegistryOptions } from './fsmTypes';
 import { logger } from '../../utils/logger';
 
@@ -27,7 +27,7 @@ export class PopoverFSMRegistry<TData = unknown, TPopoverKey extends string = st
   public getOrCreate(key: TPopoverKey): PopoverCardFSM<TData, TPopoverKey> {
     const existing = this.machines.get(key);
     if (existing) return existing;
-    const fsm = createPopoverCardFSM<TData, TPopoverKey>(key);
+    const fsm = createPopoverFSM<TData, TPopoverKey>(key);
     this.machines.set(key, fsm);
     return fsm;
   }

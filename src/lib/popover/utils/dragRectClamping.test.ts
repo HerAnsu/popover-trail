@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   clampCoordinateToBounds,
-  clampToContainerBounds,
-  clampToWindowBounds,
+  clampToContainer,
+  clampToViewport,
   computeBoundaryProximityRatio,
 } from './dragRectClamping';
 import type { DragTransform2D, DragNodeRect, DragBoundsRect } from './dragBounds';
@@ -77,20 +77,20 @@ describe('dragRectClamping', () => {
     });
   });
 
-  describe('clampToContainerBounds', () => {
+  describe('clampToContainer', () => {
     it('restricts transform to arbitrary container rectangle', () => {
       const container = { top: 100, left: 100, right: 400, bottom: 400 };
       // node left is 50 -> minX = 100 - 50 = 50
       // maxX = 400 - 50 - 100 = 250
       const transform: DragTransform2D = { ...defaultTransform, x: 0, y: 500 };
-      const clamped = clampToContainerBounds(transform, activeNode, container);
+      const clamped = clampToContainer(transform, activeNode, container);
 
       expect(clamped.x).toBe(50);
       expect(clamped.y).toBe(250);
     });
   });
 
-  describe('clampToWindowBounds', () => {
+  describe('clampToViewport', () => {
     beforeEach(() => {
       vi.stubGlobal('window', {
         innerWidth: 1000,
@@ -106,7 +106,7 @@ describe('dragRectClamping', () => {
       // minX = -50, maxX = 1000 - 50 - 100 = 850
       // minY = -50, maxY = 800 - 50 - 100 = 650
       const outsideTransform: DragTransform2D = { ...defaultTransform, x: 1200, y: 900 };
-      const clamped = clampToWindowBounds(outsideTransform, activeNode);
+      const clamped = clampToViewport(outsideTransform, activeNode);
 
       expect(clamped.x).toBe(850);
       expect(clamped.y).toBe(650);

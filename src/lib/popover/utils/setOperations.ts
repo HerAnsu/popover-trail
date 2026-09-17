@@ -5,7 +5,7 @@
  * @module utils/setOperations
  */
 
-import { EMPTY_READONLY_SET } from '../types/branded';
+import { EMPTY_SET } from '../types/branded';
 
 /**
  * Computes the union of two sets (A ∪ B).
@@ -38,7 +38,7 @@ export function setUnion<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): ReadonlySet<T
  */
 export function setIntersection<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): ReadonlySet<T> {
   if (a === b) return a;
-  if (a.size === 0 || b.size === 0) return EMPTY_READONLY_SET;
+  if (a.size === 0 || b.size === 0) return EMPTY_SET;
 
   const [smaller, larger] = a.size <= b.size ? [a, b] : [b, a];
   const result = new Set<T>();
@@ -49,7 +49,7 @@ export function setIntersection<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): Readon
     }
   }
 
-  if (result.size === 0) return EMPTY_READONLY_SET;
+  if (result.size === 0) return EMPTY_SET;
   if (result.size === a.size && a.size === b.size) return a;
   return Object.freeze(result);
 }
@@ -64,7 +64,7 @@ export function setIntersection<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): Readon
  * @returns Frozen set containing elements from `a` not in `b`.
  */
 export function setDifference<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): ReadonlySet<T> {
-  if (a.size === 0 || a === b) return EMPTY_READONLY_SET;
+  if (a.size === 0 || a === b) return EMPTY_SET;
   if (b.size === 0) return a;
 
   const result = new Set<T>();
@@ -74,7 +74,7 @@ export function setDifference<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): Readonly
     }
   }
 
-  if (result.size === 0) return EMPTY_READONLY_SET;
+  if (result.size === 0) return EMPTY_SET;
   if (result.size === a.size) return a;
   return Object.freeze(result);
 }
@@ -88,7 +88,7 @@ export function setDifference<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): Readonly
  * @returns Frozen set containing elements present in either set, but not in both.
  */
 export function setSymmetricDifference<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): ReadonlySet<T> {
-  if (a === b) return EMPTY_READONLY_SET;
+  if (a === b) return EMPTY_SET;
   if (a.size === 0) return b;
   if (b.size === 0) return a;
 
@@ -100,7 +100,7 @@ export function setSymmetricDifference<T>(a: ReadonlySet<T>, b: ReadonlySet<T>):
     if (!a.has(item)) result.add(item);
   }
 
-  return result.size === 0 ? EMPTY_READONLY_SET : Object.freeze(result);
+  return result.size === 0 ? EMPTY_SET : Object.freeze(result);
 }
 
 /**

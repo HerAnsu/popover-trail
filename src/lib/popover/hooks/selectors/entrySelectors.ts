@@ -72,9 +72,7 @@ export function usePopoverData<
 export const usePopoverIsLoading = <TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
 ): boolean => usePopoverStore(selectIsLoading(key));
-export const useIsPopoverLoading = usePopoverIsLoading;
 
 export const usePopoverError = <TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
 ): Error | null => usePopoverStore(selectError(key));
-export const useIsPopoverError = usePopoverError;

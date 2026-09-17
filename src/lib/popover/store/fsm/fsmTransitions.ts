@@ -61,8 +61,6 @@ export function transitionFSMState<TData = unknown, TPopoverKey extends string =
   }
 }
 
-export const popoverFSMReducer = transitionFSMState;
-
 export function assertPopoverFSMState<
   V extends PopoverStateValue,
   TData = unknown,

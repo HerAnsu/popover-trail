@@ -15,14 +15,12 @@ export const selectActiveTrail = <TData = unknown, TPopoverKey extends string = 
   trail: readonly TrailEntry<TData, TPopoverKey>[];
 }): readonly TrailEntry<TData, TPopoverKey>[] => state.trail;
 
-export const selectFloatingPopovers = <
+export const selectFloatingEntries = <
   TData = unknown,
   TPopoverKey extends string = string,
 >(state: {
   floating: readonly TrailEntry<TData, TPopoverKey>[];
 }): readonly TrailEntry<TData, TPopoverKey>[] => state.floating;
-
-export const selectFloatingEntries = selectFloatingPopovers;
 
 export const selectTotalActiveCount = (state: {
   trail: readonly unknown[];

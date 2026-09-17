@@ -7,7 +7,7 @@
 
 import type { StoreApi } from 'zustand';
 import type { PopoverStore } from '../../types';
-import { EMPTY_READONLY_ARRAY } from '../../types/branded';
+import { EMPTY_ARRAY } from '../../types/branded';
 import { validateStoreControllerInstance } from '../devWarnings';
 import { createFluentBuilder } from './fluentBuilder';
 import type { PopoverController } from './controllerTypes';
@@ -57,11 +57,11 @@ export function createPopoverController<
     removeParent: (child, parent) => getState().removeEdge(parent, child),
     getParents: (key) => {
       const parents = getState().getParents(key);
-      return parents.size === 0 ? EMPTY_READONLY_ARRAY : [...parents];
+      return parents.size === 0 ? EMPTY_ARRAY : [...parents];
     },
     getChildren: (key) => {
       const children = getState().getChildren(key);
-      return children.size === 0 ? EMPTY_READONLY_ARRAY : [...children];
+      return children.size === 0 ? EMPTY_ARRAY : [...children];
     },
     getState,
     dispose: clear,

@@ -6,7 +6,7 @@
 
 import type { TrailEntry, PopoverStateData, StatePatch } from '../../../types';
 import { EMPTY_OBJECT } from '../../storeDefaults';
-import { findUnifiedEntryIndex, filterOutEntryKey } from '../stack';
+import { findUnifiedEntryIndex, filterOutEntry } from '../stack';
 import { createTrailEntryNode } from '../entry';
 import { buildActiveTrailPatch, computeNextTrailForNestedPush } from './openHelpers';
 import { findFloatingElevationPatch } from './openElevation';
@@ -36,7 +36,7 @@ export function openRootState<TData, TContext, TPopoverKey extends string = stri
   const nextEntry = createTrailEntryNode(entry, { isRoot: true });
   const nextTrail =
     state.ownerId === ownerId
-      ? [...filterOutEntryKey(state.trail, entry.key), nextEntry]
+      ? [...filterOutEntry(state.trail, entry.key), nextEntry]
     : [nextEntry];
 
   return buildActiveTrailPatch(state, nextTrail, entry.key, { ownerId });

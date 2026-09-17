@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { usePopoverActions } from '../context/usePopoverStore';
-import { useIsPopoverOpen } from './usePopoverSelectors';
+import { usePopoverIsOpen } from './usePopoverSelectors';
 import { useLatestRef } from './useHookUtils';
 import type {
   AnchorEventLike,
@@ -66,7 +66,7 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
   }, [actions, key, optionsRef]);
 
   const hoverEnabled = Boolean(options?.hover?.enabled);
-  const storeIsOpen = useIsPopoverOpen(key);
+  const storeIsOpen = usePopoverIsOpen(key);
   const isOpen = explicitIsOpen ?? storeIsOpen;
 
   return useMemo(() => {

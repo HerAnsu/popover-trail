@@ -140,7 +140,7 @@ export type {
   ResolveRegisteredData,
 } from './types/registerTypes';
 
-export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT, emptyRecord, unbrand } from './types/branded';
+export { EMPTY_ARRAY, EMPTY_OBJECT, EMPTY_SET, emptyRecord, emptySet, unbrand } from './types/branded';
 
 // Types: Universal Type Utilities
 export type {
@@ -479,7 +479,7 @@ export {
 } from './store';
 export {
   createPopoverFSM,
-  popoverFSMReducer,
+  transitionFSMState,
   assertPopoverFSMState,
   canTransition,
   FSMStatusBit,

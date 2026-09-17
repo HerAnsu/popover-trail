@@ -5,24 +5,9 @@
  * @module dnd/dndClamp
  */
 
-import {
-  clampCoordinateToBounds,
-  clampToWindowBounds,
-  clampToContainerBounds,
-  computeBoundaryProximityRatio,
-} from '../utils/dragMath';
-
-/**
- * Clamps coordinates within window/viewport bounds.
- */
-export const clampToViewport = clampToWindowBounds;
-
-/**
- * Clamps coordinates within container element bounds.
- */
-export const clampToContainer = clampToContainerBounds;
-
 export {
   clampCoordinateToBounds,
+  clampToViewport,
+  clampToContainer,
   computeBoundaryProximityRatio,
-};
+} from '../utils/dragMath';

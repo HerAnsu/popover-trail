@@ -28,7 +28,10 @@ export function clampCoordinateToBounds(
   };
 }
 
-export function clampToWindowBounds(
+/**
+ * Clamps drag transform coordinates to keep the active node within viewport boundaries.
+ */
+export function clampToViewport(
   transform: DragTransform2D,
   activeNodeRect: DragNodeRect,
 ): DragTransform2D {
@@ -42,7 +45,10 @@ export function clampToWindowBounds(
   });
 }
 
-export function clampToContainerBounds(
+/**
+ * Clamps drag transform coordinates to keep the active node within container element boundaries.
+ */
+export function clampToContainer(
   transform: DragTransform2D,
   activeNodeRect: DragNodeRect,
   containerRect: { top: number; left: number; right: number; bottom: number },

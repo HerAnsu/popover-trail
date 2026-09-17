@@ -58,7 +58,6 @@ export function selectParentKey<TPopoverKey extends string = string>(key: string
 export function selectOffset<TPopoverKey extends string = string>(key: TPopoverKey) {
   return (state: HasOffsetsState<TPopoverKey>): DragOffset => state.offsets[key] ?? ZERO_OFFSET;
 }
-export const selectOffsetByKey = selectOffset;
 
 export function selectIsPinned<TPopoverKey extends string = string>(key: TPopoverKey) {
   return (state: HasPinnedStates<TPopoverKey>): boolean => Boolean(state.pinnedStates[key]);

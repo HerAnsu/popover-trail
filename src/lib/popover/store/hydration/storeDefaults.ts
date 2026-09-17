@@ -6,9 +6,9 @@
 
 import type { PopoverResolver, PopoverCache, PopoverStateData, DragOffset } from '../../types';
 import {
-  EMPTY_READONLY_ARRAY,
-  EMPTY_READONLY_OBJECT,
-  EMPTY_READONLY_SET,
+  EMPTY_ARRAY,
+  EMPTY_OBJECT,
+  EMPTY_SET,
   emptyRecord,
   emptySet,
 } from '../../types/branded';
@@ -20,26 +20,22 @@ import {
   ZERO_OFFSET,
 } from '../../constants';
 
-export const EMPTY_ARRAY = EMPTY_READONLY_ARRAY;
-export const EMPTY_OBJECT = EMPTY_READONLY_OBJECT;
-export const EMPTY_SET = EMPTY_READONLY_SET;
-export { ZERO_OFFSET, emptyRecord, emptySet };
-
+export { EMPTY_ARRAY, EMPTY_OBJECT, EMPTY_SET, ZERO_OFFSET, emptyRecord, emptySet };
 
 export const INITIAL_TRAIL_STATE = Object.freeze({
-  trail: EMPTY_READONLY_ARRAY,
-  floating: EMPTY_READONLY_ARRAY,
+  trail: EMPTY_ARRAY,
+  floating: EMPTY_ARRAY,
   ownerId: null,
-  zIndexOrder: EMPTY_READONLY_ARRAY,
+  zIndexOrder: EMPTY_ARRAY,
 });
 
 export const INITIAL_PINNING_STATE = Object.freeze({
-  offsets: EMPTY_READONLY_OBJECT,
-  pinnedStates: EMPTY_READONLY_OBJECT,
+  offsets: EMPTY_OBJECT,
+  pinnedStates: EMPTY_OBJECT,
 });
 
 export const INITIAL_CONFIG_STATE = Object.freeze({
-  nestedHydrationRequestCounters: EMPTY_READONLY_OBJECT,
+  nestedHydrationRequestCounters: EMPTY_OBJECT,
   rootHydrationRequestCounter: 0,
   anchorElement: null,
   anchorRect: null,
@@ -82,7 +78,7 @@ export const RESETTABLE_STORE_PATCH: ResettableStorePatch<string> = Object.freez
   ...INITIAL_TRAIL_STATE,
   offsets: emptyRecord<string, Readonly<DragOffset>>(),
   pinnedStates: emptyRecord<string, boolean>(),
-  zIndexOrder: EMPTY_READONLY_ARRAY,
+  zIndexOrder: EMPTY_ARRAY,
   rootHydrationRequestCounter: 0,
   nestedHydrationRequestCounters: emptyRecord<string, number>(),
   anchorElement: null,
@@ -96,7 +92,7 @@ export function getResettableStorePatch<
     ...INITIAL_TRAIL_STATE,
     offsets: emptyRecord<TPopoverKey, Readonly<DragOffset>>(),
     pinnedStates: emptyRecord<TPopoverKey, boolean>(),
-    zIndexOrder: EMPTY_READONLY_ARRAY,
+    zIndexOrder: EMPTY_ARRAY,
     rootHydrationRequestCounter: 0,
     nestedHydrationRequestCounters: emptyRecord<TPopoverKey, number>(),
     anchorElement: null,

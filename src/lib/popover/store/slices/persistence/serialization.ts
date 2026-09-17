@@ -10,5 +10,4 @@ import {
   sanitizePersistedOffsets,
 } from '../../persistence/persistenceHelpers';
 
-export const PERSIST_SCHEMA_VERSION = CURRENT_SCHEMA_VERSION;
-export { sanitizePersistedEntries, sanitizePersistedOffsets };
+export { CURRENT_SCHEMA_VERSION, sanitizePersistedEntries, sanitizePersistedOffsets };

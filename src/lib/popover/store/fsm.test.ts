@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   createPopoverFSM,
-  popoverFSMReducer,
+  transitionFSMState,
   assertPopoverFSMState,
   isValidTransitionStatusChange,
   FSMStatusBit,
@@ -72,7 +72,7 @@ describe('Popover FSM Engine', () => {
   });
 
   it('should ignore illegal transitions (Zero-Invalid-State Invariant)', () => {
-    const state = popoverFSMReducer({ value: 'Hydrating', context: { key: 'card-1' } }, {
+    const state = transitionFSMState({ value: 'Hydrating', context: { key: 'card-1' } }, {
       type: 'TOGGLE_PIN',
     } as PopoverFSMEvent);
     expect(state.value).toBe('Hydrating');

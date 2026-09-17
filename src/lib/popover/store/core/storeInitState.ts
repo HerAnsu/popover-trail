@@ -18,9 +18,7 @@ import {
   type PopoverStoreOptions,
   type NormalizedStoreConfig,
 } from './storeOptions';
-import { isEmptyRecord, safeAssign } from '../../utils/cleanObject';
-
-export const isEmptyOwnObject = isEmptyRecord;
+import { safeAssign } from '../../utils/cleanObject';
 
 export function normalizeStoreConfig<
   TData = unknown,

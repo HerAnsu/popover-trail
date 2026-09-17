@@ -7,7 +7,7 @@
 
 import type { BoundingBox } from '../guards/spatialGuards';
 import type { Point2D } from './spatialEnergy';
-import { ok, err, type Result } from '../result';
+import { Ok, Err, type Result } from '../result';
 import { approxEqual } from '../math';
 
 /**
@@ -116,14 +116,14 @@ export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatr
   // Determinant: ad - bc
   const det = m[0] * m[3] - m[1] * m[2];
   if (!Number.isFinite(det) || approxEqual(det, 0, 1e-12)) {
-    return err({
+    return Err({
       type: 'singular_matrix',
       message: `Cannot invert singular 2D affine matrix with determinant ${det}.`,
       determinant: det,
     });
   }
   const invDet = 1 / det;
-  return ok([
+  return Ok([
     m[3] * invDet,
     -m[1] * invDet,
     -m[2] * invDet,

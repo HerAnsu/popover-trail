@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { first, last, take, drop, concatImmutable } from './arrayUtils';
-import { EMPTY_READONLY_ARRAY } from '../types/branded';
+import { EMPTY_ARRAY } from '../types/branded';
 
 describe('arrayUtils', () => {
   describe('first and last', () => {
@@ -16,10 +16,10 @@ describe('arrayUtils', () => {
   });
 
   describe('take', () => {
-    it('returns EMPTY_READONLY_ARRAY for count <= 0 or empty array', () => {
-      expect(take([1, 2, 3], 0)).toBe(EMPTY_READONLY_ARRAY);
-      expect(take([1, 2, 3], -2)).toBe(EMPTY_READONLY_ARRAY);
-      expect(take([], 5)).toBe(EMPTY_READONLY_ARRAY);
+    it('returns EMPTY_ARRAY for count <= 0 or empty array', () => {
+      expect(take([1, 2, 3], 0)).toBe(EMPTY_ARRAY);
+      expect(take([1, 2, 3], -2)).toBe(EMPTY_ARRAY);
+      expect(take([], 5)).toBe(EMPTY_ARRAY);
     });
 
     it('returns original array reference if count >= items.length', () => {
@@ -44,9 +44,9 @@ describe('arrayUtils', () => {
       expect(drop([], 2)).toEqual([]);
     });
 
-    it('returns EMPTY_READONLY_ARRAY if count >= items.length', () => {
-      expect(drop([1, 2, 3], 3)).toBe(EMPTY_READONLY_ARRAY);
-      expect(drop([1, 2, 3], 5)).toBe(EMPTY_READONLY_ARRAY);
+    it('returns EMPTY_ARRAY if count >= items.length', () => {
+      expect(drop([1, 2, 3], 3)).toBe(EMPTY_ARRAY);
+      expect(drop([1, 2, 3], 5)).toBe(EMPTY_ARRAY);
     });
 
     it('returns frozen dropped array when 0 < count < length', () => {
@@ -58,8 +58,8 @@ describe('arrayUtils', () => {
   });
 
   describe('concatImmutable', () => {
-    it('returns EMPTY_READONLY_ARRAY if all input arrays are empty', () => {
-      expect(concatImmutable([], [], [])).toBe(EMPTY_READONLY_ARRAY);
+    it('returns EMPTY_ARRAY if all input arrays are empty', () => {
+      expect(concatImmutable([], [], [])).toBe(EMPTY_ARRAY);
     });
 
     it('returns the exact instance without allocation if only one array is non-empty', () => {

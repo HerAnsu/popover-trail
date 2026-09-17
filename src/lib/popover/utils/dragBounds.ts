@@ -86,7 +86,7 @@ export function isDragOffsetEqual(
 
 export {
   clampCoordinateToBounds,
-  clampToWindowBounds,
-  clampToContainerBounds,
+  clampToViewport,
+  clampToContainer,
   computeBoundaryProximityRatio,
 } from './dragRectClamping';

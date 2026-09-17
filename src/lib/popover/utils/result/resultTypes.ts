@@ -42,11 +42,6 @@ export function Err<E>(error: E): ErrResult<E> {
   return Object.freeze({ success: false, error });
 }
 
-/** Alias for Ok constructor. */
-export const ok = Ok;
-/** Alias for Err constructor. */
-export const err = Err;
-
 /**
  * Type guard asserting that a Result is an OkResult.
  *

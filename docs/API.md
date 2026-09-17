@@ -37,7 +37,7 @@ Complete technical specification for components, hooks, schema builders, core en
    - [usePopoverGeometry and QuadTree collision](#usepopovergeometry-and-quadtree-collision)
    - [usePopoverDragAndDrop](#usepopoverdraganddrop)
    - [usePopoverHydration](#usepopoverhydration)
-   - [useIsPopoverOpen and state selectors](#useispopoveropen-and-state-selectors)
+   - [usePopoverIsOpen and state selectors](#usepopoverisopen-and-state-selectors)
    - [Utility and adapter hooks](#utility-and-adapter-hooks)
 7. [Modular sub-packages (popover-trail/*)](#7-modular-sub-packages-popover-trail)
    - [DND sub-package (popover-trail/dnd)](#dnd-sub-package-popover-traildnd)
@@ -869,7 +869,7 @@ Choose the most appropriate hook based on required data and re-render scope:
 | Dispatch actions (`open`, `close`, `pin`) without re-rendering on state changes. | `usePopoverActions()` | **0 re-renders** (action dispatchers are referentially stable). |
 | All-in-one data, status flags, coordinates, and actions for a single card. | `usePopover(key)` | Re-renders only when this specific card's entry changes. |
 | Synchronous data access with React 19 `<Suspense>` boundary integration. | `usePopoverData(key)` | Suspends rendering until resolver promise fulfills. |
-| Check if a card is open or pinned to toggle UI button active state. | `useIsPopoverOpen(key)` / `useIsPopoverPinned(key)` | Re-renders only on boolean status changes. |
+| Check if a card is open or pinned to toggle UI button active state. | `usePopoverIsOpen(key)` / `usePopoverIsPinned(key)` | Re-renders only on boolean status changes. |
 | Track loading / error / success states with manual retry reload trigger. | `usePopoverHydration(key)` | Re-renders only on async status transitions. |
 | History time-travel, breadcrumb step navigation, and undo/redo buttons. | `usePopoverTimeline()` | Re-renders on history step change. |
 | Drag and drop velocity, 3D Euler tilt angles, and spring inertia physics. | `usePopoverDragAndDrop()` | Animates via CSS custom variables; 0 React re-renders. |
@@ -1183,13 +1183,13 @@ const { state, isLoading, error, data, reload } = usePopoverHydration<UserData>(
 
 ---
 
-### `useIsPopoverOpen` and state selectors
+### `usePopoverIsOpen` and state selectors
 
 Fine-grained selector hooks:
 
-- `useIsPopoverOpen(key)` / `usePopoverIsOpen(key)`: `true` if key is active in trail or floating list.
-- `useIsPopoverPinned(key)` / `usePopoverIsPinned(key)`: `true` if key is pinned.
-- `useIsPopoverTopMost(key)` / `usePopoverIsTopMost(key)`: `true` if key is topmost in stack.
+- `usePopoverIsOpen(key)`: `true` if key is active in trail or floating list.
+- `usePopoverIsPinned(key)`: `true` if key is pinned.
+- `usePopoverIsTopMost(key)`: `true` if key is topmost in stack.
 - `usePopoverEntry(key)`: Returns `TrailEntry<TData> | undefined`.
 - `usePopoverEntryStatus(key, expectedStatus?)`: Returns narrowed entry or `undefined` (defaults to `'success'`).
 - `usePopoverZIndex(key)`: Returns 0-based z-index depth index (`-1` if unmounted).
@@ -1199,11 +1199,11 @@ Fine-grained selector hooks:
 - `usePopoverFloating()`: Returns active floating card array.
 - `usePopoverContext<TContext>()`: Returns current global context.
 - `usePopoverCollisionConfig()`: Returns global collision configuration.
-- `usePopoverIsLoading(key)` / `useIsPopoverLoading(key)`: Boolean loading status.
-- `usePopoverError(key)` / `useIsPopoverError(key)`: Error object if resolution failed.
+- `usePopoverIsLoading(key)`: Boolean loading status.
+- `usePopoverError(key)`: Error object if resolution failed.
 - `usePopoverRootEntry()`: Returns root popover entry from trail.
 - `usePopoverTotalActiveCount()`: Returns total count of active popovers.
-- `useIsPopoverIdle()` / `usePopoverIsIdle()`: `true` when 0 popovers are active.
+- `usePopoverIsIdle()`: `true` when 0 popovers are active.
 - `usePopoverParentKey(key)`: Returns parent key or `undefined` if root.
 - `usePopoverChildrenKeys(key)`: Returns direct child keys spawned from `key`.
 - `usePopoverBreadcrumbs(key)`: Returns ancestor key path from root to `key`.
@@ -1462,7 +1462,7 @@ export const analyticsMiddleware = definePopoverMiddleware((patch, state) => {
 
 ### FSM statechart engine and bitmask transition algebra
 
-Deterministic finite state machine reducer with static O(1) bitwise transition lookup table (`popoverFSMReducer` & `createPopoverFSM`). `PopoverFSMState<TData>` is a 6-state discriminated union:
+Deterministic finite state machine reducer with static O(1) bitwise transition lookup table (`transitionFSMState` & `createPopoverFSM`). `PopoverFSMState<TData>` is a 6-state discriminated union:
 
 - `IdleFSMState` (`value: 'Idle'`)
 - `HydratingFSMState` (`value: 'Hydrating'`)
@@ -2458,9 +2458,9 @@ Nominal branding attaches phantom brand tags to primitives, preventing developer
 
 #### Zero-allocation singletons
 
-- `EMPTY_READONLY_ARRAY` / `EMPTY_ARRAY`: Frozen empty array (`Object.freeze([])`).
-- `EMPTY_READONLY_OBJECT` / `EMPTY_OBJECT`: Frozen empty dictionary (`Object.freeze({})`).
-- `EMPTY_READONLY_SET` / `EMPTY_SET`: Frozen empty Set (`Object.freeze(new Set())`).
+- `EMPTY_ARRAY`: Frozen empty array (`Object.freeze([])`).
+- `EMPTY_OBJECT`: Frozen empty dictionary (`Object.freeze({})`).
+- `EMPTY_SET`: Frozen empty Set (`Object.freeze(new Set())`).
 - `ZERO_OFFSET`: Frozen coordinate origin (`Object.freeze({ x: 0, y: 0 })`).
 - `emptyRecord<K, V>()`: Type-safe accessor for the frozen empty record singleton.
 - `emptySet<T>()`: Type-safe accessor for the frozen empty Set singleton.
@@ -3314,7 +3314,7 @@ Pure functional Set algebra with zero-allocation fast-paths (identity / empty se
 | Function | Signature | Description |
 | :--- | :--- | :--- |
 | `setUnion(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => ReadonlySet<T>` | Computes union $A \cup B$. Fast-path returns original reference if one set is empty or identical. |
-| `setIntersection(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => ReadonlySet<T>` | Computes intersection $A \cap B$. Iterates smaller set; returns `EMPTY_READONLY_SET` if disjoint. |
+| `setIntersection(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => ReadonlySet<T>` | Computes intersection $A \cap B$. Iterates smaller set; returns `EMPTY_SET` if disjoint. |
 | `setDifference(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => ReadonlySet<T>` | Computes relative complement $A \setminus B$. Fast-paths for empty sets and identical reference. |
 | `setSymmetricDifference(a, b)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => ReadonlySet<T>` | Computes symmetric difference $A \triangle B$. |
 | `isSubset(subset, superset)` | `<T>(ReadonlySet<T>, ReadonlySet<T>) => boolean` | Evaluates if $A \subseteq B$. |
@@ -3878,13 +3878,13 @@ Avoid subscribing whole components to `usePopoverStore(state => state)`. Use ded
 const state = usePopoverStore((s) => s);
 
 // Recommended (re-renders only when this specific card's open state changes):
-const isOpen = useIsPopoverOpen('userProfile');
-const isPinned = useIsPopoverPinned('userProfile');
+const isOpen = usePopoverIsOpen('userProfile');
+const isPinned = usePopoverIsPinned('userProfile');
 ```
 
 ### 2. Zero-allocation drag paths with `ObjectPool`
 
-Drag physics utilize pre-allocated object pools (`ObjectPool<Point2D>`) and static singletons (`EMPTY_READONLY_ARRAY`, `EMPTY_READONLY_OBJECT`) so pointer movements allocate 0 bytes on the heap per frame:
+Drag physics utilize pre-allocated object pools (`ObjectPool<Point2D>`) and static singletons (`EMPTY_ARRAY`, `EMPTY_OBJECT`) so pointer movements allocate 0 bytes on the heap per frame:
 
 ```typescript
 import { ObjectPool, Point2D } from 'popover-trail';

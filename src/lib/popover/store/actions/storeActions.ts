@@ -8,7 +8,7 @@ import type { PopoverActions, PopoverRect, PopoverStateData, StatePatch } from '
 import type { SliceContext } from '../slices';
 import type { StoreSetFn, StoreGetFn } from '../storeTypes';
 import type { ActionRegistryDependencies } from './storeActionRegistryTypes';
-import { createCoreActions } from './storeActionRegistry';
+import { createActionRegistry } from './storeActionRegistry';
 import { logger } from '../../utils/logger';
 import { togglePinState, updateOffsetState } from '../reducers/pinning/pinReducers';
 
@@ -50,7 +50,7 @@ export function createStoreActions<
   deps: ActionRegistryDependencies<TData, TContext, TPopoverKey>,
 ): PopoverActions<TData, TContext, TPopoverKey> & TCustomActions {
   const ctx: SliceContext<TData, TContext, TPopoverKey> = { set, get, deps };
-  const coreActions = createCoreActions<TData, TContext, TPopoverKey>(set, get, deps);
+  const coreActions = createActionRegistry<TData, TContext, TPopoverKey>(set, get, deps);
   const customSlices = deps.customSlices;
   if (!customSlices || customSlices.length === 0) {
     return coreActions as PopoverActions<TData, TContext, TPopoverKey> & TCustomActions;

@@ -47,5 +47,3 @@ export function createActionRegistry<
     ...createTransactionsSlice<TData, TContext, TPopoverKey>(ctx),
   };
 }
-
-export const createCoreActions = createActionRegistry;

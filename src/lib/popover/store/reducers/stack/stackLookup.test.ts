@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   findEntryIndex,
   findUnifiedEntryIndex,
-  filterOutEntryKey,
+  filterOutEntry,
   elevateKeyInOrder,
 } from './index';
 import type { TrailEntry } from '../../../types';
@@ -31,7 +31,7 @@ describe('stackLookup module', () => {
   });
 
   it('filters out entry by key without mutating original list', () => {
-    const filtered = filterOutEntryKey(trail, 'trail-1');
+    const filtered = filterOutEntry(trail, 'trail-1');
     expect(filtered).toHaveLength(1);
     expect(filtered[0]?.key).toBe('trail-2');
   });

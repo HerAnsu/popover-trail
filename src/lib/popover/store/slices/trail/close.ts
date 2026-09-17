@@ -12,7 +12,7 @@ import { getRemovedKeysForClose } from '../../reducers';
 import { selectTopmostEntry } from '../../storeSelectors';
 import type { SliceContext } from '../context';
 import { createTrailClearActions } from './clear';
-import { collectActiveKeySet } from './dagHelpers';
+import { getActiveKeys } from './dagHelpers';
 
 export type CloseTransitionOptions = { transition?: boolean } | boolean;
 
@@ -69,7 +69,7 @@ export function createTrailCloseActions<
   const closeAllEntries = (options?: CloseTransitionOptions): void => {
     const forceImmediate = isForceImmediate(options);
     const { floating, trail, exitTransitionDuration } = get();
-    const allKeys = collectActiveKeySet(floating, trail);
+    const allKeys = getActiveKeys(floating, trail);
     closeByTargetKeys(allKeys, true, forceImmediate);
     const hasTransition = !forceImmediate && (exitTransitionDuration ?? 0) > 0;
     if (!hasTransition) {

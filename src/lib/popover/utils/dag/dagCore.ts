@@ -23,7 +23,7 @@ import {
 } from './dagOrdering';
 import { findRoots, findLeaves, computeMaxDepth } from './dagMetrics';
 import { exportDAGSnapshot, importDAGSnapshot } from './dagSnapshot';
-import { EMPTY_READONLY_SET } from '../../types/branded';
+import { EMPTY_SET } from '../../types/branded';
 
 
 /**
@@ -117,12 +117,12 @@ export class PopoverDAG<TPopoverKey extends string = string> {
 
   /** Returns the direct parent keys of the specified node. */
   getParents(key: TPopoverKey): ReadonlySet<TPopoverKey> {
-    return this.nodes.get(key)?.parentKeys ?? EMPTY_READONLY_SET;
+    return this.nodes.get(key)?.parentKeys ?? EMPTY_SET;
   }
 
   /** Returns the direct children keys opened by the specified node. */
   getChildren(key: TPopoverKey): ReadonlySet<TPopoverKey> {
-    return this.nodes.get(key)?.childrenKeys ?? EMPTY_READONLY_SET;
+    return this.nodes.get(key)?.childrenKeys ?? EMPTY_SET;
   }
 
 

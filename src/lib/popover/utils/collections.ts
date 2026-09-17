@@ -6,7 +6,7 @@
  */
 
 import type { TrailEntry } from '../types';
-import { EMPTY_READONLY_ARRAY } from '../types/branded';
+import { EMPTY_ARRAY } from '../types/branded';
 import { isUnsafeKey } from './safeKeys';
 import { isNonNullable, isMatchingKey, isPopoverActive } from './predicates';
 
@@ -76,7 +76,7 @@ export function partition<T>(
   items: readonly T[],
   predicate: (item: T) => boolean,
 ): readonly [readonly T[], readonly T[]] {
-  if (items.length === 0) return [EMPTY_READONLY_ARRAY, EMPTY_READONLY_ARRAY];
+  if (items.length === 0) return [EMPTY_ARRAY, EMPTY_ARRAY];
   const matching: T[] = [];
   const nonMatching: T[] = [];
   for (const item of items) {
@@ -159,17 +159,17 @@ export function chunk<T>(items: readonly T[], size: number): readonly (readonly 
 }
 
 /**
- * Combines two arrays element-wise into pairs of 2-tuples up to the shorter array length.
+ * Zips two arrays into an array of 2-tuples up to the length of the shorter array.
  *
- * @template A - First element type.
- * @template B - Second element type.
- * @param a - First array.
- * @param b - Second array.
- * @returns Frozen array of tuples.
+ * @template A - First array element type.
+ * @template B - Second array element type.
+ * @param a - First source array.
+ * @param b - Second source array.
+ * @returns Frozen array of paired tuples.
  */
 export function zip<A, B>(a: readonly A[], b: readonly B[]): readonly (readonly [A, B])[] {
   const len = Math.min(a.length, b.length);
-  if (len === 0) return EMPTY_READONLY_ARRAY;
+  if (len === 0) return EMPTY_ARRAY;
   const result: (readonly [A, B])[] = [];
   for (let i = 0; i < len; i++) {
     result.push(Object.freeze([a[i] as A, b[i] as B]));
@@ -188,7 +188,7 @@ export function zip<A, B>(a: readonly A[], b: readonly B[]): readonly (readonly 
 export function range(start: number, end: number, step = 1): readonly number[] {
   const safeStep = step === 0 ? 1 : step;
   if ((safeStep > 0 && start >= end) || (safeStep < 0 && start <= end)) {
-    return EMPTY_READONLY_ARRAY;
+    return EMPTY_ARRAY;
   }
   const result: number[] = [];
   if (safeStep > 0) {
@@ -211,14 +211,12 @@ export function range(start: number, end: number, step = 1): readonly number[] {
  * @returns Frozen array of non-nullable elements.
  */
 export function compact<T>(array: readonly (T | null | undefined)[]): readonly T[] {
-  if (array.length === 0) return EMPTY_READONLY_ARRAY;
+  if (array.length === 0) return EMPTY_ARRAY;
   const result: T[] = [];
   for (const item of array) {
     if (isNonNullable(item)) {
       result.push(item);
     }
   }
-  return result.length === 0 ? EMPTY_READONLY_ARRAY : Object.freeze(result);
+  return result.length === 0 ? EMPTY_ARRAY : Object.freeze(result);
 }
-
-

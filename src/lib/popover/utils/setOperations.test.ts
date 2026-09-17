@@ -8,7 +8,7 @@ import {
   isSuperset,
   isDisjoint,
 } from './setOperations';
-import { EMPTY_READONLY_SET } from '../types/branded';
+import { EMPTY_SET } from '../types/branded';
 
 describe('setOperations', () => {
   describe('setUnion', () => {
@@ -37,8 +37,8 @@ describe('setOperations', () => {
       const empty = new Set<string>();
 
       expect(setIntersection(a, a)).toBe(a);
-      expect(setIntersection(a, empty)).toBe(EMPTY_READONLY_SET);
-      expect(setIntersection(empty, a)).toBe(EMPTY_READONLY_SET);
+      expect(setIntersection(a, empty)).toBe(EMPTY_SET);
+      expect(setIntersection(empty, a)).toBe(EMPTY_SET);
     });
 
     it('computes intersection iterating smaller set', () => {
@@ -47,7 +47,7 @@ describe('setOperations', () => {
 
       expect([...setIntersection(a, b)]).toEqual(['b', 'c']);
       expect([...setIntersection(b, a)]).toEqual(['b', 'c']);
-      expect(setIntersection(new Set(['a']), new Set(['b']))).toBe(EMPTY_READONLY_SET);
+      expect(setIntersection(new Set(['a']), new Set(['b']))).toBe(EMPTY_SET);
     });
 
     it('returns first set reference when intersection equals both sets', () => {
@@ -63,8 +63,8 @@ describe('setOperations', () => {
       const a = new Set(['a', 'b']);
       const empty = new Set<string>();
 
-      expect(setDifference(a, a)).toBe(EMPTY_READONLY_SET);
-      expect(setDifference(empty, a)).toBe(EMPTY_READONLY_SET);
+      expect(setDifference(a, a)).toBe(EMPTY_SET);
+      expect(setDifference(empty, a)).toBe(EMPTY_SET);
       expect(setDifference(a, empty)).toBe(a);
     });
 
@@ -73,7 +73,7 @@ describe('setOperations', () => {
       const b = new Set(['b']);
 
       expect([...setDifference(a, b)]).toEqual(['a', 'c']);
-      expect(setDifference(new Set(['a']), new Set(['a']))).toBe(EMPTY_READONLY_SET);
+      expect(setDifference(new Set(['a']), new Set(['a']))).toBe(EMPTY_SET);
     });
 
     it('returns original reference when no elements are excluded', () => {
@@ -90,7 +90,7 @@ describe('setOperations', () => {
       const b = new Set(['b', 'c']);
 
       expect([...setSymmetricDifference(a, b)]).toEqual(['a', 'c']);
-      expect(setSymmetricDifference(a, a)).toBe(EMPTY_READONLY_SET);
+      expect(setSymmetricDifference(a, a)).toBe(EMPTY_SET);
       expect(setSymmetricDifference(a, new Set())).toBe(a);
       expect(setSymmetricDifference(new Set(), b)).toBe(b);
     });

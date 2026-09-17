@@ -14,7 +14,7 @@ import type {
 } from '../../types';
 import type { RegisteredKeys, RegisteredDataMap } from '../../types/registerTypes';
 import { DISPOSE_SYMBOL } from '../../utils/disposable';
-import { err, type Result } from '../../utils/result';
+import { Err, type Result } from '../../utils/result';
 import { type CommandBusTarget, resolveCommandActions } from './cqrsCommandTarget';
 
 export type { CommandBusTarget };
@@ -152,7 +152,7 @@ export class PopoverCommandBus<
     this.batch(() => {
       result = fn(this);
     });
-    return result ?? err(new Error('Batch execution did not produce a result.') as unknown as E);
+    return result ?? Err(new Error('Batch execution did not produce a result.') as unknown as E);
   }
 
   /** Releases store resources and detaches listeners. */

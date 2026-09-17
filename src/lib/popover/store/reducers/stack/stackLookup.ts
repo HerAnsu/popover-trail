@@ -41,7 +41,7 @@ export function findUnifiedEntryIndex<TData = unknown, TPopoverKey extends strin
 /**
  * Filters out an entry matching target key without closure allocations.
  */
-export function toFilteredOutEntryKey<TData = unknown, TPopoverKey extends string = string>(
+export function filterOutEntry<TData = unknown, TPopoverKey extends string = string>(
   list: readonly TrailEntry<TData, TPopoverKey>[],
   key: TPopoverKey,
 ): TrailEntry<TData, TPopoverKey>[] {
@@ -56,8 +56,6 @@ export function toFilteredOutEntryKey<TData = unknown, TPopoverKey extends strin
   }
   return result;
 }
-
-export const filterOutEntryKey = toFilteredOutEntryKey;
 
 /**
  * Elevates target key to top of z-index ordering without duplicate allocation.

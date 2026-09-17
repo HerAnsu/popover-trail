@@ -5,7 +5,7 @@
  * @module utils/arrayUtils
  */
 
-import { EMPTY_READONLY_ARRAY } from '../types/branded';
+import { EMPTY_ARRAY } from '../types/branded';
 
 /**
  * Returns the first element of an array, or undefined if empty.
@@ -31,7 +31,7 @@ export function last<T>(items: readonly T[]): T | undefined {
 
 /**
  * Returns a slice containing the first `count` elements.
- * Returns `EMPTY_READONLY_ARRAY` if `count <= 0`, or the source array unchanged if `count >= items.length`.
+ * Returns `EMPTY_ARRAY` if `count <= 0`, or the source array unchanged if `count >= items.length`.
  *
  * @template T - Element type.
  * @param items - Source array.
@@ -39,14 +39,14 @@ export function last<T>(items: readonly T[]): T | undefined {
  * @returns Sliced array preserving reference identity when possible.
  */
 export function take<T>(items: readonly T[], count: number): readonly T[] {
-  if (count <= 0 || items.length === 0) return EMPTY_READONLY_ARRAY;
+  if (count <= 0 || items.length === 0) return EMPTY_ARRAY;
   if (count >= items.length) return items;
   return Object.freeze(items.slice(0, count));
 }
 
 /**
  * Returns a slice omitting the first `count` elements.
- * Returns the source array unchanged if `count <= 0`, or `EMPTY_READONLY_ARRAY` if `count >= items.length`.
+ * Returns the source array unchanged if `count <= 0`, or `EMPTY_ARRAY` if `count >= items.length`.
  *
  * @template T - Element type.
  * @param items - Source array.
@@ -55,13 +55,13 @@ export function take<T>(items: readonly T[], count: number): readonly T[] {
  */
 export function drop<T>(items: readonly T[], count: number): readonly T[] {
   if (count <= 0 || items.length === 0) return items;
-  if (count >= items.length) return EMPTY_READONLY_ARRAY;
+  if (count >= items.length) return EMPTY_ARRAY;
   return Object.freeze(items.slice(count));
 }
 
 /**
  * Concatenates multiple arrays with zero-allocation fast-paths for empty inputs.
- * If all arrays are empty, returns EMPTY_READONLY_ARRAY.
+ * If all arrays are empty, returns EMPTY_ARRAY.
  * If exactly one array is non-empty, returns it directly without heap allocation.
  *
  * @template T - Element type.
@@ -79,7 +79,7 @@ export function concatImmutable<T>(...arrays: readonly (readonly T[])[]): readon
     }
   }
 
-  if (nonEmptyCount === 0) return EMPTY_READONLY_ARRAY;
+  if (nonEmptyCount === 0) return EMPTY_ARRAY;
   if (nonEmptyCount === 1 && singleNonEmpty) return singleNonEmpty;
 
   const result: T[] = [];

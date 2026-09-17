@@ -11,21 +11,17 @@ import { selectIsPinned, selectHasEntry } from '../../store/selectors';
 import type { RegisteredKeys } from '../../types/registerTypes';
 import { last } from '../../utils/arrayUtils';
 
-export function useIsPopoverPinned<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
+export function usePopoverIsPinned<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore(selectIsPinned(key));
 }
-
-export const usePopoverIsPinned = useIsPopoverPinned;
 
 export function usePopoverZIndex<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore((state) => state.zIndexOrder.indexOf(key));
 }
 
-export function useIsPopoverTopMost<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
+export function usePopoverIsTopMost<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
   return usePopoverStore((state) => last(state.zIndexOrder) === key);
 }
-
-export const usePopoverIsTopMost = useIsPopoverTopMost;
 
 export function usePopoverContext<TContext = unknown>() {
   return usePopoverStore((state: PopoverStore<unknown, TContext>) => state.context);
@@ -35,10 +31,8 @@ export function usePopoverCollisionConfig() {
   return usePopoverStore((state) => state.collisionConfig);
 }
 
-export function useIsPopoverOpen<TPopoverKey extends string = RegisteredKeys>(
+export function usePopoverIsOpen<TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
 ): boolean {
   return usePopoverStore(selectHasEntry(key));
 }
-
-export const usePopoverIsOpen = useIsPopoverOpen;

@@ -20,7 +20,7 @@ import { findNearestQuadItem } from './spatialKNN';
 import { insertQuadTreeItem, removeQuadTreeItem, splitQuadTreeNodes } from './spatialInsert';
 import { tryCoalesceQuadTree } from './spatialCoalesce';
 import type { Point2D } from './spatialEnergy';
-import { ok, err, type Result } from '../result';
+import { Ok, Err, type Result } from '../result';
 
 /**
  * Diagnostic error payload returned when a spatial range query or KNN search finds no candidates.
@@ -262,12 +262,12 @@ export class QuadTree<TId extends string = string> {
   ): Result<QuadItem<TId>, SpatialNotFoundError> {
     const item = this.findFirst(target, predicate);
     if (!item) {
-      return err({
+      return Err({
         type: 'spatial_not_found',
         message: 'No spatial item matching the bounding box and predicate was found in QuadTree.',
       });
     }
-    return ok(item);
+    return Ok(item);
   }
 
   /**
@@ -294,12 +294,12 @@ export class QuadTree<TId extends string = string> {
   ): Result<QuadItem<TId>, SpatialNotFoundError> {
     const item = this.nearest(point, maxDistance);
     if (!item) {
-      return err({
+      return Err({
         type: 'spatial_not_found',
         message: 'No nearest spatial item found in QuadTree within the specified distance.',
       });
     }
-    return ok(item);
+    return Ok(item);
   }
 
   public dispose(): void {

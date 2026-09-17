@@ -13,7 +13,7 @@ import {
   rollbackControllers,
   rollbackTransactionState,
 } from '../../transactions/transactionHelpers';
-import { collectActiveKeySet } from '../trail/dagHelpers';
+import { getActiveKeys } from '../trail/dagHelpers';
 
 const executeWithTransition = (action: () => void, schedule?: (cb: () => void) => void) =>
   schedule ? schedule(action) : action();
@@ -44,8 +44,8 @@ export function createTransactionsSlice<
     targetSnapshot: Parameters<typeof applyHistorySnapshot<TData, TContext, TPopoverKey>>[0],
   ) => {
     const { floating, trail } = get();
-    const currentKeys = collectActiveKeySet(floating, trail);
-    const snapshotKeys = collectActiveKeySet(targetSnapshot.floating, targetSnapshot.trail);
+    const currentKeys = getActiveKeys(floating, trail);
+    const snapshotKeys = getActiveKeys(targetSnapshot.floating, targetSnapshot.trail);
     const evictedKeys: TPopoverKey[] = [];
     for (const k of currentKeys) {
       if (!snapshotKeys.has(k)) evictedKeys.push(k);
@@ -89,7 +89,7 @@ export function createTransactionsSlice<
       if (isErr(txResult)) {
         if (debug) logger.error('[popover-trail]: Transaction Rollback:', txResult.error);
         const { floating, trail } = get();
-        const currentActiveKeys = collectActiveKeySet(floating, trail);
+        const currentActiveKeys = getActiveKeys(floating, trail);
         dispatchEffects([{ type: 'CANCEL_TIMERS', keys: [...currentActiveKeys] }]);
         rollbackTransactionState<TData, TContext, TPopoverKey>(snapshotState, popoverDAG, set);
         rollbackControllers(activeControllers, snapshotControllers);

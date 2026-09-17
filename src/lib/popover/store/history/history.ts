@@ -6,7 +6,7 @@
  */
 
 import { DISPOSE_SYMBOL } from '../../utils/disposable';
-import { ok, err, type Result } from '../../utils/result';
+import { Ok, Err, type Result } from '../../utils/result';
 import type {
   HistoryError,
   HistoryManager,
@@ -85,12 +85,12 @@ export function createHistoryManager<
   ): Result<HistorySnapshot<TData, TPopoverKey>, HistoryError> => {
     const previous = undo(state);
     if (!previous) {
-      return err({
+      return Err({
         type: 'undo_underflow',
         message: 'Cannot undo: undo history journal is empty.',
       });
     }
-    return ok(previous);
+    return Ok(previous);
   };
 
   /**
@@ -102,12 +102,12 @@ export function createHistoryManager<
   ): Result<HistorySnapshot<TData, TPopoverKey>, HistoryError> => {
     const next = redo(state);
     if (!next) {
-      return err({
+      return Err({
         type: 'redo_underflow',
         message: 'Cannot redo: redo history journal is empty.',
       });
     }
-    return ok(next);
+    return Ok(next);
   };
 
   const clearHistory = (): void => {

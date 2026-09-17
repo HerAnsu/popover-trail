@@ -28,4 +28,4 @@ export type {
   IsBranded,
   AnyBrand,
 } from './types/branded';
-export { EMPTY_READONLY_ARRAY, EMPTY_READONLY_OBJECT, emptyRecord, unbrand } from './types/branded';
+export { EMPTY_ARRAY, EMPTY_OBJECT, emptyRecord, unbrand } from './types/branded';

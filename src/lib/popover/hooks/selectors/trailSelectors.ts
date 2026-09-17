@@ -45,11 +45,9 @@ export function usePopoverTotalActiveCount(): number {
   return usePopoverStore((state) => state.floating.length + state.trail.length);
 }
 
-export function useIsPopoverIdle(): boolean {
+export function usePopoverIsIdle(): boolean {
   return usePopoverStore((state) => state.floating.length === 0 && state.trail.length === 0);
 }
-
-export const usePopoverIsIdle = useIsPopoverIdle;
 
 export function usePopoverParentKey<TPopoverKey extends string = RegisteredKeys>(
   key: TPopoverKey,
