@@ -11,16 +11,44 @@ import type { TrailEntry } from '../types';
 import { clampToViewport, clampToContainer } from './dndClamp';
 import { createMagneticSnapModifier, type SnapTargetRect } from './dndSnap';
 
+/**
+ * Configuration options for composing dnd-kit modifiers on the popover canvas.
+ */
 export interface UseCanvasModifiersOptions {
+  /** Optional array of consumer-supplied dnd-kit modifiers. */
   readonly modifiers?: Modifier[];
+  /** Whether to clamp card dragging to the browser window viewport. */
   readonly restrictToWindow?: boolean;
+  /** Whether to clamp card dragging to the canvas container element bounds. */
   readonly restrictToContainer?: boolean;
+  /** Whether magnetic boundary snapping between sibling cards is enabled. */
   readonly enableSnapping?: boolean;
+  /** Pixel distance threshold for magnetic snapping (default: 12). */
   readonly snapThreshold?: number;
+  /** Ref to the container DOM element when `restrictToContainer` is enabled. */
   readonly containerRef: React.RefObject<HTMLDivElement | null>;
+  /** Active popover entries used to derive obstacle boundaries for magnetic snapping. */
   readonly activeEntries: readonly { readonly entry: TrailEntry<unknown> }[];
 }
 
+/**
+ * Composes dnd-kit modifiers for boundary clamping, container restrictions, and magnetic snapping.
+ * Memoizes modifier pipelines to prevent re-instantiation on intermediate animation frames.
+ *
+ * @param options - Modifier configuration options.
+ * @returns Array of active dnd-kit `Modifier` functions.
+ *
+ * @example
+ * ```tsx
+ * const modifiers = useCanvasModifiers({
+ *   restrictToWindow: true,
+ *   enableSnapping: true,
+ *   snapThreshold: 12,
+ *   containerRef,
+ *   activeEntries,
+ * });
+ * ```
+ */
 export function useCanvasModifiers({
   modifiers,
   restrictToWindow,

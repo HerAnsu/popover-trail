@@ -9,6 +9,25 @@ import type { TrailEntry, DragOffset } from '../../types';
 import { QuadTree, type BoundingBox, selectLowestEnergyPlacement } from '../../utils/quadTree';
 import { ZERO_OFFSET } from '../../constants';
 
+/**
+ * Checks for spatial collisions with active sibling cards and selects the lowest-energy non-overlapping position.
+ * Populates a spatial QuadTree with active floating siblings, evaluates candidate nudge offsets,
+ * and returns the optimal placement minimizing visual overlap and displacement distance.
+ *
+ * @param id - Key of the card being placed.
+ * @param top - Initial computed top position.
+ * @param left - Initial computed left position.
+ * @param winWidth - Viewport inner width.
+ * @param winHeight - Viewport inner height.
+ * @param activeFloating - Active floating trail entries.
+ * @param activeOffsets - Map of active card drag offsets.
+ * @returns Nudged coordinates `{ top, left }`.
+ *
+ * @example
+ * ```ts
+ * const pos = applySpatialCollisionNudge('card-2', 100, 200, 1920, 1080, siblings, offsets);
+ * ```
+ */
 export function applySpatialCollisionNudge(
   id: string,
   top: number,

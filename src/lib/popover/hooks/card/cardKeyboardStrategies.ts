@@ -19,10 +19,28 @@ import {
 import { getFocusableCardElements, focusParentCard } from './cardKeyboardFocus';
 import { isMatchingKey } from '../../utils/predicates';
 
+/**
+ * Polymorphic keyboard event contract accepting either native React KeyboardEvent or a mock structure.
+ */
 export type KeyboardNavEvent =
   | React.KeyboardEvent<HTMLElement>
   | Pick<React.KeyboardEvent<HTMLElement>, 'key' | 'preventDefault'>;
 
+/**
+ * Checks and fires custom keyboard shortcuts registered on the popover entry.
+ * Supports modifier key prefixes like `Mod+s` (Command on Mac, Control on Windows).
+ *
+ * @template TData - Stored entry data type.
+ * @template TPopoverKey - Branded key type.
+ * @param e - Keyboard event.
+ * @param cardEntry - Active popover entry.
+ * @returns `true` if a custom shortcut matched and was dispatched; `false` otherwise.
+ *
+ * @example
+ * ```ts
+ * const handled = handleCustomShortcuts(event, entry);
+ * ```
+ */
 export function handleCustomShortcuts<TData = unknown, TPopoverKey extends string = string>(
   e: KeyboardNavEvent,
   cardEntry: TrailEntry<TData, TPopoverKey>,
@@ -40,6 +58,18 @@ export function handleCustomShortcuts<TData = unknown, TPopoverKey extends strin
   return false;
 }
 
+/**
+ * Handles vertical ArrowUp and ArrowDown cycling through focusable elements inside a card.
+ * Does not intercept keys when typing inside input or textarea elements.
+ *
+ * @param e - Keyboard event.
+ * @param cardEl - Root container element of the card.
+ *
+ * @example
+ * ```ts
+ * handleVerticalArrowNavigation(e, cardEl);
+ * ```
+ */
 export function handleVerticalArrowNavigation(
   e: KeyboardNavEvent,
   cardEl: HTMLElement | null,
@@ -58,6 +88,23 @@ export function handleVerticalArrowNavigation(
   elements[nextIndex]?.focus();
 }
 
+/**
+ * Handles horizontal navigation (ArrowRight to click/activate, ArrowLeft to close and return to parent)
+ * and Escape to dismiss the active popover card.
+ *
+ * @template TData - Stored entry data type.
+ * @template TPopoverKey - Branded key type.
+ * @param e - Keyboard event.
+ * @param cardEntry - Active popover entry.
+ * @param pinned - Whether the card is pinned (pinned cards are not dismissed by ArrowLeft/Escape).
+ * @param trailList - Array of active trail entries.
+ * @param act - Action dispatchers to close cards.
+ *
+ * @example
+ * ```ts
+ * handleHorizontalArrowNavigation(e, entry, false, trail, actions);
+ * ```
+ */
 export function handleHorizontalArrowNavigation<
   TData = unknown,
   TPopoverKey extends string = string,

@@ -32,6 +32,27 @@ function restoreCardFocus(
   }
 }
 
+/**
+ * Manages the focus lifecycle of a popover card.
+ *
+ * Responsibilities:
+ * 1. Preserves the previously focused DOM element prior to mounting.
+ * 2. Optionally focuses a specified initial element (`autoFocusElement`).
+ * 3. Restores focus upon card unmount to either the previously focused element or the parent card.
+ * 4. Coordinates background body scroll locking when enabled.
+ *
+ * @param entry - Active popover trail entry with focus lock configuration.
+ * @param cardRef - Ref to the card's root DOM element.
+ *
+ * @example
+ * ```tsx
+ * function PopoverCardView({ entry }: { entry: TrailEntry }) {
+ *   const cardRef = useRef<HTMLDivElement>(null);
+ *   useCardFocusManagement(entry, cardRef);
+ *   return <div ref={cardRef}>...</div>;
+ * }
+ * ```
+ */
 export function useCardFocusManagement(
   entry: TrailEntry,
   cardRef: React.RefObject<HTMLElement | null>,

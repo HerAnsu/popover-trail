@@ -7,6 +7,19 @@
 
 import type { BoundingBox } from '../guards/spatialGuards';
 
+/**
+ * Computes the rectangular intersection of two axis-aligned bounding boxes (AABBs).
+ *
+ * @param a - First bounding box.
+ * @param b - Second bounding box.
+ * @returns The overlapping `BoundingBox`, or `null` if the boxes do not intersect.
+ *
+ * @example
+ * ```ts
+ * const overlap = intersectionBox({ x: 0, y: 0, width: 100, height: 100 }, { x: 50, y: 50, width: 100, height: 100 });
+ * // returns { x: 50, y: 50, width: 50, height: 50 }
+ * ```
+ */
 export function intersectionBox(a: BoundingBox, b: BoundingBox): BoundingBox | null {
   const minX = Math.max(a.x, b.x);
   const maxX = Math.min(a.x + a.width, b.x + b.width);
@@ -17,6 +30,18 @@ export function intersectionBox(a: BoundingBox, b: BoundingBox): BoundingBox | n
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 
+/**
+ * Calculates the numeric area of intersection between two bounding boxes.
+ *
+ * @param a - First bounding box.
+ * @param b - Second bounding box.
+ * @returns Non-negative area in square pixels (0 if no intersection).
+ *
+ * @example
+ * ```ts
+ * const area = intersectionArea(boxA, boxB);
+ * ```
+ */
 export function intersectionArea(a: BoundingBox, b: BoundingBox): number {
   const minX = Math.max(a.x, b.x);
   const maxX = Math.min(a.x + a.width, b.x + b.width);
@@ -29,6 +54,18 @@ export function intersectionArea(a: BoundingBox, b: BoundingBox): number {
   return (maxX - minX) * (maxY - minY);
 }
 
+/**
+ * Computes the minimal bounding box enclosing both given bounding boxes (AABB Union).
+ *
+ * @param a - First bounding box.
+ * @param b - Second bounding box.
+ * @returns The combined bounding box enclosing both `a` and `b`.
+ *
+ * @example
+ * ```ts
+ * const united = boundingUnion(boxA, boxB);
+ * ```
+ */
 export function boundingUnion(a: BoundingBox, b: BoundingBox): BoundingBox {
   const minX = Math.min(a.x, b.x);
   const maxX = Math.max(a.x + a.width, b.x + b.width);
@@ -38,6 +75,21 @@ export function boundingUnion(a: BoundingBox, b: BoundingBox): BoundingBox {
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 
+/**
+ * Calculates the Intersection-over-Union (IoU) overlap ratio between two bounding boxes.
+ *
+ * $$\text{IoU} = \frac{\text{Area}(A \cap B)}{\text{Area}(A \cup B)}$$
+ *
+ * @param a - First bounding box.
+ * @param b - Second bounding box.
+ * @returns Float value between 0.0 (no overlap) and 1.0 (identical bounds).
+ *
+ * @example
+ * ```ts
+ * const ratio = overlapRatio(cardBox, obstacleBox);
+ * if (ratio > 0.5) { ... }
+ * ```
+ */
 export function overlapRatio(a: BoundingBox, b: BoundingBox): number {
   const inter = intersectionArea(a, b);
   if (inter <= 0) return 0;
@@ -45,6 +97,19 @@ export function overlapRatio(a: BoundingBox, b: BoundingBox): number {
   return union > 0 ? inter / union : 0;
 }
 
+/**
+ * Computes the minimum Euclidean distance from a 2D point to the perimeter of a bounding box.
+ * If the point is inside the bounding box, returns 0.
+ *
+ * @param point - Target 2D coordinate point `{ x, y }`.
+ * @param box - Bounding box.
+ * @returns Euclidean distance in pixels.
+ *
+ * @example
+ * ```ts
+ * const dist = distanceToBox({ x: 10, y: 10 }, { x: 50, y: 50, width: 100, height: 100 });
+ * ```
+ */
 export function distanceToBox(
   point: { readonly x: number; readonly y: number },
   box: BoundingBox,

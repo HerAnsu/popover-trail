@@ -15,6 +15,11 @@ export type { InferSchemaContext };
  * @param context - Optional runtime context value.
  * @param defaultContext - Fallback context value.
  * @returns Resolved non-undefined context.
+ *
+ * @example
+ * ```ts
+ * const ctx = resolveSchemaContext(userContext, { theme: 'dark' });
+ * ```
  */
 export function resolveSchemaContext<TContext>(
   context: TContext | undefined,
@@ -27,7 +32,14 @@ export function resolveSchemaContext<TContext>(
  * Type guard checking whether a schema context is defined and non-null.
  *
  * @param context - Candidate context value.
- * @returns True if context is defined and not null.
+ * @returns `true` if context is defined and not null.
+ *
+ * @example
+ * ```ts
+ * if (hasSchemaContext(ctx)) {
+ *   console.log('Valid context:', ctx);
+ * }
+ * ```
  */
 export function hasSchemaContext<TContext>(
   context: TContext | undefined | null,
@@ -40,6 +52,12 @@ export function hasSchemaContext<TContext>(
  *
  * @param defaultContext - Default context supplied when runtime context is omitted.
  * @returns Resolver function taking optional context.
+ *
+ * @example
+ * ```ts
+ * const getContext = createDefaultContextResolver({ locale: 'en' });
+ * const activeContext = getContext(); // { locale: 'en' }
+ * ```
  */
 export function createDefaultContextResolver<TContext>(
   defaultContext: TContext,

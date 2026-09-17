@@ -16,7 +16,15 @@ import {
 import { clamp } from '../../utils/math';
 
 /**
- * Helper to safely measure current viewport bounds across SSR and browser environments.
+ * Safely measures current viewport dimensions across SSR and browser environments.
+ * Returns standard desktop fallback dimensions (1024x768) when evaluated in non-DOM environments.
+ *
+ * @returns An object with `{ width, height }` in pixels.
+ *
+ * @example
+ * ```ts
+ * const { width, height } = getViewportBounds();
+ * ```
  */
 export function getViewportBounds(): { width: number; height: number } {
   const isClient = isBrowser();
@@ -26,7 +34,12 @@ export function getViewportBounds(): { width: number; height: number } {
   };
 }
 
-/** Pure helper to extract middleware extra properties. */
+/**
+ * Pure helper to extract middleware extra properties into a safe record object.
+ *
+ * @param option - Raw configuration option.
+ * @returns Shallow copy record if option is an object, or empty record.
+ */
 export function resolveMiddlewareExtraProps(option: unknown): Record<string, unknown> {
   return isRecordObject(option) ? { ...option } : {};
 }
@@ -35,6 +48,15 @@ export function resolveMiddlewareExtraProps(option: unknown): Record<string, unk
  * Heuristic auto-placement resolver:
  * Automatically picks `'left'` or `'right'` based on whether the anchor trigger is positioned
  * on the right half or left half of the viewport, ensuring popovers naturally open towards center.
+ *
+ * @param placement - Requested placement, or `'auto'`.
+ * @param anchorRect - Bounding rectangle of the anchor trigger.
+ * @returns Resolved placement or undefined.
+ *
+ * @example
+ * ```ts
+ * const p = calculateAutoPlacement('auto', buttonRect); // 'left' if button on right half of screen
+ * ```
  */
 export function calculateAutoPlacement(
   placement: Placement | 'auto' | undefined,
@@ -50,10 +72,22 @@ export function calculateAutoPlacement(
 }
 
 /**
- * Calculates absolute layout coordinates for transformed responsive modes:
+ * Calculates absolute layout coordinates for responsive display modes:
  * - `bottom-sheet`: Docked to bottom edge of mobile viewport.
  * - `modal`: Centered in the middle of viewport with safety margins.
  * - `docked-top`: Anchored to top edge navigation bar.
+ *
+ * @param effectiveResponsiveMode - Active responsive layout mode string.
+ * @param isMobileViewport - Whether current viewport matches mobile breakpoint.
+ * @param layoutStrategy - Layout strategy identifier.
+ * @param winWidth - Viewport inner width.
+ * @param winHeight - Viewport inner height.
+ * @returns Computed `{ top, left }` position or `null` if standard floating placement applies.
+ *
+ * @example
+ * ```ts
+ * const pos = calculateResponsivePosition('bottom-sheet', true, undefined, 375, 812);
+ * ```
  */
 export function calculateResponsivePosition(
   effectiveResponsiveMode: string | undefined,

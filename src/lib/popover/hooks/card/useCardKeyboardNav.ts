@@ -18,17 +18,28 @@ import {
 export { focusParentCard, getFocusableCardElements } from './cardKeyboardFocus';
 export type { KeyboardNavEvent } from './cardKeyboardStrategies';
 
+/**
+ * Options contract for dispatching card keyboard navigation events.
+ */
 export interface CardKeyboardNavigationOptions<
   TData = unknown,
   TPopoverKey extends string = string,
 > {
+  /** Keyboard event to handle. */
   event: KeyboardNavEvent;
+  /** Card DOM container element. */
   cardElement: HTMLElement | null;
+  /** Active popover trail entry. */
   entry: TrailEntry<TData, TPopoverKey>;
+  /** Whether arrow key navigation is globally enabled. */
   enableArrowNavigation: boolean;
+  /** Whether the card is pinned. */
   isPinned: boolean;
+  /** Complete list of trail entries. */
   trail: readonly TrailEntry<TData, TPopoverKey>[];
+  /** Count of active floating cards. */
   floatingCount: number;
+  /** Actions available to close or dismiss cards. */
   actions: {
     closeFrom: (index: number, options?: { transition?: boolean }) => void;
     closeByKey?: (key: TPopoverKey, options?: { transition?: boolean }) => void;
@@ -77,6 +88,35 @@ function resolveNavParams<TData = unknown, TPopoverKey extends string = string>(
 }
 
 
+/**
+ * Dispatches keyboard navigation events for popover cards.
+ * Evaluates custom shortcuts first, followed by vertical and horizontal arrow navigation.
+ *
+ * @template TData - Stored entry data type.
+ * @template TPopoverKey - Branded key type.
+ * @param eventOrOptions - Either a full `CardKeyboardNavigationOptions` bundle or an individual `KeyboardNavEvent`.
+ * @param cardElement - Card root HTMLElement when using positional parameters.
+ * @param entry - Trail entry when using positional parameters.
+ * @param enableArrowNavigation - Boolean toggle for arrow navigation.
+ * @param isPinned - Pinned state boolean.
+ * @param trail - List of active trail entries.
+ * @param _floatingCount - Count of floating entries.
+ * @param actions - Object with `closeFrom` and `closeByKey` dispatchers.
+ *
+ * @example
+ * ```ts
+ * handleCardKeyboardNavigation({
+ *   event: e,
+ *   cardElement,
+ *   entry,
+ *   enableArrowNavigation: true,
+ *   isPinned: false,
+ *   trail,
+ *   floatingCount: 1,
+ *   actions,
+ * });
+ * ```
+ */
 export function handleCardKeyboardNavigation<TData = unknown, TPopoverKey extends string = string>(
   eventOrOptions: KeyboardNavEvent | CardKeyboardNavigationOptions<TData, TPopoverKey>,
   cardElement?: HTMLElement | null,

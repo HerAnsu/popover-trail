@@ -32,6 +32,11 @@ export function defineSchemaNode<TData, TParentData = unknown, TContext = unknow
  *
  * @param node - Popover schema node.
  * @returns Readonly array of child key identifiers.
+ *
+ * @example
+ * ```ts
+ * const children = getAllowedChildren(userNode); // ['profile', 'settings']
+ * ```
  */
 export function getAllowedChildren<TData, TParent, TContext>(
   node: PopoverSchemaNode<TData, TParent, TContext>,
@@ -44,7 +49,12 @@ export function getAllowedChildren<TData, TParent, TContext>(
  *
  * @param node - Popover schema node.
  * @param childKey - Child key to check.
- * @returns True if childKey is present in node children.
+ * @returns `true` if childKey is present in node children; `false` otherwise.
+ *
+ * @example
+ * ```ts
+ * if (hasAllowedChild(userNode, 'profile')) { ... }
+ * ```
  */
 export function hasAllowedChild<TData, TParent, TContext>(
   node: PopoverSchemaNode<TData, TParent, TContext>,

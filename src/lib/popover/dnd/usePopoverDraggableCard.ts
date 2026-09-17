@@ -20,6 +20,33 @@ import {
   resolveDragTransformState,
 } from './dndCardConfig';
 
+/**
+ * Integrates dnd-kit draggable semantics, interactive tilt physics, and popover positioning for card components.
+ * Automatically respects pin states, entry-level drag disabled toggles, and attaches draggable listeners.
+ *
+ * @param options - Draggable card options including entry, index, pin state, and tilt parameters.
+ * @returns Result object containing `ref`, `style`, `isDragging`, `isDragAllowed`, `dragHandleProps`, and card actions.
+ *
+ * @example
+ * ```tsx
+ * function MyDraggableCard({ entry, index, isPinned }: Props) {
+ *   const { ref, style, dragHandleProps } = usePopoverDraggableCard({
+ *     entry,
+ *     index,
+ *     isPinned,
+ *     enableDrag: true,
+ *     enableTilt: true,
+ *   });
+ *
+ *   return (
+ *     <div ref={ref} style={style}>
+ *       <div {...dragHandleProps}>Drag Me</div>
+ *       <div>Content</div>
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
 export function usePopoverDraggableCard(
   options: UsePopoverDraggableCardOptions,
 ): UsePopoverDraggableCardResult {

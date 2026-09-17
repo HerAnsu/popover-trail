@@ -4,6 +4,18 @@
  * @module cache/cacheTagIndex
  */
 
+/**
+ * Bidirectional inverted index mapping semantic tags to cache keys.
+ * Enables O(1) tag lookup and amortized O(K) invalidation across grouped entries.
+ *
+ * @example
+ * ```ts
+ * const tagIndex = new CacheTagIndex(500);
+ * tagIndex.register('user:123', ['user', 'auth']);
+ *
+ * const userKeys = tagIndex.getKeysForTag('user'); // Set { 'user:123' }
+ * ```
+ */
 export class CacheTagIndex {
   public readonly capacity: number;
   private readonly tagToKeys = new Map<string, Set<string>>();
@@ -13,6 +25,13 @@ export class CacheTagIndex {
     this.capacity = capacity;
   }
 
+  /**
+   * Associates an entry key with one or more tags.
+   * Cleans up prior associations if the key was already registered.
+   *
+   * @param key - The cache entry key.
+   * @param tags - Optional list of tags to associate.
+   */
   public register(key: string, tags?: readonly string[]): void {
     this.unregister(key);
     if (!tags || tags.length === 0) return;
@@ -36,6 +55,11 @@ export class CacheTagIndex {
     if (keyTags.size > 0) this.keyToTags.set(key, keyTags);
   }
 
+  /**
+   * Unregisters a key, removing all of its tag associations.
+   *
+   * @param key - The cache entry key to remove.
+   */
   public unregister(key: string): void {
     const tags = this.keyToTags.get(key);
     if (!tags) return;
@@ -50,10 +74,22 @@ export class CacheTagIndex {
     this.keyToTags.delete(key);
   }
 
+  /**
+   * Returns all keys associated with a specific tag.
+   *
+   * @param tag - Tag name.
+   * @returns Readonly set of matching keys, or undefined if no keys match.
+   */
   public getKeysForTag(tag: string): ReadonlySet<string> | undefined {
     return this.tagToKeys.get(tag);
   }
 
+  /**
+   * Returns a deduplicated Set of keys associated with any of the provided tags.
+   *
+   * @param tags - Array of tags to query.
+   * @returns Set of keys matching any of the specified tags.
+   */
   public getKeysForTags(tags: readonly string[]): Set<string> {
     const result = new Set<string>();
     for (const tag of tags) {
@@ -63,12 +99,29 @@ export class CacheTagIndex {
     return result;
   }
 
+  /**
+   * Clears all tag-to-key and key-to-tag index records.
+   */
   public clear(): void {
     this.tagToKeys.clear();
     this.keyToTags.clear();
   }
 }
 
+/**
+ * Invalidates all cache entries matching the specified tags using the inverted tag index.
+ *
+ * @param storage - Object with a `delete` method (such as a CacheStorageAdapter).
+ * @param tagIndex - The `CacheTagIndex` holding tag mappings.
+ * @param tags - A single tag string or list of tag strings to invalidate.
+ * @param onDelete - Optional callback invoked after each key deletion.
+ * @returns The total number of entries successfully deleted.
+ *
+ * @example
+ * ```ts
+ * const purged = invalidateWithTagIndex(storage, tagIndex, ['dashboard', 'analytics']);
+ * ```
+ */
 export function invalidateWithTagIndex(
   storage: { delete(key: string): boolean },
   tagIndex: CacheTagIndex,

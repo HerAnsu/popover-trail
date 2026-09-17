@@ -69,6 +69,13 @@ export type SchemaDataMap<TSchema extends PopoverSchemaDefinition> = {
  *
  * @param schemas - Array of schema definitions or instantiated schema objects to combine.
  * @returns Instantiated PopoverSchemaInstance containing merged keys, routes, and actions.
+ *
+ * @example
+ * ```ts
+ * const baseSchema = createPopoverSchema({ home: { children: ['about'] } });
+ * const featureSchema = createPopoverSchema({ settings: { children: ['account'] } });
+ * const appSchema = mergePopoverSchemas(baseSchema, featureSchema);
+ * ```
  */
 export function mergePopoverSchemas<
   const TSchemas extends readonly (

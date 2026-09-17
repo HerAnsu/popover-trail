@@ -10,8 +10,13 @@ import { boundingUnion } from './spatialAABB';
 import { QuadTree } from './quadTreeCore';
 import { RingBuffer } from '../buffer';
 
+/**
+ * A group of spatially connected items and their encompassing bounding box.
+ */
 export interface SpatialCluster<TId extends string = string> {
+  /** Enclosing bounding box of the entire cluster. */
   readonly bounds: BoundingBox;
+  /** Items belonging to this cluster. */
   readonly items: readonly QuadItem<TId>[];
 }
 
@@ -33,6 +38,22 @@ function computeEnclosingBounds<TId extends string>(items: readonly QuadItem<TId
   return { x: minX - 10, y: minY - 10, width: w + 20, height: h + 20 };
 }
 
+/**
+ * Partitions a collection of items into connected spatial clusters using BFS over a QuadTree.
+ * Two items belong to the same cluster if their bounding boxes overlap or form an unbroken chain of intersections.
+ *
+ * @template TId - Item identifier type.
+ * @param items - Items to cluster.
+ * @returns Array of disjoint `SpatialCluster` objects.
+ *
+ * @example
+ * ```ts
+ * const clusters = findSpatialClusters(popoverItems);
+ * for (const cluster of clusters) {
+ *   console.log(`Cluster with ${cluster.items.length} popovers spanning`, cluster.bounds);
+ * }
+ * ```
+ */
 export function findSpatialClusters<TId extends string>(
   items: readonly QuadItem<TId>[],
 ): SpatialCluster<TId>[] {
