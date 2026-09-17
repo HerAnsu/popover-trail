@@ -11,6 +11,22 @@ export interface HasKey {
   readonly key: string;
 }
 
+/**
+ * Checks whether an object with the specified `key` exists in an array.
+ * Fast iteration with early return and zero allocations.
+ *
+ * @template T - Element type extending HasKey.
+ * @param list - Array of keyed elements.
+ * @param key - Identifier string to find.
+ * @returns True if an element with the exact key exists.
+ *
+ * @example
+ * ```typescript
+ * const entries = [{ key: 'card-1' }, { key: 'card-2' }];
+ * isKeyInList(entries, 'card-1'); // => true
+ * isKeyInList(entries, 'card-3'); // => false
+ * ```
+ */
 export function isKeyInList<T extends HasKey>(list: readonly T[], key: string): boolean {
   for (const item of list) {
     if (item && item.key === key) return true;
@@ -18,6 +34,18 @@ export function isKeyInList<T extends HasKey>(list: readonly T[], key: string): 
   return false;
 }
 
+/**
+ * Checks whether a popover key is actively present in either the cascading trail or floating list.
+ *
+ * @param state - Trail and floating entry lists.
+ * @param key - Popover key to check.
+ * @returns True if the key is active in trail or floating entries.
+ *
+ * @example
+ * ```typescript
+ * const isActive = isPopoverActive(storeState, 'card-profile');
+ * ```
+ */
 export function isPopoverActive(
   state: { readonly trail: readonly HasKey[]; readonly floating: readonly HasKey[] },
   key: string,
@@ -25,10 +53,38 @@ export function isPopoverActive(
   return isKeyInList(state.trail, key) || isKeyInList(state.floating, key);
 }
 
+/**
+ * Determines whether floating geometry (drag/pin offsets) needs active tracking.
+ *
+ * @param isPinned - Whether popover is currently pinned.
+ * @param isDragging - Whether popover is actively being dragged.
+ * @returns True if pinned or dragging.
+ *
+ * @example
+ * ```typescript
+ * if (shouldTrackFloatingGeometry(entry.isPinned, entry.isDragging)) {
+ *   syncCoordinates();
+ * }
+ * ```
+ */
 export function shouldTrackFloatingGeometry(isPinned?: boolean, isDragging?: boolean): boolean {
   return Boolean(isPinned) || Boolean(isDragging);
 }
 
+/**
+ * Compares two animation class name configuration objects for visual changes.
+ *
+ * @param prev - Previous animation class configuration.
+ * @param next - Next animation class configuration.
+ * @returns True if class names have changed and require a CSS re-computation.
+ *
+ * @example
+ * ```typescript
+ * if (hasAnimationClassNamesChanged(prevClasses, nextClasses)) {
+ *   updateClassNames();
+ * }
+ * ```
+ */
 export function hasAnimationClassNamesChanged(
   prev?: {
     readonly mountingClassName?: string;
@@ -57,6 +113,12 @@ export function hasAnimationClassNamesChanged(
  * @template T - Input value type.
  * @param value - Value to inspect.
  * @returns True if value is non-nullable.
+ *
+ * @example
+ * ```typescript
+ * const items: (string | null | undefined)[] = ['a', null, 'b', undefined];
+ * const clean: string[] = items.filter(isNonNullable); // => ['a', 'b']
+ * ```
  */
 export function isNonNullable<T>(value: T): value is NonNullable<T> {
   return value !== null && value !== undefined;
@@ -68,6 +130,14 @@ export function isNonNullable<T>(value: T): value is NonNullable<T> {
  * @template T - Value type.
  * @param value - Value to inspect.
  * @returns True if value is not `undefined`.
+ *
+ * @example
+ * ```typescript
+ * const val: number | undefined = 42;
+ * if (isDefined(val)) {
+ *   console.log(val.toFixed(2));
+ * }
+ * ```
  */
 export function isDefined<T>(value: T | undefined): value is T {
   return value !== undefined;
@@ -79,6 +149,13 @@ export function isDefined<T>(value: T | undefined): value is T {
  * @template T - Value type.
  * @param value - Value to inspect.
  * @returns True if value is `null`.
+ *
+ * @example
+ * ```typescript
+ * if (isNull(entry.parentKey)) {
+ *   console.log('Root popover card');
+ * }
+ * ```
  */
 export function isNull<T>(value: T | null): value is null {
   return value === null;
@@ -90,6 +167,13 @@ export function isNull<T>(value: T | null): value is null {
  * @template T - Value type.
  * @param value - Value to inspect.
  * @returns True if value is `undefined`.
+ *
+ * @example
+ * ```typescript
+ * if (isUndefined(options.timeout)) {
+ *   useDefaultTimeout();
+ * }
+ * ```
  */
 export function isUndefined<T>(value: T | undefined): value is undefined {
   return value === undefined;
@@ -101,6 +185,12 @@ export function isUndefined<T>(value: T | undefined): value is undefined {
  * @template T - Object extending HasKey.
  * @param key - Target key string to match.
  * @returns Predicate function.
+ *
+ * @example
+ * ```typescript
+ * const matchesCardA = isMatchingKey('card-a');
+ * const target = items.find(matchesCardA);
+ * ```
  */
 export function isMatchingKey<T extends HasKey>(key: string): (item: T) => boolean {
   return curry2((k: string, item: T) => item.key === k)(key);
@@ -112,6 +202,13 @@ export function isMatchingKey<T extends HasKey>(key: string): (item: T) => boole
  * @template T - Object extending HasKey.
  * @param keys - Set of target key strings.
  * @returns Predicate function.
+ *
+ * @example
+ * ```typescript
+ * const activeKeys = new Set(['card-1', 'card-2']);
+ * const isInActiveSet = hasKeyIn(activeKeys);
+ * const filtered = items.filter(isInActiveSet);
+ * ```
  */
 export function hasKeyIn<T extends HasKey>(keys: ReadonlySet<string>): (item: T) => boolean {
   return curry2((set: ReadonlySet<string>, item: T) => set.has(item.key))(keys);

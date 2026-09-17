@@ -8,6 +8,22 @@ export interface SafeCallbackOptions {
 /**
  * Fault-isolated callback executor.
  * Protects state machines, batching loops, and subscribers from throwing unhandled consumer exceptions.
+ * Catches errors, logs diagnostics, and optionally dispatches to an error handler.
+ *
+ * @template TArgs - Argument tuple type.
+ * @template TReturn - Callback return value type.
+ * @param fn - Consumer callback function (safely handles null/undefined).
+ * @param args - Arguments to pass into the callback.
+ * @param options - Configuration including contextName for logging and custom onError hook.
+ * @returns Resulting return value, or `undefined` if execution failed or fn is not a function.
+ *
+ * @example
+ * ```typescript
+ * const result = safeCallback(onOpenChange, [true], {
+ *   contextName: 'usePopoverCard',
+ *   onError: (err) => console.error('Listener failed', err),
+ * });
+ * ```
  */
 export function safeCallback<TArgs extends unknown[], TReturn>(
   fn: ((...args: TArgs) => TReturn) | null | undefined,

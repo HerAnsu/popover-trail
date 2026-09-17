@@ -9,6 +9,12 @@
  * suitable for tab sessions and transient keys.
  *
  * @returns Unique tab/session ID string.
+ *
+ * @example
+ * ```typescript
+ * const tabId = generateTabId();
+ * // => '3b241101-e2bb-4255-8caf-4136c566a964'
+ * ```
  */
 export function generateTabId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {

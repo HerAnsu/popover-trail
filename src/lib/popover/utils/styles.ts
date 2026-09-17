@@ -31,6 +31,26 @@ export interface GetPopoverStylesParams {
 const styleCache = createLRUCache<number, CSSProperties>(128);
 const DEFAULT_FALLBACK_Z_INDEX = DEFAULT_BASE_Z_INDEX;
 
+/**
+ * Computes hardware-accelerated CSS properties and `--pt-*` custom variables for a popover card.
+ * Normalizes input coordinates to finite numbers, applies subpixel rounding during dynamic dragging,
+ * and caches static layout positions via an internal LRU cache to eliminate style object re-allocation.
+ *
+ * @param params - Layout coordinates, drag deltas, 3D tilt rotations, and stacking z-index.
+ * @returns React `CSSProperties` object with absolute positioning, transform, and custom properties.
+ *
+ * @example
+ * ```typescript
+ * const cardStyle = getPopoverStyles({
+ *   finalLayoutPos: { top: 120, left: 340 },
+ *   offset: { x: 10, y: 0 },
+ *   dragX: 5,
+ *   dragY: 0,
+ *   rotation: 2,
+ *   zIndex: 105,
+ * });
+ * ```
+ */
 export function getPopoverStyles({
   finalLayoutPos,
   offset = ZERO_OFFSET,

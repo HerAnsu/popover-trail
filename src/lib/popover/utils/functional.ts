@@ -11,6 +11,12 @@
  * @template T - Argument type.
  * @param value - Value to return.
  * @returns The exact value.
+ *
+ * @example
+ * ```typescript
+ * identity(42); // => 42
+ * [1, 2, 3].map(identity); // => [1, 2, 3]
+ * ```
  */
 export function identity<T>(value: T): T {
   return value;
@@ -18,6 +24,12 @@ export function identity<T>(value: T): T {
 
 /**
  * Pure singleton no-op callback.
+ *
+ * @example
+ * ```typescript
+ * const onFinish = options.onComplete ?? noop;
+ * onFinish();
+ * ```
  */
 export function noop(): void {}
 
@@ -25,8 +37,14 @@ export function noop(): void {}
  * Returns a constant function that always produces `val`.
  *
  * @template T - Return value type.
- * @param val - The constant value.
+ * @param val - The constant value to return.
  * @returns Function returning `val`.
+ *
+ * @example
+ * ```typescript
+ * const getAlwaysFive = constant(5);
+ * getAlwaysFive(); // => 5
+ * ```
  */
 export function constant<T>(val: T): () => T {
   return () => val;
@@ -38,6 +56,15 @@ export function constant<T>(val: T): () => T {
  * @template A - Initial value type.
  * @param a - Initial value.
  * @returns Final composed result.
+ *
+ * @example
+ * ```typescript
+ * const format = pipe(
+ *   '  hello  ',
+ *   (s) => s.trim(),
+ *   (s) => s.toUpperCase(),
+ * ); // => 'HELLO'
+ * ```
  */
 export function pipe<A>(a: A): A;
 export function pipe<A, B>(a: A, ab: (a: A) => B): B;
@@ -81,7 +108,16 @@ export function pipe(value: unknown, ...fns: readonly ((arg: unknown) => unknown
 /**
  * Performs right-to-left function composition.
  *
- * @returns Composed function.
+ * @returns Composed function executing right-to-left.
+ *
+ * @example
+ * ```typescript
+ * const roundAndDouble = compose(
+ *   (n: number) => n * 2,
+ *   (n: number) => Math.round(n),
+ * );
+ * roundAndDouble(4.6); // => 10
+ * ```
  */
 export function compose<A, B>(ab: (a: A) => B): (a: A) => B;
 export function compose<A, B, C>(bc: (b: B) => C, ab: (a: A) => B): (a: A) => C;
@@ -120,6 +156,13 @@ export function compose(
  * @template R - Return value type.
  * @param fn - Binary function to curry.
  * @returns Curried unary function returning unary function.
+ *
+ * @example
+ * ```typescript
+ * const add = curry2((a: number, b: number) => a + b);
+ * const addTen = add(10);
+ * addTen(5); // => 15
+ * ```
  */
 export function curry2<A, B, R>(fn: (a: A, b: B) => R): (a: A) => (b: B) => R {
   return (a: A) => (b: B) => fn(a, b);
@@ -132,6 +175,12 @@ export function curry2<A, B, R>(fn: (a: A, b: B) => R): (a: A) => (b: B) => R {
  * @template K - Property key type.
  * @param key - Property key to extract.
  * @returns Unary accessor function returning the property value.
+ *
+ * @example
+ * ```typescript
+ * const getId = prop<{ id: string; name: string }, 'id'>('id');
+ * getId({ id: 'popover-1', name: 'Settings' }); // => 'popover-1'
+ * ```
  */
 export function prop<T, K extends keyof T>(key: K): (obj: T) => T[K] {
   return (obj: T) => obj[key];
@@ -145,6 +194,13 @@ export function prop<T, K extends keyof T>(key: K): (obj: T) => T[K] {
  * @param key - Property key to inspect.
  * @param value - Expected property value.
  * @returns Predicate function returning true when property equals value.
+ *
+ * @example
+ * ```typescript
+ * const isPinned = propEq<{ pinned: boolean }, 'pinned'>('pinned', true);
+ * isPinned({ pinned: true }); // => true
+ * isPinned({ pinned: false }); // => false
+ * ```
  */
 export function propEq<T, K extends keyof T>(key: K, value: T[K]): (obj: T) => boolean {
   return (obj: T) => obj[key] === value;
@@ -157,6 +213,16 @@ export function propEq<T, K extends keyof T>(key: K, value: T[K]): (obj: T) => b
  * @template T - Target value type.
  * @param predicates - Readonly array of predicate functions.
  * @returns Conjunction predicate function.
+ *
+ * @example
+ * ```typescript
+ * const isPositiveEven = and(
+ *   (n: number) => n > 0,
+ *   (n: number) => n % 2 === 0,
+ * );
+ * isPositiveEven(4); // => true
+ * isPositiveEven(-2); // => false
+ * ```
  */
 export function and<T>(...predicates: readonly ((val: T) => boolean)[]): (val: T) => boolean {
   return (val: T) => {
@@ -174,6 +240,16 @@ export function and<T>(...predicates: readonly ((val: T) => boolean)[]): (val: T
  * @template T - Target value type.
  * @param predicates - Readonly array of predicate functions.
  * @returns Disjunction predicate function.
+ *
+ * @example
+ * ```typescript
+ * const isZeroOrNegative = or(
+ *   (n: number) => n === 0,
+ *   (n: number) => n < 0,
+ * );
+ * isZeroOrNegative(0); // => true
+ * isZeroOrNegative(5); // => false
+ * ```
  */
 export function or<T>(...predicates: readonly ((val: T) => boolean)[]): (val: T) => boolean {
   return (val: T) => {
@@ -190,6 +266,13 @@ export function or<T>(...predicates: readonly ((val: T) => boolean)[]): (val: T)
  * @template T - Target value type.
  * @param predicate - Source predicate to invert.
  * @returns Negated predicate function.
+ *
+ * @example
+ * ```typescript
+ * const isNonEmpty = not((s: string) => s.length === 0);
+ * isNonEmpty('test'); // => true
+ * isNonEmpty(''); // => false
+ * ```
  */
 export function not<T>(predicate: (val: T) => boolean): (val: T) => boolean {
   return (val: T) => !predicate(val);

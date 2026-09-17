@@ -12,6 +12,24 @@ export { toFiniteNumber };
 
 const DEFAULT_PERSPECTIVE_PX = 1000;
 
+/**
+ * Computes a 32-bit integer hash from geometric layout coordinates and zIndex.
+ * Utilizes multiplicative Murmur-style bit mixing (`Math.imul` and XOR shifts)
+ * to produce uniform hash distributions with zero heap allocations on hot interaction paths.
+ *
+ * @param top - Vertical layout position in pixels.
+ * @param left - Horizontal layout position in pixels.
+ * @param tx - Computed X translation in pixels.
+ * @param ty - Computed Y translation in pixels.
+ * @param zIndex - Visual stacking order index.
+ * @returns 32-bit integer hash suitable for LRU cache lookup keys.
+ *
+ * @example
+ * ```typescript
+ * const key = hashTransformCoordinates(120, 350, 0, 0, 100);
+ * const cachedStyle = styleCache.get(key);
+ * ```
+ */
 export function hashTransformCoordinates(
   top: number,
   left: number,
@@ -31,12 +49,43 @@ export function hashTransformCoordinates(
 }
 
 /**
- * Ensures custom CSS variable has canonical --pt- prefix.
+ * Ensures a custom CSS variable name carries the canonical `--pt-` prefix.
+ *
+ * @param name - Base variable name or raw CSS custom property.
+ * @returns Normalized CSS variable name with `--pt-` prefix.
+ *
+ * @example
+ * ```typescript
+ * buildPopoverCssVar('drag-x'); // => '--pt-drag-x'
+ * buildPopoverCssVar('--pt-drag-x'); // => '--pt-drag-x'
+ * ```
  */
 export function buildPopoverCssVar(name: string): string {
   return ensurePrefix(name, '--pt-');
 }
 
+/**
+ * Constructs a hardware-accelerated CSS `transform` string.
+ * Optimizes static translations to `translate3d(x, y, 0px)`
+ * and adds 3D perspective projection and Euler axis rotations (`rotateX`, `rotateY`, `rotateZ`)
+ * only when tilt or rotation dynamics are active.
+ *
+ * @param translateX - Translation along the X axis in pixels.
+ * @param translateY - Translation along the Y axis in pixels.
+ * @param rotX - 3D rotation around the X axis in degrees (pitch).
+ * @param rotY - 3D rotation around the Y axis in degrees (yaw).
+ * @param rotZ - 2D planar rotation around the Z axis in degrees (roll).
+ * @returns Hardware-accelerated CSS transform string.
+ *
+ * @example
+ * ```typescript
+ * buildTransformString(150, 40, 0, 0, 0);
+ * // => 'translate3d(150px, 40px, 0px)'
+ *
+ * buildTransformString(150, 40, 5, 2, -3);
+ * // => 'perspective(1000px) translate3d(150px, 40px, 0px) rotateX(5.00deg) rotateY(2.00deg) rotateZ(-3.00deg)'
+ * ```
+ */
 export function buildTransformString(
   translateX: number,
   translateY: number,

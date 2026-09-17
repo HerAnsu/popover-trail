@@ -28,10 +28,17 @@ function cloneBuiltinInstance(obj: object): object | null {
  * @remarks
  * Utilizes native `structuredClone` when supported, and gracefully falls back to recursive
  * object/array/Map/Set cloning when non-serializable properties (e.g. functions, DOM nodes) are encountered.
+ * Prototype pollution keys are explicitly skipped during cloning.
  *
  * @template T - Input object type.
  * @param obj - Object, array, or primitive value to clone.
  * @returns An isolated deep copy of the input value.
+ *
+ * @example
+ * ```typescript
+ * const clonedState = fastClone(currentState);
+ * clonedState.settings.theme = 'dark'; // currentState unaffected
+ * ```
  */
 export function fastClone<T>(obj: T): T {
   if (obj === null || typeof obj !== 'object') {

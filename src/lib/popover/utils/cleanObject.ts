@@ -16,6 +16,13 @@ import { isUnsafeKey } from './safeKeys';
  * @param record - Source record.
  * @param keyToOmit - Key to exclude from the new record.
  * @returns A new record with the key omitted, or the original record if unchanged.
+ *
+ * @example
+ * ```typescript
+ * const user = { id: 'u1', password: 'secret', name: 'Alice' };
+ * const sanitized = omitKey(user, 'password');
+ * // => { id: 'u1', name: 'Alice' }
+ * ```
  */
 export function omitKey<T, K extends string = string>(
   record: Partial<Record<K, T>>,
@@ -43,6 +50,12 @@ export function omitKey<T, K extends string = string>(
  * @param record - Source record.
  * @param keysToOmit - Set or array of keys to exclude.
  * @returns A new record with the keys omitted.
+ *
+ * @example
+ * ```typescript
+ * const config = { debug: true, host: 'localhost', port: 8080 };
+ * const publicConfig = omitKeys(config, ['debug']);
+ * ```
  */
 export function omitKeys<T, K extends string = string>(
   record?: Partial<Record<K, T>> | null,
@@ -71,6 +84,12 @@ export function omitKeys<T, K extends string = string>(
  * @param target - Base destination object.
  * @param source - Incoming source properties.
  * @returns Merged intersection object without unsafe prototype keys.
+ *
+ * @example
+ * ```typescript
+ * const base = { title: 'Card' };
+ * const merged = safeAssign(base, { description: 'Info' });
+ * ```
  */
 export function safeAssign<T extends object, S extends object>(
   target: T,
@@ -97,6 +116,13 @@ export function safeAssign<T extends object, S extends object>(
  * @param record - Source record.
  * @param keysToPick - Set or array of keys to include.
  * @returns A new record containing only the picked keys.
+ *
+ * @example
+ * ```typescript
+ * const fullRecord = { id: 1, name: 'Root', role: 'admin', internalToken: 'xyz' };
+ * const userView = pickKeys(fullRecord, ['id', 'name']);
+ * // => { id: 1, name: 'Root' }
+ * ```
  */
 export function pickKeys<T, K extends string = string>(
   record: Partial<Record<K, T>>,
@@ -123,6 +149,13 @@ export function pickKeys<T, K extends string = string>(
  *
  * @param record - Source record to inspect.
  * @returns True if nullish or having no own enumerable properties.
+ *
+ * @example
+ * ```typescript
+ * isEmptyRecord({}); // => true
+ * isEmptyRecord({ a: 1 }); // => false
+ * isEmptyRecord(null); // => true
+ * ```
  */
 export function isEmptyRecord(record?: object | null): boolean {
   if (!record) return true;
@@ -142,6 +175,13 @@ export function isEmptyRecord(record?: object | null): boolean {
  * @param record - Source record.
  * @param fn - Value transformer function.
  * @returns A new record with transformed values.
+ *
+ * @example
+ * ```typescript
+ * const scores = { alice: 10, bob: 15 };
+ * const doubled = mapValues(scores, (v) => v * 2);
+ * // => { alice: 20, bob: 30 }
+ * ```
  */
 export function mapValues<K extends string | number, V, R>(
   record: Partial<Record<K, V>>,
@@ -169,6 +209,13 @@ export function mapValues<K extends string | number, V, R>(
  * @param record - Source record.
  * @param predicate - Entry filter function.
  * @returns A new record containing only entries that satisfied the predicate.
+ *
+ * @example
+ * ```typescript
+ * const items = { a: 1, b: 2, c: 3 };
+ * const even = filterObject(items, (v) => v % 2 === 0);
+ * // => { b: 2 }
+ * ```
  */
 export function filterObject<K extends string | number, V>(
   record: Record<K, V>,
@@ -203,6 +250,13 @@ export function filterObject<K extends string | number, V>(
  * @template V - Value type.
  * @param record - Source record.
  * @returns A new record containing only defined, non-null values.
+ *
+ * @example
+ * ```typescript
+ * const raw = { a: 1, b: null, c: undefined, d: 'ok' };
+ * const clean = compactObject(raw);
+ * // => { a: 1, d: 'ok' }
+ * ```
  */
 export function compactObject<K extends string | number, V>(
   record?: Partial<Record<K, V | null | undefined>> | null,
@@ -228,6 +282,13 @@ export function compactObject<K extends string | number, V>(
  * @template V - Source value type.
  * @param record - Source record with unique string or number values.
  * @returns A new inverted record.
+ *
+ * @example
+ * ```typescript
+ * const mapping = { first: '1st', second: '2nd' };
+ * const inverted = invertObject(mapping);
+ * // => { '1st': 'first', '2nd': 'second' }
+ * ```
  */
 export function invertObject<K extends string | number, V extends string | number>(
   record?: Record<K, V> | Partial<Record<K, V>> | readonly V[] | null,
@@ -260,6 +321,11 @@ export function invertObject<K extends string | number, V extends string | numbe
  * @template T - Object type.
  * @param obj - Target object to freeze deeply.
  * @returns Deeply frozen object.
+ *
+ * @example
+ * ```typescript
+ * const config = deepFreeze({ api: { endpoint: '/popovers', retries: 3 } });
+ * ```
  */
 export function deepFreeze<T>(obj: T): Readonly<T> {
   if (obj === null || typeof obj !== 'object') return obj;

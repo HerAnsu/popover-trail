@@ -9,15 +9,53 @@ import { isRecordObject, isFunction } from './typeGuards';
 import { noop, constant } from './functional';
 import { clamp } from './math';
 
+/**
+ * Type guard verifying whether an unknown value is a Promise or Thenable object.
+ *
+ * @template T - Promise resolved value type.
+ * @param value - Value to inspect.
+ * @returns True if `value` conforms to the standard PromiseLike interface.
+ *
+ * @example
+ * ```typescript
+ * if (isPromise(result)) {
+ *   const data = await result;
+ * }
+ * ```
+ */
 export function isPromise<T>(value: unknown): value is Promise<T> {
   if (value instanceof Promise) return true;
   return isRecordObject(value) && 'then' in value && isFunction(value.then);
 }
 
+/**
+ * Returns a Promise that resolves after the specified duration in milliseconds.
+ *
+ * @param ms - Delay in milliseconds (sanitized to non-negative finite range).
+ * @returns Promise resolving after the timeout.
+ *
+ * @example
+ * ```typescript
+ * await sleep(150);
+ * ```
+ */
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, clamp(ms, 0, Infinity)));
 }
 
+/**
+ * Defers execution of a synchronous task to the next microtask cycle.
+ * Falls back to `Promise.resolve().then(...)` when `queueMicrotask` is unavailable.
+ *
+ * @param fn - Void callback to schedule.
+ *
+ * @example
+ * ```typescript
+ * deferMicrotask(() => {
+ *   store.notifySubscribers();
+ * });
+ * ```
+ */
 export function deferMicrotask(fn: () => void): void {
   if (typeof queueMicrotask === 'function') {
     queueMicrotask(fn);
@@ -40,7 +78,17 @@ export interface Deferred<T> {
 }
 
 /**
- * Creates an uncoupled Deferred promise container.
+ * Creates an uncoupled Deferred promise container allowing external resolution and rejection.
+ *
+ * @template T - Resolution value type.
+ * @returns Deferred object containing promise and resolution controllers.
+ *
+ * @example
+ * ```typescript
+ * const signal = deferred<string>();
+ * signal.promise.then(console.log);
+ * signal.resolve('ready');
+ * ```
  */
 export function deferred<T>(): Deferred<T> {
   let resolveFn!: (value: T | PromiseLike<T>) => void;
@@ -74,6 +122,17 @@ export function deferred<T>(): Deferred<T> {
 /**
  * Enforces a maximum timeout on an asynchronous Promise, rejecting if not settled within duration.
  * Automatically clears internal timer on early promise settlement to prevent memory leaks.
+ *
+ * @template T - Promise return type.
+ * @param promise - Target promise to monitor.
+ * @param timeoutMs - Maximum allowable duration in milliseconds.
+ * @param customError - Optional custom error instance or message string on timeout.
+ * @returns Settled promise value, or rejects with timeout error.
+ *
+ * @example
+ * ```typescript
+ * const data = await withTimeout(fetchPopoverData(id), 5000, 'Data resolution timed out');
+ * ```
  */
 export async function withTimeout<T>(
   promise: Promise<T>,
@@ -119,6 +178,21 @@ export interface DebouncedFunction<Args extends readonly unknown[]> {
 
 /**
  * Creates a debounced version of a procedure delaying execution until waitMs elapses after last call.
+ * Augmented with `.cancel()`, `.flush()`, and `.isPending()` control handles.
+ *
+ * @template Args - Parameter types tuple.
+ * @param fn - Procedure to debounce.
+ * @param waitMs - Debounce cooldown in milliseconds.
+ * @returns Debounced procedure with cancellation and flush handles.
+ *
+ * @example
+ * ```typescript
+ * const debouncedSearch = debounce((query: string) => {
+ *   filterTrail(query);
+ * }, 200);
+ * debouncedSearch('settings');
+ * debouncedSearch.cancel();
+ * ```
  */
 export function debounce<Args extends readonly unknown[]>(
   fn: (...args: Args) => void,
@@ -175,6 +249,20 @@ export interface ThrottledFunction<Args extends readonly unknown[]> {
 
 /**
  * Creates a throttled version of a procedure executing at most once per waitMs window.
+ * Trailing executions are scheduled automatically if called during cooldown.
+ *
+ * @template Args - Parameter types tuple.
+ * @param fn - Procedure to throttle.
+ * @param waitMs - Throttle cooldown in milliseconds.
+ * @returns Throttled procedure with cancellation handle.
+ *
+ * @example
+ * ```typescript
+ * const throttledScroll = throttle((ev: Event) => {
+ *   updateScrollCoordinates();
+ * }, 50);
+ * window.addEventListener('scroll', throttledScroll);
+ * ```
  */
 export function throttle<Args extends readonly unknown[]>(
   fn: (...args: Args) => void,
@@ -242,6 +330,15 @@ export interface RetryOptions {
  * @param fn - Asynchronous function to execute.
  * @param options - Configuration options for retries, delays, and backoff.
  * @returns Result of the resolved asynchronous operation.
+ *
+ * @example
+ * ```typescript
+ * const data = await retryAsync(() => fetchUserData(userId), {
+ *   retries: 3,
+ *   delayMs: 200,
+ *   backoffMultiplier: 2,
+ * });
+ * ```
  */
 export async function retryAsync<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T> {
   const retries = options?.retries ?? 3;
@@ -268,7 +365,6 @@ export async function retryAsync<T>(fn: () => Promise<T>, options?: RetryOptions
   return attempt(retries, clamp(delayMs, 0, Infinity));
 }
 
-
 /**
  * Asynchronous mutex lock for serializing critical asynchronous sections.
  */
@@ -281,6 +377,14 @@ export interface AsyncMutex {
  * Creates an asynchronous mutex lock guaranteeing sequential FIFO execution without race conditions.
  *
  * @returns An AsyncMutex instance.
+ *
+ * @example
+ * ```typescript
+ * const mutex = createAsyncMutex();
+ * await mutex.runExclusive(async () => {
+ *   await savePopoverTransaction();
+ * });
+ * ```
  */
 export function createAsyncMutex(): AsyncMutex {
   let pending: Promise<unknown> = Promise.resolve();

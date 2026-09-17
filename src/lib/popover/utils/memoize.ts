@@ -23,6 +23,18 @@ export type MemoizedFn<Args extends readonly unknown[], R> = ((...args: Args) =>
  * @param fn - Pure computation function to memoize.
  * @param isEqual - Custom arguments equality comparator (defaults to `shallowEqualArray`).
  * @returns Memoized function with `.clear()` invalidation handle.
+ *
+ * @example
+ * ```typescript
+ * const computeBoundingBox = memoizeOne((x: number, y: number, w: number, h: number) => ({
+ *   left: x,
+ *   top: y,
+ *   right: x + w,
+ *   bottom: y + h,
+ * }));
+ * const box = computeBoundingBox(10, 20, 100, 50);
+ * computeBoundingBox.clear();
+ * ```
  */
 export function memoizeOne<Args extends readonly unknown[], R>(
   fn: (...args: Args) => R,
@@ -60,7 +72,16 @@ export function memoizeOne<Args extends readonly unknown[], R>(
  * @template K - Object key type.
  * @template R - Result type.
  * @param fn - Transformer function mapping object key to result.
- * @returns Weak memoized function.
+ * @returns Weak memoized function with `.delete()` entry removal handle.
+ *
+ * @example
+ * ```typescript
+ * const getElementLayout = memoizeWeak((el: HTMLElement) => ({
+ *   width: el.offsetWidth,
+ *   height: el.offsetHeight,
+ * }));
+ * const layout = getElementLayout(cardRef);
+ * ```
  */
 export function memoizeWeak<K extends object, R>(
   fn: (key: K) => R,
