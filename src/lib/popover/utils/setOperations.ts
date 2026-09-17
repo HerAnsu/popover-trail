@@ -11,6 +11,13 @@ import { EMPTY_SET } from '../types/branded';
  * Computes the union of two sets (A ∪ B).
  * Returns the original reference when one set is empty or both sets are identical.
  *
+ * @example
+ * ```ts
+ * const s1 = new Set(['a', 'b']);
+ * const s2 = new Set(['b', 'c']);
+ * setUnion(s1, s2); // => Set { 'a', 'b', 'c' }
+ * ```
+ *
  * @template T - Element type.
  * @param a - First set.
  * @param b - Second set.
@@ -30,6 +37,13 @@ export function setUnion<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): ReadonlySet<T
 /**
  * Computes the intersection of two sets (A ∩ B).
  * Iterates over the smaller set to minimize lookup operations.
+ *
+ * @example
+ * ```ts
+ * const s1 = new Set(['a', 'b']);
+ * const s2 = new Set(['b', 'c']);
+ * setIntersection(s1, s2); // => Set { 'b' }
+ * ```
  *
  * @template T - Element type.
  * @param a - First set.
@@ -58,6 +72,13 @@ export function setIntersection<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): Readon
  * Computes the relative complement of b in a (A \ B).
  * Returns elements present in `a` that are not present in `b`.
  *
+ * @example
+ * ```ts
+ * const s1 = new Set(['a', 'b', 'c']);
+ * const s2 = new Set(['b']);
+ * setDifference(s1, s2); // => Set { 'a', 'c' }
+ * ```
+ *
  * @template T - Element type.
  * @param a - Base set.
  * @param b - Elements to exclude.
@@ -81,6 +102,13 @@ export function setDifference<T>(a: ReadonlySet<T>, b: ReadonlySet<T>): Readonly
 
 /**
  * Computes the symmetric difference of two sets (A △ B = (A \ B) ∪ (B \ A)).
+ *
+ * @example
+ * ```ts
+ * const s1 = new Set(['a', 'b']);
+ * const s2 = new Set(['b', 'c']);
+ * setSymmetricDifference(s1, s2); // => Set { 'a', 'c' }
+ * ```
  *
  * @template T - Element type.
  * @param a - First set.
@@ -106,6 +134,11 @@ export function setSymmetricDifference<T>(a: ReadonlySet<T>, b: ReadonlySet<T>):
 /**
  * Determines whether `subset` is a subset of `superset` (A ⊆ B).
  *
+ * @example
+ * ```ts
+ * isSubset(new Set(['a']), new Set(['a', 'b'])); // => true
+ * ```
+ *
  * @template T - Element type.
  * @param subset - Potential subset.
  * @param superset - Potential superset.
@@ -123,6 +156,11 @@ export function isSubset<T>(subset: ReadonlySet<T>, superset: ReadonlySet<T>): b
 /**
  * Determines whether `superset` is a superset of `subset` (A ⊇ B).
  *
+ * @example
+ * ```ts
+ * isSuperset(new Set(['a', 'b']), new Set(['a'])); // => true
+ * ```
+ *
  * @template T - Element type.
  * @param superset - Potential superset.
  * @param subset - Potential subset.
@@ -134,6 +172,12 @@ export function isSuperset<T>(superset: ReadonlySet<T>, subset: ReadonlySet<T>):
 
 /**
  * Determines whether two sets are disjoint (A ∩ B = ∅).
+ *
+ * @example
+ * ```ts
+ * isDisjoint(new Set(['a']), new Set(['b'])); // => true
+ * isDisjoint(new Set(['a']), new Set(['a'])); // => false
+ * ```
  *
  * @template T - Element type.
  * @param a - First set.

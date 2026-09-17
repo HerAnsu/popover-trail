@@ -101,7 +101,7 @@ export function topologicalSort<TPopoverKey extends string>(
  * ```ts
  * const result = safeTopologicalSort(dagNodes);
  * if (isOk(result)) {
- *   console.log('Topological order:', result.value);
+ *   console.log('Topological order:', result.data);
  * } else {
  *   console.error('Cycle detected in keys:', result.error.cycleKeys);
  * }

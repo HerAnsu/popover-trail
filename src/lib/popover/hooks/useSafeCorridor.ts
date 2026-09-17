@@ -17,6 +17,25 @@ export interface UseSafeCorridorOptions {
   readonly onLeave?: () => void;
 }
 
+/**
+ * Hook providing pointer-safe corridor tracking between a menu trigger and its open child card.
+ *
+ * @remarks
+ * Prevents submenus from accidentally closing when the user moves the pointer diagonally
+ * across neighboring menu items towards the submenu (Amazon / macOS style menu navigation).
+ *
+ * @example
+ * ```tsx
+ * const { isInsideCorridor } = useSafeCorridor({
+ *   triggerRef,
+ *   childCardId: 'nested-menu',
+ *   onLeave: () => closeSubmenu(),
+ * });
+ * ```
+ *
+ * @param options - Hook configuration options.
+ * @returns Object with boolean `isInsideCorridor` flag.
+ */
 export function useSafeCorridor({
   triggerRef,
   childCardId,

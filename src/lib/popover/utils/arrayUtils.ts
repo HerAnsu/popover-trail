@@ -10,6 +10,12 @@ import { EMPTY_ARRAY } from '../types/branded';
 /**
  * Returns the first element of an array, or undefined if empty.
  *
+ * @example
+ * ```ts
+ * first([10, 20, 30]); // => 10
+ * first([]);           // => undefined
+ * ```
+ *
  * @template T - Element type.
  * @param items - Readonly source array.
  * @returns First element or undefined.
@@ -20,6 +26,12 @@ export function first<T>(items: readonly T[]): T | undefined {
 
 /**
  * Returns the last element of an array, or undefined if empty.
+ *
+ * @example
+ * ```ts
+ * last([10, 20, 30]); // => 30
+ * last([]);           // => undefined
+ * ```
  *
  * @template T - Element type.
  * @param items - Readonly source array.
@@ -32,6 +44,13 @@ export function last<T>(items: readonly T[]): T | undefined {
 /**
  * Returns a slice containing the first `count` elements.
  * Returns `EMPTY_ARRAY` if `count <= 0`, or the source array unchanged if `count >= items.length`.
+ *
+ * @example
+ * ```ts
+ * take(['a', 'b', 'c'], 2); // => ['a', 'b']
+ * take(['a', 'b'], 5);       // => ['a', 'b'] (same reference)
+ * take(['a', 'b'], 0);       // => EMPTY_ARRAY
+ * ```
  *
  * @template T - Element type.
  * @param items - Source array.
@@ -48,6 +67,13 @@ export function take<T>(items: readonly T[], count: number): readonly T[] {
  * Returns a slice omitting the first `count` elements.
  * Returns the source array unchanged if `count <= 0`, or `EMPTY_ARRAY` if `count >= items.length`.
  *
+ * @example
+ * ```ts
+ * drop(['a', 'b', 'c'], 1); // => ['b', 'c']
+ * drop(['a', 'b'], 0);       // => ['a', 'b'] (same reference)
+ * drop(['a', 'b'], 3);       // => EMPTY_ARRAY
+ * ```
+ *
  * @template T - Element type.
  * @param items - Source array.
  * @param count - Number of elements to drop.
@@ -63,6 +89,13 @@ export function drop<T>(items: readonly T[], count: number): readonly T[] {
  * Concatenates multiple arrays with zero-allocation fast-paths for empty inputs.
  * If all arrays are empty, returns EMPTY_ARRAY.
  * If exactly one array is non-empty, returns it directly without heap allocation.
+ *
+ * @example
+ * ```ts
+ * concatImmutable(['a'], ['b', 'c']); // => ['a', 'b', 'c']
+ * concatImmutable([], []);             // => EMPTY_ARRAY (no allocation)
+ * concatImmutable(['a', 'b'], []);     // => ['a', 'b'] (reused reference)
+ * ```
  *
  * @template T - Element type.
  * @param arrays - Readonly sequence of arrays to concatenate.

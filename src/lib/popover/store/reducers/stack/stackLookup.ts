@@ -9,6 +9,15 @@ import { last } from '../../../utils/arrayUtils';
 
 /**
  * Finds index of a specific popover key in entry list using fast loop.
+ *
+ * @example
+ * ```ts
+ * const idx = findEntryIndex(trail, 'profileCard');
+ * ```
+ *
+ * @param list - Array of TrailEntry objects.
+ * @param key - Popover key to search for.
+ * @returns Index if found, or -1.
  */
 export function findEntryIndex<TData = unknown, TPopoverKey extends string = string>(
   list: readonly TrailEntry<TData, TPopoverKey>[],
@@ -23,6 +32,16 @@ export function findEntryIndex<TData = unknown, TPopoverKey extends string = str
 /**
  * Finds unified continuous index of a key across floating and trail collections.
  * Returns -1 if key is not present in either collection.
+ *
+ * @example
+ * ```ts
+ * const uIdx = findUnifiedEntryIndex(floating, trail, 'nestedCard');
+ * ```
+ *
+ * @param floating - Readonly array of floating pinned entries.
+ * @param trail - Readonly array of cascading trail entries.
+ * @param key - Popover key to locate.
+ * @returns Unified continuous index or -1 if not found.
  */
 export function findUnifiedEntryIndex<TData = unknown, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],
@@ -40,6 +59,15 @@ export function findUnifiedEntryIndex<TData = unknown, TPopoverKey extends strin
 
 /**
  * Filters out an entry matching target key without closure allocations.
+ *
+ * @example
+ * ```ts
+ * const remaining = filterOutEntry(trail, 'closedKey');
+ * ```
+ *
+ * @param list - Source TrailEntry array.
+ * @param key - Key of the entry to omit.
+ * @returns New array without target entry, or original list if key was not found.
  */
 export function filterOutEntry<TData = unknown, TPopoverKey extends string = string>(
   list: readonly TrailEntry<TData, TPopoverKey>[],
@@ -59,6 +87,16 @@ export function filterOutEntry<TData = unknown, TPopoverKey extends string = str
 
 /**
  * Elevates target key to top of z-index ordering without duplicate allocation.
+ *
+ * @example
+ * ```ts
+ * const order = elevateKeyInOrder(['a', 'b', 'c'], 'a');
+ * // => ['b', 'c', 'a']
+ * ```
+ *
+ * @param order - Readonly array of popover keys in stacking order.
+ * @param key - Popover key to elevate to top.
+ * @returns New array with key positioned last, or original array if already last.
  */
 export function elevateKeyInOrder<TPopoverKey extends string = string>(
   order: readonly TPopoverKey[],
@@ -74,4 +112,5 @@ export function elevateKeyInOrder<TPopoverKey extends string = string>(
   result.push(key);
   return result;
 }
+
 
