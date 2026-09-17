@@ -9,6 +9,20 @@ import { getBufferItem } from './bufferIndex';
 import { toLogicalIndex, isLogicalIndex, type BufferLogicalIndex } from './bufferBranded';
 import type { BufferConsumer, ReadonlyRingBufferState } from './bufferTypes';
 
+/**
+ * Iterates over each item in logical FIFO insertion order (oldest to newest).
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @param fn - Consumer callback receiving each item and its logical index.
+ *
+ * @example
+ * ```typescript
+ * forEachItem(state, (item, index) => {
+ *   console.log(`[${index}]:`, item);
+ * });
+ * ```
+ */
 export function forEachItem<T>(state: ReadonlyRingBufferState<T>, fn: BufferConsumer<T>): void {
   for (let i = 0; i < state.count; i++) {
     const idx = toLogicalIndex(i);
@@ -17,6 +31,20 @@ export function forEachItem<T>(state: ReadonlyRingBufferState<T>, fn: BufferCons
   }
 }
 
+/**
+ * Iterates over each item in reverse logical insertion order (newest to oldest).
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @param fn - Consumer callback receiving each item and its relative loop index.
+ *
+ * @example
+ * ```typescript
+ * forEachReversedItem(state, (item) => {
+ *   console.log('Most recent item:', item);
+ * });
+ * ```
+ */
 export function forEachReversedItem<T>(
   state: ReadonlyRingBufferState<T>,
   fn: BufferConsumer<T>,
@@ -28,6 +56,20 @@ export function forEachReversedItem<T>(
   }
 }
 
+/**
+ * Retrieves an item at a relative index supporting positive (0..count-1) and negative (-1..-count) indexing.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @param relativeIndex - 0-based offset or negative relative offset from end (-1 = newest).
+ * @returns The element at `relativeIndex` or `undefined` if out of bounds.
+ *
+ * @example
+ * ```typescript
+ * const oldest = itemAt(state, 0);
+ * const newest = itemAt(state, -1);
+ * ```
+ */
 export function itemAt<T>(
   state: ReadonlyRingBufferState<T>,
   relativeIndex: BufferLogicalIndex | number,
@@ -37,6 +79,20 @@ export function itemAt<T>(
   return getBufferItem(state, toLogicalIndex(norm));
 }
 
+/**
+ * Creates an iterable iterator over all active values in FIFO order.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @returns An `IterableIterator<T>` over the active elements.
+ *
+ * @example
+ * ```typescript
+ * for (const val of createBufferIterator(state)) {
+ *   console.log(val);
+ * }
+ * ```
+ */
 export function createBufferIterator<T>(state: ReadonlyRingBufferState<T>): IterableIterator<T> {
   let cur = 0;
   return {
@@ -51,6 +107,20 @@ export function createBufferIterator<T>(state: ReadonlyRingBufferState<T>): Iter
   };
 }
 
+/**
+ * Creates an iterable iterator yielding `[index, value]` tuples in FIFO order.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @returns An `IterableIterator<[BufferLogicalIndex, T]>`.
+ *
+ * @example
+ * ```typescript
+ * for (const [idx, item] of createBufferEntriesIterator(state)) {
+ *   console.log(idx, item);
+ * }
+ * ```
+ */
 export function createBufferEntriesIterator<T>(
   state: ReadonlyRingBufferState<T>,
 ): IterableIterator<[BufferLogicalIndex, T]> {
@@ -70,6 +140,18 @@ export function createBufferEntriesIterator<T>(
   };
 }
 
+/**
+ * Creates an iterable iterator yielding logical index keys in FIFO order.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @returns An `IterableIterator<BufferLogicalIndex>`.
+ *
+ * @example
+ * ```typescript
+ * const keys = Array.from(createBufferKeysIterator(state));
+ * ```
+ */
 export function createBufferKeysIterator<T = unknown>(
   state: ReadonlyRingBufferState<T>,
 ): IterableIterator<BufferLogicalIndex> {
@@ -85,13 +167,37 @@ export function createBufferKeysIterator<T = unknown>(
   };
 }
 
-export function toArrayRing<T>(state: ReadonlyRingBufferState<T>): T[] {
+/**
+ * Copies all active circular buffer elements into a newly allocated standard JavaScript array in FIFO order.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @returns Array containing active buffer elements in logical order.
+ *
+ * @example
+ * ```typescript
+ * const list = bufferToArray(state);
+ * ```
+ */
+export function bufferToArray<T>(state: ReadonlyRingBufferState<T>): T[] {
   const res: T[] = [];
   forEachItem(state, (it) => res.push(it));
   return res;
 }
 
-export function toReversedArrayRing<T>(state: ReadonlyRingBufferState<T>): T[] {
+/**
+ * Copies all active circular buffer elements into a newly allocated standard JavaScript array in reverse order.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @returns Array containing active buffer elements in reverse logical order.
+ *
+ * @example
+ * ```typescript
+ * const reversedList = bufferToReversedArray(state);
+ * ```
+ */
+export function bufferToReversedArray<T>(state: ReadonlyRingBufferState<T>): T[] {
   const res: T[] = [];
   forEachReversedItem(state, (it) => res.push(it));
   return res;

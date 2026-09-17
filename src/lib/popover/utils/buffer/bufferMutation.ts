@@ -9,7 +9,21 @@ import { getPhysicalIndex } from './bufferIndex';
 import { isLogicalIndex, nextRevision, type BufferRelativeIndex } from './bufferBranded';
 import type { RingBufferState } from './bufferStateTypes';
 
-export function swapRingItems<T>(
+/**
+ * Swaps two elements in-place within the ring buffer using logical or negative relative indices.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @param indexA - Relative or logical index of first item (supports negative relative indexing).
+ * @param indexB - Relative or logical index of second item (supports negative relative indexing).
+ * @returns `true` if elements were swapped; `false` if either index was out of bounds.
+ *
+ * @example
+ * ```typescript
+ * swapBufferItems(state, 0, -1); // Swap first and last elements
+ * ```
+ */
+export function swapBufferItems<T>(
   state: RingBufferState<T>,
   indexA: BufferRelativeIndex,
   indexB: BufferRelativeIndex,
@@ -28,7 +42,18 @@ export function swapRingItems<T>(
   return true;
 }
 
-export function reverseRing<T>(state: RingBufferState<T>): void {
+/**
+ * Reverses all active elements in-place within the circular buffer without allocating scratch arrays.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state to reverse.
+ *
+ * @example
+ * ```typescript
+ * reverseBuffer(state);
+ * ```
+ */
+export function reverseBuffer<T>(state: RingBufferState<T>): void {
   if (state.count <= 1) return;
   const half = Math.floor(state.count / 2);
   for (let i = 0; i < half; i++) {
@@ -41,7 +66,19 @@ export function reverseRing<T>(state: RingBufferState<T>): void {
   state.revision = nextRevision(state.revision);
 }
 
-export function fillRing<T>(state: RingBufferState<T>, value: T): void {
+/**
+ * Replaces all active element slots in the circular buffer with the specified value.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @param value - Value to overwrite active slots with.
+ *
+ * @example
+ * ```typescript
+ * fillBuffer(state, null);
+ * ```
+ */
+export function fillBuffer<T>(state: RingBufferState<T>, value: T): void {
   for (let i = 0; i < state.count; i++) {
     state.buffer[getPhysicalIndex(state, i)] = value;
   }

@@ -23,8 +23,8 @@ import {
   createBufferIterator,
   createBufferEntriesIterator,
   createBufferKeysIterator,
-  toArrayRing,
-  toReversedArrayRing,
+  bufferToArray,
+  bufferToReversedArray,
 } from './bufferIteration';
 import { sliceRing, copyRingTo } from './bufferSlice';
 import { RingBufferQuery } from './ringBufferQuery';
@@ -99,10 +99,10 @@ export abstract class RingBufferReader<T> extends RingBufferQuery<T> {
   }
 
   toArray(): T[] {
-    return toArrayRing(this.state);
+    return bufferToArray(this.state);
   }
   toReversedArray(): T[] {
-    return toReversedArrayRing(this.state);
+    return bufferToReversedArray(this.state);
   }
   toReadonlyArray(): readonly T[] {
     return this.toArray();

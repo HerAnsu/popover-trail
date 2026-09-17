@@ -12,7 +12,7 @@ import type { RingBufferState } from './bufferStateTypes';
 import { BufferMetricsTracker } from './bufferMetrics';
 import { pushItem, popItem, shiftItem, unshiftItem } from './bufferQueue';
 import { popRingResult, shiftRingResult, tryPushRing, tryUnshiftRing } from './bufferMonadic';
-import { swapRingItems, reverseRing, fillRing } from './bufferMutation';
+import { swapBufferItems, reverseBuffer, fillBuffer } from './bufferMutation';
 import { clearRingBufferState } from './bufferState';
 import { isIterable } from './bufferGuards';
 import { RingBufferReader } from './ringBufferReader';
@@ -51,13 +51,13 @@ export abstract class RingBufferDeque<T> extends RingBufferReader<T> {
   }
 
   swap(indexA: BufferRelativeIndex, indexB: BufferRelativeIndex): boolean {
-    return swapRingItems(this.state, indexA, indexB);
+    return swapBufferItems(this.state, indexA, indexB);
   }
   reverse(): void {
-    reverseRing(this.state);
+    reverseBuffer(this.state);
   }
   fill(value: T): void {
-    fillRing(this.state, value);
+    fillBuffer(this.state, value);
   }
   clear(): void {
     clearRingBufferState(this.state);
