@@ -23,18 +23,21 @@ export type PopoverCardCloseButtonProps<E extends ElementType = 'button'> = Poly
   { children?: ReactNode }
 >;
 
-export function PopoverCardCloseButton<E extends ElementType = 'button'>(
-  props: PopoverCardCloseButtonProps<E>,
-) {
+export function PopoverCardCloseButton<E extends ElementType = 'button'>({
+  children = '✕',
+  ...restProps
+}: PopoverCardCloseButtonProps<E>) {
   const { entry, actions } = usePopoverCardScope();
-  const handleClose = useCallback(() => actions.closeByKey(entry.key), [actions, entry.key]);
+  const { key } = entry;
+  const { closeByKey } = actions;
+  const handleClose = useCallback(() => closeByKey(key), [closeByKey, key]);
 
   return (
     <CardActionButtonBase<E>
-      {...(props as CardActionButtonBaseProps<E>)}
+      {...(restProps as CardActionButtonBaseProps<E>)}
       ariaLabel={resolveActionLabel('close')}
       onAction={handleClose}>
-      {props.children ?? '✕'}
+      {children}
     </CardActionButtonBase>
   );
 }

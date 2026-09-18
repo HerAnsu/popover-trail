@@ -35,39 +35,54 @@ export function useComposedTriggerHandlers(
   triggerProps: React.DOMAttributes<HTMLElement>,
   childProps?: React.DOMAttributes<HTMLElement>,
 ) {
+  const {
+    onClick: triggerClick,
+    onMouseEnter: triggerMouseEnter,
+    onMouseLeave: triggerMouseLeave,
+    onKeyDown: triggerKeyDown,
+    onFocus: triggerFocus,
+  } = triggerProps;
+  const {
+    onClick: childClick,
+    onMouseEnter: childMouseEnter,
+    onMouseLeave: childMouseLeave,
+    onKeyDown: childKeyDown,
+    onFocus: childFocus,
+  } = childProps ?? {};
+
   const onClick = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      invokeEventHandlers(e, triggerProps.onClick, childProps?.onClick);
+      invokeEventHandlers(e, triggerClick, childClick);
     },
-    [triggerProps.onClick, childProps?.onClick],
+    [triggerClick, childClick],
   );
 
   const onMouseEnter = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      invokeEventHandlers(e, triggerProps.onMouseEnter, childProps?.onMouseEnter);
+      invokeEventHandlers(e, triggerMouseEnter, childMouseEnter);
     },
-    [triggerProps.onMouseEnter, childProps?.onMouseEnter],
+    [triggerMouseEnter, childMouseEnter],
   );
 
   const onMouseLeave = React.useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      invokeEventHandlers(e, triggerProps.onMouseLeave, childProps?.onMouseLeave);
+      invokeEventHandlers(e, triggerMouseLeave, childMouseLeave);
     },
-    [triggerProps.onMouseLeave, childProps?.onMouseLeave],
+    [triggerMouseLeave, childMouseLeave],
   );
 
   const onKeyDown = React.useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
-      invokeEventHandlers(e, triggerProps.onKeyDown, childProps?.onKeyDown);
+      invokeEventHandlers(e, triggerKeyDown, childKeyDown);
     },
-    [triggerProps.onKeyDown, childProps?.onKeyDown],
+    [triggerKeyDown, childKeyDown],
   );
 
   const onFocus = React.useCallback(
     (e: React.FocusEvent<HTMLElement>) => {
-      invokeEventHandlers(e, triggerProps.onFocus, childProps?.onFocus);
+      invokeEventHandlers(e, triggerFocus, childFocus);
     },
-    [triggerProps.onFocus, childProps?.onFocus],
+    [triggerFocus, childFocus],
   );
 
   return { onClick, onMouseEnter, onMouseLeave, onKeyDown, onFocus };

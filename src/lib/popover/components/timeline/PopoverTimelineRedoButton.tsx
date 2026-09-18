@@ -26,15 +26,16 @@ export function PopoverTimelineRedoButton<E extends ElementType = 'button'>({
 }: PopoverTimelineRedoButtonProps<E>) {
   const { Component, buttonProps } = resolvePolymorphicProps(as);
   const { timeline } = usePopoverTimelineScope();
+  const { canRedo, redo } = timeline;
 
-  const isDisabled = disabled ?? !timeline.canRedo;
+  const isDisabled = disabled ?? !canRedo;
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     if (isDisabled) {
       e.preventDefault();
       return;
     }
-    timeline.redo();
+    redo();
     onClick?.(e);
   };
 

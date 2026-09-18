@@ -47,15 +47,16 @@ function renderTimelineStepListChildren<TData>(
   timeline: UsePopoverTimelineResult<TData>,
 ): ReactNode {
   if (typeof children !== 'function') return children;
-  const safeHistory = compact(timeline.history);
+  const { history, currentIndex } = timeline;
+  const safeHistory = compact(history);
   if (isContextRenderProp(children)) {
     return children({
       history: safeHistory,
-      currentIndex: timeline.currentIndex,
+      currentIndex,
       timeline,
     });
   }
-  return safeHistory.map((item, idx) => children(item, idx === timeline.currentIndex, idx));
+  return safeHistory.map((item, idx) => children(item, idx === currentIndex, idx));
 }
 
 export function PopoverTimelineStepList<E extends ElementType = 'ol', TData = unknown>({

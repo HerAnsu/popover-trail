@@ -34,9 +34,18 @@ export const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<Elemen
     const Component = as || 'div';
     const actions = usePopoverActions();
     const card = usePopoverCard({ entry, index, isPinned, placement });
+    const {
+      ref: cardRef,
+      style: cardStyle,
+      transitionClassName,
+      onMouseEnter,
+      onMouseLeave,
+      onKeyDown,
+    } = card;
+    const { key, transitionStatus, ariaDescribedby } = entry;
 
     const domRef = useRef<HTMLElement | null>(null);
-    const handleRef = useMergedRef(card.ref, domRef, outerRef);
+    const handleRef = useMergedRef(cardRef, domRef, outerRef);
 
     const scope = useMemo<PopoverCardScope>(
       () => ({ entry, index, isPinned, card, actions, cardRef: domRef }),
@@ -44,34 +53,34 @@ export const PopoverCardBase = React.forwardRef<unknown, PopoverCardProps<Elemen
     );
 
     const combinedStyle = useMemo(
-      () => (userStyle ? { ...card.style, ...userStyle } : card.style),
-      [card.style, userStyle],
+      () => (userStyle ? { ...cardStyle, ...userStyle } : cardStyle),
+      [cardStyle, userStyle],
     );
 
-    const mergedClassName = clsx('popover-card', className, card.transitionClassName);
+    const mergedClassName = clsx('popover-card', className, transitionClassName);
     const userAriaLabel = restProps['aria-label'];
     const ariaLabel = useMemo(
-      () => resolveCardAriaLabel(userAriaLabel, entry.key),
-      [userAriaLabel, entry.key],
+      () => resolveCardAriaLabel(userAriaLabel, key),
+      [userAriaLabel, key],
     );
 
     return (
       <PopoverCardScopeContext value={scope}>
         <Component
-          id={restProps.id ?? `popover-card-${entry.key}`}
+          id={restProps.id ?? `popover-card-${key}`}
           ref={handleRef}
           style={combinedStyle}
           className={mergedClassName || undefined}
-          onMouseEnter={card.onMouseEnter}
-          onMouseLeave={card.onMouseLeave}
-          onKeyDown={card.onKeyDown}
-          data-state={entry.transitionStatus || 'mounted'}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          onKeyDown={onKeyDown}
+          data-state={transitionStatus || 'mounted'}
           data-pinned={isPinned ? 'true' : 'false'}
-          data-key={entry.key}
+          data-key={key}
           role="dialog"
           aria-modal={!isPinned}
           aria-label={ariaLabel}
-          aria-describedby={entry.ariaDescribedby}
+          aria-describedby={ariaDescribedby}
           {...restProps}>
           {typeof children === 'function' ? children(scope) : children}
         </Component>

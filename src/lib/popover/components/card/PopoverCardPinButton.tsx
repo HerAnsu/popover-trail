@@ -22,10 +22,13 @@ export type PopoverCardPinButtonProps<E extends ElementType = 'button'> = Polymo
   { children?: ReactNode }
 >;
 
-export function PopoverCardPinButton<E extends ElementType = 'button'>(
-  props: PopoverCardPinButtonProps<E>,
-) {
+export function PopoverCardPinButton<E extends ElementType = 'button'>({
+  children,
+  ...restProps
+}: PopoverCardPinButtonProps<E>) {
   const { entry, isPinned, actions, cardRef } = usePopoverCardScope();
+  const { key, rect: entryRect } = entry;
+  const { togglePin } = actions;
 
   const handleTogglePin = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -34,19 +37,19 @@ export function PopoverCardPinButton<E extends ElementType = 'button'>(
         e.currentTarget.closest('[role="dialog"]') ??
         e.currentTarget.closest('.popover-card');
 
-      const rect = targetEl ? targetEl.getBoundingClientRect() : entry.rect;
-      actions.togglePin(entry.key, rect ?? undefined);
+      const rect = targetEl ? targetEl.getBoundingClientRect() : entryRect;
+      togglePin(key, rect ?? undefined);
     },
-    [actions, entry.key, entry.rect, cardRef],
+    [togglePin, key, entryRect, cardRef],
   );
 
   return (
     <CardActionButtonBase<E>
-      {...(props as CardActionButtonBaseProps<E>)}
+      {...(restProps as CardActionButtonBaseProps<E>)}
       ariaLabel={resolveActionLabel(isPinned ? 'unpin' : 'pin')}
       onAction={handleTogglePin}
       aria-pressed={isPinned}>
-      {props.children ?? (isPinned ? '📌' : '📍')}
+      {children ?? (isPinned ? '📌' : '📍')}
     </CardActionButtonBase>
   );
 }

@@ -36,15 +36,16 @@ export function PopoverCardHandle<E extends ElementType = 'header'>({
 }: PopoverCardHandleProps<E>) {
   const Component = asChild ? Slot : as || 'header';
   const { card } = usePopoverCardScope();
+  const { dragHandleProps } = card;
 
-  const handleStyle = card.dragHandleProps?.style;
+  const handleStyle = dragHandleProps?.style;
   const combinedStyle = useMemo(
     () => (userStyle ? { ...handleStyle, ...userStyle } : handleStyle),
     [handleStyle, userStyle],
   );
 
   return (
-    <Component {...card.dragHandleProps} style={combinedStyle} className={className} {...restProps}>
+    <Component {...dragHandleProps} style={combinedStyle} className={className} {...restProps}>
       {children}
     </Component>
   );

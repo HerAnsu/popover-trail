@@ -26,15 +26,16 @@ export function PopoverTimelineUndoButton<E extends ElementType = 'button'>({
 }: PopoverTimelineUndoButtonProps<E>) {
   const { Component, buttonProps } = resolvePolymorphicProps(as);
   const { timeline } = usePopoverTimelineScope();
+  const { canUndo, undo } = timeline;
 
-  const isDisabled = disabled ?? !timeline.canUndo;
+  const isDisabled = disabled ?? !canUndo;
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     if (isDisabled) {
       e.preventDefault();
       return;
     }
-    timeline.undo();
+    undo();
     onClick?.(e);
   };
 

@@ -59,10 +59,12 @@ export function PopoverTrigger<TPopoverKey extends string = string>({
   children,
 }: PopoverTriggerProps<TPopoverKey>) {
   const parentKey = useContext(PopoverCardContext);
+  const { hover } = options ?? {};
+  const { openDelay, closeDelay } = hover ?? {};
 
   validatePopoverKey(popoverKey);
   validatePlacement(placement);
-  validateHoverDelays(options?.hover?.openDelay, options?.hover?.closeDelay);
+  validateHoverDelays(openDelay, closeDelay);
   validateCascadeAncestry(popoverKey, parentKey);
   const isOpen = usePopoverIsOpen(popoverKey);
 

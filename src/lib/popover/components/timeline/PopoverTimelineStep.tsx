@@ -45,24 +45,25 @@ function PopoverTimelineStepInner<E extends ElementType = 'button'>({
 }: PopoverTimelineStepProps<E>) {
   const { Component, buttonProps } = resolvePolymorphicProps(as);
   const { timeline } = usePopoverTimelineScope();
+  const { currentIndex, canUndo, canRedo, history, jumpToStep } = timeline;
 
   const effectiveIndex = index ?? stepIndex ?? 0;
-  const isCurrent = active ?? timeline.currentIndex === effectiveIndex;
+  const isCurrent = active ?? currentIndex === effectiveIndex;
   const displayLabel = label && maxLabelLength ? truncate(label, maxLabelLength) : label;
   const effectiveKey = stepKey ?? displayLabel ?? `step-${effectiveIndex}`;
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    timeline.jumpToStep(effectiveIndex);
+    jumpToStep(effectiveIndex);
     onClick?.(e);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLElement>) => {
-    if (isArrowLeftKey(e) && timeline.canUndo) {
+    if (isArrowLeftKey(e) && canUndo) {
       e.preventDefault();
-      timeline.jumpToStep(clamp(effectiveIndex - 1, 0, timeline.history.length - 1));
-    } else if (isArrowRightKey(e) && timeline.canRedo) {
+      jumpToStep(clamp(effectiveIndex - 1, 0, history.length - 1));
+    } else if (isArrowRightKey(e) && canRedo) {
       e.preventDefault();
-      timeline.jumpToStep(clamp(effectiveIndex + 1, 0, timeline.history.length - 1));
+      jumpToStep(clamp(effectiveIndex + 1, 0, history.length - 1));
     }
     onKeyDown?.(e);
   };
