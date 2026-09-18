@@ -30,17 +30,13 @@ export default {
     return {
       JSXAttribute(node) {
         if (
-          node.name &&
-          node.name.name === 'ref' &&
-          node.value &&
-          node.value.type === 'JSXExpressionContainer' &&
+          node.name?.name === 'ref' &&
+          node.value?.type === 'JSXExpressionContainer' &&
           node.value.expression &&
           (node.value.expression.type === 'ArrowFunctionExpression' ||
             node.value.expression.type === 'FunctionExpression')
         ) {
-          const body = context.getSourceCode
-            ? context.getSourceCode().getText(node.value.expression)
-            : '';
+          const body = context.getSourceCode?.()?.getText?.(node.value.expression) ?? '';
           if (
             body.includes('.focus(') &&
             !body.includes('if (!') &&

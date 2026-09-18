@@ -17,10 +17,8 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
-          node.callee.property &&
-          node.callee.property.name === 'postMessage' &&
+          node.callee?.type === 'MemberExpression' &&
+          node.callee.property?.name === 'postMessage' &&
           node.arguments.length >= 2 &&
           node.arguments[1].type === 'Literal' &&
           node.arguments[1].value === '*'

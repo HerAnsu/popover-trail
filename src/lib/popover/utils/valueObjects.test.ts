@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Point2D, RectBounds } from './valueObjects';
+import { Point2D, RectBounds, ZIndex, DurationMs } from './valueObjects';
 
 describe('Geometry Value Objects', () => {
   describe('Point2D', () => {
@@ -104,6 +104,22 @@ describe('Geometry Value Objects', () => {
       expect(exportedDomRect.y).toBe(20);
       expect(exportedDomRect.width).toBe(100);
       expect(exportedDomRect.height).toBe(50);
+    });
+  });
+
+  describe('ZIndex and DurationMs', () => {
+    it('creates and increments ZIndex', () => {
+      const z = ZIndex.of(100);
+      expect(z.value).toBe(100);
+      expect(z.next().value).toBe(101);
+      expect(z.elevate(15).value).toBe(115);
+    });
+
+    it('creates and checks DurationMs', () => {
+      const d1 = DurationMs.of(250);
+      expect(d1.value).toBe(250);
+      expect(DurationMs.zero().value).toBe(0);
+      expect(DurationMs.of(-10).value).toBe(0);
     });
   });
 });

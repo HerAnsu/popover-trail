@@ -23,10 +23,8 @@ export default {
     return {
       JSXAttribute(node) {
         if (
-          node.name &&
-          node.name.name === 'href' &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.name?.name === 'href' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'string' &&
           node.value.value.trim().toLowerCase().startsWith('javascript:')
         ) {

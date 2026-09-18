@@ -29,10 +29,8 @@ export default {
     return {
       MemberExpression(node) {
         if (
-          node.object &&
-          node.object.name === 'rawResult' &&
-          node.property &&
-          node.property.name === 'data'
+          node.object?.name === 'rawResult' &&
+          node.property?.name === 'data'
         ) {
           context.report({
             node,

@@ -7,13 +7,7 @@
 
 import type { PopoverStore, PopoverStateData } from '../types/storeTypes';
 
-export type {
-  StoreSetFn,
-  StoreGetFn,
-  StatePatch,
-  StoreState,
-  StoreSliceCreator,
-} from '../types/storeTypes';
+export type { StoreSetFn, StoreGetFn } from '../types/storeTypes';
 
 /**
  * Erased internal store state payload type.

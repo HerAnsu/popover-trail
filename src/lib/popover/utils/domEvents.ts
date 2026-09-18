@@ -1,11 +1,20 @@
+import { isElementLike, isFunction } from './typeGuards';
+import { DATA_POPOVER_PORTAL, DATA_POPOVER_IGNORE_OUTSIDE } from '../constants';
+import { first } from './arrayUtils';
+
 /**
  * Returns the event propagation path array, with support for Shadow DOM `composedPath()`.
  *
  * @param e - DOM Event instance.
  * @returns Array of EventTarget nodes traversed during event propagation.
+ *
+ * @example
+ * ```typescript
+ * const path = getEventPath(event);
+ * ```
  */
 export function getEventPath(e: Event): EventTarget[] {
-  if (typeof e.composedPath === 'function') {
+  if (isFunction(e.composedPath)) {
     return e.composedPath();
   }
   return e.target ? [e.target] : [];
@@ -16,14 +25,25 @@ export function getEventPath(e: Event): EventTarget[] {
  *
  * @template T - Expected EventTarget or HTMLElement subclass.
  * @param e - DOM Event instance.
+ * @param guard - Optional type guard to validate target.
  * @returns Target element or null if unavailable.
+ *
+ * @example
+ * ```typescript
+ * const button = getEventTarget(event, (node): node is HTMLButtonElement => node instanceof HTMLButtonElement);
+ * ```
  */
-export function getEventTarget<T extends EventTarget = HTMLElement>(e: Event): T | null {
-  if (typeof e.composedPath === 'function') {
-    const path = e.composedPath();
-    if (path.length > 0) return (path[0] as T) ?? (e.target as T | null);
+export function getEventTarget<T extends EventTarget = HTMLElement>(
+  e: Event,
+  guard?: (node: EventTarget) => node is T,
+): T | null {
+  const path = isFunction(e.composedPath) ? e.composedPath() : null;
+  const candidate = path && path.length > 0 ? (first(path) ?? e.target) : e.target;
+  if (!candidate) return null;
+  if (guard) {
+    return guard(candidate) ? candidate : null;
   }
-  return (e.target as T | null) ?? null;
+  return candidate as T;
 }
 
 /**
@@ -32,14 +52,20 @@ export function getEventTarget<T extends EventTarget = HTMLElement>(e: Event): T
  *
  * @param e - DOM Event instance.
  * @returns True if any ancestor in the event path is marked to be ignored.
+ *
+ * @example
+ * ```typescript
+ * if (isPortalOrExcludedTarget(event)) {
+ *   return; // Skip outside dismiss
+ * }
+ * ```
  */
 export function isPortalOrExcludedTarget(e: Event): boolean {
   const path = getEventPath(e);
   for (const target of path) {
     if (
-      target instanceof Element &&
-      (target.hasAttribute('data-popover-portal') ||
-        target.hasAttribute('data-popover-ignore-outside'))
+      isElementLike(target) &&
+      (target.hasAttribute(DATA_POPOVER_PORTAL) || target.hasAttribute(DATA_POPOVER_IGNORE_OUTSIDE))
     ) {
       return true;
     }

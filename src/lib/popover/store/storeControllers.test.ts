@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createControllerManager } from './storeControllers';
+import { AbortRegistry } from './controllers/AbortRegistry';
+import { InFlightPromiseCache } from './controllers/InFlightPromiseCache';
 
 describe('storeControllers module', () => {
   it('registers and aborts previous AbortController for key', () => {
@@ -46,5 +48,21 @@ describe('storeControllers module', () => {
 
     // Null safety check
     expect(() => manager.abortControllersForKeys(null as never)).not.toThrow();
+  });
+
+  it('verifies AbortRegistry and InFlightPromiseCache classes directly', () => {
+    const registry = new AbortRegistry();
+    expect(registry.isDisposed).toBe(false);
+    expect(registry.size).toBe(0);
+
+    registry.register('test-key');
+    expect(registry.size).toBe(1);
+    registry.dispose();
+    expect(registry.isDisposed).toBe(true);
+
+    const promiseCache = new InFlightPromiseCache<string, string>();
+    expect(promiseCache.size).toBe(0);
+    promiseCache.set('p1', Promise.resolve('ok'));
+    expect(promiseCache.size).toBe(1);
   });
 });

@@ -1,4 +1,6 @@
 import { wrapResult, isOk } from './result';
+import { isFunction, isArray } from './typeGuards';
+import { isUnsafeKey } from './safeKeys';
 
 function cloneBuiltinInstance(obj: object): object | null {
   if (obj instanceof Date) return new Date(obj);
@@ -26,17 +28,24 @@ function cloneBuiltinInstance(obj: object): object | null {
  * @remarks
  * Utilizes native `structuredClone` when supported, and gracefully falls back to recursive
  * object/array/Map/Set cloning when non-serializable properties (e.g. functions, DOM nodes) are encountered.
+ * Prototype pollution keys are explicitly skipped during cloning.
  *
  * @template T - Input object type.
  * @param obj - Object, array, or primitive value to clone.
  * @returns An isolated deep copy of the input value.
+ *
+ * @example
+ * ```typescript
+ * const clonedState = fastClone(currentState);
+ * clonedState.settings.theme = 'dark'; // currentState unaffected
+ * ```
  */
 export function fastClone<T>(obj: T): T {
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
 
-  if (typeof structuredClone === 'function') {
+  if (typeof structuredClone !== 'undefined' && isFunction(structuredClone)) {
     const cloneResult = wrapResult(() => structuredClone(obj));
     if (isOk(cloneResult)) {
       return cloneResult.data;
@@ -48,10 +57,16 @@ export function fastClone<T>(obj: T): T {
     return builtinClone as T;
   }
 
-  if (Array.isArray(obj)) {
+  if (isArray(obj)) {
     const copy = obj.map((item) => fastClone(item));
     return copy as T;
   }
 
-  return { ...obj };
+  const copy: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (!isUnsafeKey(k)) {
+      copy[k] = fastClone(v);
+    }
+  }
+  return copy as T;
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+﻿import { describe, it, expect, vi } from 'vitest';
 import { createPopoverController } from './popoverController';
 import { createPopoverStore } from '../store';
 
@@ -70,6 +70,47 @@ describe('popoverController', () => {
 
       expect(card.isPinned()).toBe(true);
     });
+
+    it('supports multi-parent DAG querying and mutation via fluent builder', () => {
+      const store = createPopoverStore(mockResolver);
+      const controller = createPopoverController(store);
+
+      controller.openRoot('owner-1', { key: 'parent-1' });
+      controller.openRoot('owner-1', { key: 'parent-2' });
+      controller.openRoot('owner-1', { key: 'child' });
+
+      const childCard = controller.focus('child');
+      expect(childCard.parents()).toEqual([]);
+
+      childCard.addParent('parent-1');
+      childCard.addParent('parent-2');
+
+      expect(childCard.parents()).toContain('parent-1');
+      expect(childCard.parents()).toContain('parent-2');
+      expect(controller.focus('parent-1').children()).toContain('child');
+      expect(controller.focus('parent-2').children()).toContain('child');
+
+      childCard.removeParent('parent-1');
+      expect(childCard.parents()).not.toContain('parent-1');
+      expect(childCard.parents()).toContain('parent-2');
+    });
+  });
+
+  it('manages multi-parent DAG connections via controller methods directly', () => {
+    const store = createPopoverStore(mockResolver);
+    const controller = createPopoverController(store);
+
+    controller.openRoot('owner-1', { key: 'node-A' });
+    controller.openRoot('owner-1', { key: 'node-B' });
+
+    expect(controller.getParents('node-B')).toEqual([]);
+    controller.addParent('node-B', 'node-A');
+
+    expect(controller.getParents('node-B')).toContain('node-A');
+    expect(controller.getChildren('node-A')).toContain('node-B');
+
+    controller.removeParent('node-B', 'node-A');
+    expect(controller.getParents('node-B')).not.toContain('node-A');
   });
 
   it('retries async data resolution via retryPopover controller method', async () => {

@@ -19,10 +19,8 @@ export default {
         if (
           node.name &&
           (node.name.name === 'tabIndex' || node.name.name === 'tabindex') &&
-          node.value &&
-          node.value.type === 'JSXExpressionContainer' &&
-          node.value.expression &&
-          node.value.expression.type === 'Literal' &&
+          node.value?.type === 'JSXExpressionContainer' &&
+          node.value.expression?.type === 'Literal' &&
           typeof node.value.expression.value === 'number' &&
           node.value.expression.value > 0
         ) {

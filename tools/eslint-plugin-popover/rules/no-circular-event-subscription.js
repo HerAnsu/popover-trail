@@ -30,19 +30,15 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           (node.callee.property.name === 'on' || node.callee.property.name === 'subscribe') &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Literal' &&
+          node.arguments[0]?.type === 'Literal' &&
           node.arguments[1] &&
           (node.arguments[1].type === 'ArrowFunctionExpression' ||
             node.arguments[1].type === 'FunctionExpression')
         ) {
           const eventName = String(node.arguments[0].value);
-          const body = context.getSourceCode
-            ? context.getSourceCode().getText(node.arguments[1])
-            : '';
+          const body = context.getSourceCode?.()?.getText?.(node.arguments[1]) ?? '';
           if (body.includes(`emit('${eventName}'`) || body.includes(`emit("${eventName}"`)) {
             context.report({
               node,

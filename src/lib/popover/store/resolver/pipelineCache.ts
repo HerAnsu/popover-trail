@@ -6,84 +6,91 @@
  */
 
 import type { PopoverCache } from '../../types';
-import { wrapResult, isOk } from '../../utils/result';
 import { isPromise } from '../../utils/storeHelpers';
+import { isResolvedEntry } from '../../utils/guards/entryGuards';
 import { dispatchStoreEvent } from '../eventBus';
+import { recordResolutionMetric } from './resolverTelemetry';
 import type { CacheResolutionAttemptArgs } from './resolverTypes';
 
 /**
- * Reads data synchronously from the provided cache instance.
+ * Reads synchronous cached data, ignoring promises or retrieval errors.
  *
- * @template TData - Resolved data payload type.
- * @param activeCache - Optional cache instance.
- * @param key - Target popover key.
- * @returns Cached data payload or `undefined`.
+ * @template TData - Cached data payload type.
+ * @param activeCache - Cache instance (safely handles undefined).
+ * @param key - Popover key to look up.
+ * @returns Cached data value or `undefined` if missing or pending Promise.
+ *
+ * @example
+ * ```typescript
+ * const data = readSyncCache(cache, 'card-1');
+ * ```
  */
-export function getSyncCachedData<TData>(
+export function readSyncCache<TData>(
   activeCache: PopoverCache<TData> | undefined,
   key: string,
 ): TData | undefined {
   if (!activeCache) return undefined;
-  const readResult = wrapResult(() => activeCache.get(key));
-
-  if (isOk(readResult)) {
-    const raw = readResult.data;
-    if (raw !== undefined && !isPromise(raw)) {
-      return raw as TData;
-    }
+  try {
+    const raw = activeCache.get(key);
+    return raw !== undefined && !isPromise(raw) ? raw : undefined;
+  } catch {
+    return undefined;
   }
-  return undefined;
+}
+
+function commitSuccessPayload<TData, TContext, TPopoverKey extends string>(
+  data: TData,
+  args: CacheResolutionAttemptArgs<TData, TContext, TPopoverKey>,
+  startTime?: number,
+): void {
+  const { resolveParams, requestCounter, eventListeners, key, eventBus, safeSet, buildEntry } =
+    args;
+  if (resolveParams.isStale(requestCounter)) return;
+
+  dispatchStoreEvent(eventListeners, { type: 'resolve_success', key, data }, eventBus);
+
+  if (startTime !== undefined) {
+    recordResolutionMetric(args, key, 'cache', startTime, true);
+  }
+
+  safeSet(resolveParams.insertStatePatch(buildEntry(data, null, false)));
 }
 
 /**
- * Attempts to synchronously resolve popover data from the L1 cache or an already
- * hydrated success entry, committing the result through `safeSet` when fresh.
+ * Attempts synchronous resolution from L1 cache or existing settled success state in the store.
  *
- * @returns `true` if resolved synchronously from cache or state.
+ * Checks if fresh data is already available synchronously in either:
+ * 1. The provided or store cache.
+ * 2. An existing resolved entry (if not bypassing with `forceRefresh: true`).
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param args - Cache resolution attempt arguments.
+ * @param startTime - Optional performance timestamp.
+ * @returns True if resolved from cache or state, false otherwise.
+ *
+ * @example
+ * ```typescript
+ * const resolved = tryResolveFromCacheOrState(attemptArgs, performance.now());
+ * ```
  */
 export function tryResolveFromCacheOrState<
   TData = unknown,
   TContext = unknown,
   TPopoverKey extends string = string,
->(args: CacheResolutionAttemptArgs<TData, TContext, TPopoverKey>): boolean {
-  const {
-    cache,
-    storeCache,
-    existingEntry,
-    key,
-    forceRefresh,
-    requestCounter,
-    resolveParams,
-    safeSet,
-    buildEntry,
-    eventListeners,
-    eventBus,
-  } = args;
-
+>(args: CacheResolutionAttemptArgs<TData, TContext, TPopoverKey>, startTime?: number): boolean {
+  const { cache, storeCache, key, forceRefresh, existingEntry } = args;
   const effectiveCache = cache ?? storeCache ?? undefined;
-  const cachedData = getSyncCachedData(effectiveCache, key);
+  const cachedData = readSyncCache(effectiveCache, key);
 
   if (cachedData !== undefined) {
-    if (!resolveParams.isStale(requestCounter)) {
-      dispatchStoreEvent(
-        eventListeners,
-        { type: 'resolve_success', key, data: cachedData },
-        eventBus,
-      );
-      safeSet(resolveParams.insertStatePatch(buildEntry(cachedData, null, false)));
-    }
+    commitSuccessPayload(cachedData, args, startTime);
     return true;
   }
 
-  if (existingEntry?.status === 'success' && !forceRefresh) {
-    if (!resolveParams.isStale(requestCounter)) {
-      dispatchStoreEvent(
-        eventListeners,
-        { type: 'resolve_success', key, data: existingEntry.data as TData },
-        eventBus,
-      );
-      safeSet(resolveParams.insertStatePatch(buildEntry(existingEntry.data, null, false)));
-    }
+  if (!forceRefresh && isResolvedEntry<TData, TPopoverKey>(existingEntry)) {
+    commitSuccessPayload(existingEntry.data, args, startTime);
     return true;
   }
 

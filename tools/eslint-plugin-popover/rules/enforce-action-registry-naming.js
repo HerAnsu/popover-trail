@@ -1,4 +1,3 @@
-'use strict';
 export default {
   meta: {
     type: 'suggestion',
@@ -13,12 +12,13 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
-    if (!filename.includes('storeActionRegistry.ts')) return {};
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
       Property(node) {
-        if (node.key && node.key.name && node.key.name.includes('-')) {
-          context.report({ node, messageId: 'invalidActionName', data: { name: node.key.name } });
+        if (node.key?.name?.includes('-')) {
+          context.report({ node, messageId: 'invalidActionName', data: { name: node.key?.name } });
         }
       },
     };

@@ -34,7 +34,7 @@ export default {
           (node.id.name.toLowerCase().includes('verifysignature') ||
             node.id.name.toLowerCase().includes('verifytoken'))
         ) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             body.includes('===') &&
             !body.includes('timingSafeEqual') &&

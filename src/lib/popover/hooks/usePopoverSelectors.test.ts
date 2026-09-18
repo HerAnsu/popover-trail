@@ -3,16 +3,13 @@ import {
   usePopoverTrail,
   usePopoverFloating,
   usePopoverOffsets,
-  useIsPopoverPinned,
   usePopoverIsPinned,
   usePopoverEntry,
   usePopoverZIndex,
-  useIsPopoverTopMost,
   usePopoverIsTopMost,
   usePopoverOffset,
   usePopoverContext,
   usePopoverCollisionConfig,
-  useIsPopoverOpen,
   usePopoverIsOpen,
   usePopover,
   usePopoverHydration,
@@ -22,11 +19,9 @@ import {
   usePopoverBreadcrumbs,
   usePopoverDepth,
   usePopoverIsLoading,
-  useIsPopoverLoading,
   usePopoverError,
-  useIsPopoverError,
   usePopoverIsIdle,
-  useIsPopoverIdle,
+  usePopoverActiveCount,
 } from './usePopoverSelectors';
 
 describe('usePopoverSelectors module', () => {
@@ -34,14 +29,14 @@ describe('usePopoverSelectors module', () => {
     expect(typeof usePopoverTrail).toBe('function');
     expect(typeof usePopoverFloating).toBe('function');
     expect(typeof usePopoverOffsets).toBe('function');
-    expect(typeof useIsPopoverPinned).toBe('function');
+    expect(typeof usePopoverIsPinned).toBe('function');
     expect(typeof usePopoverEntry).toBe('function');
     expect(typeof usePopoverZIndex).toBe('function');
-    expect(typeof useIsPopoverTopMost).toBe('function');
+    expect(typeof usePopoverIsTopMost).toBe('function');
     expect(typeof usePopoverOffset).toBe('function');
     expect(typeof usePopoverContext).toBe('function');
     expect(typeof usePopoverCollisionConfig).toBe('function');
-    expect(typeof useIsPopoverOpen).toBe('function');
+    expect(typeof usePopoverIsOpen).toBe('function');
     expect(typeof usePopover).toBe('function');
     expect(typeof usePopoverHydration).toBe('function');
     expect(typeof usePopoverData).toBe('function');
@@ -54,12 +49,10 @@ describe('usePopoverSelectors module', () => {
     expect(typeof usePopoverDepth).toBe('function');
   });
 
-  it('exports symmetric naming aliases matching the primary hooks', () => {
-    expect(usePopoverIsOpen).toBe(useIsPopoverOpen);
-    expect(usePopoverIsPinned).toBe(useIsPopoverPinned);
-    expect(usePopoverIsTopMost).toBe(useIsPopoverTopMost);
-    expect(usePopoverIsIdle).toBe(useIsPopoverIdle);
-    expect(useIsPopoverLoading).toBe(usePopoverIsLoading);
-    expect(useIsPopoverError).toBe(usePopoverError);
+  it('exports lifecycle and status hooks', () => {
+    expect(typeof usePopoverIsLoading).toBe('function');
+    expect(typeof usePopoverError).toBe('function');
+    expect(typeof usePopoverIsIdle).toBe('function');
+    expect(typeof usePopoverActiveCount).toBe('function');
   });
 });

@@ -30,8 +30,7 @@ export default {
         if (
           node.key &&
           (node.key.name === 'animationName' || node.key.value === 'animationName') &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'string' &&
           !node.value.value.startsWith('var(') &&
           node.value.value !== 'none' &&

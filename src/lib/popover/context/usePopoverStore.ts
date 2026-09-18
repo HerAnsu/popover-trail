@@ -5,12 +5,13 @@ import type { PopoverStore } from '../types';
 import type { RegisteredKeys, RegisteredDataMap } from '../types/registerTypes';
 import { PopoverStoreContext } from './PopoverStoreContext';
 import { invariant } from '../utils/invariant';
+import { isRecordObject } from '../utils/typeGuards';
 
 function assertStoreApi<TData, TContext, TPopoverKey extends string>(
   store: unknown,
 ): asserts store is StoreApi<PopoverStore<TData, TContext, TPopoverKey>> {
   invariant(
-    typeof store === 'object' && store !== null && 'getState' in store,
+    isRecordObject(store) && 'getState' in store,
     'usePopoverStoreApi must be used within a PopoverProvider',
   );
 }
@@ -46,6 +47,11 @@ export function usePopoverStoreApi<
  * @param equalityFn - Optional custom equality function to prevent redundant re-renders.
  * @returns The selected state slice.
  * @throws {Error} If called outside a `<PopoverProvider>`.
+ *
+ * @example
+ * ```tsx
+ * const activeCount = usePopoverStore((state) => state.trail.length);
+ * ```
  */
 export function usePopoverStore<
   TSelected,
@@ -95,6 +101,12 @@ export function usePopoverStore<
  * @template TContext - The type of global shared context.
  * @template TPopoverKey - Union of valid popover keys.
  * @returns Object containing dispatch actions.
+ *
+ * @example
+ * ```tsx
+ * const actions = usePopoverActions();
+ * const handleCloseAll = () => actions.closeAll();
+ * ```
  */
 export function usePopoverActions<
   TData = RegisteredDataMap[RegisteredKeys],
@@ -102,5 +114,6 @@ export function usePopoverActions<
   TPopoverKey extends string = RegisteredKeys,
 >(): Readonly<PopoverStore<TData, TContext, TPopoverKey>['actions']> {
   const store = usePopoverStoreApi<TData, TContext, TPopoverKey>();
-  return store.getState().actions;
+  const { actions } = store.getState();
+  return actions;
 }

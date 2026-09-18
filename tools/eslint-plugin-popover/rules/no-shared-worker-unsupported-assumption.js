@@ -28,8 +28,8 @@ export default {
 
     return {
       NewExpression(node) {
-        if (node.callee && node.callee.name === 'SharedWorker') {
-          const scope = context.getSourceCode ? context.getSourceCode().getText() : '';
+        if (node.callee?.name === 'SharedWorker') {
+          const scope = context.getSourceCode?.()?.getText?.() ?? '';
           if (scope && !scope.includes("typeof SharedWorker !== 'undefined'")) {
             context.report({
               node,

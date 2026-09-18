@@ -24,11 +24,9 @@ export default {
     return {
       TSInterfaceDeclaration(node) {
         if (
-          node.id &&
-          node.id.name &&
+          node.id?.name &&
           node.id.name.includes('Resolver') &&
-          node.typeParameters &&
-          node.typeParameters.params.length === 1 &&
+          node.typeParameters?.params.length === 1 &&
           !node.typeParameters.params[0].default
         ) {
           context.report({

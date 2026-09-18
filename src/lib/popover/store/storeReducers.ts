@@ -1,11 +1,7 @@
 /**
- * Pure Store State Reducers for popover-trail.
- * Re-export facade consolidating pure reducers from `src/lib/popover/store/reducers/`.
+ * Facade re-export for backward compatibility.
  *
  * @module storeReducers
  */
 
-export * from './reducers/stackReducers';
-export * from './reducers/openReducers';
-export * from './reducers/pinReducers';
-export * from './reducers/closeReducers';
+export * from './reducers/index';

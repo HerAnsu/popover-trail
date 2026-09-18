@@ -24,14 +24,10 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.object &&
+          node.callee?.object &&
           node.callee.object.name === 'localStorage' &&
-          node.callee.property &&
-          node.callee.property.name === 'setItem' &&
-          node.arguments &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Literal'
+          node.callee.property?.name === 'setItem' &&
+          node.arguments?.[0]?.type === 'Literal'
         ) {
           const key = String(node.arguments[0].value).toLowerCase();
           if (

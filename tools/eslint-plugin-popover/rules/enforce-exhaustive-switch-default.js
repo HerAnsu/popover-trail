@@ -1,7 +1,3 @@
-/**
- * @fileoverview Enforce default branch in switch statements handling discriminated unions.
- */
-
 export default {
   meta: {
     type: 'suggestion',
@@ -23,8 +19,8 @@ export default {
 
     return {
       SwitchStatement(node) {
-        const hasDefault = node.cases.some((c) => c.test === null);
-        if (!hasDefault && node.cases.length > 3) {
+        const hasDefault = node.cases?.some?.((c) => c.test === null);
+        if (!hasDefault && node.cases?.length > 3) {
           context.report({
             node,
             messageId: 'requireDefaultInSwitch',

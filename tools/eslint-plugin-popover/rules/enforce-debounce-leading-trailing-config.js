@@ -19,24 +19,16 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          (node.callee.name === 'debounce' ||
-            (node.callee.property && node.callee.property.name === 'debounce')) &&
+          (node.callee?.name === 'debounce' ||
+            node.callee?.property?.name === 'debounce') &&
           node.arguments.length === 2 &&
-          node.arguments[1] &&
-          node.arguments[1].type === 'Literal' &&
-          typeof node.arguments[1].value === 'number'
+          node.arguments[1]?.type === 'Literal' &&
+          typeof node.arguments[1]?.value === 'number'
         ) {
           context.report({
             node,

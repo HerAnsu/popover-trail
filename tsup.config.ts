@@ -1,7 +1,13 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/lib/popover/index.ts', 'src/lib/popover/dnd.tsx'],
+  entry: {
+    index: 'src/lib/popover/index.ts',
+    dnd: 'src/lib/popover/dnd.tsx',
+    store: 'src/lib/popover/store.ts',
+    schema: 'src/lib/popover/schema.tsx',
+    utils: 'src/lib/popover/utils.ts',
+  },
   format: ['cjs', 'esm'],
   dts: false,
   tsconfig: 'tsconfig.lib.json',
@@ -13,9 +19,9 @@ export default defineConfig({
   external: [
     'react',
     'react-dom',
+    'react/jsx-runtime',
     'zustand',
     '@floating-ui/react',
     '@dnd-kit/core',
-    'react-focus-lock',
   ],
 });

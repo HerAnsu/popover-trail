@@ -14,7 +14,7 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (!filename.includes('src/lib/') || filename.includes('.test.')) return {};
     let depth = 0;
     return {
@@ -41,7 +41,7 @@ export default {
           depth === 0 &&
           node.callee &&
           (node.callee.name === 'fetch' ||
-            (node.callee.object && node.callee.object.name === 'document'))
+            (node.callee.object?.name === 'document'))
         ) {
           context.report({
             node,

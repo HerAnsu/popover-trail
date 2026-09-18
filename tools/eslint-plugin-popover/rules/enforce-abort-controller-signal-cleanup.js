@@ -24,14 +24,12 @@ export default {
     return {
       NewExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'AbortController' &&
-          node.parent &&
-          node.parent.type === 'VariableDeclarator'
+          node.callee?.name === 'AbortController' &&
+          node.parent?.type === 'VariableDeclarator'
         ) {
-          const varName = node.parent.id?.name;
+          const varName = node.parent?.id?.name;
           if (varName) {
-            const scope = context.getSourceCode ? context.getSourceCode().getText() : '';
+            const scope = context.getSourceCode?.()?.getText?.() ?? '';
             if (scope && !scope.includes(`${varName}.abort()`)) {
               context.report({
                 node,

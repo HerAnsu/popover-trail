@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createPopoverStore } from '../store';
 import { defineStoreSlice } from '../types/storeTypes';
-import type { SliceContext } from './slices/sliceContext';
+import type { SliceContext } from './slices/context';
 
 describe('OCP Custom Store Slices (Open/Closed Principle)', () => {
   interface AnalyticsState extends Record<string, unknown> {

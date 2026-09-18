@@ -15,20 +15,17 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.')) return {};
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'addEventListener' &&
-          node.arguments[0] &&
-          node.arguments[0].value === 'keydown' &&
-          node.callee.object &&
-          node.callee.object.name === 'window'
+          node.arguments[0]?.value === 'keydown' &&
+          node.callee.object?.name === 'window'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          const src = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (!src.includes('active') && !src.includes('isOpen') && !src.includes('selected')) {
             context.report({ node, messageId: 'unscopedKeyboard' });
           }

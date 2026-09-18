@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { usePopoverActions } from '../context/usePopoverStore';
-import { useIsPopoverOpen } from './usePopoverSelectors';
+import { usePopoverIsOpen } from './usePopoverSelectors';
+import { useLatestRef } from './useHookUtils';
 import type {
   AnchorEventLike,
   OpenNestedOptions,
@@ -14,15 +15,10 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
   onOpenHandler: (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => void,
   explicitIsOpen?: boolean,
 ) {
-  const actions = usePopoverActions();
-  const optionsRef = useRef(options);
-  const onOpenHandlerRef = useRef(onOpenHandler);
+  const { hoverLeave } = usePopoverActions();
+  const optionsRef = useLatestRef(options);
+  const onOpenHandlerRef = useLatestRef(onOpenHandler);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    optionsRef.current = options;
-    onOpenHandlerRef.current = onOpenHandler;
-  }, [options, onOpenHandler]);
 
   useEffect(() => {
     return () => {
@@ -32,25 +28,31 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
     };
   }, []);
 
-  const onClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    if (optionsRef.current?.hover?.enabled) return;
-    onOpenHandlerRef.current(e, e.currentTarget);
-  }, []);
+  const onClick = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      if (optionsRef.current?.hover?.enabled) return;
+      onOpenHandlerRef.current(e, e.currentTarget);
+    },
+    [optionsRef, onOpenHandlerRef],
+  );
 
-  const onMouseEnter = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    const hoverOpts = optionsRef.current?.hover;
-    if (hoverOpts?.enabled) {
-      if (openTimerRef.current) {
-        clearTimeout(openTimerRef.current);
+  const onMouseEnter = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      const hoverOpts = optionsRef.current?.hover;
+      if (hoverOpts?.enabled) {
+        if (openTimerRef.current) {
+          clearTimeout(openTimerRef.current);
+        }
+        const currentTarget = e.currentTarget;
+        const delay = hoverOpts.openDelay ?? 200;
+        e.persist?.();
+        openTimerRef.current = setTimeout(() => {
+          onOpenHandlerRef.current(e, currentTarget);
+        }, delay);
       }
-      const currentTarget = e.currentTarget;
-      const delay = hoverOpts.openDelay ?? 200;
-      e.persist?.();
-      openTimerRef.current = setTimeout(() => {
-        onOpenHandlerRef.current(e, currentTarget);
-      }, delay);
-    }
-  }, []);
+    },
+    [optionsRef, onOpenHandlerRef],
+  );
 
   const onMouseLeave = useCallback(() => {
     const hoverOpts = optionsRef.current?.hover;
@@ -59,12 +61,12 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
         clearTimeout(openTimerRef.current);
       }
       const delay = hoverOpts.closeDelay ?? 300;
-      actions.hoverLeave(key, delay);
+      hoverLeave(key, delay);
     }
-  }, [actions, key]);
+  }, [hoverLeave, key, optionsRef]);
 
   const hoverEnabled = Boolean(options?.hover?.enabled);
-  const storeIsOpen = useIsPopoverOpen(key);
+  const storeIsOpen = usePopoverIsOpen(key);
   const isOpen = explicitIsOpen ?? storeIsOpen;
 
   return useMemo(() => {
@@ -109,7 +111,7 @@ export function usePopoverTrigger(
   options?: OpenRootOptions,
   explicitIsOpen?: boolean,
 ) {
-  const actions = usePopoverActions();
+  const { openRootWithResolver } = usePopoverActions();
   const onOpenHandler = useCallback(
     (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => {
       const fakeEvent: AnchorEventLike = {
@@ -118,9 +120,9 @@ export function usePopoverTrigger(
           e.stopPropagation?.();
         },
       };
-      void actions.openRootWithResolver(key, fakeEvent, options);
+      void openRootWithResolver(key, fakeEvent, options);
     },
-    [actions, key, options],
+    [openRootWithResolver, key, options],
   );
 
   return usePopoverTriggerBase(key, options, onOpenHandler, explicitIsOpen);
@@ -155,16 +157,16 @@ export function usePopoverNestedTrigger(
   options?: OpenNestedOptions,
   explicitIsOpen?: boolean,
 ) {
-  const actions = usePopoverActions();
+  const { openNestedWithResolver } = usePopoverActions();
   const onOpenHandler = useCallback(
     (_e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => {
       const rect = currentTarget.getBoundingClientRect();
-      void actions.openNestedWithResolver(key, sourceKey, {
+      void openNestedWithResolver(key, sourceKey, {
         ...options,
         triggerRect: rect,
       });
     },
-    [actions, key, sourceKey, options],
+    [openNestedWithResolver, key, sourceKey, options],
   );
 
   return usePopoverTriggerBase(key, options, onOpenHandler, explicitIsOpen);

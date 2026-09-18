@@ -24,13 +24,11 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.object &&
+          node.callee?.object &&
           node.callee.object.name === 'document' &&
           (node.callee.property.name === 'querySelector' ||
             node.callee.property.name === 'getElementById') &&
-          node.arguments &&
-          node.arguments[0] &&
+          node.arguments?.[0] &&
           typeof node.arguments[0].value === 'string' &&
           (node.arguments[0].value.includes('portal') ||
             node.arguments[0].value.includes('popover-root'))

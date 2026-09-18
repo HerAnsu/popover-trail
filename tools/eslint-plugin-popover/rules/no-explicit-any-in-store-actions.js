@@ -24,10 +24,8 @@ export default {
     return {
       TSAnyKeyword(node) {
         if (
-          node.parent &&
-          node.parent.type === 'TSTypeAnnotation' &&
-          node.parent.parent &&
-          node.parent.parent.type === 'Identifier' &&
+          node.parent?.type === 'TSTypeAnnotation' &&
+          node.parent.parent?.type === 'Identifier' &&
           (node.parent.parent.name === 'payload' || node.parent.parent.name === 'data')
         ) {
           context.report({

@@ -28,13 +28,12 @@ export default {
 
     return {
       CallExpression(node) {
-        if (node.callee && node.callee.property && node.callee.property.name === 'subscribe') {
+        if (node.callee?.property && node.callee.property.name === 'subscribe') {
           let parent = node.parent;
           while (parent) {
             if (
               parent.type === 'CallExpression' &&
-              parent.callee &&
-              parent.callee.property &&
+              parent.callee?.property &&
               parent.callee.property.name === 'subscribe'
             ) {
               context.report({

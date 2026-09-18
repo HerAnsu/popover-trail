@@ -19,18 +19,12 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       FunctionDeclaration(node) {
         if (node.async && node.generator && node.body) {
-          const hasFinally = node.body.body.some(
+          const hasFinally = node.body?.body?.some(
             (stmt) => stmt.type === 'TryStatement' && stmt.finalizer !== null,
           );
           if (!hasFinally) {

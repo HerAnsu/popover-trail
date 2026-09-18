@@ -29,7 +29,7 @@ export default {
 
     return {
       CatchClause(node) {
-        const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        const body = context.getSourceCode?.()?.getText?.(node) ?? '';
         if (
           (body.includes('fetch(') || body.includes('controller.signal')) &&
           !body.includes('AbortError') &&

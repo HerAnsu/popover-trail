@@ -5,8 +5,8 @@ import { createMockStoreState } from '../testing/createMockStoreState';
 import { createPopoverStore } from '../store';
 
 describe('cqrs module', () => {
-  const createMockActions = (): PopoverActions => {
-    const mockActions: PopoverActions = {
+  const createMockActions = () => {
+    const mockActions = {
       setContext: vi.fn(),
       setResolveData: vi.fn(),
       setOwnerId: vi.fn(),
@@ -28,7 +28,7 @@ describe('cqrs module', () => {
       invalidate: vi.fn(async () => {}),
       undo: vi.fn(),
       redo: vi.fn(),
-      batchUpdates: vi.fn((fn: (actions: PopoverActions) => void) => fn(mockActions)),
+      batchUpdates: vi.fn((fn: (actions: PopoverActions) => void) => fn(mockActions as never)),
       setClosePinnedDescendants: vi.fn(),
       setCollisionConfig: vi.fn(),
       setEnableArrowNavigation: vi.fn(),
@@ -59,7 +59,8 @@ describe('cqrs module', () => {
       setResponsiveMode: vi.fn(),
       setZIndexBaseMap: vi.fn(),
       setSlotComponents: vi.fn(),
-      runTransition: vi.fn((fn: (actions: PopoverActions) => void) => fn(mockActions)),
+      runTransition: vi.fn((fn: (actions: PopoverActions) => void) => fn(mockActions as never)),
+      updateConfig: vi.fn(),
       destroy: vi.fn(),
     };
     return mockActions;
@@ -91,19 +92,20 @@ describe('cqrs module', () => {
     expect(queryBus.isPinned('pinned-1')).toBe(true);
     expect(queryBus.getOffset('pinned-1')).toEqual({ x: 15, y: 30 });
     expect(queryBus.getOffset('unknown')).toEqual({ x: 0, y: 0 });
-    expect(queryBus.activeCount).toBe(3);
+    expect(queryBus.totalCount).toBe(3);
     expect(queryBus.isIdle).toBe(false);
-    expect(queryBus.discriminatedStatus).toBe('active-trail');
+    expect(queryBus.status).toBe('active-trail');
     expect(queryBus.root?.key).toBe('root-1');
-    expect(queryBus.hasEntry('root-1')).toBe(true);
     expect(queryBus.isOpen('root-1')).toBe(true);
-    expect(queryBus.hasEntry('missing')).toBe(false);
+    expect(queryBus.isOpen('missing')).toBe(false);
     expect(queryBus.isLoading('root-1')).toBe(false);
     expect(queryBus.getError('root-1')).toBeNull();
     expect(queryBus.getData('root-1')).toBeNull();
     expect(queryBus.zIndexOrder).toEqual(['pinned-1', 'root-1', 'child-1']);
     expect(queryBus.isTopmost('child-1')).toBe(true);
     expect(queryBus.isTopmost('root-1')).toBe(false);
+    expect(queryBus.topmost?.key).toBe('child-1');
+    expect(queryBus.getBranch('child-1')).toHaveLength(2);
   });
 
   it('queries hierarchy, breadcrumbs, parent, and children in PopoverQueryBus', () => {
@@ -128,13 +130,13 @@ describe('cqrs module', () => {
 
   it('dispatches commands via PopoverCommandBus', async () => {
     const mockActions = createMockActions();
-    const commandBus = new PopoverCommandBus(mockActions);
+    const commandBus = new PopoverCommandBus(mockActions as never);
 
     const testEntry: TrailEntry<unknown> = { key: 'root-1', isLoading: false, error: null };
     commandBus.openRoot('owner-1', testEntry);
     expect(mockActions.openRoot).toHaveBeenCalledWith('owner-1', testEntry);
 
-    commandBus.openNested(0, testEntry);
+    commandBus.pushNested(0, testEntry);
     expect(mockActions.pushNested).toHaveBeenCalledWith(0, testEntry);
 
     await commandBus.openRootWithResolver('card-res');
@@ -147,7 +149,7 @@ describe('cqrs module', () => {
       undefined,
     );
 
-    commandBus.close('root-1');
+    commandBus.closeByKey('root-1');
     expect(mockActions.closeByKey).toHaveBeenCalledWith('root-1', undefined);
 
     commandBus.closeTopmost();
@@ -181,8 +183,20 @@ describe('cqrs module', () => {
     commandBus.redo();
     expect(mockActions.redo).toHaveBeenCalled();
 
+    commandBus.updateConfig({ debug: true });
+    expect(mockActions.updateConfig).toHaveBeenCalledWith({ debug: true });
+
+    commandBus.pushNested(0, { key: 'new-child' });
+    expect(mockActions.pushNested).toHaveBeenCalledWith(0, { key: 'new-child' });
+
+    commandBus.closeByKey('root-1');
+    expect(mockActions.closeByKey).toHaveBeenCalledWith('root-1', undefined);
+
+    commandBus.clear();
+    expect(mockActions.clear).toHaveBeenCalled();
+
     commandBus.batch((bus) => {
-      bus.close('root-1');
+      bus.closeByKey('root-1');
     });
     expect(mockActions.batchUpdates).toHaveBeenCalled();
   });

@@ -14,15 +14,14 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (!filename.includes('components/') || filename.includes('.test.')) return {};
     return {
       Property(node) {
         if (
           node.key &&
           (node.key.name === 'color' || node.key.name === 'backgroundColor') &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'string' &&
           node.value.value.startsWith('#')
         ) {

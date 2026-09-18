@@ -107,4 +107,24 @@ describe('eventBus module', () => {
     bus.dispose();
     expect(bus.size).toBe(0);
   });
+
+  it('supports wildcard onAny and key-filtered onKey subscriptions', () => {
+    const bus = new PopoverEventBus();
+    const anyListener = vi.fn();
+    const keyListener = vi.fn();
+
+    const unsubAny = bus.onAny(anyListener);
+    const unsubKey = bus.onKey('card-1', keyListener);
+
+    bus.emit('popover:open', { key: 'card-1' });
+    expect(anyListener).toHaveBeenCalledTimes(1);
+    expect(keyListener).toHaveBeenCalledTimes(1);
+
+    bus.emit('popover:open', { key: 'card-2' });
+    expect(anyListener).toHaveBeenCalledTimes(2);
+    expect(keyListener).toHaveBeenCalledTimes(1);
+
+    unsubAny();
+    unsubKey();
+  });
 });

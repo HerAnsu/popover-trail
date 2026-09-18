@@ -6,6 +6,8 @@
  * @module triggerRegistry
  */
 
+import type { Unbrand } from '../types/branded';
+
 /**
  * Singleton registry mapping popover keys to `WeakRef<HTMLElement>` anchor elements.
  *
@@ -26,12 +28,17 @@ function pruneDeadRefs(): void {
 
 export const TriggerRegistry = {
   /**
-   * Registers a trigger element for a popover key.
+   * Registers a trigger element for a popover key. Accepts branded and unbranded keys.
    *
-   * @param key - Unique popover key string.
+   * @param key - Unique popover key string or branded domain key.
    * @param el - DOM HTMLElement of the trigger button or container.
+   *
+   * @example
+   * ```typescript
+   * TriggerRegistry.register('user-button', buttonRef.current);
+   * ```
    */
-  register(key: string, el?: HTMLElement | null): void {
+  register<K extends string = string>(key: K | Unbrand<K>, el?: HTMLElement | null): void {
     if (!key || !el || typeof el !== 'object' || typeof WeakRef === 'undefined') return;
     if (registry.size > MAX_REGISTRY_SIZE_BEFORE_SWEEP) {
       pruneDeadRefs();
@@ -39,8 +46,18 @@ export const TriggerRegistry = {
     registry.set(key, new WeakRef(el));
   },
 
-  /** Retrieve the anchor element, or null if GC'd or not registered. */
-  get(key: string): HTMLElement | null {
+  /**
+   * Retrieves the anchor element, or null if garbage collected or not registered.
+   *
+   * @param key - Popover key to look up.
+   * @returns Active HTMLElement or null.
+   *
+   * @example
+   * ```typescript
+   * const triggerEl = TriggerRegistry.get('user-button');
+   * ```
+   */
+  get<K extends string = string>(key: K | Unbrand<K>): HTMLElement | null {
     if (!key) return null;
     const ref = registry.get(key);
     if (!ref) return null;
@@ -52,24 +69,48 @@ export const TriggerRegistry = {
     return el;
   },
 
-  /** Unregister a popover key. */
-  unregister(key: string): void {
+  /**
+   * Unregisters a popover key from the registry.
+   *
+   * @param key - Popover key to unregister.
+   *
+   * @example
+   * ```typescript
+   * TriggerRegistry.unregister('user-button');
+   * ```
+   */
+  unregister<K extends string = string>(key: K | Unbrand<K>): void {
     if (!key) return;
     registry.delete(key);
   },
 
-  /** Clear all registrations. */
+  /**
+   * Clears all trigger registrations from the registry.
+   */
   clear(): void {
     registry.clear();
   },
 
-  /** ScopeDisposable compliance handle clearing all registered anchors. */
+  /**
+   * Disposable compliance handle clearing all registered anchors.
+   */
   dispose(): void {
     registry.clear();
   },
 
-  /** Check if a key has a living (non-GC'd) element. Prunes stale WeakRef if GC'd. */
-  has(key: string): boolean {
+  /**
+   * Checks if a key has an active (non-GC'd) trigger element.
+   * Prunes stale WeakRef if garbage collection has occurred.
+   *
+   * @param key - Popover key.
+   * @returns True if active element exists.
+   *
+   * @example
+   * ```typescript
+   * if (TriggerRegistry.has('user-button')) { ... }
+   * ```
+   */
+  has<K extends string = string>(key: K | Unbrand<K>): boolean {
     const ref = registry.get(key);
     if (!ref) return false;
     const el = ref.deref();
@@ -80,7 +121,9 @@ export const TriggerRegistry = {
     return true;
   },
 
-  /** Returns active registration count. */
+  /**
+   * Returns current active registration count in the registry.
+   */
   get size(): number {
     return registry.size;
   },

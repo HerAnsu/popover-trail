@@ -5,11 +5,11 @@ import type { StoreApi } from 'zustand/vanilla';
 describe('storeBatching module (Microtask Coalescing & Batching)', () => {
   const createMockStore = <TState extends Record<string, unknown>>(
     initialState: TState,
-  ): StoreApi<TState> => {
+  ): BatchedStoreApi<TState> => {
     let state = { ...initialState };
     const rawListeners = new Set<(state: TState, prevState: TState) => void>();
 
-    const store: StoreApi<TState> = {
+    const store: BatchedStoreApi<TState> = {
       getState: () => state,
       getInitialState: () => state,
       setState: (updater) => {
@@ -225,7 +225,7 @@ describe('storeBatching module (Microtask Coalescing & Batching)', () => {
 
     const seen: number[] = [];
     let equalityCalls = 0;
-    const batchedStore = store as unknown as BatchedStoreApi<{ count: number; label: string }>;
+    const batchedStore = store;
     const unsubscribe = batchedStore.subscribe(
       (selected: number) => {
         seen.push(selected);

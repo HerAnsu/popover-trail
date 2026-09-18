@@ -19,8 +19,7 @@ export default {
         if (
           node.key &&
           (node.key.name === 'outline' || node.key.value === 'outline') &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.value?.type === 'Literal' &&
           node.value.value === 'none'
         ) {
           context.report({ node, messageId: 'visibleFocusOutline' });

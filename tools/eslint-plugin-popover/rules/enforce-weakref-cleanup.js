@@ -23,10 +23,8 @@ export default {
     return {
       MemberExpression(node) {
         if (
-          node.object &&
-          node.object.type === 'CallExpression' &&
-          node.object.callee &&
-          node.object.callee.property &&
+          node.object?.type === 'CallExpression' &&
+          node.object.callee?.property &&
           node.object.callee.property.name === 'deref' &&
           !node.optional
         ) {

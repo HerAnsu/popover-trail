@@ -15,6 +15,12 @@ import type { PopoverKey, OwnerId } from '../types/storeTypes';
  * @template T - Input value type.
  * @param value - Value to assert.
  * @param name - Property or argument variable name for diagnostic messages.
+ *
+ * @example
+ * ```typescript
+ * assertNonNullable(entry.triggerRect, 'triggerRect');
+ * console.log(entry.triggerRect.width); // narrowed to NonNullable
+ * ```
  */
 export function assertNonNullable<T>(value: T, name = 'value'): asserts value is NonNullable<T> {
   if (value === null || value === undefined) {
@@ -30,6 +36,11 @@ export function assertNonNullable<T>(value: T, name = 'value'): asserts value is
  * Asserts that a key string is a valid, non-empty PopoverKey.
  *
  * @param key - Identifier value to validate.
+ *
+ * @example
+ * ```typescript
+ * assertValidPopoverKey(props.key);
+ * ```
  */
 export function assertValidPopoverKey(key: unknown): asserts key is PopoverKey {
   if (typeof key !== 'string' || key.trim() === '') {
@@ -45,6 +56,11 @@ export function assertValidPopoverKey(key: unknown): asserts key is PopoverKey {
  * Asserts that a value is a valid, non-empty OwnerId string.
  *
  * @param ownerId - Owner identifier value to validate.
+ *
+ * @example
+ * ```typescript
+ * assertValidOwnerId(options.ownerId);
+ * ```
  */
 export function assertValidOwnerId(ownerId: unknown): asserts ownerId is OwnerId {
   if (typeof ownerId !== 'string' || ownerId.trim() === '') {
@@ -60,6 +76,11 @@ export function assertValidOwnerId(ownerId: unknown): asserts ownerId is OwnerId
  * Asserts that a DOMRect or bounding rectangle contains valid, finite numeric coordinates.
  *
  * @param rect - Rect object to validate.
+ *
+ * @example
+ * ```typescript
+ * assertValidRect(element.getBoundingClientRect());
+ * ```
  */
 export function assertValidRect(rect: unknown): asserts rect is DOMRect {
   if (!rect || typeof rect !== 'object') {

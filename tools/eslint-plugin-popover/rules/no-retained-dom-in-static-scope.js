@@ -30,13 +30,10 @@ export default {
     return {
       VariableDeclarator(node) {
         if (
-          node.parent &&
-          node.parent.parent &&
+          node.parent?.parent &&
           node.parent.parent.type === 'Program' &&
-          node.init &&
-          node.init.type === 'CallExpression' &&
-          node.init.callee &&
-          node.init.callee.object &&
+          node.init?.type === 'CallExpression' &&
+          node.init.callee?.object &&
           node.init.callee.object.name === 'document' &&
           (node.init.callee.property.name === 'createElement' ||
             node.init.callee.property.name === 'querySelector')

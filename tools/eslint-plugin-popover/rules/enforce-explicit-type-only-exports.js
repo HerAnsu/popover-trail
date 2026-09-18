@@ -1,4 +1,3 @@
-'use strict';
 export default {
   meta: {
     type: 'suggestion',
@@ -14,15 +13,16 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
     if (!filename.endsWith('.ts') && !filename.endsWith('.tsx')) return {};
+
     return {
       ExportNamedDeclaration(node) {
         if (node.exportKind === 'type') return;
         if (
-          node.declaration &&
-          (node.declaration.type === 'TSTypeAliasDeclaration' ||
-            node.declaration.type === 'TSInterfaceDeclaration')
+          node.declaration?.type === 'TSTypeAliasDeclaration' ||
+          node.declaration?.type === 'TSInterfaceDeclaration'
         ) {
           context.report({ node, messageId: 'useTypeExport' });
         }

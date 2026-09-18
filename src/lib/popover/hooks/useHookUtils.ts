@@ -5,37 +5,74 @@
  * @module useHookUtils
  */
 
-import { useRef, useCallback, useInsertionEffect, type Ref, type RefCallback } from 'react';
+import {
+  useRef,
+  useCallback,
+  useEffect,
+  useInsertionEffect,
+  type Ref,
+  type RefCallback,
+  type RefObject,
+} from 'react';
+import { isReactRefObject } from '../utils/guards/reactGuards';
 
 /**
- * Merges multiple React refs (callback refs, ref objects, or null/undefined)
- * into a single stable callback ref that never changes identity.
+ * Safely assigns a value to a React ref (either mutable RefObject or RefCallback).
  *
- * @remarks
- * Unlike `useCallback((node) => { ref1(node); ref2(node); }, [ref1, ref2])`,
- * this hook returns a **referentially stable** function. When one of the input
- * refs changes (e.g., a parent passes a new callback ref), the DOM node is NOT
- * detached and reattached — the merge function simply forwards to the latest refs
- * updated synchronously in `useInsertionEffect`.
+ * @template T - Node element type.
+ * @param ref - React ref to assign.
+ * @param value - DOM node or value to pass to the ref.
  *
- * This eliminates layout thrashing (forced style recalculations) caused by
- * unnecessary DOM node detach/reattach cycles during parent re-renders.
+ * @example
+ * ```typescript
+ * setRef(forwardedRef, node);
+ * ```
+ */
+export function setRef<T>(ref: Ref<T> | undefined | null, value: T | null): void {
+  if (typeof ref === 'function') {
+    ref(value);
+  } else if (isReactRefObject<T>(ref)) {
+    ref.current = value;
+  }
+}
+
+/**
+ * Composes multiple React refs into a single RefCallback.
  *
- * @template T - The DOM element type.
- * @param refs - Spread array of React refs to merge.
- * @returns A single stable callback ref that forwards to all input refs.
+ * @template T - Node element type.
+ * @param refs - Sequence of refs to merge.
+ * @returns Composed callback ref.
+ *
+ * @example
+ * ```typescript
+ * const combinedRef = mergeRefs(localRef, forwardedRef);
+ * ```
+ */
+export function mergeRefs<T>(...refs: (Ref<T> | undefined | null)[]): RefCallback<T> {
+  return (node: T | null) => {
+    for (const ref of refs) {
+      setRef(ref, node);
+    }
+  };
+}
+
+/**
+ * Merges multiple React refs into a single referentially stable callback ref.
+ * Eliminates layout thrashing by avoiding DOM node detach/reattach cycles.
+ *
+ * @param refs - List of refs to merge.
+ * @returns Stable merged callback ref.
  *
  * @example
  * ```tsx
- * const mergedRef = useMergedRef(internalRef, externalRef, floatingRef);
- * return <div ref={mergedRef} />;
+ * function Card({ forwardedRef }: CardProps) {
+ *   const localRef = useRef<HTMLDivElement>(null);
+ *   const ref = useMergedRef(localRef, forwardedRef);
+ *   return <div ref={ref}>Card Content</div>;
+ * }
  * ```
  */
-function isRefObject<T>(ref: unknown): ref is React.MutableRefObject<T | null> {
-  return typeof ref === 'object' && ref !== null && 'current' in ref;
-}
-
-export function useMergedRef<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T> {
+export function useMergedRef<T>(...refs: (Ref<T> | undefined | null)[]): RefCallback<T> {
   const refsRef = useRef(refs);
 
   useInsertionEffect(() => {
@@ -44,11 +81,7 @@ export function useMergedRef<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T>
 
   return useCallback((node: T | null) => {
     for (const ref of refsRef.current) {
-      if (typeof ref === 'function') {
-        ref(node);
-      } else if (isRefObject<T>(ref)) {
-        ref.current = node;
-      }
+      setRef(ref, node);
     }
   }, []);
 }
@@ -91,3 +124,97 @@ export function useStableCallback<T extends (...args: never[]) => unknown>(fn: T
 
   return useCallback(((...args: Parameters<T>) => ref.current(...args)) as T, []);
 }
+
+/**
+ * Returns a ref object that synchronously updates to always hold the latest value.
+ *
+ * @template T - Value type.
+ * @param value - Value to keep track of.
+ * @returns Ref containing the latest value.
+ *
+ * @example
+ * ```tsx
+ * function EventTrigger({ onClick }: { onClick: () => void }) {
+ *   const onClickRef = useLatestRef(onClick);
+ *   useEffect(() => {
+ *     const timer = setTimeout(() => onClickRef.current(), 1000);
+ *     return () => clearTimeout(timer);
+ *   }, [onClickRef]);
+ * }
+ * ```
+ */
+export function useLatestRef<T>(value: T): RefObject<T> {
+  const ref = useRef(value);
+
+  useInsertionEffect(() => {
+    ref.current = value;
+  });
+
+  return ref;
+}
+
+/**
+ * Returns a predicate function indicating whether the component is currently mounted.
+ * Useful in asynchronous flows to prevent state updates on unmounted components.
+ *
+ * @returns Stable predicate function returning true if mounted.
+ *
+ * @example
+ * ```tsx
+ * function AsyncCard({ loadData }: AsyncCardProps) {
+ *   const isMounted = useIsMounted();
+ *   const [data, setData] = useState(null);
+ *
+ *   useEffect(() => {
+ *     loadData().then(result => {
+ *       if (isMounted()) setData(result);
+ *     });
+ *   }, [loadData, isMounted]);
+ * }
+ * ```
+ */
+export function useIsMounted(): () => boolean {
+  const isMountedRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  return useCallback(() => isMountedRef.current, []);
+}
+
+/**
+ * Returns the value from the previous render cycle.
+ *
+ * @template T - Value type.
+ * @param value - Current value to track.
+ * @returns Previous value or undefined on the first render cycle.
+ *
+ * @example
+ * ```tsx
+ * function Counter({ count }: { count: number }) {
+ *   const prevCount = usePrevious(count);
+ *   const hasIncreased = prevCount !== undefined && count > prevCount;
+ *   return <div>{count} {hasIncreased ? '↑' : ''}</div>;
+ * }
+ * ```
+ */
+export function usePrevious<T>(value: T): T | undefined {
+  const ref = useRef<{ value: T; prev: T | undefined }>({
+    value,
+    prev: undefined,
+  });
+
+  if (ref.current.value !== value) {
+    ref.current = {
+      value,
+      prev: ref.current.value,
+    };
+  }
+
+  return ref.current.prev;
+}
+

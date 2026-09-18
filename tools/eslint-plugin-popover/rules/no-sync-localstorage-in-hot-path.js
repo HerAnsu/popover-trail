@@ -24,8 +24,7 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.object &&
+          node.callee?.object &&
           node.callee.object.name === 'localStorage' &&
           (node.callee.property.name === 'setItem' || node.callee.property.name === 'getItem')
         ) {

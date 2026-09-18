@@ -29,20 +29,17 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'request' &&
-          node.callee.object &&
-          node.callee.object.property &&
+          node.callee.object?.property &&
           node.callee.object.property.name === 'locks' &&
           node.arguments.length === 2 &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Literal'
+          node.arguments[0]?.type === 'Literal'
         ) {
           context.report({
             node,
             messageId: 'suggestLockTimeout',
-            data: { lockName: String(node.arguments[0].value) },
+            data: { lockName: String(node.arguments[0]?.value) },
           });
         }
       },

@@ -29,10 +29,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'invariant' &&
+          ((node.callee?.name || node.callee?.property?.name) || node.callee?.property?.name) === 'invariant' &&
           (!node.arguments[1] ||
-            (node.arguments[1].type === 'Literal' && node.arguments[1].value === ''))
+            (node.arguments[1]?.type === 'Literal' && node.arguments[1]?.value === ''))
         ) {
           context.report({
             node,

@@ -1,0 +1,343 @@
+/**
+ * Safe Object Manipulation Utilities for Prototype Pollution Resistance.
+ * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
+ *
+ * @module utils/cleanObject
+ */
+
+import { isUnsafeKey } from './safeKeys';
+
+/**
+ * Creates a shallow copy of a record omitting the specified key.
+ * Avoids the `delete` operator to preserve V8 hidden classes.
+ *
+ * @template T - Value type of the record.
+ * @template K - Key type of the record.
+ * @param record - Source record.
+ * @param keyToOmit - Key to exclude from the new record.
+ * @returns A new record with the key omitted, or the original record if unchanged.
+ *
+ * @example
+ * ```typescript
+ * const user = { id: 'u1', password: 'secret', name: 'Alice' };
+ * const sanitized = omitKey(user, 'password');
+ * // => { id: 'u1', name: 'Alice' }
+ * ```
+ */
+export function omitKey<T, K extends string = string>(
+  record: Partial<Record<K, T>>,
+  keyToOmit: K,
+): Partial<Record<K, T>> {
+  if (!record || !(keyToOmit in record)) {
+    return record;
+  }
+
+  const result: Partial<Record<K, T>> = {};
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && key !== keyToOmit && !isUnsafeKey(key)) {
+      result[key] = record[key];
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Creates a shallow copy of a record omitting multiple specified keys.
+ *
+ * @template T - Value type of the record.
+ * @template K - Key type of the record.
+ * @param record - Source record.
+ * @param keysToOmit - Set or array of keys to exclude.
+ * @returns A new record with the keys omitted.
+ *
+ * @example
+ * ```typescript
+ * const config = { debug: true, host: 'localhost', port: 8080 };
+ * const publicConfig = omitKeys(config, ['debug']);
+ * ```
+ */
+export function omitKeys<T, K extends string = string>(
+  record?: Partial<Record<K, T>> | null,
+  keysToOmit?: ReadonlySet<K> | readonly K[] | null,
+): Partial<Record<K, T>> {
+  if (!record) return {};
+  if (!keysToOmit) return record;
+  const filterSet: ReadonlySet<string> =
+    keysToOmit instanceof Set ? keysToOmit : new Set(keysToOmit);
+  if (filterSet.size === 0) return record;
+
+  const result: Partial<Record<K, T>> = {};
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && !filterSet.has(key) && !isUnsafeKey(key)) {
+      result[key] = record[key];
+    }
+  }
+  return result;
+}
+
+/**
+ * Safely assigns source properties to a target object protecting against prototype pollution.
+ *
+ * @template T - Target object type.
+ * @template S - Source object type.
+ * @param target - Base destination object.
+ * @param source - Incoming source properties.
+ * @returns Merged intersection object without unsafe prototype keys.
+ *
+ * @example
+ * ```typescript
+ * const base = { title: 'Card' };
+ * const merged = safeAssign(base, { description: 'Info' });
+ * ```
+ */
+export function safeAssign<T extends object, S extends object>(
+  target: T,
+  source?: S | null,
+): T & S {
+  if (!source || typeof source !== 'object') {
+    return { ...target } as T & S;
+  }
+  const result = { ...target } as T & S;
+  for (const key of Object.keys(source)) {
+    if (!isUnsafeKey(key)) {
+      Reflect.set(result, key, Reflect.get(source, key));
+    }
+  }
+  return result;
+}
+
+/**
+ * Creates a shallow copy of a record containing only the specified keys.
+ * Protects against prototype pollution by skipping unsafe keys.
+ *
+ * @template T - Value type of the record.
+ * @template K - Key type of the record.
+ * @param record - Source record.
+ * @param keysToPick - Set or array of keys to include.
+ * @returns A new record containing only the picked keys.
+ *
+ * @example
+ * ```typescript
+ * const fullRecord = { id: 1, name: 'Root', role: 'admin', internalToken: 'xyz' };
+ * const userView = pickKeys(fullRecord, ['id', 'name']);
+ * // => { id: 1, name: 'Root' }
+ * ```
+ */
+export function pickKeys<T, K extends string = string>(
+  record: Partial<Record<K, T>>,
+  keysToPick: ReadonlySet<K> | readonly K[],
+): Partial<Record<K, T>> {
+  if (!record) return {};
+  const filterSet: ReadonlySet<string> =
+    keysToPick instanceof Set ? keysToPick : new Set(keysToPick);
+  const result: Partial<Record<K, T>> = {};
+  for (const key of filterSet) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(key)) {
+      const val = record[key as K];
+      if (val !== undefined) {
+        result[key as K] = val;
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Checks whether a record contains zero own enumerable properties.
+ * Executes in O(1) without heap allocation (unlike Object.keys(record).length === 0).
+ *
+ * @param record - Source record to inspect.
+ * @returns True if nullish or having no own enumerable properties.
+ *
+ * @example
+ * ```typescript
+ * isEmptyRecord({}); // => true
+ * isEmptyRecord({ a: 1 }); // => false
+ * isEmptyRecord(null); // => true
+ * ```
+ */
+export function isEmptyRecord(record?: object | null): boolean {
+  if (!record) return true;
+  for (const key in record) {
+    if (Object.hasOwn(record, key)) return false;
+  }
+  return true;
+}
+
+/**
+ * Transforms the values of a record using a mapping function.
+ * Protects against prototype pollution by skipping unsafe keys.
+ *
+ * @template K - Key type.
+ * @template V - Input value type.
+ * @template R - Output value type.
+ * @param record - Source record.
+ * @param fn - Value transformer function.
+ * @returns A new record with transformed values.
+ *
+ * @example
+ * ```typescript
+ * const scores = { alice: 10, bob: 15 };
+ * const doubled = mapValues(scores, (v) => v * 2);
+ * // => { alice: 20, bob: 30 }
+ * ```
+ */
+export function mapValues<K extends string | number, V, R>(
+  record: Partial<Record<K, V>>,
+  fn: (value: V, key: K) => R,
+): Partial<Record<K, R>> {
+  if (!record || isEmptyRecord(record)) return {};
+  const result: Partial<Record<K, R>> = {};
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(String(key))) {
+      const val = record[key as K];
+      if (val !== undefined) {
+        result[key as K] = fn(val, key as unknown as K);
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Filters a record based on a key-value predicate evaluation.
+ * Protects against prototype pollution by skipping unsafe keys.
+ *
+ * @template K - Key type.
+ * @template V - Value type.
+ * @param record - Source record.
+ * @param predicate - Entry filter function.
+ * @returns A new record containing only entries that satisfied the predicate.
+ *
+ * @example
+ * ```typescript
+ * const items = { a: 1, b: 2, c: 3 };
+ * const even = filterObject(items, (v) => v % 2 === 0);
+ * // => { b: 2 }
+ * ```
+ */
+export function filterObject<K extends string | number, V>(
+  record: Record<K, V>,
+  predicate: (value: V, key: K) => boolean,
+): Record<K, V>;
+export function filterObject<K extends string | number, V>(
+  record: Partial<Record<K, V>>,
+  predicate: (value: V, key: K) => boolean,
+): Partial<Record<K, V>>;
+export function filterObject<K extends string | number, V>(
+  record: Partial<Record<K, V>>,
+  predicate: (value: V, key: K) => boolean,
+): Partial<Record<K, V>> {
+  if (!record || isEmptyRecord(record)) return {};
+  const result: Partial<Record<K, V>> = {};
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(String(key))) {
+      const val = record[key as K];
+      if (val !== undefined && predicate(val, key as unknown as K)) {
+        result[key as K] = val;
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Removes null and undefined values from a record, returning a clean partial record.
+ * Protects against prototype pollution by skipping unsafe keys.
+ *
+ * @template K - Key type.
+ * @template V - Value type.
+ * @param record - Source record.
+ * @returns A new record containing only defined, non-null values.
+ *
+ * @example
+ * ```typescript
+ * const raw = { a: 1, b: null, c: undefined, d: 'ok' };
+ * const clean = compactObject(raw);
+ * // => { a: 1, d: 'ok' }
+ * ```
+ */
+export function compactObject<K extends string | number, V>(
+  record?: Partial<Record<K, V | null | undefined>> | null,
+): Partial<Record<K, V>> {
+  if (!record || isEmptyRecord(record)) return {};
+  const result: Partial<Record<K, V>> = {};
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(String(key))) {
+      const val = record[key as K];
+      if (val !== undefined && val !== null) {
+        result[key as K] = val;
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Inverts keys and values of a record ({ a: 'x' } -> { x: 'a' }).
+ * Protects against prototype pollution by skipping unsafe keys and values.
+ *
+ * @template K - Source key type.
+ * @template V - Source value type.
+ * @param record - Source record with unique string or number values.
+ * @returns A new inverted record.
+ *
+ * @example
+ * ```typescript
+ * const mapping = { first: '1st', second: '2nd' };
+ * const inverted = invertObject(mapping);
+ * // => { '1st': 'first', '2nd': 'second' }
+ * ```
+ */
+export function invertObject<K extends string | number, V extends string | number>(
+  record?: Record<K, V> | Partial<Record<K, V>> | readonly V[] | null,
+): Record<V, K> {
+  const result: Record<string, K> = {};
+  if (!record || isEmptyRecord(record)) return result as Record<V, K>;
+  if (Array.isArray(record)) {
+    for (let i = 0; i < record.length; i++) {
+      const val = record[i];
+      if (val !== undefined && val !== null && !isUnsafeKey(String(val))) {
+        Reflect.set(result, String(val), i);
+      }
+    }
+    return result as Record<V, K>;
+  }
+  for (const key in record) {
+    if (Object.hasOwn(record, key) && !isUnsafeKey(key)) {
+      const val = (record as Record<string, V>)[key];
+      if (val !== undefined && val !== null && !isUnsafeKey(String(val))) {
+        Reflect.set(result, String(val), key);
+      }
+    }
+  }
+  return result as Record<V, K>;
+}
+
+/**
+ * Recursively freezes an object and its nested properties, preventing runtime mutations.
+ *
+ * @template T - Object type.
+ * @param obj - Target object to freeze deeply.
+ * @returns Deeply frozen object.
+ *
+ * @example
+ * ```typescript
+ * const config = deepFreeze({ api: { endpoint: '/popovers', retries: 3 } });
+ * ```
+ */
+export function deepFreeze<T>(obj: T): Readonly<T> {
+  if (obj === null || typeof obj !== 'object') return obj;
+  for (const key of Object.keys(obj)) {
+    if (!isUnsafeKey(key)) {
+      const val = Reflect.get(obj, key);
+      if (typeof val === 'object' && val !== null && !Object.isFrozen(val)) {
+        deepFreeze(val);
+      }
+    }
+  }
+  return Object.freeze(obj);
+}
+
+

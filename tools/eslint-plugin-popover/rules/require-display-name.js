@@ -18,13 +18,12 @@ export default {
     return {
       VariableDeclarator(node) {
         if (
-          node.init &&
-          node.init.type === 'CallExpression' &&
+          node.init?.type === 'CallExpression' &&
           node.init.callee &&
           (node.init.callee.name === 'forwardRef' || node.init.callee.name === 'memo')
         ) {
           const compName = node.id ? node.id.name : 'Component';
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (!src.includes(`${compName}.displayName`) && compName !== 'Component') {
             context.report({
               node,

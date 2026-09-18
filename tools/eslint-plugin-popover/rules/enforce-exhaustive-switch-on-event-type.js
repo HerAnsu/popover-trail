@@ -1,4 +1,3 @@
-'use strict';
 export default {
   meta: {
     type: 'suggestion',
@@ -15,19 +14,20 @@ export default {
     },
   },
   create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
       SwitchStatement(node) {
         if (
-          node.discriminant &&
-          node.discriminant.property &&
-          node.discriminant.property.name === 'type'
+          node.discriminant?.property?.name === 'type'
         ) {
-          const hasDefault = node.cases.some((c) => c.test === null);
-          if (!hasDefault && node.cases.length > 2) {
+          const hasDefault = node.cases?.some?.((c) => c.test === null);
+          if (!hasDefault && node.cases?.length > 2) {
             context.report({
               node,
               messageId: 'exhaustiveSwitch',
-              data: { discriminant: node.discriminant.property.name },
+              data: { discriminant: node.discriminant?.property?.name },
             });
           }
         }

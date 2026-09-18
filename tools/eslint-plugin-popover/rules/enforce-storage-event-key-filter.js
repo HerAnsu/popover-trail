@@ -17,8 +17,7 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'addEventListener' &&
           node.arguments.length >= 2 &&
           node.arguments[0].value === 'storage'
@@ -29,7 +28,7 @@ export default {
             (handler.type === 'ArrowFunctionExpression' || handler.type === 'FunctionExpression')
           ) {
             const param = handler.params[0] ? handler.params[0].name : null;
-            const src = context.getSourceCode ? context.getSourceCode().getText(handler) : '';
+            const src = context.getSourceCode?.()?.getText?.(handler) ?? '';
             if (param && !src.includes(`${param}.key`)) {
               context.report({ node, messageId: 'unfilteredStorageEvent' });
             }

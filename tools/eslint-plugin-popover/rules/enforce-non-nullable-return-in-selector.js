@@ -28,8 +28,8 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name.startsWith('select') && !node.returnType) {
-          const bodySrc = context.getSourceCode ? context.getSourceCode().getText(node.body) : '';
+        if (node.id?.name.startsWith('select') && !node.returnType) {
+          const bodySrc = context.getSourceCode?.()?.getText?.(node.body) ?? '';
           if (!bodySrc.includes('=>') && !bodySrc.includes('return (state')) {
             context.report({
               node,

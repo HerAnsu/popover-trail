@@ -31,8 +31,7 @@ export default {
         if (
           node.callee &&
           (node.callee.name === 'Float64Array' || node.callee.name === 'Int32Array') &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Literal' &&
+          node.arguments[0]?.type === 'Literal' &&
           typeof node.arguments[0].value === 'number' &&
           node.arguments[0].value > 500000
         ) {

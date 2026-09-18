@@ -29,17 +29,16 @@ export default {
 
     return {
       NewExpression(node) {
-        if (node.callee && node.callee.name === 'AudioContext') {
+        if (node.callee?.name === 'AudioContext') {
           let parent = node.parent;
           while (
-            parent &&
-            parent.type !== 'FunctionDeclaration' &&
+            parent?.type !== 'FunctionDeclaration' &&
             parent.type !== 'ArrowFunctionExpression'
           ) {
             parent = parent.parent;
           }
           if (parent) {
-            const body = context.getSourceCode ? context.getSourceCode().getText(parent) : '';
+            const body = context.getSourceCode?.()?.getText?.(parent) ?? '';
             if (!body.includes('.close()') && !body.includes('close')) {
               context.report({
                 node,

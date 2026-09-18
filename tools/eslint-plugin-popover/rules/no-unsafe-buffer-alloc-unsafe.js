@@ -30,11 +30,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.object &&
+          node.callee?.object &&
           node.callee.object.name === 'Buffer' &&
-          node.callee.property &&
-          node.callee.property.name === 'allocUnsafe'
+          node.callee.property?.name === 'allocUnsafe'
         ) {
           context.report({
             node,

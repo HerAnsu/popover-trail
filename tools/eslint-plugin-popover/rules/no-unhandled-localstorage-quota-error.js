@@ -18,12 +18,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
-          node.callee.object &&
-          node.callee.object.name === 'localStorage' &&
-          node.callee.property &&
-          node.callee.property.name === 'setItem'
+          node.callee?.type === 'MemberExpression' &&
+          node.callee.object?.name === 'localStorage' &&
+          node.callee.property?.name === 'setItem'
         ) {
           let parent = node.parent;
           let inTry = false;

@@ -29,7 +29,7 @@ export default {
 
     return {
       CallExpression(node) {
-        if (node.callee && node.callee.name === 'queueMicrotask') {
+        if (node.callee?.name === 'queueMicrotask') {
           let parent = node.parent;
           let insideEffect = false;
           while (parent) {

@@ -18,26 +18,15 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
-          node.callee.property.name === 'digest' &&
-          node.callee.object &&
-          node.callee.object.property &&
-          node.callee.object.property.name === 'subtle' &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Literal' &&
-          typeof node.arguments[0].value === 'string' &&
+          node.callee?.property?.name === 'digest' &&
+          node.callee?.object?.property?.name === 'subtle' &&
+          node.arguments?.[0]?.type === 'Literal' &&
+          typeof node.arguments?.[0]?.value === 'string' &&
           node.arguments[0].value !== 'SHA-256' &&
           node.arguments[0].value !== 'SHA-384' &&
           node.arguments[0].value !== 'SHA-512'

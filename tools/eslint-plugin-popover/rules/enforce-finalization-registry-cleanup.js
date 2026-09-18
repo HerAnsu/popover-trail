@@ -1,7 +1,3 @@
-/**
- * @fileoverview Recommend unregistering tokens from FinalizationRegistry upon manual resource dispose.
- */
-
 export default {
   meta: {
     type: 'suggestion',
@@ -19,17 +15,11 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       ClassDeclaration(node) {
-        const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        const body = context.getSourceCode?.()?.getText?.(node) ?? '';
         if (body.includes('new FinalizationRegistry') && !body.includes('.unregister(')) {
           context.report({
             node,

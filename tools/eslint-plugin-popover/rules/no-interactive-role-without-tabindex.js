@@ -26,14 +26,13 @@ export default {
         const tag = node.openingElement?.name?.name;
         if (tag && tag !== 'button' && tag !== 'a' && tag !== 'input') {
           const roleAttr = node.openingElement.attributes.find(
-            (a) => a.name && a.name.name === 'role',
+            (a) => a.name?.name === 'role',
           );
           const tabIndexAttr = node.openingElement.attributes.find(
             (a) => a.name && (a.name.name === 'tabIndex' || a.name.name === 'tabindex'),
           );
           if (
-            roleAttr &&
-            roleAttr.value &&
+            roleAttr?.value &&
             (roleAttr.value.value === 'button' || roleAttr.value.value === 'menuitem') &&
             !tabIndexAttr
           ) {

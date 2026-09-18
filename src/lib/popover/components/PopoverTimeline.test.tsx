@@ -30,7 +30,7 @@ describe('<PopoverTimeline /> Component', () => {
     const element = (
       <PopoverTimeline>
         <PopoverTimeline.StepList>
-          {({ history }: { history: { primaryKey: string; stepIndex: number }[] }) =>
+          {({ history }: { history: readonly { primaryKey: string; stepIndex: number }[] }) =>
             history.map((item: { primaryKey: string; stepIndex: number }) => (
               <PopoverTimeline.Step key={item.primaryKey} stepIndex={item.stepIndex}>
                 {item.primaryKey}

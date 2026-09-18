@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState, type DependencyList } from 'react';
+/**
+ * Floating Setup Hooks and Coordination.
+ * Clean Architecture Layer 3: Reactive Integration & Hooks.
+ *
+ * @module hooks/geometry/useFloatingSetup
+ */
+
+import { useMemo } from 'react';
 import {
   useFloating,
   offset,
@@ -6,153 +13,60 @@ import {
   shift,
   size,
   autoUpdate,
-  type Boundary,
   type Placement,
 } from '@floating-ui/react';
+import type { PopoverRect } from '../../types';
 import { usePopoverStore } from '../../context/usePopoverStore';
 import { shallowEqual } from '../../utils/equality';
-import { ResizeObserverRegistry } from '../../utils/resizeObserverRegistry';
-import { calculateAutoPlacement, resolveMiddlewareExtraProps } from './geometryUtils';
-import { useResolvedBoundary } from './useResolvedBoundary';
-import type { CollisionConfig } from '../../types';
+import { resolveAutoPlacement } from './geometryUtils';
 
-export function buildFloatingMiddlewareList(
-  offsetDistance: number,
-  flipOption: unknown,
-  shiftOption: unknown,
-  sizeOption: unknown,
-  boundaryOption: Boundary | undefined,
-  padding: number | { top?: number; right?: number; bottom?: number; left?: number } | undefined,
-) {
-  const list = [offset(offsetDistance)];
+export * from './floatingMiddleware';
+export * from './floatingObserver';
 
-  if (flipOption !== false) {
-    list.push(
-      flip({
-        boundary: boundaryOption,
-        padding: padding ?? undefined,
-        ...resolveMiddlewareExtraProps(flipOption),
-      }),
-    );
-  }
-
-  if (shiftOption !== false) {
-    list.push(
-      shift({
-        boundary: boundaryOption,
-        padding: padding ?? 12,
-        ...resolveMiddlewareExtraProps(shiftOption),
-      }),
-    );
-  }
-
-  if (sizeOption) {
-    list.push(
-      size({
-        boundary: boundaryOption,
-        padding: padding ?? 12,
-        apply({ availableWidth, availableHeight, elements }) {
-          elements.floating.style.setProperty('--popover-max-width', `${availableWidth}px`);
-          elements.floating.style.setProperty('--popover-max-height', `${availableHeight}px`);
-        },
-        ...resolveMiddlewareExtraProps(sizeOption),
-      }),
-    );
-  }
-
-  return list;
-}
-
-export function useVirtualAnchorElement(anchorRect: DOMRect | null | undefined) {
-  return useMemo(() => {
-    if (!anchorRect) return null;
-    return {
-      getBoundingClientRect: () => anchorRect,
-    };
-  }, [anchorRect]);
-}
-
-export function useFloatingResizeObserver(
-  floatingEl: HTMLElement | null,
-  isPinned: boolean | undefined,
-  isDragging: boolean | undefined,
-  update: () => void,
-) {
-  useEffect(() => {
-    if (isPinned || isDragging || !floatingEl) return;
-
-    const unobserve = ResizeObserverRegistry.observe(floatingEl, () => {
-      void update();
-    });
-    return () => {
-      unobserve();
-    };
-  }, [isPinned, isDragging, update, floatingEl]);
-}
-
-export function useMobileViewport(mobileBreakpoint: number): boolean {
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const check = () => {
-      const isMobile = window.innerWidth < mobileBreakpoint;
-      setIsMobileViewport((prev) => (prev === isMobile ? prev : isMobile));
-    };
-    check();
-    window.addEventListener('resize', check, { passive: true });
-    return () => window.removeEventListener('resize', check);
-  }, [mobileBreakpoint]);
-
-  return isMobileViewport;
-}
-
+/**
+ * Reads geometry configuration options from the popover store slice with shallow equality.
+ *
+ * @returns Object with `cascadeOffsetStep`, `defaultOffset`, `responsiveMode`, and `mobileBreakpoint`.
+ *
+ * @example
+ * ```tsx
+ * const { cascadeOffsetStep, defaultOffset } = useGeometryStoreConfig();
+ * ```
+ */
 export function useGeometryStoreConfig() {
   return usePopoverStore(
-    (state) => ({
-      cascadeOffsetStep: state.cascadeOffsetStep,
-      defaultOffset: state.defaultOffset,
-      responsiveMode: state.responsiveMode,
-      mobileBreakpoint: state.mobileBreakpoint,
+    ({ cascadeOffsetStep, defaultOffset, responsiveMode, mobileBreakpoint }) => ({
+      cascadeOffsetStep,
+      defaultOffset,
+      responsiveMode,
+      mobileBreakpoint,
     }),
     shallowEqual,
   );
 }
 
-export function useCollisionMergedConfig(
-  localCollision?: CollisionConfig | null,
-  globalCollision?: CollisionConfig | null,
-) {
-  const boundary = localCollision?.boundary ?? globalCollision?.boundary;
-  const boundaryOption = useResolvedBoundary(boundary);
-  const merged = { ...globalCollision, ...localCollision };
-
-  return {
-    padding: merged.padding,
-    flipOption: merged.flip,
-    shiftOption: merged.shift,
-    sizeOption: merged.size,
-    boundaryOption,
-  };
-}
-
-export function useFloatingUpdater(
-  isPinned: boolean | undefined,
-  isDragging: boolean | undefined,
-  update: () => void,
-  deps: DependencyList,
-) {
-  useEffect(() => {
-    if (!isPinned && !isDragging) {
-      void update();
-    }
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-}
-
+/**
+ * Initializes and coordinates Floating UI hooks with auto-placement heuristics and auto-updating.
+ *
+ * @param placement - Preferred placement or 'auto'.
+ * @param anchorRect - Virtual or DOM anchor rectangle.
+ * @param isPinned - Whether card is pinned (disables autoUpdate).
+ * @param middleware - Array of configured Floating UI middleware.
+ * @returns Floating UI hook result augmented with `resolvedAutoPlacement`.
+ *
+ * @example
+ * ```tsx
+ * const { refs, x, y, update, placement } = usePopoverFloatingSetup(
+ *   'auto',
+ *   anchorRect,
+ *   false,
+ *   middlewareList,
+ * );
+ * ```
+ */
 export function usePopoverFloatingSetup(
   placement: Placement | 'auto' | undefined,
-  anchorRect: DOMRect | null | undefined,
+  anchorRect: DOMRect | PopoverRect | null | undefined,
   isPinned: boolean | undefined,
   middleware: Array<
     | ReturnType<typeof offset>
@@ -162,7 +76,7 @@ export function usePopoverFloatingSetup(
   >,
 ) {
   const resolvedAutoPlacement = useMemo(
-    () => calculateAutoPlacement(placement, anchorRect),
+    () => resolveAutoPlacement(placement, anchorRect),
     [placement, anchorRect],
   );
 

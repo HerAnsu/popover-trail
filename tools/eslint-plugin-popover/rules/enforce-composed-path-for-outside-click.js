@@ -15,12 +15,13 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
-    if (filename.includes('.test.')) return {};
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
+    
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name.includes('handleOutsideClick')) {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name?.includes('handleOutsideClick')) {
+          const src = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (!src.includes('composedPath')) {
             context.report({ node, messageId: 'useComposedPath' });
           }

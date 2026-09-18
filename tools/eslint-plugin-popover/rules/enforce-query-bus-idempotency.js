@@ -23,8 +23,8 @@ export default {
 
     return {
       MethodDefinition(node) {
-        if (node.key && node.key.name && node.key.name.startsWith('query')) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.key?.name && node.key.name.startsWith('query')) {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (body.includes('commandBus.dispatch') || body.includes('store.setState')) {
             context.report({
               node,

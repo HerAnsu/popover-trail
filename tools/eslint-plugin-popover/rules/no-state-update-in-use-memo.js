@@ -22,16 +22,12 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'useMemo' &&
-          node.arguments &&
-          node.arguments[0] &&
+          node.callee?.name === 'useMemo' &&
+          node.arguments?.[0] &&
           (node.arguments[0].type === 'ArrowFunctionExpression' ||
             node.arguments[0].type === 'FunctionExpression')
         ) {
-          const fnBody = context.getSourceCode
-            ? context.getSourceCode().getText(node.arguments[0])
-            : '';
+          const fnBody = context.getSourceCode?.()?.getText?.(node.arguments[0]) ?? '';
           if (
             fnBody.includes('setState') ||
             fnBody.includes('.dispatch(') ||

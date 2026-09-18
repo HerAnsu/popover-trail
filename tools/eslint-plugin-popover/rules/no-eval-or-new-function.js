@@ -22,7 +22,7 @@ export default {
 
     return {
       CallExpression(node) {
-        if (node.callee && node.callee.name === 'eval') {
+        if (node.callee?.name === 'eval') {
           context.report({
             node,
             messageId: 'noEvalOrFunction',
@@ -30,7 +30,7 @@ export default {
         }
       },
       NewExpression(node) {
-        if (node.callee && node.callee.name === 'Function') {
+        if (node.callee?.name === 'Function') {
           context.report({
             node,
             messageId: 'noEvalOrFunction',

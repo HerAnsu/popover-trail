@@ -10,16 +10,27 @@ export default {
     schema: [],
     messages: {
       potentialRaceCondition:
-        'Async data resolution in useEffect should use an isActive flag or AbortController.',
+        'Async data resolution in useEffect without cancellation can cause race conditions.',
     },
   },
   create(context) {
     return {
       CallExpression(node) {
-        if (node.callee && node.callee.name === 'useEffect') {
-          const fn = node.arguments[0];
+        if (node.callee?.name === 'useEffect') {
+          const fn = node.arguments?.[0];
           if (fn && fn.async) {
-            context.report({ node, messageId: 'potentialRaceCondition' });
+            let hasGuard = false;
+            let hasSetter = false;
+            const src = context.getSourceCode?.()?.getText?.(fn) ?? '';
+            if (src.includes('AbortController') || src.includes('isActive') || src.includes('isMounted')) {
+                hasGuard = true;
+            }
+            if (src.includes('set') && /[A-Z]/.test(src)) {
+                hasSetter = true;
+            }
+            if (!hasGuard && hasSetter) {
+                context.report({ node, messageId: 'potentialRaceCondition' });
+            }
           }
         }
       },

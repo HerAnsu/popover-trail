@@ -33,10 +33,8 @@ export default {
         if (text.includes('matrix3d(') && node.expressions.length > 4) {
           const parent = node.parent;
           if (
-            parent &&
-            parent.type === 'Property' &&
-            parent.key &&
-            parent.key.name === 'transform'
+            parent?.type === 'Property' &&
+            parent.key?.name === 'transform'
           ) {
             context.report({
               node,

@@ -16,7 +16,7 @@ export default {
   create(context) {
     return {
       JSXOpeningElement(node) {
-        const names = new Set(node.attributes.map((a) => a.name && a.name.name).filter(Boolean));
+        const names = new Set(node.attributes.map((a) => a.name?.name).filter(Boolean));
         if (names.has('onMouseDown') && names.has('onTouchStart') && !names.has('onPointerDown')) {
           context.report({ node, messageId: 'duplicateTrigger' });
         }

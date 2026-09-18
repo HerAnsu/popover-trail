@@ -23,19 +23,17 @@ export default {
     return {
       JSXElement(node) {
         if (
-          node.openingElement &&
-          node.openingElement.name &&
+          node.openingElement?.name &&
           node.openingElement.name.name === 'a'
         ) {
           const targetAttr = node.openingElement.attributes.find(
-            (a) => a.name && a.name.name === 'target',
+            (a) => a.name?.name === 'target',
           );
           const relAttr = node.openingElement.attributes.find(
-            (a) => a.name && a.name.name === 'rel',
+            (a) => a.name?.name === 'rel',
           );
           if (
-            targetAttr &&
-            targetAttr.value &&
+            targetAttr?.value &&
             targetAttr.value.value === '_blank' &&
             (!relAttr || !relAttr.value || !String(relAttr.value.value).includes('noopener'))
           ) {

@@ -1,7 +1,3 @@
-/**
- * @fileoverview Enforce popover-trail: prefix on BroadcastChannel names.
- */
-
 export default {
   meta: {
     type: 'suggestion',
@@ -12,34 +8,26 @@ export default {
     },
     schema: [],
     messages: {
-      requireChannelPrefix:
-        'BroadcastChannel name "{{ name }}" should start with "popover-trail:".',
+      requireChannelPrefix: 'BroadcastChannel name "{{ name }}" should start with "popover-trail:".',
     },
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       NewExpression(node) {
+        const arg = node.arguments?.[0];
         if (
-          node.callee &&
-          node.callee.name === 'BroadcastChannel' &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Literal' &&
-          typeof node.arguments[0].value === 'string' &&
-          !node.arguments[0].value.startsWith('popover-trail:')
+          node.callee?.name === 'BroadcastChannel' &&
+          arg?.type === 'Literal' &&
+          typeof arg.value === 'string' &&
+          !arg.value.startsWith('popover-trail:')
         ) {
           context.report({
-            node: node.arguments[0],
+            node: arg,
             messageId: 'requireChannelPrefix',
-            data: { name: node.arguments[0].value },
+            data: { name: arg.value },
           });
         }
       },

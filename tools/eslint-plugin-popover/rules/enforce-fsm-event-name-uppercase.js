@@ -27,12 +27,10 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'type' &&
+          node.key?.name === 'type' &&
           node.value &&
           typeof node.value.value === 'string' &&
-          node.parent &&
-          node.parent.type === 'ObjectExpression'
+          node.parent?.type === 'ObjectExpression'
         ) {
           const val = node.value.value;
           if (val !== val.toUpperCase() && !val.includes('.')) {

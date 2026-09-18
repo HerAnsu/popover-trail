@@ -34,7 +34,7 @@ describe('disposable utility', () => {
 
     const disposeSymbol = Symbol.dispose;
     if (disposeSymbol) {
-      expect((disposable as Record<symbol, unknown>)[disposeSymbol]).toBeDefined();
+      expect(Reflect.get(disposable, disposeSymbol)).toBeDefined();
     }
   });
 
@@ -63,5 +63,19 @@ describe('disposable utility', () => {
     expect(comp2.size).toBe(1);
     comp2.remove(d4);
     expect(comp2.size).toBe(0);
+  });
+
+  it('enforces strict LIFO reverse teardown ordering and terminal state', () => {
+    const order: number[] = [];
+    const comp = new CompositeDisposable();
+    expect(comp.isDisposed).toBe(false);
+    comp.add(
+      () => order.push(1),
+      () => order.push(2),
+      () => order.push(3),
+    );
+    comp.dispose();
+    expect(comp.isDisposed).toBe(true);
+    expect(order).toEqual([3, 2, 1]);
   });
 });

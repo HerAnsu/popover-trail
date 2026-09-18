@@ -24,8 +24,7 @@ export default {
       ImportDeclaration(node) {
         if (
           !node.importKind &&
-          node.source &&
-          node.source.value &&
+          node.source?.value &&
           (node.source.value.includes('/types') || node.source.value.endsWith('.d.ts'))
         ) {
           const allTypeSpecifiers = node.specifiers.every(

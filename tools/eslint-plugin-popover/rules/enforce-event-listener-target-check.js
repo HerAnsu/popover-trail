@@ -1,4 +1,3 @@
-'use strict';
 export default {
   meta: {
     type: 'suggestion',
@@ -13,16 +12,16 @@ export default {
     },
   },
   create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
-          node.callee.property.name === 'addEventListener' &&
-          node.callee.object &&
-          node.callee.object.type === 'Identifier' &&
-          node.callee.object.name === 'el' &&
-          !node.callee.optional
+          node.callee?.property?.name === 'addEventListener' &&
+          node.callee?.object?.type === 'Identifier' &&
+          node.callee?.object?.name === 'el' &&
+          !node.callee?.optional
         ) {
           context.report({ node, messageId: 'uncheckedTarget' });
         }

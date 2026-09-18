@@ -32,7 +32,7 @@ export default {
           filename.includes('src/lib/popover/store') ||
           filename.includes('src/lib/popover/components')
         ) {
-          const comments = context.getSourceCode ? context.getSourceCode().getAllComments() : [];
+          const comments = (context.getSourceCode?.()?.getAllComments?.() ?? []);
           const hasFileOverview = comments.some(
             (c) => c.value.includes('@fileoverview') || c.value.includes('popover'),
           );

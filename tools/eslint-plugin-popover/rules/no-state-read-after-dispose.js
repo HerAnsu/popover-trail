@@ -27,8 +27,8 @@ export default {
 
     return {
       MethodDefinition(node) {
-        if (node.value && node.value.async) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node.value) : '';
+        if (node.value?.async) {
+          const body = context.getSourceCode?.()?.getText?.(node.value) ?? '';
           if (
             body.includes('await ') &&
             body.includes('this.store.getState()') &&

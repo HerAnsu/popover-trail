@@ -1,19 +1,19 @@
 import { useEffect, useMemo } from 'react';
 import { usePopoverStoreApi } from '../context/usePopoverStore';
 import { usePopoverCollisionConfig } from './usePopoverSelectors';
-import type { PopoverPlacement, TrailEntry } from '../types';
+import type { PopoverPlacement, PopoverRect, TrailEntry } from '../types';
 import {
   getViewportBounds,
-  calculateResponsivePosition,
-  resolveUnpinnedLayoutPosition,
+  resolveResponsivePosition,
+  resolveUnpinnedPosition,
 } from './geometry/geometryUtils';
 import {
-  buildFloatingMiddlewareList,
+  buildFloatingMiddleware,
   useVirtualAnchorElement,
   useFloatingResizeObserver,
   useMobileViewport,
   useGeometryStoreConfig,
-  useCollisionMergedConfig,
+  useMergedCollisionConfig,
   useFloatingUpdater,
   usePopoverFloatingSetup,
 } from './geometry/useFloatingSetup';
@@ -25,7 +25,7 @@ export interface UsePopoverGeometryOptions {
   /** Identifying popover key string. */
   id: string;
   /** Bounding rectangle of the trigger or anchor element. */
-  anchorRect?: DOMRect;
+  anchorRect?: DOMRect | PopoverRect;
   /** Floating UI placement preference string. */
   placement?: PopoverPlacement;
   /** Current 0-based depth index in the z-index stack. */
@@ -56,7 +56,6 @@ export interface UsePopoverGeometryResult {
 /**
  * Composite hook calculating absolute positioning coordinates for popover cards.
  *
- * @remarks
  * Coordinates multiple positioning layers:
  * 1. Pinned layout override: Returns custom pinned screen coordinates when detached.
  * 2. Responsive mode overrides: Modals, bottom sheets, docked navigation bars on small screens.
@@ -65,6 +64,29 @@ export interface UsePopoverGeometryResult {
  *
  * @param options - Geometry calculation parameters.
  * @returns Final layout coordinates (`top`, `left`) and floating element ref callback.
+ *
+ * @example
+ * ```tsx
+ * function CardContent({ id, anchorRect, zIndex, isPinned, isDragging }: CardProps) {
+ *   const { finalLayoutPos, setFloating } = usePopoverGeometry({
+ *     id,
+ *     anchorRect,
+ *     placement: 'right-start',
+ *     zIndex,
+ *     isDragging,
+ *     isPinned,
+ *   });
+ *
+ *   return (
+ *     <div
+ *       ref={setFloating}
+ *       style={{ position: 'fixed', top: finalLayoutPos.top, left: finalLayoutPos.left }}
+ *     >
+ *       Popover Body
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function usePopoverGeometry({
   id,
@@ -85,7 +107,7 @@ export function usePopoverGeometry({
     mobileBreakpoint,
   } = useGeometryStoreConfig();
 
-  const { padding, flipOption, shiftOption, sizeOption, boundaryOption } = useCollisionMergedConfig(
+  const { padding, flipOption, shiftOption, sizeOption, boundaryOption } = useMergedCollisionConfig(
     entry?.collision,
     globalCollision,
   );
@@ -94,7 +116,7 @@ export function usePopoverGeometry({
 
   const middleware = useMemo(
     () =>
-      buildFloatingMiddlewareList(
+      buildFloatingMiddleware(
         entry?.offset ?? defaultOffset ?? 8,
         flipOption,
         shiftOption,
@@ -145,7 +167,7 @@ export function usePopoverGeometry({
 
     const { width: winWidth, height: winHeight } = getViewportBounds();
 
-    const responsivePos = calculateResponsivePosition(
+    const responsivePos = resolveResponsivePosition(
       effectiveResponsiveMode,
       isMobileViewport,
       layoutStrategy,
@@ -154,7 +176,7 @@ export function usePopoverGeometry({
     );
     if (responsivePos) return responsivePos;
 
-    return resolveUnpinnedLayoutPosition(
+    return resolveUnpinnedPosition(
       id,
       entry,
       cascadeOffsetStep,

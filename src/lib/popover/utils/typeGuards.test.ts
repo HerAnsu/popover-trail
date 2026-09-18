@@ -6,7 +6,6 @@ import {
   getEntryState,
   createPopoverKey,
   definePopoverResolver,
-  createPopoverResolver,
   isVirtualElementAnchor,
   isEventAnchor,
   toValidatedAnchorRef,
@@ -23,6 +22,24 @@ import {
   assertIsTrailEntry,
   assertIsDOMRect,
   isPopoverPlacement,
+  isNumberInRange,
+  isCoordinateWithinBounds,
+  areCoordinatesWithinBounds,
+  toFiniteOrDefault,
+  isFinitePoint,
+  isFiniteRect,
+  isValidBoundingBox,
+  isValidQuadItem,
+  boxesIntersect,
+  isTextEditableElement,
+  isClickableElement,
+  canElementReceiveFocus,
+  isFocusWithin,
+  isPointerOrMouseEvent,
+  isContainedInPath,
+  isBottomSheetMode,
+  isCenteredModalMode,
+  isDockedTopMode,
 } from './typeGuards';
 import type { TrailEntry, PopoverStoreEvent } from '../types';
 
@@ -106,9 +123,7 @@ describe('typeGuards utility', () => {
 
     it('defines resolver callback', () => {
       const fn = definePopoverResolver(async () => 'data');
-      const fn2 = createPopoverResolver(async () => 'data');
       expect(typeof fn).toBe('function');
-      expect(typeof fn2).toBe('function');
     });
   });
 
@@ -227,6 +242,177 @@ describe('typeGuards utility', () => {
       expect(isPopoverPlacement('bottom')).toBe(true);
       expect(isPopoverPlacement('top-start')).toBe(true);
       expect(isPopoverPlacement('invalid-placement')).toBe(false);
+    });
+  });
+
+  describe('Numeric and Coordinate Guards', () => {
+    it('validates numbers in range with isNumberInRange', () => {
+      expect(isNumberInRange(5, 0, 10)).toBe(true);
+      expect(isNumberInRange(0, 0, 10)).toBe(true);
+      expect(isNumberInRange(10, 0, 10)).toBe(true);
+      expect(isNumberInRange(-1, 0, 10)).toBe(false);
+      expect(isNumberInRange(11, 0, 10)).toBe(false);
+      expect(isNumberInRange(Number.NaN, 0, 10)).toBe(false);
+      expect(isNumberInRange('5', 0, 10)).toBe(false);
+    });
+
+    it('validates coordinates with areCoordinatesWithinBounds', () => {
+      expect(areCoordinatesWithinBounds(100, -200)).toBe(true);
+      expect(areCoordinatesWithinBounds(10000, -10000)).toBe(true);
+      expect(areCoordinatesWithinBounds(10001, 0)).toBe(false);
+      expect(areCoordinatesWithinBounds(0, -10001)).toBe(false);
+      expect(isCoordinateWithinBounds(500)).toBe(true);
+      expect(isCoordinateWithinBounds(Number.NaN)).toBe(false);
+    });
+
+    it('sanitizes numbers with toFiniteOrDefault', () => {
+      expect(toFiniteOrDefault(42, 0)).toBe(42);
+      expect(toFiniteOrDefault(Number.NaN, 10)).toBe(10);
+      expect(toFiniteOrDefault(Infinity, -1)).toBe(-1);
+      expect(toFiniteOrDefault('42', 5)).toBe(5);
+      expect(toFiniteOrDefault(undefined, 99)).toBe(99);
+    });
+
+    it('validates 2D points and rects', () => {
+      expect(isFinitePoint({ x: 10, y: 20 })).toBe(true);
+      expect(isFinitePoint({ x: 10, y: Number.NaN })).toBe(false);
+      expect(isFinitePoint(null)).toBe(false);
+      expect(isFinitePoint({ x: '10', y: 20 })).toBe(false);
+
+      expect(isFiniteRect({ top: 0, left: 100 })).toBe(true);
+      expect(isFiniteRect({ top: Infinity, left: 100 })).toBe(false);
+      expect(isFiniteRect(undefined)).toBe(false);
+    });
+  });
+
+  describe('Spatial QuadTree Guards', () => {
+    it('validates BoundingBox with isValidBoundingBox', () => {
+      expect(isValidBoundingBox({ x: 0, y: 0, width: 100, height: 100 })).toBe(true);
+      expect(isValidBoundingBox({ x: -50, y: -20, width: 0, height: 0 })).toBe(true);
+      expect(isValidBoundingBox({ x: 0, y: 0, width: -10, height: 100 })).toBe(false);
+      expect(isValidBoundingBox({ x: Number.NaN, y: 0, width: 100, height: 100 })).toBe(false);
+      expect(isValidBoundingBox(null)).toBe(false);
+    });
+
+    it('validates QuadItem with isValidQuadItem', () => {
+      expect(isValidQuadItem({ id: 'item-1', bounds: { x: 0, y: 0, width: 10, height: 10 } })).toBe(
+        true,
+      );
+      expect(isValidQuadItem({ id: '', bounds: { x: 0, y: 0, width: 10, height: 10 } })).toBe(
+        false,
+      );
+      expect(isValidQuadItem({ id: 'item-2', bounds: null })).toBe(false);
+    });
+
+    it('evaluates bounding box intersections with boxesIntersect', () => {
+      const boxA = { x: 0, y: 0, width: 10, height: 10 };
+      const boxB = { x: 5, y: 5, width: 10, height: 10 };
+      const boxC = { x: 20, y: 20, width: 10, height: 10 };
+      expect(boxesIntersect(boxA, boxB)).toBe(true);
+      expect(boxesIntersect(boxA, boxC)).toBe(false);
+    });
+  });
+
+  describe('DOM Interaction & Accessibility Guards', () => {
+    it('handles non-DOM and falsy environments safely', () => {
+      expect(isTextEditableElement(null)).toBe(false);
+      expect(isTextEditableElement({})).toBe(false);
+      expect(isClickableElement(null)).toBe(false);
+      expect(isClickableElement({})).toBe(false);
+      expect(canElementReceiveFocus(null)).toBe(false);
+      expect(canElementReceiveFocus({})).toBe(false);
+      expect(isContainedInPath([], null, null)).toBe(false);
+      expect(isFocusWithin(null, null)).toBe(true);
+      expect(isPointerOrMouseEvent(null)).toBe(false);
+      expect(isPointerOrMouseEvent({})).toBe(false);
+    });
+
+    it('validates mock elements in simulated DOM environment', () => {
+      class MockHTMLElement {
+        public readonly isMock = true;
+      }
+      class MockMouseEvent {
+        public readonly isMock = true;
+      }
+
+      const originalWindow = globalThis.window;
+      const originalDocument = globalThis.document;
+      const originalHTMLElement = globalThis.HTMLElement;
+      const originalMouseEvent = globalThis.MouseEvent;
+
+      try {
+        // @ts-expect-error - mock globals for DOM test
+        globalThis.HTMLElement = MockHTMLElement;
+        // @ts-expect-error - mock globals for DOM test
+        globalThis.MouseEvent = MockMouseEvent;
+        // @ts-expect-error - mock globals for DOM test
+        globalThis.window = { HTMLElement: MockHTMLElement };
+        const mockChild = Object.assign(new MockHTMLElement(), {
+          tagName: 'INPUT',
+          isContentEditable: false,
+          focus: () => {},
+        });
+        const mockBtn = Object.assign(new MockHTMLElement(), {
+          tagName: 'BUTTON',
+          focus: () => {},
+        });
+        const mockBody = { contains: (el: unknown) => el === mockChild };
+        const mockParent = Object.assign(new MockHTMLElement(), {
+          contains: (el: unknown) => el === mockChild,
+        });
+
+        const mockDoc = {
+          body: mockBody,
+          activeElement: mockChild,
+        } as never;
+
+        Object.defineProperty(globalThis, 'document', {
+          value: mockDoc,
+          configurable: true,
+          writable: true,
+        });
+
+        expect(isTextEditableElement(mockChild)).toBe(true);
+        expect(isTextEditableElement(mockBtn)).toBe(false);
+        expect(isClickableElement(mockBtn)).toBe(true);
+        expect(canElementReceiveFocus(mockChild)).toBe(true);
+        expect(
+          isContainedInPath(
+            [mockChild, mockParent] as never,
+            mockChild as never,
+            mockParent as never,
+          ),
+        ).toBe(true);
+        expect(isFocusWithin(mockParent as never, mockChild as never)).toBe(true);
+        expect(isPointerOrMouseEvent(new MockMouseEvent())).toBe(true);
+      } finally {
+        globalThis.window = originalWindow;
+        globalThis.document = originalDocument;
+        globalThis.HTMLElement = originalHTMLElement;
+        globalThis.MouseEvent = originalMouseEvent;
+      }
+    });
+  });
+
+  describe('Responsive Placement Mode Guards', () => {
+    it('evaluates bottom-sheet mode with isBottomSheetMode', () => {
+      expect(isBottomSheetMode('bottom-sheet', false)).toBe(true);
+      expect(isBottomSheetMode('auto', true)).toBe(true);
+      expect(isBottomSheetMode('auto', false)).toBe(false);
+      expect(isBottomSheetMode(undefined, false, 'docked-bottom')).toBe(true);
+      expect(isBottomSheetMode('modal', false)).toBe(false);
+    });
+
+    it('evaluates centered modal mode with isCenteredModalMode', () => {
+      expect(isCenteredModalMode('modal')).toBe(true);
+      expect(isCenteredModalMode(undefined, 'fixed-center')).toBe(true);
+      expect(isCenteredModalMode('bottom-sheet')).toBe(false);
+    });
+
+    it('evaluates docked-top mode with isDockedTopMode', () => {
+      expect(isDockedTopMode('docked-top')).toBe(true);
+      expect(isDockedTopMode('docked-bottom')).toBe(false);
+      expect(isDockedTopMode(undefined)).toBe(false);
     });
   });
 });

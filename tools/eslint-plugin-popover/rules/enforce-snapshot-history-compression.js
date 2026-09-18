@@ -27,8 +27,8 @@ export default {
 
     return {
       ClassDeclaration(node) {
-        if (node.id && node.id.name.includes('History')) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name.includes('History')) {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             !body.includes('maxHistory') &&
             !body.includes('capacity') &&

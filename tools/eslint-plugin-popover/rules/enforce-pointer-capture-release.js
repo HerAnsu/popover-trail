@@ -18,11 +18,10 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'setPointerCapture'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (!src.includes('releasePointerCapture')) {
             context.report({ node, messageId: 'unreleasedPointerCapture' });
           }

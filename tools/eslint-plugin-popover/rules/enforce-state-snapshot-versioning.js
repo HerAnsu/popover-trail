@@ -29,10 +29,8 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'createSnapshot' &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'ObjectExpression'
+          node.callee?.name === 'createSnapshot' &&
+          node.arguments[0]?.type === 'ObjectExpression'
         ) {
           const hasVersion = node.arguments[0].properties.some(
             (p) => p.key && (p.key.name === 'version' || p.key.value === 'version'),

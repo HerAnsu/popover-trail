@@ -27,10 +27,8 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'loading' &&
-          node.value &&
-          node.value.type === 'ObjectExpression'
+          node.key?.name === 'loading' &&
+          node.value?.type === 'ObjectExpression'
         ) {
           const hasErrorBranch = node.value.properties.some(
             (p) =>

@@ -30,11 +30,9 @@ export default {
     return {
       VariableDeclarator(node) {
         if (
-          node.id &&
-          node.id.name &&
+          node.id?.name &&
           node.id.name.includes('Matrix') &&
-          node.init &&
-          node.init.type === 'ArrayExpression' &&
+          node.init?.type === 'ArrayExpression' &&
           node.init.elements.length === 16
         ) {
           context.report({

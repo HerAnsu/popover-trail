@@ -24,11 +24,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'includes' &&
-          node.callee.object &&
-          node.callee.object.type === 'Identifier' &&
+          node.callee.object?.type === 'Identifier' &&
           (node.callee.object.name === 'allKeys' || node.callee.object.name === 'pinnedKeysList')
         ) {
           context.report({

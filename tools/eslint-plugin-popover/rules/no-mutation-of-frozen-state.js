@@ -29,10 +29,8 @@ export default {
     return {
       AssignmentExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
-          node.left.object &&
-          node.left.object.name === 'frozenState'
+          node.left?.type === 'MemberExpression' &&
+          node.left.object?.name === 'frozenState'
         ) {
           context.report({
             node,

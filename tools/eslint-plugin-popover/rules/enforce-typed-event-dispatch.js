@@ -21,12 +21,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
-          node.callee.object &&
-          node.callee.object.name === 'eventBus' &&
-          node.callee.property &&
-          node.callee.property.name === 'emit' &&
+          node.callee?.type === 'MemberExpression' &&
+          node.callee.object?.name === 'eventBus' &&
+          node.callee.property?.name === 'emit' &&
           (node.arguments.length === 0 ||
             (node.arguments[0].type === 'Literal' && !node.arguments[0].value))
         ) {

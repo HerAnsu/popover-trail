@@ -4,15 +4,24 @@ import {
   Err,
   isOk,
   isErr,
+  isResult,
+  isOkResult,
+  isErrResult,
   mapResult,
   mapErr,
   flatMapResult,
   unwrapOr,
+  unwrapOrElse,
   unwrap,
   matchResult,
+  tapResult,
+  tapErr,
   wrapResult,
   wrapAsyncResult,
+  mapAsyncResult,
+  flatMapAsyncResult,
 } from './result';
+
 import { PopoverErrorCode } from './errors';
 
 describe('result monad utility', () => {
@@ -24,6 +33,16 @@ describe('result monad utility', () => {
     expect(isErr(okRes)).toBe(false);
     expect(isOk(errRes)).toBe(false);
     expect(isErr(errRes)).toBe(true);
+
+    expect(isResult(okRes)).toBe(true);
+    expect(isResult(errRes)).toBe(true);
+    expect(isResult(null)).toBe(false);
+    expect(isResult({ success: 'not-bool' })).toBe(false);
+
+    expect(isOkResult(okRes)).toBe(true);
+    expect(isOkResult(errRes)).toBe(false);
+    expect(isErrResult(errRes)).toBe(true);
+    expect(isErrResult(okRes)).toBe(false);
   });
 
   it('maps result data when Ok, preserves Err', () => {
@@ -98,5 +117,45 @@ describe('result monad utility', () => {
       err: (e) => `Failed ${e}`,
     });
     expect(errMatch).toBe('Failed network_failure');
+  });
+
+  it('supports unwrapOrElse, flatMapResult, tapResult, tapErr', () => {
+    const ok = Ok(42);
+    const err = Err('boom');
+
+    expect(unwrapOrElse(ok, () => 99)).toBe(42);
+    expect(unwrapOrElse(err, (e) => (e === 'boom' ? 100 : 0))).toBe(100);
+
+    expect(flatMapResult(ok, (x) => Ok(x * 2))).toEqual(Ok(84));
+    expect(flatMapResult(err, (x: number) => Ok(x * 2))).toEqual(err);
+
+    let tappedVal = 0;
+    tapResult(ok, (v) => {
+      tappedVal = v;
+    });
+    expect(tappedVal).toBe(42);
+
+    let tappedErr = '';
+    tapErr(err, (e) => {
+      tappedErr = e;
+    });
+    expect(tappedErr).toBe('boom');
+  });
+
+  it('mapAsyncResult and flatMapAsyncResult chain asynchronous operations', async () => {
+    const okRes = Ok(10);
+    const errRes = Err('network_err');
+
+    const mappedOk = await mapAsyncResult(okRes, async (x) => x * 3);
+    expect(mappedOk).toEqual(Ok(30));
+
+    const mappedErr = await mapAsyncResult(errRes, async (x: number) => x * 3);
+    expect(mappedErr).toEqual(errRes);
+
+    const chainedOk = await flatMapAsyncResult(okRes, async (x) => Ok(`val-${x}`));
+    expect(chainedOk).toEqual(Ok('val-10'));
+
+    const chainedErr = await flatMapAsyncResult(errRes, async (x: number) => Ok(`val-${x}`));
+    expect(chainedErr).toEqual(errRes);
   });
 });

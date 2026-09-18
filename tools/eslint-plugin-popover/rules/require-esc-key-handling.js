@@ -22,8 +22,8 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name && node.id.name.includes('handleCardKeyboard')) {
-          const bodyText = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name && node.id.name.includes('handleCardKeyboard')) {
+          const bodyText = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             bodyText &&
             !bodyText.includes('Escape') &&

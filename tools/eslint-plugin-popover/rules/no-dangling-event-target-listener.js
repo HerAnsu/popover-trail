@@ -29,11 +29,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'addEventListener' &&
-          node.callee.object &&
-          node.callee.object.name === 'customTarget'
+          node.callee.object?.name === 'customTarget'
         ) {
           context.report({
             node,

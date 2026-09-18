@@ -1,7 +1,3 @@
-/**
- * @fileoverview Recommend setting maxListeners threshold on custom EventEmitters to catch leaks early.
- */
-
 export default {
   meta: {
     type: 'suggestion',
@@ -18,18 +14,12 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       ClassDeclaration(node) {
-        if (node.id && (node.id.name.includes('EventBus') || node.id.name.includes('Emitter'))) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name?.includes('EventBus') || node.id?.name?.includes('Emitter')) {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             !body.includes('maxListeners') &&
             !body.includes('MAX_LISTENERS') &&
@@ -38,7 +28,7 @@ export default {
             context.report({
               node,
               messageId: 'suggestMaxListeners',
-              data: { name: node.id.name },
+              data: { name: node.id?.name },
             });
           }
         }

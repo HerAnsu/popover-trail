@@ -1,0 +1,90 @@
+/**
+ * Persisted Snapshot Payload Builder for Store Persistence Slice.
+ *
+ * @module store/slices/persistence/persistPayload
+ */
+
+import type {
+  DragOffset,
+  PopoverPersistConfig,
+  PopoverStateData,
+  TrailEntry,
+} from '../../../types';
+import { EMPTY_ARRAY, emptyRecord } from '../../storeDefaults';
+import { compactObject, pickKeys } from '../../../utils/cleanObject';
+import { prop } from '../../../utils/functional';
+import {
+  CURRENT_SCHEMA_VERSION,
+  sanitizePersistedEntries,
+  sanitizePersistedOffsets,
+} from './serialization';
+
+export interface PersistedSnapshotPayload<TData = unknown, TPopoverKey extends string = string> {
+  readonly version: number;
+  readonly timestamp: number;
+  readonly tabId: string;
+  readonly floating: readonly TrailEntry<TData, TPopoverKey>[];
+  readonly offsets: Partial<Record<TPopoverKey, DragOffset>>;
+  readonly pinnedStates: Partial<Record<TPopoverKey, boolean>>;
+  readonly zIndexOrder: readonly TPopoverKey[];
+}
+
+function buildCleanPinned<TPopoverKey extends string>(
+  keys: ReadonlySet<TPopoverKey>,
+  pinnedStates: Partial<Record<TPopoverKey, boolean>>,
+): Partial<Record<TPopoverKey, boolean>> {
+  return compactObject(pickKeys(pinnedStates, keys));
+}
+
+/**
+ * Builds a sanitized, filtered snapshot payload for persistence.
+ *
+ * @example
+ * ```ts
+ * const payload = buildPersistPayload(state, 'tab-123', persistConfig);
+ * console.log(payload.version, payload.floating.length);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param state - Current store state snapshot.
+ * @param tabId - Unique identifier of the current browser tab.
+ * @param config - Optional persistence configuration with key and filter rules.
+ * @returns Sanitized persistence snapshot payload.
+ */
+export function buildPersistPayload<TData, TContext, TPopoverKey extends string = string>(
+  state: PopoverStateData<TData, TContext, TPopoverKey>,
+  tabId: string,
+  config?: PopoverPersistConfig,
+): PersistedSnapshotPayload<TData, TPopoverKey> {
+  const { floating, pinnedStates, offsets, zIndexOrder } = state;
+  const filterFn = config?.filter;
+  const filtered = filterFn ? floating.filter(({ key }) => filterFn(key)) : floating;
+
+  if (filtered.length === 0) {
+    return {
+      version: CURRENT_SCHEMA_VERSION,
+      timestamp: Date.now(),
+      tabId,
+      floating: EMPTY_ARRAY,
+      offsets: emptyRecord<TPopoverKey, DragOffset>(),
+      pinnedStates: emptyRecord<TPopoverKey, boolean>(),
+      zIndexOrder: EMPTY_ARRAY,
+    };
+  }
+
+  const keys = new Set<TPopoverKey>(filtered.map(prop('key')));
+  const cleanOffsets = sanitizePersistedOffsets(offsets, keys);
+  const cleanPinned = buildCleanPinned(keys, pinnedStates);
+
+  return {
+    version: CURRENT_SCHEMA_VERSION,
+    timestamp: Date.now(),
+    tabId,
+    floating: sanitizePersistedEntries(filtered),
+    offsets: compactObject(cleanOffsets),
+    pinnedStates: cleanPinned,
+    zIndexOrder: zIndexOrder.filter((key) => keys.has(key)),
+  };
+}

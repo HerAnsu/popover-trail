@@ -1,4 +1,3 @@
-'use strict';
 export default {
   meta: {
     type: 'suggestion',
@@ -9,20 +8,20 @@ export default {
     },
     schema: [],
     messages: {
-      shortcutCasing:
-        'Keyboard key matching for `{{key}}` should use canonical TitleCase `{{canonical}}`.',
+      shortcutCasing: 'Keyboard key matching for `{{key}}` should use canonical TitleCase `{{canonical}}`.',
     },
   },
   create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
       BinaryExpression(node) {
         if (
           node.operator === '===' &&
-          node.left &&
-          node.left.property &&
-          node.left.property.name === 'key' &&
-          node.right &&
-          node.right.type === 'Literal'
+          node.left?.type === 'MemberExpression' &&
+          node.left?.property?.name === 'key' &&
+          node.right?.type === 'Literal'
         ) {
           if (node.right.value === 'escape') {
             context.report({

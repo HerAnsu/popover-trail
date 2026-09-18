@@ -29,10 +29,8 @@ export default {
     return {
       ForStatement(node) {
         if (
-          node.test &&
-          node.test.type === 'BinaryExpression' &&
-          node.test.right &&
-          node.test.right.type === 'Literal' &&
+          node.test?.type === 'BinaryExpression' &&
+          node.test.right?.type === 'Literal' &&
           typeof node.test.right.value === 'number' &&
           node.test.right.value > 50000
         ) {

@@ -30,13 +30,11 @@ export default {
     return {
       VariableDeclarator(node) {
         if (
-          node.id &&
-          node.id.type === 'ArrayPattern' &&
+          node.id?.type === 'ArrayPattern' &&
           node.id.elements.length > 2 &&
-          node.init &&
-          node.init.type === 'CallExpression'
+          node.init?.type === 'CallExpression'
         ) {
-          const hasNoDefaults = node.id.elements.every((el) => el && el.type === 'Identifier');
+          const hasNoDefaults = node.id.elements.every((el) => el?.type === 'Identifier');
           if (hasNoDefaults) {
             context.report({
               node,

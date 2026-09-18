@@ -1,20 +1,14 @@
-/**
- * @fileoverview Disallow multiple consecutive set() calls in a single synchronous handler.
- */
-
 export default {
   meta: {
     type: 'suggestion',
     docs: {
-      description:
-        'Encourage combining consecutive synchronous set() state updates into a single batch commit.',
+      description: 'Encourage combining consecutive synchronous set() state updates into a single batch commit.',
       category: 'Performance',
       recommended: false,
     },
     schema: [],
     messages: {
-      combineSetCalls:
-        'Combine multiple consecutive set() state updates into a single atomic patch object.',
+      combineSetCalls: 'Combine multiple consecutive set() state updates into a single atomic patch object.',
     },
   },
   create(context) {
@@ -24,13 +18,11 @@ export default {
     return {
       BlockStatement(node) {
         let consecutiveSets = 0;
-        for (const statement of node.body) {
+        for (const statement of node.body || []) {
           if (
             statement.type === 'ExpressionStatement' &&
-            statement.expression &&
-            statement.expression.type === 'CallExpression' &&
-            statement.expression.callee &&
-            statement.expression.callee.name === 'set'
+            statement.expression?.type === 'CallExpression' &&
+            (statement.expression?.callee?.name === 'set' || statement.expression?.callee?.property?.name === 'set')
           ) {
             consecutiveSets++;
             if (consecutiveSets > 2) {

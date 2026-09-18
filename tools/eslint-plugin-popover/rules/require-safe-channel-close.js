@@ -15,12 +15,12 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.')) return {};
     return {
       NewExpression(node) {
-        if (node.callee && node.callee.name === 'BroadcastChannel') {
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+        if (node.callee?.name === 'BroadcastChannel') {
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (!src.includes('.close()')) {
             context.report({ node, messageId: 'unclosedChannel' });
           }

@@ -23,13 +23,11 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'close' &&
-          node.callee.object &&
-          node.callee.object.name === 'self'
+          node.callee.object?.name === 'self'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (src.includes('setInterval(') && !src.includes('clearInterval(')) {
             context.report({
               node,

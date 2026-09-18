@@ -1,6 +1,9 @@
 import { useCallback, useDebugValue, useMemo } from 'react';
 import { usePopoverActions, usePopoverStore } from '../context/usePopoverStore';
 import { usePopoverFloating, usePopoverTrail } from './usePopoverSelectors';
+import { take } from '../utils/arrayUtils';
+import { prop } from '../utils/functional';
+import { EMPTY_ARRAY } from '../constants';
 
 /**
  * Item element in the popover timeline history.
@@ -9,17 +12,17 @@ import { usePopoverFloating, usePopoverTrail } from './usePopoverSelectors';
  */
 export interface PopoverTimelineItem<TData = unknown> {
   /** Sequential step index integer. */
-  stepIndex: number;
+  readonly stepIndex: number;
   /** Active popover keys in the cascading trail at this point in history. */
-  trailKeys: string[];
+  readonly trailKeys: readonly string[];
   /** Active pinned popover keys at this point in history. */
-  pinnedKeys: string[];
+  readonly pinnedKeys: readonly string[];
   /** Topmost or focus key at this point in history. */
-  primaryKey: string;
+  readonly primaryKey: string;
   /** Optional timestamp when step occurred. */
-  timestamp?: number;
+  readonly timestamp?: number;
   /** Optional data payload associated with the step. */
-  payload?: TData;
+  readonly payload?: TData;
 }
 
 /**
@@ -29,19 +32,19 @@ export interface PopoverTimelineItem<TData = unknown> {
  */
 export interface UsePopoverTimelineResult<TData = unknown> {
   /** Chronological history entries list. */
-  history: PopoverTimelineItem<TData>[];
+  readonly history: readonly PopoverTimelineItem<TData>[];
   /** Current active history step index. */
-  currentIndex: number;
+  readonly currentIndex: number;
   /** True if undo action is available in history stack. */
-  canUndo: boolean;
+  readonly canUndo: boolean;
   /** True if redo action is available in history stack. */
-  canRedo: boolean;
-  /** Executes undo to previous state snapshot. */
-  undo: () => void;
-  /** Executes redo to next state snapshot. */
-  redo: () => void;
-  /** Navigates directly to a specific step in history by index. */
-  jumpToStep: (index: number) => void;
+  readonly canRedo: boolean;
+  /** Jump directly to a specific historical step by index. */
+  readonly jumpToStep: (stepIndex: number) => void;
+  /** Step backwards in history. */
+  readonly undo: () => void;
+  /** Step forwards in history. */
+  readonly redo: () => void;
 }
 
 /**
@@ -53,9 +56,28 @@ export interface UsePopoverTimelineResult<TData = unknown> {
  *
  * @template TData - The type of resolved data payload.
  * @returns Timeline step items, active step index, undo/redo triggers, and jumpToStep callback.
+ *
+ * @example
+ * ```tsx
+ * function MyTimeline() {
+ *   const { history, currentIndex, canUndo, canRedo, undo, redo, jumpToStep } = usePopoverTimeline();
+ *
+ *   return (
+ *     <div className="timeline-nav">
+ *       <button disabled={!canUndo} onClick={undo}>Undo</button>
+ *       <button disabled={!canRedo} onClick={redo}>Redo</button>
+ *       {history.map((step) => (
+ *         <button key={step.stepIndex} onClick={() => jumpToStep(step.stepIndex)}>
+ *           Step {step.stepIndex + 1}: {step.primaryKey}
+ *         </button>
+ *       ))}
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<TData> {
-  const actions = usePopoverActions<TData>();
+  const { undo, redo, closeFrom, bringToFront } = usePopoverActions<TData>();
 
   // Reactively track undo/redo availability from store state
   const canUndo = usePopoverStore((state) => state.canUndo?.() ?? false);
@@ -65,18 +87,18 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
   const floating = usePopoverFloating<TData>();
 
   // Construct real chronological step items from the active trail and pinned cards
-  const history = useMemo<PopoverTimelineItem<TData>[]>(() => {
+  const history = useMemo<readonly PopoverTimelineItem<TData>[]>(() => {
     if (trail.length === 0 && floating.length === 0) {
-      return [];
+      return EMPTY_ARRAY;
     }
 
-    const pinnedKeys = floating.map((e) => e.key);
+    const pinnedKeys = floating.map(prop('key'));
 
     // If there is an active cascading trail, each depth level is an interactive step
     if (trail.length > 0) {
       return trail.map((entry, idx) => ({
         stepIndex: idx,
-        trailKeys: trail.slice(0, idx + 1).map((e) => e.key),
+        trailKeys: take(trail, idx + 1).map(prop('key')),
         pinnedKeys,
         primaryKey: entry.key,
         payload: entry.data ?? undefined,
@@ -86,7 +108,7 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
     // If only floating/pinned windows exist
     return floating.map((entry, idx) => ({
       stepIndex: idx,
-      trailKeys: [],
+      trailKeys: EMPTY_ARRAY,
       pinnedKeys,
       primaryKey: entry.key,
       payload: entry.data ?? undefined,
@@ -105,15 +127,15 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
       if (!targetStep) return;
 
       if (trail.length > 0 && stepIndex < trail.length - 1) {
-        actions.closeFrom(stepIndex + 1);
+        closeFrom(stepIndex + 1);
       }
 
       // Bring target popover to front and focus
       if (targetStep.primaryKey) {
-        actions.bringToFront(targetStep.primaryKey);
+        bringToFront(targetStep.primaryKey);
       }
     },
-    [history, trail.length, actions],
+    [history, trail.length, closeFrom, bringToFront],
   );
 
   useDebugValue(
@@ -125,8 +147,8 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
     currentIndex,
     canUndo,
     canRedo,
-    undo: actions.undo,
-    redo: actions.redo,
+    undo,
+    redo,
     jumpToStep,
   };
 }

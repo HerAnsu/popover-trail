@@ -27,8 +27,8 @@ export default {
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name.startsWith('select')) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+        if (node.id?.name.startsWith('select')) {
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (body.includes('.push(') || body.includes('.splice(') || body.includes('setState(')) {
             context.report({
               node,

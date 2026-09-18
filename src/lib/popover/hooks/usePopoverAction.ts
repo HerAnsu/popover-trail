@@ -5,7 +5,7 @@
  * @module hooks/usePopoverAction
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type {
   PopoverActionState,
   PopoverServerAction,
@@ -15,6 +15,11 @@ import type {
 import { useCrossVersionActionState } from '../utils/react19Adapters';
 import { usePopoverStoreApi } from '../context/usePopoverStore';
 import { wrapAsyncResult, isOk } from '../utils/result';
+import { toError } from '../utils/typeGuards';
+import { isPopoverActive } from '../utils/predicates';
+import { findEntryInStore } from '../utils/collections';
+import { updateEntryInLists } from '../store/reducers/stack/stackReducers';
+import { useLatestRef } from './useHookUtils';
 
 /**
  * Executes a React 19 Server Action or async mutation with automatic popover store synchronization.
@@ -31,9 +36,30 @@ import { wrapAsyncResult, isOk } from '../utils/result';
  * @param action - Async function taking previous state and input parameters.
  * @param options - Configuration options for initial data, optimistic values, and callbacks.
  * @returns Tuple of current action state, dispatch function, and isPending boolean.
+ *
+ * @example
+ * ```tsx
+ * function EditCard({ cardKey }: { cardKey: string }) {
+ *   const [state, updateName, isPending] = usePopoverAction(
+ *     cardKey,
+ *     async (prev, newName: string) => {
+ *       const updated = await saveNameToServer(newName);
+ *       return { status: 'success', data: updated };
+ *     },
+ *     { optimisticData: (prev, newName) => ({ name: newName }) }
+ *   );
+ *
+ *   return (
+ *     <div>
+ *       <span>{state.data?.name}</span>
+ *       <button disabled={isPending} onClick={() => updateName('Alice')}>Save</button>
+ *     </div>
+ *   );
+ * }
+ * ```
  */
-export function usePopoverAction<TData, TInput = void>(
-  cardKey: string,
+export function usePopoverAction<TData, TInput = void, TPopoverKey extends string = string>(
+  cardKey: TPopoverKey,
   action: PopoverServerAction<TData, TInput>,
   options: Omit<UsePopoverActionOptions<TData, TInput>, 'action'> = {},
 ): UsePopoverActionResult<TData, TInput> {
@@ -43,22 +69,14 @@ export function usePopoverAction<TData, TInput = void>(
   const updateCardData = useCallback(
     (nextData: TData) => {
       store.setState((state) => {
-        const inFloating = state.floating.some((e) => e.key === cardKey);
-        const inTrail = state.trail.some((e) => e.key === cardKey);
-        if (!inFloating && !inTrail) return state;
+        if (!isPopoverActive(state, cardKey)) return state;
+        const { floating, trail } = state;
+        const entry = findEntryInStore(floating, trail, cardKey);
+        if (!entry) return state;
 
-        return {
-          floating: inFloating
-            ? state.floating.map((e) =>
-                e.key === cardKey ? { ...e, data: nextData, isLoading: false } : e,
-              )
-            : state.floating,
-          trail: inTrail
-            ? state.trail.map((e) =>
-                e.key === cardKey ? { ...e, data: nextData, isLoading: false } : e,
-              )
-            : state.trail,
-        };
+        const updatedEntry = { ...entry, data: nextData, isLoading: false };
+        const patch = updateEntryInLists(floating, trail, cardKey, updatedEntry);
+        return { ...state, ...patch };
       });
     },
     [store, cardKey],
@@ -82,8 +100,7 @@ export function usePopoverAction<TData, TInput = void>(
   }, [initialData]);
 
   const [optimisticActive, setOptimisticActive] = useState(false);
-  const callbacksRef = useRef({ onSuccess, onError });
-  callbacksRef.current = { onSuccess, onError };
+  const callbacksRef = useLatestRef({ onSuccess, onError });
 
   const wrappedAction: PopoverServerAction<TData, TInput> = useCallback(
     async (prevState, input) => {
@@ -108,8 +125,7 @@ export function usePopoverAction<TData, TInput = void>(
         updateCardData(prevState.data);
       }
 
-      const error =
-        execResult.error instanceof Error ? execResult.error : new Error(String(execResult.error));
+      const error = toError(execResult.error);
       callbacksRef.current.onError?.(error);
       return {
         status: 'error',
@@ -118,13 +134,11 @@ export function usePopoverAction<TData, TInput = void>(
         isOptimistic: false,
       };
     },
-    [action, updateCardData],
+    [action, updateCardData, callbacksRef],
   );
 
-  const actionTuple = useCrossVersionActionState<TData, TInput>(wrappedAction, initialState);
-  const actionState = actionTuple[0];
-  const dispatchAction = actionTuple[1];
-  const isPending = actionTuple[2];
+  const [actionState, dispatchAction, isPending = false] =
+    useCrossVersionActionState<TData, TInput>(wrappedAction, initialState);
 
   const execute = useCallback(
     (input: TInput) => {

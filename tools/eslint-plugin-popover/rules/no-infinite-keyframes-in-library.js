@@ -19,8 +19,7 @@ export default {
         if (
           node.key &&
           (node.key.name === 'animation' || node.key.name === 'animationIterationCount') &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'string' &&
           node.value.value.includes('infinite')
         ) {

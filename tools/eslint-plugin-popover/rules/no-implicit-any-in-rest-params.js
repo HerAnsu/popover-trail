@@ -33,8 +33,7 @@ export default {
           (node.parent.type === 'FunctionDeclaration' ||
             node.parent.type === 'FunctionExpression') &&
           !node.typeAnnotation &&
-          node.argument &&
-          node.argument.type === 'Identifier' &&
+          node.argument?.type === 'Identifier' &&
           (node.argument.name === 'args' || node.argument.name === 'params')
         ) {
           context.report({

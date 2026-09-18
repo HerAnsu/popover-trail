@@ -29,8 +29,7 @@ export default {
     return {
       FunctionDeclaration(node) {
         if (
-          node.id &&
-          node.id.name &&
+          node.id?.name &&
           (node.id.name.includes('Traverse') ||
             node.id.name.includes('Walk') ||
             node.id.name.includes('Dag') ||
@@ -41,7 +40,7 @@ export default {
 
           function checkNode(n) {
             if (!n || isRecursive) return;
-            if (n.type === 'CallExpression' && n.callee && n.callee.name === fnName) {
+            if (n.type === 'CallExpression' && n.callee?.name === fnName) {
               isRecursive = true;
               return;
             }
@@ -58,14 +57,14 @@ export default {
             }
           }
 
-          if (node.body && node.body.body) {
+          if (node.body?.body) {
             for (const stmt of node.body.body) {
               checkNode(stmt);
             }
           }
 
           if (isRecursive) {
-            const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+            const src = context.getSourceCode?.()?.getText?.(node) ?? '';
             if (
               !src.includes('depth') &&
               !src.includes('maxDepth') &&

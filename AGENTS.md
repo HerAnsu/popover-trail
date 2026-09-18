@@ -1,4 +1,4 @@
-﻿# Engineering Principles, Architecture & Operational Charter
+# Engineering Principles, Architecture & Operational Charter
 
 This document serves as the governing architectural charter for the `popover-trail` library. It defines the foundational methodologies, structural constraints, theoretical paradigms, and quality standards for all software engineers and autonomous agents modifying this codebase.
 
@@ -220,12 +220,17 @@ Multi-action batch transactions execute under strict atomicity and serializabili
 
 Maintainability is sustained through strict structural constraints and clean code principles:
 
+* **Single Responsibility & Cohesion Principle (SRP)**:
+  * Module boundaries must align with conceptual cohesion and distinct domain responsibilities rather than arbitrary line quotas. Code that changes together, shares private invariants, or implements a cohesive algorithm belongs in the same module.
 * **Single Level of Abstraction Principle (SLAP)**:
   * Every function must operate at a consistent level of conceptual abstraction. High-level domain workflows must not be interleaved with low-level bitwise operations, DOM traversals, or raw string concatenations.
-* **File Sizing Discipline**:
-  * Source files must maintain a budget of 70 to 90 lines of code. Any module exceeding this threshold must be refactored into cohesive, single-responsibility submodules.
-* **Function Sizing Discipline**:
-  * Functions must be scoped to a single responsibility and remain within 20 to 25 lines of code.
+* **Rational File Sizing Discipline**:
+  * **No Artificial Lower Bound**: Focused micro-modules (e.g. branded type definitions, isolated type guards, pure geometric vector utilities) of 20–60 lines are encouraged whenever they represent a single complete abstraction. Never pad code or comments artificially to meet an arbitrary minimum line count.
+  * **Target Range**: Most focused production modules naturally reside within **80 to 250 lines of code (LOC)**.
+  * **Soft Upper Threshold (250–300 LOC)**: Modules exceeding 250 LOC should be actively evaluated for extraction opportunities (e.g., separating internal helper algorithms, extracting sub-reducers, or isolating type definitions).
+  * **Hard Ceiling (350–400 LOC)**: Files should not exceed 350 LOC unless they represent mathematically irreducible algorithms (such as QuadTree spatial partitioning or complex affine geometric collision solvers) or consolidated type registries where fragmentation would degrade type inference and cohesion.
+* **Function Sizing & Complexity Discipline**:
+  * Functions must be scoped to a single responsibility and remain within 20 to 40 lines of code in standard flows. Complex state transitions, exhaustive pattern matches, or mathematical steps are permitted up to 50 lines when splitting would harm algorithmic clarity.
 * **Continuous Refactoring (Boy Scout Rule)**:
   * Every modification must leave the touched module cleaner than before. Dead comments, unused imports, obsolete compatibility shims, and unchecked type assertions must be eliminated on sight.
 
@@ -386,3 +391,29 @@ Every code modification must pass an exhaustive verification battery before merg
 * **Architectural Boundaries**: Automated dependency structure analysis must confirm zero layer violations, zero backward imports, and zero circular dependencies.
 * **Payload Budgets**: Output bundle sizes must comply with strict gzip thresholds, accompanied by continuous dead-code elimination verification.
 * **API Stability**: Public contracts must remain backward-compatible across minor iterations, with deprecation pathways clearly designated ahead of major milestones.
+* **API Documentation Synchronization**: Any newly added, renamed, or modified public API (components, compound slots, hooks, stores, types, utilities, combinators, configuration options, error models) must be immediately documented in `docs/API.md` in its corresponding section following implementation. No pull request or commit introducing public API modifications may be accepted without updating `docs/API.md`.
+
+---
+
+## 23. Public API Documentation Synchronization & SSOT (`docs/API.md`)
+
+`docs/API.md` is the canonical Single Source of Truth (SSOT) for the public interface and developer reference of `popover-trail`.
+
+* **Immediate Documentation Invariant**:
+  * Any autonomous agent or software engineer introducing a new exported symbol (component, compound subcomponent, hook, action dispatcher, selector, type/interface, type guard, branded constructor, utility function, error type) or modifying the signature, parameters, or return contract of an existing public API must immediately document it in `docs/API.md`.
+* **Topological Placement Discipline**:
+  * Updates must be placed in the appropriate section matching the Clean Architecture layer and domain responsibility:
+    - Layer 4 (Presentation & UI Components, compound subcomponents, DOM slots, portals): Section 5 & Section 7 (DnD).
+    - Layer 3 (React hooks, selectors, React 19 concurrency adapters): Section 6.
+    - Layer 2 & Layer 1 Core Engines (Transactions, CQRS, FSM, DAG, Spatial, Result, Disposable, RingBuffer): Section 8.
+    - Multi-stack zones and micro-frontends: Section 9.
+    - Types, interfaces, discriminated unions, branded types: Section 10.
+    - Type guards, pattern matchers (`matchEntryState`, `matchActionState`): Section 11.
+    - Utilities, caching, controllers, error models: Section 12.
+* **Accuracy and Completeness Contract**:
+  * Every documented API entry must state:
+    1. Signature and generic type parameters.
+    2. Input options and default values.
+    3. Return contract (including `Result<T, E>` failure modes where applicable).
+    4. Practical, idiomatic TypeScript code example demonstrating usage without academic jargon.
+

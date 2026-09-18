@@ -17,17 +17,15 @@ export default {
   create(context) {
     return {
       JSXElement(node) {
-        if (node.openingElement && node.openingElement.attributes) {
+        if (node.openingElement?.attributes) {
           const hasDraggable = node.openingElement.attributes.some(
-            (a) => a.name && a.name.name === 'draggable' && a.value && a.value.value === 'true',
+            (a) => a.name?.name === 'draggable' && a.value?.value === 'true',
           );
           const hasTouchAction = node.openingElement.attributes.some(
             (a) =>
-              a.name &&
-              a.name.name === 'style' &&
-              a.value &&
-              a.value.type === 'JSXExpressionContainer' &&
-              context.getSourceCode().getText(a.value).includes('touchAction'),
+              a.name?.name === 'style' &&
+              a.value?.type === 'JSXExpressionContainer' &&
+              context.getSourceCode?.()?.getText?.(a.value).includes('touchAction'),
           );
           if (hasDraggable && !hasTouchAction) {
             context.report({ node, messageId: 'missingTouchAction' });

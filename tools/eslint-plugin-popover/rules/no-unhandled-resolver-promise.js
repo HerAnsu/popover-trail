@@ -17,12 +17,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
-          node.callee.property &&
-          node.callee.property.name === 'then' &&
-          node.parent &&
-          node.parent.type === 'ExpressionStatement'
+          node.callee?.type === 'MemberExpression' &&
+          node.callee.property?.name === 'then' &&
+          node.parent?.type === 'ExpressionStatement'
         ) {
           // Floating .then() without .catch()
           context.report({ node, messageId: 'unhandledPromise' });

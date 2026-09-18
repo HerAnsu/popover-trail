@@ -31,11 +31,10 @@ export default {
       FunctionDeclaration(node) {
         if (
           node.async &&
-          node.id &&
-          node.id.name.startsWith('resolve') &&
+          node.id?.name.startsWith('resolve') &&
           node.params.length === 1
         ) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (body.includes('fetch(') && !body.includes('signal') && !body.includes('timeout')) {
             context.report({
               node,

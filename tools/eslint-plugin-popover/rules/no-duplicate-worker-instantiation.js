@@ -24,10 +24,8 @@ export default {
     return {
       NewExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'Worker' &&
-          node.parent &&
-          node.parent.parent &&
+          node.callee?.name === 'Worker' &&
+          node.parent?.parent &&
           (node.parent.parent.type === 'FunctionDeclaration' ||
             node.parent.parent.type === 'ArrowFunctionExpression')
         ) {

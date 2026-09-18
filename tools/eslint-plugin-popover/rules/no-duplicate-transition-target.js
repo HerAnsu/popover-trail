@@ -29,10 +29,8 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'on' &&
-          node.value &&
-          node.value.type === 'ObjectExpression'
+          node.key?.name === 'on' &&
+          node.value?.type === 'ObjectExpression'
         ) {
           const seen = new Set();
           for (const prop of node.value.properties) {

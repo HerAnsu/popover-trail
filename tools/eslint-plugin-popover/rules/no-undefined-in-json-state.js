@@ -28,8 +28,7 @@ export default {
     return {
       Property(node) {
         if (
-          node.value &&
-          node.value.type === 'Identifier' &&
+          node.value?.type === 'Identifier' &&
           node.value.name === 'undefined' &&
           node.key
         ) {

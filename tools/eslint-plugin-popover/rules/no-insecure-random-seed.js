@@ -33,8 +33,7 @@ export default {
           (node.callee.name === 'Mulberry32' ||
             node.callee.name === 'SplitMix32' ||
             node.callee.name === 'PRNG') &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'Literal' &&
+          node.arguments[0]?.type === 'Literal' &&
           typeof node.arguments[0].value === 'number'
         ) {
           context.report({

@@ -15,7 +15,7 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     const isStoreOrUtils =
       (filename.includes('store/') ||
         filename.includes('store\\') ||

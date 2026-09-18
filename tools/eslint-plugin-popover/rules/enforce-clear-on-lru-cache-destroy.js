@@ -14,13 +14,15 @@ export default {
     },
   },
   create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
       ClassDeclaration(node) {
-        if (node.id && node.id.name.endsWith('Cache')) {
-          const hasClear =
-            node.body &&
-            node.body.body &&
-            node.body.body.some((m) => m.key && (m.key.name === 'clear' || m.key.name === 'reset'));
+        if (node.id?.name?.endsWith('Cache')) {
+          const hasClear = node.body?.body?.some(
+            (m) => m.key && (m.key?.name === 'clear' || m.key?.name === 'reset')
+          );
           if (!hasClear) {
             context.report({ node, messageId: 'missingClearMethod' });
           }

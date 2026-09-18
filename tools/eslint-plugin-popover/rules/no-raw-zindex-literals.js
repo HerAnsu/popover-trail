@@ -18,15 +18,14 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.') || filename.includes('test/')) return {};
     return {
       Property(node) {
         if (
           node.key &&
           (node.key.name === 'zIndex' || node.key.value === 'zIndex') &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'number' &&
           node.value.value >= 1000
         ) {

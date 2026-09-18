@@ -28,10 +28,8 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'createStateMachine' &&
-          node.arguments[0] &&
-          node.arguments[0].type === 'ObjectExpression'
+          ((node.callee?.name || node.callee?.property?.name) || node.callee?.property?.name) === 'createStateMachine' &&
+          node.arguments[0]?.type === 'ObjectExpression'
         ) {
           const hasInitial = node.arguments[0].properties.some(
             (p) => p.key && (p.key.name === 'initial' || p.key.value === 'initial'),

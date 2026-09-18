@@ -18,8 +18,7 @@ export default {
         if (
           node.key &&
           (node.key.name === 'transitionDuration' || node.key.name === 'duration') &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'number' &&
           node.value.value < 0
         ) {

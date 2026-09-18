@@ -23,7 +23,7 @@ export default {
       SwitchStatement(node) {
         const seen = new Set();
         for (const c of node.cases) {
-          if (c.test && c.test.type === 'Literal') {
+          if (c.test?.type === 'Literal') {
             const val = String(c.test.value);
             if (seen.has(val)) {
               context.report({

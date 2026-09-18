@@ -19,18 +19,15 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (!filename.includes('dag') && !filename.includes('DAG')) return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
-          node.callee.property.name === 'addEdge' &&
-          node.callee.object &&
-          node.callee.object.name === 'dag'
+          node.callee?.property?.name === 'addEdge' &&
+          node.callee?.object?.name === 'dag'
         ) {
-          const scope = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const scope = context.getSourceCode?.()?.getText?.() ?? '';
           if (scope && !scope.includes('hasCycle') && !scope.includes('canAddEdge')) {
             context.report({
               node,

@@ -1,53 +1,28 @@
 /**
- * Strongly typed error codes and Actionable Error class for PopoverTrail operations.
+ * Actionable Error class for PopoverTrail operations.
+ * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
  *
- * @module errors
+ * @module utils/errors
  */
 
-/**
- * Strongly typed error codes for PopoverTrail operations.
- */
-export const PopoverErrorCode = {
-  /** Data resolver promise timed out or was aborted. */
-  RESOLVER_TIMEOUT: 'ERR_RESOLVER_TIMEOUT',
-  /** Worker RPC task rejected or failed to instantiate. */
-  WORKER_CRASHED: 'ERR_WORKER_CRASHED',
-  /** State persistence read or write failed. */
-  PERSIST_FAILED: 'ERR_PERSIST_FAILED',
-  /** Invalid transition dispatched to FSM. */
-  INVALID_TRANSITION: 'ERR_INVALID_TRANSITION',
-  /** Circular dependency detected in cascade path. */
-  CIRCULAR_CASCADE: 'ERR_CIRCULAR_CASCADE',
-  /** Element unmounted while operation in progress. */
-  UNMOUNTED: 'ERR_UNMOUNTED',
-} as const;
+import { PopoverErrorCode, formatPopoverErrorMessage } from './errorFormatting';
 
-export type PopoverErrorCode = (typeof PopoverErrorCode)[keyof typeof PopoverErrorCode];
-
-export function formatPopoverErrorMessage(
-  code: PopoverErrorCode,
-  message: string,
-  remediationHint?: string,
-): string {
-  return remediationHint
-    ? `[popover-trail:${code}] ${message}\n  💡 Remediation Hint: ${remediationHint}`
-    : `[popover-trail:${code}] ${message}`;
-}
+export { PopoverErrorCode, formatPopoverErrorMessage };
 
 /**
- * Custom Actionable Error class for PopoverTrail.
- * Includes error codes, remediation guidance hints, and optional underlying cause chaining.
+ * Actionable domain error class for `popover-trail` library operations.
  *
- * @template TCode - Standardized error code identifier.
- * @remarks
- * Formats diagnostic messages with helpful remediation hints so developers immediately know how to fix issues.
+ * Encapsulates an error code, user message, optional remediation hint, and causal error.
+ * Formats messages automatically into standardized diagnostic output.
+ *
+ * @template TCode - Specific PopoverErrorCode string union type.
  *
  * @example
  * ```typescript
  * throw new PopoverError(
- *   PopoverErrorCode.CIRCULAR_CASCADE,
- *   'Detected circular relationship when opening "userCard".',
- *   'Ensure parent and child cards do not reference each other in an infinite cycle.'
+ *   PopoverErrorCode.INVALID_TRANSITION,
+ *   'Cannot open unmounted popover',
+ *   'Verify provider is mounted in DOM before triggering actions.',
  * );
  * ```
  */
@@ -63,35 +38,51 @@ export class PopoverError<TCode extends PopoverErrorCode = PopoverErrorCode> ext
     this.remediationHint = remediationHint;
     this.cause = cause;
 
-    // Maintain standard stack trace in V8 environments
     if ('captureStackTrace' in Error && typeof Error.captureStackTrace === 'function') {
       Error.captureStackTrace(this, PopoverError);
     }
   }
 
-  /** Checks if a given value is an instance of PopoverError, optionally narrowing to a specific error code. */
+  /**
+   * Type guard checking if an error is a PopoverError, optionally narrowing by specific code.
+   *
+   * @template C - Specific PopoverErrorCode.
+   * @param error - Unknown error candidate.
+   * @param code - Optional specific code to check.
+   * @returns True if error is a PopoverError matching code.
+   *
+   * @example
+   * ```typescript
+   * if (PopoverError.isPopoverError(err, PopoverErrorCode.CIRCULAR_CASCADE)) {
+   *   console.error('Circular popover reference detected!');
+   * }
+   * ```
+   */
   public static isPopoverError<C extends PopoverErrorCode>(
     error: unknown,
     code: C,
   ): error is PopoverError<C>;
   public static isPopoverError(error: unknown): error is PopoverError;
   public static isPopoverError(error: unknown, code?: PopoverErrorCode): error is PopoverError {
-    if (!(error instanceof PopoverError)) {
-      return false;
-    }
+    if (!(error instanceof PopoverError)) return false;
     return code === undefined || error.code === code;
   }
 }
 
 /**
- * Factory helper function to create standardized PopoverError instances with diagnostic hints.
+ * Factory helper creating a new PopoverError instance.
  *
- * @template TCode - Standardized error code identifier.
- * @param code - Standardized error code identifier.
+ * @template TCode - Specific error code type.
+ * @param code - Standardized PopoverErrorCode.
  * @param message - Descriptive failure message.
- * @param remediationHint - Optional advice on resolving the problem.
- * @param cause - Optional root cause error object.
- * @returns PopoverError instance ready to throw or wrap.
+ * @param remediationHint - Actionable suggestion for the developer.
+ * @param cause - Optional root cause error.
+ * @returns New PopoverError instance.
+ *
+ * @example
+ * ```typescript
+ * const err = createPopoverError(PopoverErrorCode.RESOLVER_TIMEOUT, 'Resolver took > 5000ms');
+ * ```
  */
 export function createPopoverError<TCode extends PopoverErrorCode = PopoverErrorCode>(
   code: TCode,
@@ -100,4 +91,30 @@ export function createPopoverError<TCode extends PopoverErrorCode = PopoverError
   cause?: unknown,
 ): PopoverError<TCode> {
   return new PopoverError(code, message, remediationHint, cause);
+}
+
+/**
+ * Type guard verifying if an unknown error object is a PopoverError.
+ *
+ * @template C - Specific PopoverErrorCode.
+ * @param error - Error object to inspect.
+ * @param code - Optional code to match.
+ * @returns True if error conforms to PopoverError.
+ *
+ * @example
+ * ```typescript
+ * if (isPopoverError(err)) {
+ *   console.log('Error code:', err.code);
+ * }
+ * ```
+ */
+export function isPopoverError<C extends PopoverErrorCode>(
+  error: unknown,
+  code: C,
+): error is PopoverError<C>;
+export function isPopoverError(error: unknown): error is PopoverError;
+export function isPopoverError(error: unknown, code?: PopoverErrorCode): error is PopoverError {
+  return code !== undefined
+    ? PopoverError.isPopoverError(error, code)
+    : PopoverError.isPopoverError(error);
 }

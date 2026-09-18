@@ -1,84 +1,149 @@
-import { isRecord, isUnsafeKey } from './safeKeys';
+/**
+ * Zero-GC Shallow and Deep Equality Comparison Utilities.
+ * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
+ *
+ * @module utils/equality
+ */
+
+import { isUnsafeKey } from './safeKeys';
+import { isRecordObject, isArray } from './typeGuards';
+import { isSubset } from './setOperations';
 
 /**
- * Shallow equality comparison utility for plain objects, arrays, and primitive values.
+ * Performs a zero-allocation shallow equality comparison between two readonly arrays using `Object.is`.
  *
- * @remarks
- * Uses `Object.is` for value equality and performs shallow key comparisons on object dictionaries.
+ * @template T - Element type.
+ * @param a - First array.
+ * @param b - Second array.
+ * @returns True if both arrays have identical length and identical elements.
  *
- * @param objA - First object to compare.
- * @param objB - Second object to compare.
- * @returns True if both values are shallowly identical.
+ * @example
+ * ```typescript
+ * shallowEqualArray([1, 2], [1, 2]); // true
+ * shallowEqualArray([1, 2], [1, 3]); // false
+ * ```
  */
-export function shallowEqual<T>(objA: T, objB: T): boolean {
-  if (Object.is(objA, objB)) return true;
-  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
-    return false;
-  }
-  if (Array.isArray(objA) || Array.isArray(objB)) {
-    if (!Array.isArray(objA) || !Array.isArray(objB)) return false;
-    if (objA.length !== objB.length) return false;
-    for (let i = 0; i < objA.length; i++) {
-      if (!Object.is(objA[i], objB[i])) return false;
-    }
-    return true;
-  }
-  if (!isRecord(objA) || !isRecord(objB)) {
-    return false;
-  }
-  const keysA = Object.keys(objA);
-  if (keysA.length !== Object.keys(objB).length) return false;
-  for (const key of keysA) {
-    if (!Object.hasOwn(objB, key) || !Object.is(objA[key], objB[key])) {
-      return false;
-    }
+export function shallowEqualArray<T>(a?: readonly T[], b?: readonly T[]): boolean {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (!Object.is(a[i], b[i])) return false;
   }
   return true;
 }
 
-function areArraysDeepEqual(a: unknown[], b: unknown[]): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (!isDeepEqual(a[i], b[i])) return false;
+/**
+ * Checks whether two sets contain the exact same items.
+ *
+ * @template T - Value type.
+ * @param a - First Set.
+ * @param b - Second Set.
+ * @returns True if both sets have identical size and members.
+ *
+ * @example
+ * ```typescript
+ * areSetsEqual(new Set(['a', 'b']), new Set(['b', 'a'])); // true
+ * ```
+ */
+export function areSetsEqual<T>(a?: ReadonlySet<T>, b?: ReadonlySet<T>): boolean {
+  if (a === b) return true;
+  if (!a || !b || a.size !== b.size) return false;
+  return isSubset(a, b);
+}
+
+/**
+ * Performs a high-performance shallow equality comparison between two values, objects, or arrays.
+ * Traverses object keys without allocating intermediate arrays (`Object.keys()`).
+ *
+ * @template T - Input value type.
+ * @param objA - First value.
+ * @param objB - Second value.
+ * @returns True if shallowly equal.
+ *
+ * @example
+ * ```typescript
+ * shallowEqual({ x: 10, y: 20 }, { x: 10, y: 20 }); // true
+ * shallowEqual({ x: 10 }, { x: 20 }); // false
+ * ```
+ */
+export function shallowEqual<T>(objA: T, objB: T): boolean {
+  if (Object.is(objA, objB)) return true;
+  if (!objA || !objB || typeof objA !== 'object' || typeof objB !== 'object') return false;
+  if (isArray(objA) || isArray(objB)) {
+    return isArray(objA) && isArray(objB) && shallowEqualArray(objA, objB);
   }
-  return true;
+  if (!isRecordObject(objA) || !isRecordObject(objB)) return false;
+  return areObjectsEqual(objA, objB);
+}
+
+function areObjectsEqual(recA: Record<string, unknown>, recB: Record<string, unknown>): boolean {
+  let countA = 0;
+  let countB = 0;
+
+  for (const key in recA) {
+    if (Object.hasOwn(recA, key) && !isUnsafeKey(key)) {
+      countA++;
+      if (!Object.hasOwn(recB, key) || !Object.is(recA[key], recB[key])) return false;
+    }
+  }
+  for (const key in recB) {
+    if (Object.hasOwn(recB, key) && !isUnsafeKey(key)) countB++;
+  }
+  return countA === countB;
 }
 
 function areObjectsDeepEqual(
   recA: Record<string, unknown>,
   recB: Record<string, unknown>,
 ): boolean {
-  const keysA = Object.keys(recA);
-  if (keysA.length !== Object.keys(recB).length) return false;
-  for (const key of keysA) {
-    if (isUnsafeKey(key)) continue;
-    if (!Object.hasOwn(recB, key) || !isDeepEqual(recA[key], recB[key])) {
-      return false;
+  let countA = 0;
+  let countB = 0;
+  for (const key in recA) {
+    if (Object.hasOwn(recA, key) && !isUnsafeKey(key)) {
+      countA++;
+      if (!Object.hasOwn(recB, key) || !isDeepEqual(recA[key], recB[key])) return false;
     }
   }
-  return true;
+  for (const key in recB) {
+    if (Object.hasOwn(recB, key) && !isUnsafeKey(key)) countB++;
+  }
+  return countA === countB;
 }
 
 /**
- * Lightweight zero-dependency deep equality comparison helper for plain objects, arrays, and primitives.
+ * Performs a recursive deep equality comparison between two arbitrary structures.
  *
- * @remarks
- * Recursively compares nested objects and arrays while ignoring unsafe prototype properties.
+ * @template T - Input value type.
+ * @param a - First value.
+ * @param b - Second value.
+ * @returns True if both structures are deeply structurally identical.
  *
- * @param a - First value to compare.
- * @param b - Second value to compare.
- * @returns True if deeply structural-equal.
+ * @example
+ * ```typescript
+ * isDeepEqual({ nested: { a: 1 } }, { nested: { a: 1 } }); // true
+ * ```
  */
 export function isDeepEqual<T>(a: T, b: T): boolean {
   if (Object.is(a, b)) return true;
-  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
-    return false;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (isArray(a) || isArray(b)) {
+    if (!isArray(a) || !isArray(b) || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!isDeepEqual(a[i], b[i])) return false;
+    return true;
   }
-  if (Array.isArray(a) || Array.isArray(b)) {
-    return Array.isArray(a) && Array.isArray(b) && areArraysDeepEqual(a, b);
-  }
-  if (isRecord(a) && isRecord(b)) {
-    return areObjectsDeepEqual(a, b);
-  }
+  if (isRecordObject(a) && isRecordObject(b)) return areObjectsDeepEqual(a, b);
   return false;
+}
+
+/**
+ * Compares two collision configuration objects for structural equality.
+ *
+ * @param a - First config.
+ * @param b - Second config.
+ * @returns True if both configurations match.
+ */
+export function isCollisionConfigEqual(a?: unknown, b?: unknown): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return isDeepEqual(a, b);
 }

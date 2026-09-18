@@ -24,14 +24,12 @@ export default {
     return {
       NewExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'ResizeObserver' &&
-          node.parent &&
-          node.parent.type === 'VariableDeclarator'
+          ((node.callee?.name || node.callee?.property?.name) || node.callee?.property?.name) === 'ResizeObserver' &&
+          node.parent?.type === 'VariableDeclarator'
         ) {
-          const varName = node.parent.id?.name;
+          const varName = node.parent?.id?.name;
           if (varName) {
-            const scope = context.getSourceCode ? context.getSourceCode().getText() : '';
+            const scope = context.getSourceCode?.()?.getText?.() ?? '';
             if (
               scope &&
               !scope.includes(`${varName}.disconnect()`) &&

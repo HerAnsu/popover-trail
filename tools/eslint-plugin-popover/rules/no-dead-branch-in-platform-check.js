@@ -29,7 +29,7 @@ export default {
     return {
       LogicalExpression(node) {
         if (node.operator === '&&') {
-          const src = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          const src = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (src.includes("typeof window === 'undefined'") && src.includes('window.')) {
             context.report({
               node,

@@ -17,10 +17,8 @@ export default {
     return {
       AssignmentExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
-          node.left.object &&
-          node.left.object.name === 'rect' &&
+          node.left?.type === 'MemberExpression' &&
+          node.left.object?.name === 'rect' &&
           node.left.property &&
           ['x', 'y', 'width', 'height', 'top', 'bottom', 'left', 'right'].includes(
             node.left.property.name,

@@ -30,10 +30,8 @@ export default {
     return {
       TSAsExpression(node) {
         if (
-          node.expression &&
-          node.expression.type === 'ObjectExpression' &&
-          node.typeAnnotation &&
-          node.typeAnnotation.typeName &&
+          node.expression?.type === 'ObjectExpression' &&
+          node.typeAnnotation?.typeName &&
           node.typeAnnotation.typeName.name &&
           !node.typeAnnotation.typeName.name.includes('unknown') &&
           !node.typeAnnotation.typeName.name.includes('any') &&

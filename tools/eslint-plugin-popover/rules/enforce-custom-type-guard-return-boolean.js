@@ -19,14 +19,12 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (!filename.includes('typeGuards') && !filename.includes('assertions')) return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       FunctionDeclaration(node) {
         if (
-          node.id &&
-          node.id.name &&
-          node.id.name.startsWith('is') &&
+            node.id?.name?.startsWith('is') &&
           node.id.name.length > 2 &&
           !node.returnType
         ) {

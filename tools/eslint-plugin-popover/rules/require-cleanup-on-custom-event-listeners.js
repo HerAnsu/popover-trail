@@ -24,7 +24,7 @@ export default {
     return {
       MethodDefinition(node) {
         if (node.key && (node.key.name === 'subscribe' || node.key.name === 'on')) {
-          const body = context.getSourceCode ? context.getSourceCode().getText(node) : '';
+          const body = context.getSourceCode?.()?.getText?.(node) ?? '';
           if (
             body &&
             !body.includes('return () =>') &&

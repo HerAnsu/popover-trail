@@ -19,8 +19,7 @@ export default {
         if (
           node.expression &&
           (node.expression.name === 'e' || node.expression.name === 'event') &&
-          node.typeAnnotation &&
-          node.typeAnnotation.type === 'TSAnyKeyword'
+          node.typeAnnotation?.type === 'TSAnyKeyword'
         ) {
           context.report({ node, messageId: 'unsafeEventCast' });
         }

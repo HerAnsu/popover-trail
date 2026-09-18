@@ -1,83 +1,66 @@
-import React, { useEffect, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
-import { usePopoverFloating, usePopoverTrail } from '../hooks/usePopoverSelectors';
-import type { TrailEntry } from '../types';
-import { validatePortalContainer } from '../utils/devWarnings';
-
 /**
- * Props for `<PopoverPortal>`.
- */
-export interface PopoverPortalProps {
-  /** React elements or a render prop callback function receiving all active popover entries. */
-  children: ReactNode | ((entries: Array<TrailEntry & { isPinned: boolean }>) => ReactNode);
-  /** Optional custom DOM container element target. Defaults to `document.body`. */
-  container?: HTMLElement | (() => HTMLElement | null) | React.RefObject<HTMLElement | null>;
-}
-
-/**
- * Portal wrapper component that safely mounts children elements to `document.body` or a custom container.
- * Bypasses parent `overflow: hidden`, `clip-path`, and CSS transform stacking context limitations.
+ * Accessible Portal Wrapper Component with Isomorphic Hydration.
+ * Clean Architecture Layer 4: Presentation & UI Components.
  *
- * @remarks
- * Safe for SSR: only renders the portal after client-side mounting is verified to avoid hydration mismatches.
- * Supports direct React children or a render prop receiving the combined array of active popovers.
+ * Renders popovers into a detached DOM node (defaults to `document.body`) while preserving
+ * React event propagation and hydration safety during SSR.
  *
  * @example
  * ```tsx
- * import { PopoverPortal } from 'popover-trail';
- *
- * function App() {
- *   return (
- *     <PopoverPortal>
- *       <div className="floating-layer">...</div>
- *     </PopoverPortal>
- *   );
- * }
+ * <PopoverPortal>
+ *   <div className="custom-overlay">
+ *     <PopoverCard entry={entry} index={0} isPinned={false} />
+ *   </div>
+ * </PopoverPortal>
  * ```
  *
- * @param props - Portal configuration options and children content.
- * @returns React Portal instance, or null prior to hydration.
+ * @module components/PopoverPortal
  */
+
+import React, { useMemo, useSyncExternalStore, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { usePopoverFloating, usePopoverTrail } from '../hooks/usePopoverSelectors';
+import type { TrailEntry } from '../types';
+import { resolveContainerElement } from '../utils/componentUtils';
+import { isFunction, isBrowser } from '../utils/typeGuards';
+import { validatePortalContainer } from '../utils/devWarnings';
+import { constant, noop } from '../utils/functional';
+
+export interface PopoverPortalProps {
+  children: ReactNode | ((entries: Array<TrailEntry & { isPinned: boolean }>) => ReactNode);
+  container?: HTMLElement | (() => HTMLElement | null) | React.RefObject<HTMLElement | null>;
+}
+
+const emptySubscribe = constant(noop);
+const getClientSnapshot = constant(true);
+const getServerSnapshot = constant(false);
+
 export function PopoverPortal({ children, container }: PopoverPortalProps) {
-  const [mounted, setMounted] = useState(false);
+  const isHydrated = useSyncExternalStore(
+    emptySubscribe,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
   const trail = usePopoverTrail();
   const floating = usePopoverFloating();
 
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  const isRenderProp = typeof children === 'function';
-  const formattedEntries = React.useMemo(() => {
+  const isRenderProp = isFunction(children);
+  const formattedEntries = useMemo(() => {
     if (!isRenderProp) return null;
     const result: Array<TrailEntry & { isPinned: boolean }> = [];
     for (const entry of floating) {
-      if (entry) {
-        result.push({ ...entry, isPinned: true });
-      }
+      if (entry) result.push({ ...entry, isPinned: true });
     }
     for (const entry of trail) {
-      if (entry) {
-        result.push({ ...entry, isPinned: false });
-      }
+      if (entry) result.push({ ...entry, isPinned: false });
     }
     return result;
   }, [isRenderProp, floating, trail]);
 
-  if (!mounted) return null;
+  if (!isHydrated || !isBrowser()) return null;
 
-  let target: HTMLElement | null = null;
-  if (container) {
-    if (typeof container === 'function') {
-      target = container();
-    } else if ('current' in container) {
-      target = container.current;
-    } else {
-      target = container;
-    }
-    validatePortalContainer(target);
-  }
+  const target = resolveContainerElement(container);
+  if (container) validatePortalContainer(target);
 
   const renderedContent =
     typeof children === 'function'

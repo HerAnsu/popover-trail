@@ -15,7 +15,7 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (!filename.includes('store/')) return {};
     return {
       Property(node) {
@@ -24,8 +24,7 @@ export default {
           (node.key.name === 'element' ||
             node.key.name === 'domNode' ||
             node.key.name === 'containerElement') &&
-          node.value &&
-          node.value.type === 'Identifier' &&
+          node.value?.type === 'Identifier' &&
           node.value.name === 'element'
         ) {
           context.report({ node, messageId: 'domInStore' });

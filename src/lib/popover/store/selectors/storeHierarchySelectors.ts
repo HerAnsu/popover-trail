@@ -1,0 +1,216 @@
+/**
+ * Hierarchy, Breadcrumb, and Graph Branch Selectors.
+ * Clean Architecture Layer 2: Headless State Management & Orchestration.
+ *
+ * @module storeHierarchySelectors
+ */
+
+import type { TrailEntry } from '../../types';
+import { EMPTY_ARRAY } from '../hydration';
+import { hasKeyIn } from '../../utils/predicates';
+import { concatImmutable } from '../../utils/arrayUtils';
+import { setUnion } from '../../utils/setOperations';
+import type { HasActiveEntriesState } from './storeSelectorTypes';
+
+
+/**
+ * Traverses floating and trail popovers to collect all child keys directly opened by `key`.
+ *
+ * @example
+ * ```ts
+ * const childKeys = collectChildrenKeys(state.floating, state.trail, 'root-popover');
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
+ * @param floating - Readonly array of floating/pinned entries.
+ * @param trail - Readonly array of active cascading trail entries.
+ * @param key - Identifier of the parent popover.
+ * @returns Readonly array of direct child popover keys, or an empty frozen array.
+ */
+export function collectChildrenKeys<TPopoverKey extends string = string, TData = unknown>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
+  key: string,
+): readonly TPopoverKey[] {
+  const children: TPopoverKey[] = [];
+  const isChild = (e: TrailEntry<TData, TPopoverKey>): boolean =>
+    e.parentKey === key || e.originalParentKey === key;
+  for (const e of floating) if (isChild(e)) children.push(e.key);
+  for (const e of trail) if (isChild(e)) children.push(e.key);
+  return children.length > 0 ? children : EMPTY_ARRAY;
+}
+
+/**
+ * Higher-order selector returning all direct child keys of a popover.
+ *
+ * @example
+ * ```ts
+ * const children = selectChildrenKeys('parent-card')(store.getState());
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
+ * @param key - Identifier of the parent popover.
+ * @returns Selector function mapping store state to child keys array.
+ */
+export const selectChildrenKeys =
+  <TPopoverKey extends string = string, TData = unknown>(key: string) =>
+  (state: HasActiveEntriesState<TData, TPopoverKey>): readonly TPopoverKey[] => {
+    const { floating, trail } = state;
+    return collectChildrenKeys<TPopoverKey, TData>(floating, trail, key);
+  };
+
+/**
+ * Builds a fast Map index pairing keys with their corresponding `TrailEntry`.
+ *
+ * @example
+ * ```ts
+ * const index = buildEntryIndex(state.floating, state.trail);
+ * const entry = index.get('my-card');
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param floating - Readonly array of floating/pinned entries.
+ * @param trail - Readonly array of active cascading trail entries.
+ * @returns Map index for O(1) entry lookup.
+ */
+export function buildEntryIndex<TData, TPopoverKey extends string>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
+): Map<string, TrailEntry<TData, TPopoverKey>> {
+  const index = new Map<string, TrailEntry<TData, TPopoverKey>>();
+  for (const e of trail) index.set(e.key, e);
+  for (const e of floating) index.set(e.key, e);
+  return index;
+}
+
+/**
+ * Backtracks via parent pointers to construct the breadcrumb trail path from root to the target popover.
+ *
+ * @example
+ * ```ts
+ * const path = buildBreadcrumbPath(state.floating, state.trail, 'leaf-popover');
+ * // ['root', 'child', 'leaf-popover']
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
+ * @param floating - Readonly array of floating/pinned entries.
+ * @param trail - Readonly array of active cascading trail entries.
+ * @param key - Target popover key.
+ * @returns Array of keys in root-to-target order.
+ */
+export function buildBreadcrumbPath<TPopoverKey extends string = string, TData = unknown>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
+  key: string,
+): readonly TPopoverKey[] {
+  const path: TPopoverKey[] = [];
+  let currentKey: string | undefined = key;
+  const visited = new Set<string>();
+  const index = buildEntryIndex<TData, TPopoverKey>(floating, trail);
+  while (currentKey && !visited.has(currentKey)) {
+    visited.add(currentKey);
+    const entry = index.get(currentKey);
+    if (!entry) break;
+    path.push(entry.key);
+    currentKey = entry.parentKey ?? entry.originalParentKey;
+  }
+  return path.length > 0 ? path.toReversed() : EMPTY_ARRAY;
+}
+
+/**
+ * Higher-order selector returning the breadcrumb keys from root down to the target popover.
+ *
+ * @example
+ * ```ts
+ * const breadcrumbs = selectBreadcrumbs('deep-card')(store.getState());
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
+ * @param key - Target popover key.
+ * @returns Selector mapping state to breadcrumb keys array.
+ */
+export const selectBreadcrumbs =
+  <TPopoverKey extends string = string, TData = unknown>(key: string) =>
+  (state: HasActiveEntriesState<TData, TPopoverKey>): readonly TPopoverKey[] => {
+    const { floating, trail } = state;
+    return buildBreadcrumbPath<TPopoverKey, TData>(floating, trail, key);
+  };
+
+/**
+ * Higher-order selector calculating the integer nesting depth of a popover (0 = root).
+ *
+ * @example
+ * ```ts
+ * const depth = selectPopoverDepth('child-popover')(store.getState());
+ * console.log('Nesting depth:', depth);
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
+ * @param key - Target popover key.
+ * @returns Selector mapping state to integer depth.
+ */
+export function selectPopoverDepth<TPopoverKey extends string = string, TData = unknown>(
+  key: string,
+) {
+  return (state: HasActiveEntriesState<TData, TPopoverKey>): number => {
+    const { floating, trail } = state;
+    let depth = 0;
+    let currentKey: string | undefined = key;
+    const visited = new Set<string>();
+    const index = buildEntryIndex<TData, TPopoverKey>(floating, trail);
+    while (currentKey && !visited.has(currentKey)) {
+      visited.add(currentKey);
+      const entry = index.get(currentKey);
+      const parentKey = entry?.parentKey ?? entry?.originalParentKey;
+      if (!parentKey) break;
+      depth++;
+      currentKey = parentKey;
+    }
+    return depth;
+  };
+}
+
+function collectBranchMatches<TPopoverKey extends string = string, TData = unknown>(
+  floating: readonly TrailEntry<TData, TPopoverKey>[],
+  trail: readonly TrailEntry<TData, TPopoverKey>[],
+  keys: ReadonlySet<string>,
+): readonly TrailEntry<TData, TPopoverKey>[] {
+  const inKeys = hasKeyIn<TrailEntry<TData, TPopoverKey>>(keys);
+  return concatImmutable(floating.filter(inKeys), trail.filter(inKeys));
+}
+
+/**
+ * Higher-order selector returning all active entries along the branch (ancestor path + direct children).
+ *
+ * @example
+ * ```ts
+ * const branch = selectTrailBranch('middle-node')(store.getState());
+ * console.log('Active branch entries:', branch.map(e => e.key));
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
+ * @param key - Focus popover key.
+ * @returns Selector mapping state to array of TrailEntry items.
+ */
+export function selectTrailBranch<TPopoverKey extends string = string, TData = unknown>(
+  key: string,
+) {
+  return (
+    state: HasActiveEntriesState<TData, TPopoverKey>,
+  ): readonly TrailEntry<TData, TPopoverKey>[] => {
+    const { floating, trail } = state;
+    const breadcrumbs = buildBreadcrumbPath<TPopoverKey, TData>(floating, trail, key);
+    const children = collectChildrenKeys<TPopoverKey, TData>(floating, trail, key);
+    const keys = setUnion(new Set(breadcrumbs), new Set(children));
+    return collectBranchMatches<TPopoverKey, TData>(floating, trail, keys);
+  };
+}
+
+

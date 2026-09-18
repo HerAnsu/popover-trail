@@ -29,12 +29,9 @@ export default {
     return {
       JSXAttribute(node) {
         if (
-          node.name &&
-          node.name.name === 'style' &&
-          node.value &&
-          node.value.type === 'JSXExpressionContainer' &&
-          node.value.expression &&
-          node.value.expression.type === 'ObjectExpression' &&
+          node.name?.name === 'style' &&
+          node.value?.type === 'JSXExpressionContainer' &&
+          node.value.expression?.type === 'ObjectExpression' &&
           node.value.expression.properties.length === 0
         ) {
           context.report({

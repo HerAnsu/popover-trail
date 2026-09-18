@@ -73,15 +73,15 @@ By using `<PopoverTrail>` or `<PopoverPortal>` to render cards directly into `do
 
 ---
 
-## 4. Detecting Top-Most Card (`useIsPopoverTopMost`)
+## 4. Detecting Top-Most Card (`usePopoverIsTopMost`)
 
-Use `useIsPopoverTopMost` to check if a specific card is currently on top of the active visual stack. This is useful for highlighting active borders or delegating keyboard ESC events:
+Use `usePopoverIsTopMost` to check if a specific card is currently on top of the active visual stack. This is useful for highlighting active borders or delegating keyboard ESC events:
 
 ```tsx
-import { useIsPopoverTopMost } from 'popover-trail';
+import { usePopoverIsTopMost } from 'popover-trail';
 
 export function CardHeader({ entryKey }: { entryKey: string }) {
-  const isTopMost = useIsPopoverTopMost(entryKey);
+  const isTopMost = usePopoverIsTopMost(entryKey);
 
   return (
     <header className={`card-header ${isTopMost ? 'active-focus-header' : 'inactive-header'}`}>
@@ -124,5 +124,5 @@ export function App() {
 Depth calculation and stacking behavior follow explicit rules:
 
 - **Escaping Traps**: Rendering through `<PopoverTrail>` or `<PopoverPortal>` places cards directly under `document.body`, avoiding CSS stacking context traps.
-- **Top-Most Detection**: `useIsPopoverTopMost(key)` tracks the active card on top of the visual stack for focus management and active UI styling.
+- **Top-Most Detection**: `usePopoverIsTopMost(key)` tracks the active card on top of the visual stack for focus management and active UI styling.
 - **Multi-Zone Grouping**: `zIndexBaseMap` defines custom base layers for complex UI zones like sidebars and modals.

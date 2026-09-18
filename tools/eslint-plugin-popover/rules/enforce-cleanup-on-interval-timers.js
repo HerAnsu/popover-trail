@@ -24,14 +24,12 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'setInterval' &&
-          node.parent &&
-          node.parent.type === 'VariableDeclarator'
+          node.callee?.name === 'setInterval' &&
+          node.parent?.type === 'VariableDeclarator'
         ) {
-          const varName = node.parent.id?.name;
+          const varName = node.parent?.id?.name;
           if (varName) {
-            const scope = context.getSourceCode ? context.getSourceCode().getText() : '';
+            const scope = context.getSourceCode?.()?.getText?.() ?? '';
             if (scope && !scope.includes(`clearInterval(${varName})`)) {
               context.report({
                 node,

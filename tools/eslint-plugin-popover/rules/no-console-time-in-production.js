@@ -13,15 +13,13 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.')) return {};
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
-          node.callee.object &&
-          node.callee.object.name === 'console' &&
+          node.callee?.type === 'MemberExpression' &&
+          node.callee.object?.name === 'console' &&
           node.callee.property &&
           (node.callee.property.name === 'time' || node.callee.property.name === 'timeEnd')
         ) {

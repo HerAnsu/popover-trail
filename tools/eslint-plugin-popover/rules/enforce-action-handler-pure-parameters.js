@@ -19,21 +19,13 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (
-      filename.includes('eslint-plugin') ||
-      filename.includes('rules/') ||
-      filename.includes('.test.') ||
-      filename.includes('tests/')
-    )
-      return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       AssignmentExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
-          node.left.object &&
-          node.left.object.name === 'payload'
+          node.left?.type === 'MemberExpression' &&
+          node.left?.object?.name === 'payload'
         ) {
           context.report({
             node,

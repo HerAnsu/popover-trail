@@ -17,10 +17,8 @@ export default {
     return {
       Property(node) {
         if (
-          node.key &&
-          node.key.name === 'maxHistory' &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.key?.name === 'maxHistory' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'number' &&
           node.value.value <= 0
         ) {

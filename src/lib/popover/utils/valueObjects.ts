@@ -8,3 +8,4 @@
 
 export * from './Point2D';
 export * from './RectBounds';
+export * from './domainValues';

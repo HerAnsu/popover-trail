@@ -18,18 +18,17 @@ export default {
   },
   create(context) {
     const filename = context.filename || context.getFilename?.() || '';
-    if (!filename.includes('ActionRegistry') && !filename.includes('storeActions')) return {};
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
 
     return {
       FunctionDeclaration(node) {
-        if (node.id && node.id.name && node.id.name.startsWith('handle') && node.body) {
+        if (node.id?.name?.startsWith('handle') && node.body) {
           const returnStatements =
-            node.body.body?.filter((s) => s.type === 'ReturnStatement') || [];
+            node.body?.body?.filter((s) => s.type === 'ReturnStatement') || [];
           for (const ret of returnStatements) {
             if (
-              ret.argument &&
-              ret.argument.type === 'Literal' &&
-              typeof ret.argument.value === 'number'
+              ret.argument?.type === 'Literal' &&
+              typeof ret.argument?.value === 'number'
             ) {
               context.report({
                 node: ret,

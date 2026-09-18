@@ -33,8 +33,7 @@ export default {
           (node.id.name === 'CRYPTO_SALT' ||
             node.id.name === 'STATIC_IV' ||
             node.id.name === 'DEFAULT_SALT') &&
-          node.init &&
-          node.init.type === 'Literal' &&
+          node.init?.type === 'Literal' &&
           typeof node.init.value === 'string'
         ) {
           context.report({

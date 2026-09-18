@@ -25,7 +25,7 @@ export default {
             callback &&
             (callback.type === 'ArrowFunctionExpression' || callback.type === 'FunctionExpression')
           ) {
-            const src = context.getSourceCode ? context.getSourceCode().getText(callback) : '';
+            const src = context.getSourceCode?.()?.getText?.(callback) ?? '';
             if (
               (src.includes('setTimeout') || src.includes('setInterval')) &&
               !src.includes('clearTimeout') &&

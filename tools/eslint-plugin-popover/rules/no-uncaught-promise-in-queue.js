@@ -22,11 +22,9 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.property &&
+          node.callee?.property &&
           node.callee.property.name === 'drain' &&
-          node.parent &&
-          node.parent.type === 'ExpressionStatement'
+          node.parent?.type === 'ExpressionStatement'
         ) {
           context.report({
             node,

@@ -5,8 +5,8 @@
  * @module testing/createMockStoreState
  */
 
-import type { PopoverStateData, PopoverResolver, DragOffset } from '../types';
-import { EMPTY_OBJECT } from '../store/storeDefaults';
+import type { PopoverStateData, PopoverResolver } from '../types';
+import { getInitialStoreState } from '../store/storeDefaults';
 
 /**
  * Creates a fully initialized, type-safe PopoverStateData fixture with customizable overrides.
@@ -24,40 +24,10 @@ export function createMockStoreState<
 >(
   overrides?: Partial<PopoverStateData<TData, TContext, TPopoverKey>>,
 ): PopoverStateData<TData, TContext, TPopoverKey> {
+  const defaultResolveData: PopoverResolver<TData, TContext> = () => Promise.resolve({} as TData);
+  const base = getInitialStoreState<TData, TContext, TPopoverKey>(defaultResolveData);
   return {
-    stateRevision: 0,
-    trail: [],
-    floating: [],
-    offsets: EMPTY_OBJECT as Readonly<Partial<Record<TPopoverKey, Readonly<DragOffset>>>>,
-    pinnedStates: EMPTY_OBJECT as Readonly<Partial<Record<TPopoverKey, boolean>>>,
-    zIndexOrder: [],
-    ownerId: null,
-    anchorElement: null,
-    anchorRect: null,
-    rootHydrationRequestCounter: 0,
-    nestedHydrationRequestCounters: EMPTY_OBJECT as Readonly<Partial<Record<TPopoverKey, number>>>,
-    context: null,
-    resolveData: (() => Promise.resolve({} as TData)) as PopoverResolver<TData, TContext>,
-    cache: null,
-    closePinnedDescendants: false,
-    collisionConfig: null,
-    enableArrowNavigation: true,
-    debug: false,
-    cascadeOffsetStep: 8,
-    exitTransitionDuration: 0,
-    defaultOffset: 8,
-    baseZIndex: 1000,
-    mountingClassName: '',
-    unmountingClassName: '',
-    mountedClassName: '',
-    activeStackGroup: null,
-    responsiveMode: 'auto',
-    mobileBreakpoint: 768,
-    components: null,
-    zIndexBaseMap: null,
-    allowDragWhenPinned: true,
-    allowDragWhenUnpinned: true,
-    focusLockOptions: null,
+    ...base,
     ...overrides,
   };
 }

@@ -24,11 +24,9 @@ export default {
     return {
       SpreadElement(node) {
         if (
-          node.argument &&
-          node.argument.name &&
+          node.argument?.name &&
           (node.argument.name === 'state' || node.argument.name === 'fullState') &&
-          node.parent &&
-          node.parent.type === 'ObjectExpression' &&
+          node.parent?.type === 'ObjectExpression' &&
           node.parent.properties.length > 15
         ) {
           context.report({

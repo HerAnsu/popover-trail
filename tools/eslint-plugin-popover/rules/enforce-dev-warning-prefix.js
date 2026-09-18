@@ -13,14 +13,16 @@ export default {
     },
   },
   create(context) {
+    const filename = context.filename || context.getFilename?.() || '';
+    if (filename.includes('.test.') || filename.includes('tests/')) return {};
+
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.name === 'devWarning' &&
+          node.callee?.name === 'devWarning' &&
           node.arguments.length >= 2 &&
-          node.arguments[1].type === 'Literal' &&
-          typeof node.arguments[1].value === 'string' &&
+          node.arguments[1]?.type === 'Literal' &&
+          typeof node.arguments[1]?.value === 'string' &&
           !node.arguments[1].value.startsWith('[popover-trail]')
         ) {
           context.report({ node: node.arguments[1], messageId: 'missingWarningPrefix' });

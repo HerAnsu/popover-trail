@@ -16,7 +16,7 @@ export default {
   create(context) {
     return {
       JSXAttribute(node) {
-        if (node.name && node.name.name === 'dangerouslySetInnerHTML') {
+        if (node.name?.name === 'dangerouslySetInnerHTML') {
           context.report({
             node,
             messageId: 'noDangerouslySetInnerHTML',

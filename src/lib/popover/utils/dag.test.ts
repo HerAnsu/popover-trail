@@ -68,21 +68,26 @@ describe('PopoverDAG utility', () => {
     expect([...b1Descendants]).toEqual(['c1', 'c2', 'd1']);
   });
 
-  it('prevents infinite loops when cyclic parent-child links are introduced', () => {
+  it('prevents cycles and maintains valid topological z-index when cyclic links are introduced', () => {
     const dag = new PopoverDAG();
     dag.addNode('node-a');
     dag.addNode('node-b', 'node-a');
     dag.addNode('node-c', 'node-b');
-    // Force a cycle: node-a child of node-c
+    // Reparenting that would introduce a cycle: node-a child of node-c
     dag.addNode('node-a', 'node-c');
 
-    const descendants = dag.getDescendantKeys('node-a');
-    expect(descendants.has('node-b')).toBe(true);
-    expect(descendants.has('node-c')).toBe(true);
+    const bDescendants = dag.getDescendantKeys('node-b');
+    expect(bDescendants.has('node-c')).toBe(true);
+    expect(bDescendants.has('node-a')).toBe(true);
 
-    // Ensure topological z-index visit terminates
+    // Ensure topological z-index visit terminates and maintains child > parent
     const zIndexes = dag.getTopologicalZIndexOrder(100);
     expect(zIndexes.size).toBe(3);
+    const zB = zIndexes.get('node-b') ?? 0;
+    const zC = zIndexes.get('node-c') ?? 0;
+    const zA = zIndexes.get('node-a') ?? 0;
+    expect(zC).toBeGreaterThan(zB);
+    expect(zA).toBeGreaterThan(zC);
   });
 
   it('supports node removal and introspection (hasNode, getNode, size)', () => {
@@ -105,5 +110,23 @@ describe('PopoverDAG utility', () => {
     dag.addNode('self-node', 'self-node');
     expect(dag.getNode('self-node')?.parentKey).toBeUndefined();
     expect(dag.getDescendantKeys('self-node').size).toBe(0);
+  });
+
+  it('correctly predicts cycle creation with wouldCreateCycle', () => {
+    const dag = new PopoverDAG();
+    dag.addNode('A');
+    dag.addNode('B', 'A');
+    dag.addNode('C', 'B');
+
+    // Setting A's parent to C would create a cycle: A -> B -> C -> A
+    expect(dag.wouldCreateCycle('A', 'C')).toBe(true);
+    // Setting A's parent to B would create a cycle: A -> B -> A
+    expect(dag.wouldCreateCycle('A', 'B')).toBe(true);
+    // Self-referential parent is a cycle
+    expect(dag.wouldCreateCycle('A', 'A')).toBe(true);
+    // Setting D's parent to C does not create a cycle
+    expect(dag.wouldCreateCycle('D', 'C')).toBe(false);
+    // Unknown parent does not create a cycle
+    expect(dag.wouldCreateCycle('A', 'unknown')).toBe(false);
   });
 });

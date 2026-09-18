@@ -24,8 +24,7 @@ export default {
     return {
       AssignmentExpression(node) {
         if (
-          node.left &&
-          node.left.type === 'MemberExpression' &&
+          node.left?.type === 'MemberExpression' &&
           node.left.property &&
           (node.left.property.name === '_activeControllers' ||
             node.left.property.name === '_inFlightPromises')

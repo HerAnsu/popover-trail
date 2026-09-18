@@ -28,14 +28,11 @@ export default {
           (node.callee.name === 'useMemo' ||
             node.callee.name === 'useCallback' ||
             node.callee.name === 'useEffect') &&
-          node.arguments &&
-          node.arguments[1] &&
-          node.arguments[1].type === 'ArrayExpression'
+          node.arguments?.[1]?.type === 'ArrayExpression'
         ) {
           for (const dep of node.arguments[1].elements) {
             if (
-              dep &&
-              dep.type === 'Identifier' &&
+              dep?.type === 'Identifier' &&
               dep.name !== 'virtualElement' &&
               (dep.name.endsWith('Element') ||
                 dep.name.endsWith('Node') ||

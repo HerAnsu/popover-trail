@@ -17,14 +17,11 @@ export default {
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
+          node.callee?.type === 'MemberExpression' &&
           node.callee.property &&
           ['push', 'splice'].includes(node.callee.property.name) &&
-          node.callee.object &&
-          node.callee.object.type === 'MemberExpression' &&
-          node.callee.object.object &&
-          node.callee.object.object.name === 'history'
+          node.callee.object?.type === 'MemberExpression' &&
+          node.callee.object.object?.name === 'history'
         ) {
           context.report({
             node,

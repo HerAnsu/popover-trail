@@ -15,19 +15,17 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
-    if (!filename.includes('.test.')) return {};
+    const filename = context.filename || context.getFilename?.() || '';
+    if (!filename.includes('.test.') && !filename.includes('tests/')) return {};
+
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
-          node.callee.object &&
-          node.callee.object.name === 'vi' &&
-          node.callee.property &&
-          node.callee.property.name === 'useFakeTimers'
+          node.callee?.type === 'MemberExpression' &&
+          node.callee?.object?.name === 'vi' &&
+          node.callee?.property?.name === 'useFakeTimers'
         ) {
-          const src = context.getSourceCode ? context.getSourceCode().getText() : '';
+          const src = context.getSourceCode?.()?.getText?.() ?? '';
           if (!src.includes('useRealTimers')) {
             context.report({ node, messageId: 'missingRealTimers' });
           }

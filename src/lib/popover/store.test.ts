@@ -6,7 +6,7 @@ import {
   isErrorEntry,
   getEntryState,
   createPopoverKey,
-  createPopoverResolver,
+  definePopoverResolver,
   createVirtualElement,
   isOpenRootEvent,
   isPinEvent,
@@ -27,6 +27,7 @@ import { ObjectPool } from './utils/objectPool';
 import { ResizeObserverRegistry } from './utils/resizeObserverRegistry';
 import { FixedCenterLayoutStrategy } from './utils/layoutStrategies';
 import { RectBounds } from './utils/valueObjects';
+import { sleep, deferred } from './utils/asyncUtils';
 
 // Mock DOMRect for the Node environment
 if (typeof globalThis.DOMRect === 'undefined') {
@@ -194,7 +195,7 @@ describe('createPopoverStore', () => {
       resolveCallCount++;
       const currentCall = resolveCallCount;
       const delayTime = currentCall === 1 ? 50 : 10;
-      await new Promise((r) => setTimeout(r, delayTime));
+      await sleep(delayTime);
       return { title: `Resolved Call ${currentCall}` };
     };
 
@@ -221,7 +222,7 @@ describe('createPopoverStore', () => {
       resolveCallCount++;
       const currentCall = resolveCallCount;
       const delayTime = currentCall === 1 ? 50 : 10;
-      await new Promise((r) => setTimeout(r, delayTime));
+      await sleep(delayTime);
       return { title: `Nested Call ${currentCall}` };
     };
 
@@ -283,9 +284,7 @@ describe('createPopoverStore', () => {
       if (signal) {
         signals.push(signal);
       }
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 50);
-      });
+      await sleep(50);
       return { title: 'Resolved' };
     };
 
@@ -550,20 +549,17 @@ describe('createPopoverStore', () => {
     expect(cache.get('item-1')).toEqual({ name: 'Expiring Item' });
 
     // Wait for TTL expiration
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await sleep(150);
 
     // Retrieve expired item (should trigger cleanup and return undefined)
     expect(cache.get('item-1')).toBeUndefined();
   });
 
   it('should successfully resolve data when a popover is pinned while loading', async () => {
-    let resolvePromise!: (val: unknown) => void;
-    const asyncPromise = new Promise((resolve) => {
-      resolvePromise = resolve;
-    });
+    const defer = deferred<void>();
 
     const resolver = async () => {
-      await asyncPromise;
+      await defer.promise;
       return 'async payload';
     };
 
@@ -588,7 +584,7 @@ describe('createPopoverStore', () => {
     expect(state.floating[0]?.isLoading).toBe(true);
 
     // Finish resolving the data
-    resolvePromise('Async Loaded Data');
+    defer.resolve();
     await loadPromise;
 
     // Verify the pinned/floating element got resolved successfully!
@@ -623,7 +619,7 @@ describe('createPopoverStore', () => {
     store.getState().hoverEnter('child-item');
 
     // Wait 100ms
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await sleep(100);
 
     // Verify both are still open!
     state = store.getState();
@@ -633,7 +629,7 @@ describe('createPopoverStore', () => {
     store.getState().hoverLeave('child-item', 30);
 
     // Wait 60ms
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    await sleep(60);
 
     // child-item should now be closed!
     state = store.getState();
@@ -870,7 +866,7 @@ describe('createPopoverStore', () => {
       expect(store.getState().trail).toEqual([]);
 
       // Wait for exit transition timeout
-      await new Promise((r) => setTimeout(r, 250));
+      await sleep(250);
 
       // Verify store state remains empty clean
       expect(store.getState().trail).toEqual([]);
@@ -935,7 +931,7 @@ describe('createPopoverStore', () => {
       expect(cache.has('item-3')).toBe(true);
 
       // Wait for expiration
-      await new Promise((r) => setTimeout(r, 70));
+      await sleep(70);
 
       expect(cache.size).toBe(2);
       cache.pruneExpired();
@@ -979,7 +975,7 @@ describe('createPopoverStore', () => {
       store.getState().togglePin('pin-hover-item', new DOMRect(10, 10, 100, 100));
 
       // Wait 100ms
-      await new Promise((r) => setTimeout(r, 100));
+      await sleep(100);
 
       // Popover should remain pinned and open!
       const state = store.getState();
@@ -991,7 +987,7 @@ describe('createPopoverStore', () => {
       let resolverCallCount = 0;
       const slowResolver = async (_key: string) => {
         resolverCallCount++;
-        await new Promise((r) => setTimeout(r, 60));
+        await sleep(60);
         return { data: `Resolved payload call ${resolverCallCount}` };
       };
 
@@ -1220,7 +1216,7 @@ describe('createPopoverStore', () => {
       expect(store.getState().trail[0]?.buttonControls?.enablePin).toBe(true);
     });
 
-    it('should validate isLoadingEntry, isErrorEntry, getEntryState, createPopoverKey, and createPopoverResolver helpers', () => {
+    it('should validate isLoadingEntry, isErrorEntry, getEntryState, createPopoverKey, and definePopoverResolver helpers', () => {
       const loadingEntry: TrailEntry<{ name: string }> = {
         key: 'k1',
         isLoading: true,
@@ -1266,7 +1262,7 @@ describe('createPopoverStore', () => {
       const brandedKey = createPopoverKey('custom-key');
       expect(brandedKey).toBe('custom-key');
 
-      const customResolver = createPopoverResolver((key) => ({ resolvedKey: key }));
+      const customResolver = definePopoverResolver((key) => ({ resolvedKey: key }));
       expect(customResolver('test')).toEqual({ resolvedKey: 'test' });
     });
 
@@ -1666,7 +1662,7 @@ describe('createPopoverStore', () => {
         signal?: AbortSignal,
       ) => {
         signal?.addEventListener('abort', () => abortedKeys.push(key));
-        await new Promise((r) => setTimeout(r, 100));
+        await sleep(100);
         return { title: `L_${key}` };
       };
 
@@ -1781,7 +1777,7 @@ describe('createPopoverStore', () => {
 
       const variableResolver = async (key: string) => {
         const delay = resolveTimes[key] ?? 10;
-        await new Promise((r) => setTimeout(r, delay));
+        await sleep(delay);
         return { siblingName: key };
       };
 
@@ -1856,7 +1852,7 @@ describe('createPopoverStore', () => {
 
       store.getState().hoverEnter('L1');
 
-      await new Promise((r) => setTimeout(r, 80));
+      await sleep(80);
 
       expect(store.getState().floating).toHaveLength(1);
     });
@@ -1929,7 +1925,7 @@ describe('createPopoverStore', () => {
         signal?: AbortSignal,
       ) => {
         signal?.addEventListener('abort', () => abortedKeys.push(key));
-        await new Promise((r) => setTimeout(r, 60));
+        await sleep(60);
         return { schemaKey: key, schemaVersion: 2 };
       };
 
@@ -2400,7 +2396,7 @@ describe('createPopoverStore', () => {
       };
 
       const customResolver = async (key: string) => {
-        await new Promise((r) => setTimeout(r, delays[key] ?? 5));
+        await sleep(delays[key] ?? 5);
         return { resolvedKey: key };
       };
 
@@ -2638,10 +2634,10 @@ describe('createPopoverStore', () => {
 
       store.getState().hoverLeave('card-hover', 150);
 
-      await new Promise((r) => setTimeout(r, 30));
+      await sleep(30);
       store.getState().hoverEnter('card-hover');
 
-      await new Promise((r) => setTimeout(r, 150));
+      await sleep(150);
 
       expect(store.getState().trail[0]?.key).toBe('card-hover');
     });
@@ -2761,7 +2757,7 @@ describe('createPopoverStore', () => {
         signal?: AbortSignal,
       ) => {
         signal?.addEventListener('abort', () => abortedKeys.push(key));
-        await new Promise((r) => setTimeout(r, 200));
+        await sleep(200);
         return { data: key };
       };
 
@@ -2803,7 +2799,7 @@ describe('createPopoverStore', () => {
 
       store.getState().hoverEnter('child-card');
 
-      await new Promise((r) => setTimeout(r, 100));
+      await sleep(100);
 
       expect(store.getState().trail).toHaveLength(2);
     });
@@ -2857,11 +2853,8 @@ describe('createPopoverStore', () => {
 
   describe('resolver pipeline edge-case regressions', () => {
     it('setResolveData marks in-flight resolutions from the previous resolver as stale', async () => {
-      let releaseOld!: (data: { v: string }) => void;
-      const oldResolver = (_key: string) =>
-        new Promise<{ v: string }>((resolve) => {
-          releaseOld = resolve;
-        });
+      const deferOld = deferred<{ v: string }>();
+      const oldResolver = (_key: string) => deferOld.promise;
 
       const store = createPopoverStore(oldResolver);
       const opening = store.getState().openRootWithResolver('item-a', createMockAnchor());
@@ -2870,7 +2863,7 @@ describe('createPopoverStore', () => {
       store.getState().setResolveData(async () => ({ v: 'new' }));
 
       // The swapped-out resolver ignores its AbortSignal and tries to commit late.
-      releaseOld({ v: 'old' });
+      deferOld.resolve({ v: 'old' });
       await opening;
 
       const entry = store.getState().trail.find((e) => e.key === 'item-a');
@@ -2879,13 +2872,11 @@ describe('createPopoverStore', () => {
 
     it('invalidate retriggers resolution for an in-flight loading popover', async () => {
       let callCount = 0;
-      let releaseFirst!: () => void;
+      const deferFirst = deferred<void>();
       const resolver = async () => {
         callCount++;
         if (callCount === 1) {
-          await new Promise<void>((resolve) => {
-            releaseFirst = resolve;
-          });
+          await deferFirst.promise;
           return { v: 'first' };
         }
         return { v: 'second' };
@@ -2901,17 +2892,14 @@ describe('createPopoverStore', () => {
       expect(entry?.data?.v).toBe('second');
 
       // The abandoned first resolution must not commit after being released.
-      releaseFirst();
+      deferFirst.resolve();
       await opening;
       expect(store.getState().trail.find((e) => e.key === 'item-a')?.data?.v).toBe('second');
     });
 
     it('preserves entry mutations that happen while a resolver is in flight', async () => {
-      let release!: (data: { v: string }) => void;
-      const resolver = (_key: string) =>
-        new Promise<{ v: string }>((resolve) => {
-          release = resolve;
-        });
+      const defer = deferred<{ v: string }>();
+      const resolver = (_key: string) => defer.promise;
 
       const store = createPopoverStore(resolver);
       const opening = store.getState().openRootWithResolver('item-a', createMockAnchor());
@@ -2920,7 +2908,7 @@ describe('createPopoverStore', () => {
       store.getState().togglePin('item-a');
       expect(store.getState().floating).toHaveLength(1);
 
-      release({ v: 'late' });
+      defer.resolve({ v: 'late' });
       await opening;
 
       const entry = store.getState().floating.find((e) => e.key === 'item-a');
@@ -2930,7 +2918,7 @@ describe('createPopoverStore', () => {
 
     it('prefetch does not drop a controller registered by a concurrent resolution', async () => {
       const signals: AbortSignal[] = [];
-      let releaseFirst!: () => void;
+      const deferFirst = deferred<{ v: string }>();
       let callCount = 0;
       const resolver = (
         _key: string,
@@ -2941,9 +2929,7 @@ describe('createPopoverStore', () => {
         if (signal) signals.push(signal);
         callCount++;
         if (callCount === 1) {
-          return new Promise<{ v: string }>((resolve) => {
-            releaseFirst = () => resolve({ v: 'prefetch' });
-          });
+          return deferFirst.promise;
         }
         return new Promise<{ v: string }>((resolve) => {
           setTimeout(resolve, 5, { v: 'nested' });
@@ -2959,7 +2945,7 @@ describe('createPopoverStore', () => {
       });
 
       // Prefetch settles while the nested resolution is still in flight.
-      releaseFirst();
+      deferFirst.resolve({ v: 'prefetch' });
       await prefetching;
 
       // The nested controller must survive the prefetch teardown...

@@ -14,7 +14,7 @@ export default {
     },
   },
   create(context) {
-    const rawFilename = context.filename || context.getFilename();
+    const rawFilename = context.filename || context.getFilename?.();
     if (!rawFilename.includes('reducers/')) return {};
 
     return {

@@ -19,8 +19,7 @@ export default {
         if (
           node.key &&
           (node.key.name === 'scale' || node.key.name === 'initialScale') &&
-          node.value &&
-          node.value.type === 'Literal' &&
+          node.value?.type === 'Literal' &&
           typeof node.value.value === 'number' &&
           (node.value.value < 0.2 || node.value.value > 3.0)
         ) {

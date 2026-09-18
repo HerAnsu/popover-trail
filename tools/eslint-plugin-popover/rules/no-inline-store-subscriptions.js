@@ -20,23 +20,20 @@ export default {
     },
   },
   create(context) {
-    const filename = context.filename || context.getFilename();
+    const filename = context.filename || context.getFilename?.();
     if (filename.includes('.test.') || filename.includes('test/')) return {};
-    let inEffect = false;
+    const effectNodes = new Set();
     return {
       CallExpression(node) {
         if (
-          node.callee &&
-          node.callee.type === 'Identifier' &&
+          node.callee?.type === 'Identifier' &&
           (node.callee.name === 'useEffect' || node.callee.name === 'useLayoutEffect')
         ) {
-          inEffect = true;
+          effectNodes.add(node);
         } else if (
-          !inEffect &&
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
-          node.callee.property &&
-          node.callee.property.name === 'subscribe' &&
+          effectNodes.size === 0 &&
+          node.callee?.type === 'MemberExpression' &&
+          node.callee.property?.name === 'subscribe' &&
           node.callee.object &&
           (node.callee.object.name === 'store' || node.callee.object.name === 'eventBus')
         ) {
@@ -45,11 +42,10 @@ export default {
       },
       'CallExpression:exit'(node) {
         if (
-          node.callee &&
-          node.callee.type === 'Identifier' &&
+          node.callee?.type === 'Identifier' &&
           (node.callee.name === 'useEffect' || node.callee.name === 'useLayoutEffect')
         ) {
-          inEffect = false;
+          effectNodes.delete(node);
         }
       },
     };

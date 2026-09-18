@@ -23,8 +23,7 @@ export default {
     return {
       TSPropertySignature(node) {
         if (
-          node.key &&
-          node.key.name &&
+          node.key?.name &&
           (node.key.name === 'trail' || node.key.name === 'floating') &&
           !node.readonly
         ) {

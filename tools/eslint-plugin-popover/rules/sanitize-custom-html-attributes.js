@@ -16,7 +16,7 @@ export default {
   create(context) {
     return {
       JSXSpreadAttribute(node) {
-        if (node.argument && node.argument.name === 'rawHtmlProps') {
+        if (node.argument?.name === 'rawHtmlProps') {
           context.report({ node, messageId: 'unfilteredSpread' });
         }
       },

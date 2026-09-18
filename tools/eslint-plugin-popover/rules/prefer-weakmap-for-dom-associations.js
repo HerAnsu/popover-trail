@@ -17,9 +17,9 @@ export default {
   create(context) {
     return {
       NewExpression(node) {
-        if (node.callee && node.callee.name === 'Map' && node.typeParameters) {
-          const firstParam = node.typeParameters.params && node.typeParameters.params[0];
-          if (firstParam && firstParam.typeName && firstParam.typeName.name === 'HTMLElement') {
+        if (node.callee?.name === 'Map' && node.typeParameters) {
+          const firstParam = node.typeParameters.params?.[0];
+          if (firstParam?.typeName && firstParam.typeName.name === 'HTMLElement') {
             context.report({ node, messageId: 'useWeakMap' });
           }
         }
