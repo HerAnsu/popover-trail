@@ -22,10 +22,36 @@ type WorkerTarget<TData, TContext> =
   | string
   | ((key: string, parentData?: unknown, context?: TContext) => MaybePromise<TData>);
 
+/**
+ * Creates a background Web Worker data resolver with RPC message passing, timeout handling,
+ * and automatic worker restart upon error.
+ *
+ * Can accept a pre-instantiated Worker instance, a script URL string, or an inline resolver function
+ * that gets compiled into a transient Blob URL worker automatically.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Optional context type passed to the resolver.
+ * @param workerOrFn - Worker instance, worker script URL, or resolver function.
+ * @param options - Configuration options (timeout, autoRestart, fallbacks).
+ * @returns An executable PopoverResolver augmented with resource disposal handles.
+ *
+ * @example
+ * ```typescript
+ * const resolver = createWorkerResolver(async (key) => {
+ *   const res = await fetch(`/api/popovers/${key}`);
+ *   return await res.json();
+ * }, { timeoutMs: 5000 });
+ *
+ * const data = await resolver('profile-data');
+ * // Later when disposing:
+ * resolver.terminate();
+ * ```
+ */
 export function createWorkerResolver<TData = unknown, TContext = unknown>(
   workerOrFn: WorkerTarget<TData, TContext>,
   options: WorkerResolverOptions<TData> = {},
 ): WorkerResolver<TData, TContext> {
+
   let worker: Worker | null = null;
   let scriptUrl: string | null = null;
   let reqId = 0;

@@ -1,5 +1,6 @@
 /**
- * Extended popover cache with SWR, background polling, and event reactivity.
+ * Extended popover cache featuring stale-while-revalidate (SWR), background polling,
+ * optimistic mutations, and scoped namespace isolation.
  *
  * @module cache/SimplePopoverCache
  */
@@ -18,7 +19,24 @@ import { exportCacheSnapshot, restoreCacheSnapshot } from './cacheSnapshot';
 import { DEFAULT_CACHE_MAX_SIZE, DEFAULT_CACHE_TTL_MS } from './cacheConfigParser';
 import { createScopedCache, type ScopedPopoverCache } from './cacheNamespace';
 
+/**
+ * Extended popover cache featuring stale-while-revalidate (SWR), background polling,
+ * optimistic mutations, and scoped namespace isolation.
+ *
+ * @template TData - Type of data payload stored in the cache.
+ *
+ * @example
+ * ```typescript
+ * const cache = new SimplePopoverCache<UserProfile>({ ttl: 30000 });
+ *
+ * // Fetches from API or serves fresh cache / SWR revalidation
+ * const profile = await cache.getOrSet('user:42', async () => {
+ *   return await fetchUserProfile(42);
+ * });
+ * ```
+ */
 export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCache<TData> {
+
   private readonly swr: CacheSWRController<TData>;
 
   constructor(
@@ -38,6 +56,13 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
    *
    * @param key - Cache entry key to check.
    * @returns `true` if missing or expired, `false` if fresh.
+   *
+   * @example
+   * ```typescript
+   * if (cache.isStale('user:42')) {
+   *   console.log('Cache entry needs background refresh');
+   * }
+   * ```
    */
   public isStale(key: string): boolean {
     const entry = this.storage.get(key);
@@ -48,10 +73,17 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
 
   /**
    * Retrieves an item from cache, or fetches and stores it if missing or stale.
+   * Supports in-flight request deduplication and SWR background revalidation.
    *
    * @param key - Cache key identifier.
-   * @param fetcher - Async loader function.
+   * @param fetcher - Async loader function returning the data.
    * @param opts - SWR fetch options (deduplication, timeout, stale-while-revalidate).
+   * @returns Promise resolving to the retrieved or freshly fetched data.
+   *
+   * @example
+   * ```typescript
+   * const data = await cache.getOrSet('menu:items', () => api.fetchMenuItems());
+   * ```
    */
   public getOrSet(
     key: string,
@@ -61,12 +93,18 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
     return this.swr.execute(key, fetcher, opts);
   }
 
+
   /**
    * Optimistically updates a cached value and notifies key subscribers.
    *
    * @param key - Cache key to update.
    * @param updater - New value or update function receiving the previous value.
    * @returns The updated value.
+   *
+   * @example
+   * ```typescript
+   * cache.mutate('user:42', (prev) => ({ ...prev, name: 'Bob' }));
+   * ```
    */
   public mutate(key: string, updater: TData | ((prev: TData | undefined) => TData)): TData {
     return this.swr.mutate(key, updater);
@@ -78,6 +116,12 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
    * @param key - Cache key to refresh.
    * @param fetcher - Async loader function.
    * @param opts - SWR options.
+   * @returns Promise resolving to the freshly revalidated data.
+   *
+   * @example
+   * ```typescript
+   * await cache.revalidate('user:42', () => api.fetchUser(42));
+   * ```
    */
   public revalidate(
     key: string,
@@ -94,6 +138,13 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
    * @param intervalMs - Polling interval in milliseconds.
    * @param fetcher - Async loader function.
    * @returns Cleanup function to stop polling.
+   *
+   * @example
+   * ```typescript
+   * const stopPolling = cache.poll('status', 5000, () => api.checkStatus());
+   * // Later:
+   * stopPolling();
+   * ```
    */
   public poll(key: string, intervalMs: number, fetcher: () => Promise<TData>): () => void {
     return this.timers.registerPolling(key, intervalMs, () => {
@@ -106,6 +157,12 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
    *
    * @param namespace - Prefix namespace string.
    * @returns Scoped cache wrapper.
+   *
+   * @example
+   * ```typescript
+   * const sessionCache = cache.scope('session:');
+   * sessionCache.set('token', 'xyz'); // Stored as 'session:token' in root cache
+   * ```
    */
   public scope(namespace: string): ScopedPopoverCache<TData> {
     return createScopedCache(this, namespace);
@@ -120,6 +177,14 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
 
   /**
    * Serializes all cached entries into an exportable array for persistence or debugging.
+   *
+   * @returns Array of key-entry tuples.
+   *
+   * @example
+   * ```typescript
+   * const snapshot = cache.dump();
+   * localStorage.setItem('cache-backup', JSON.stringify(snapshot));
+   * ```
    */
   public dump(): Array<[string, CacheEntry<TData>]> {
     return exportCacheSnapshot(this.storage);
@@ -130,6 +195,12 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
    *
    * @param snapshot - Iterable collection of key-entry tuples.
    * @returns Number of successfully restored entries.
+   *
+   * @example
+   * ```typescript
+   * const saved = JSON.parse(localStorage.getItem('cache-backup') ?? '[]');
+   * const count = cache.restore(saved);
+   * ```
    */
   public restore(snapshot: Iterable<unknown>): number {
     return restoreCacheSnapshot(this.storage, snapshot, this.maxSize, this.events);
@@ -141,6 +212,13 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
    * @param key - Key to monitor.
    * @param listener - Callback receiving the new value or undefined if evicted.
    * @returns Unsubscribe function.
+   *
+   * @example
+   * ```typescript
+   * const unsubscribe = cache.subscribe('user:42', (val) => {
+   *   console.log('User changed:', val);
+   * });
+   * ```
    */
   public subscribe(key: string, listener: (value: TData | undefined) => void): () => void {
     return this.events.subscribe(key, listener);
@@ -152,6 +230,13 @@ export class SimplePopoverCache<TData = unknown> extends InvalidatablePopoverCac
    * @param event - Lifecycle event name.
    * @param listener - Event handler.
    * @returns Unsubscribe function.
+   *
+   * @example
+   * ```typescript
+   * const unsubscribe = cache.on('evict', ({ key }) => {
+   *   console.log('Evicted key:', key);
+   * });
+   * ```
    */
   public on<E extends CacheEventType>(
     event: E,

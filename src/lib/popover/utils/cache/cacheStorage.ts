@@ -6,6 +6,17 @@
 
 import type { CacheEntry, StorageAdapter } from './cacheTypes';
 
+/**
+ * Standard high-performance in-memory storage adapter based on native `Map`.
+ *
+ * @template T - Type of cached payload.
+ *
+ * @example
+ * ```typescript
+ * const memoryStorage = new MemoryStorageAdapter<string>();
+ * memoryStorage.set('key', { data: 'hello', expiry: Date.now() + 5000 });
+ * ```
+ */
 export class MemoryStorageAdapter<T = unknown> implements StorageAdapter<T> {
   private readonly map = new Map<string, CacheEntry<T>>();
 
@@ -38,10 +49,23 @@ export class MemoryStorageAdapter<T = unknown> implements StorageAdapter<T> {
   }
 }
 
+/**
+ * Cross-tab synchronization manager using browser `BroadcastChannel`.
+ * Broadcasts key invalidation events across multiple open browser tabs.
+ *
+ * @example
+ * ```typescript
+ * const sync = new CrossTabSync('my-cache-channel', (invalidatedKey) => {
+ *   console.log('Key invalidated from another tab:', invalidatedKey);
+ * });
+ * sync.broadcastInvalidate('user:123');
+ * ```
+ */
 export class CrossTabSync {
   private channel: BroadcastChannel | null = null;
 
   constructor(channelName?: string, onInvalidate?: (key: string) => void) {
+
     if (channelName && typeof BroadcastChannel !== 'undefined') {
       try {
         this.channel = new BroadcastChannel(channelName);

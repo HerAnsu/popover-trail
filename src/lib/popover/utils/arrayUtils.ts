@@ -7,15 +7,40 @@
 
 import { EMPTY_ARRAY } from '../types/branded';
 
-/** Returns the first element of an array, or undefined if empty. */
+/**
+ * Returns the first element of an array, or undefined if empty.
+ *
+ * @template T - Element type.
+ * @param items - Source array.
+ * @returns First element or undefined.
+ *
+ * @example
+ * ```typescript
+ * const item = first([10, 20, 30]); // => 10
+ * const empty = first([]);          // => undefined
+ * ```
+ */
 export function first<T>(items: readonly T[]): T | undefined {
   return items.at(0);
 }
 
-/** Returns the last element of an array, or undefined if empty. */
+/**
+ * Returns the last element of an array, or undefined if empty.
+ *
+ * @template T - Element type.
+ * @param items - Source array.
+ * @returns Last element or undefined.
+ *
+ * @example
+ * ```typescript
+ * const item = last([10, 20, 30]); // => 30
+ * const empty = last([]);          // => undefined
+ * ```
+ */
 export function last<T>(items: readonly T[]): T | undefined {
   return items.at(-1);
 }
+
 
 /**
  * Returns a slice containing the first `count` elements.

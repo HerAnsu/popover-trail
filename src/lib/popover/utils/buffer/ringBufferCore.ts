@@ -29,10 +29,27 @@ import type {
   BufferTransform,
 } from './bufferTypes';
 
+/**
+ * High-performance, zero-allocation bounded circular ring buffer with deque semantics (`push`, `pop`, `shift`, `unshift`).
+ * Automatically reuses internal slots in O(1) time and evicts oldest items when capacity is reached.
+ *
+ * @template T - Stored element type.
+ *
+ * @example
+ * ```typescript
+ * const buffer = new RingBuffer<string>({ capacity: 3 });
+ * buffer.push('a');
+ * buffer.push('b');
+ * buffer.push('c');
+ * buffer.push('d'); // Evicts 'a' automatically
+ * console.log(buffer.toArray()); // ['b', 'c', 'd']
+ * ```
+ */
 export class RingBuffer<T>
   extends RingBufferDeque<T>
   implements ReadonlyRingBuffer<T>, ScopeDisposable
 {
+
   override readonly state: RingBufferState<T>;
 
   static create<T>(

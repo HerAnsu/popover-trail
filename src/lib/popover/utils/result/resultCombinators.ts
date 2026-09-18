@@ -247,6 +247,15 @@ export async function fromPromise<T, E>(
  * @template E - Error type of failed results.
  * @param results - Array of Results to evaluate.
  * @returns Ok with all values, or the first encountered Err.
+ *
+ * @example
+ * ```typescript
+ * const results = [Ok(1), Ok(2), Ok(3)];
+ * const combined = collectResults(results);
+ * if (isOk(combined)) {
+ *   console.log(combined.data); // [1, 2, 3]
+ * }
+ * ```
  */
 export function collectResults<T, E>(results: readonly Result<T, E>[]): Result<readonly T[], E> {
   const accumulated: T[] = [];
@@ -270,6 +279,14 @@ export function collectResults<T, E>(results: readonly Result<T, E>[]): Result<r
  * @template E - Error type.
  * @param results - Array of Results to partition.
  * @returns An immutable object containing readonly arrays of all `ok` and `err` items.
+ *
+ * @example
+ * ```typescript
+ * const results = [Ok('first'), Err('timeout'), Ok('second')];
+ * const { ok, err } = partitionResults(results);
+ * console.log(ok);  // ['first', 'second']
+ * console.log(err); // ['timeout']
+ * ```
  */
 export function partitionResults<T, E>(
   results: readonly Result<T, E>[],
@@ -301,6 +318,16 @@ export function partitionResults<T, E>(
  * @param r1 - First Result.
  * @param r2 - Second Result.
  * @returns Ok with a readonly 2-tuple `[T1, T2]`, or the first failing Err.
+ *
+ * @example
+ * ```typescript
+ * const userRes = Ok({ name: 'Alice' });
+ * const configRes = Ok({ theme: 'dark' });
+ * const combined = combineResults(userRes, configRes);
+ * if (isOk(combined)) {
+ *   const [user, config] = combined.data;
+ * }
+ * ```
  */
 export function combineResults<T1, T2, E>(
   r1: Result<T1, E>,
@@ -320,6 +347,14 @@ export function combineResults<T1, T2, E>(
  * @param result - Result or Promise resolving to a Result.
  * @param fn - Transformer returning U or Promise<U>.
  * @returns Promise resolving to the transformed Result.
+ *
+ * @example
+ * ```typescript
+ * const res = Ok({ userId: 123 });
+ * const mapped = await mapAsyncResult(res, async (user) => {
+ *   return await fetchUserProfile(user.userId);
+ * });
+ * ```
  */
 export async function mapAsyncResult<T, U, E>(
   result: Result<T, E> | Promise<Result<T, E>>,
@@ -340,6 +375,15 @@ export async function mapAsyncResult<T, U, E>(
  * @param result - Result or Promise resolving to a Result.
  * @param fn - Asynchronous transformation returning a new Result.
  * @returns Promise resolving to the chained Result.
+ *
+ * @example
+ * ```typescript
+ * const res = Ok('popover-1');
+ * const chained = await flatMapAsyncResult(res, async (key) => {
+ *   const exists = await checkExistence(key);
+ *   return exists ? Ok(key) : Err('Not found');
+ * });
+ * ```
  */
 export async function flatMapAsyncResult<T, U, E>(
   result: Result<T, E> | Promise<Result<T, E>>,
@@ -349,3 +393,4 @@ export async function flatMapAsyncResult<T, U, E>(
   if (!resolved.success) return resolved;
   return await fn(resolved.data);
 }
+

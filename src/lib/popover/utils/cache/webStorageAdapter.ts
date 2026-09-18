@@ -15,14 +15,34 @@ function isCacheEntry<T>(val: unknown): val is CacheEntry<T> {
   );
 }
 
+/**
+ * Storage adapter backed by browser Web Storage (`localStorage` or `sessionStorage`).
+ * Automatically handles JSON serialization, error recovery, key prefixing, and isolation.
+ *
+ * @template T - Type of cached payload.
+ *
+ * @example
+ * ```typescript
+ * const adapter = new WebStorageAdapter<UserData>(window.localStorage, 'my_app_cache:');
+ * adapter.set('user_123', { data: { name: 'Alice' }, expiry: Date.now() + 60000 });
+ * const cached = adapter.get('user_123');
+ * ```
+ */
 export class WebStorageAdapter<T = unknown> implements StorageAdapter<T> {
   private readonly prefix: string;
   private readonly storage: Storage;
 
+  /**
+   * Creates a new WebStorageAdapter.
+   *
+   * @param storage - Underlying web storage instance (e.g. `localStorage`).
+   * @param prefix - Key prefix to isolate cache entries from other local storage data.
+   */
   constructor(storage: Storage, prefix = 'pt_cache:') {
     this.storage = storage;
     this.prefix = ensureSuffix(prefix, ':');
   }
+
 
   public get(key: string): CacheEntry<T> | undefined {
     if (!isValidStorageKey(key)) return undefined;

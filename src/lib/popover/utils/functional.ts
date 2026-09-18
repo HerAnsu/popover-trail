@@ -5,18 +5,49 @@
  * @module utils/functional
  */
 
-/** The identity function. Returns the passed argument without modification. */
+/**
+ * The identity function. Returns the passed argument without modification.
+ *
+ * @template T - Argument type.
+ * @param value - Value to return.
+ * @returns The input value unchanged.
+ *
+ * @example
+ * ```typescript
+ * const val = identity(42); // => 42
+ * ```
+ */
 export function identity<T>(value: T): T {
   return value;
 }
 
-/** Pure singleton no-op callback. */
+/**
+ * Pure singleton no-op callback.
+ *
+ * @example
+ * ```typescript
+ * const callback = options.onClose ?? noop;
+ * ```
+ */
 export function noop(): void {}
 
-/** Returns a constant function that always produces `val`. */
+/**
+ * Returns a constant function that always produces `val`.
+ *
+ * @template T - Return value type.
+ * @param val - Value to return continuously.
+ * @returns Function always returning `val`.
+ *
+ * @example
+ * ```typescript
+ * const alwaysTrue = constant(true);
+ * console.log(alwaysTrue()); // => true
+ * ```
+ */
 export function constant<T>(val: T): () => T {
   return () => val;
 }
+
 
 /**
  * Performs left-to-right function composition (pipeline).
@@ -116,17 +147,59 @@ export function compose(
   };
 }
 
-/** Curries a binary function into a sequence of two unary functions. */
+/**
+ * Curries a binary function into a sequence of two unary functions.
+ *
+ * @template A - First parameter type.
+ * @template B - Second parameter type.
+ * @template R - Return value type.
+ * @param fn - Binary function to curry.
+ * @returns Curried unary function.
+ *
+ * @example
+ * ```typescript
+ * const add = curry2((a: number, b: number) => a + b);
+ * const add5 = add(5);
+ * console.log(add5(3)); // => 8
+ * ```
+ */
 export function curry2<A, B, R>(fn: (a: A, b: B) => R): (a: A) => (b: B) => R {
   return (a: A) => (b: B) => fn(a, b);
 }
 
-/** Creates an accessor function extracting the specified property from an object. */
+/**
+ * Creates an accessor function extracting the specified property from an object.
+ *
+ * @template T - Object type.
+ * @template K - Property key type.
+ * @param key - Property key to access.
+ * @returns Accessor function.
+ *
+ * @example
+ * ```typescript
+ * const getName = prop<{ name: string }, 'name'>('name');
+ * console.log(getName({ name: 'Alice' })); // => 'Alice'
+ * ```
+ */
 export function prop<T, K extends keyof T>(key: K): (obj: T) => T[K] {
   return (obj: T) => obj[key];
 }
 
-/** Creates a predicate checking if an object's property strictly equals the specified value. */
+/**
+ * Creates a predicate checking if an object's property strictly equals the specified value.
+ *
+ * @template T - Object type.
+ * @template K - Property key type.
+ * @param key - Property key to check.
+ * @param value - Expected property value.
+ * @returns Predicate function.
+ *
+ * @example
+ * ```typescript
+ * const isAdmin = propEq<{ role: string }, 'role'>('role', 'admin');
+ * console.log(isAdmin({ role: 'admin' })); // => true
+ * ```
+ */
 export function propEq<T, K extends keyof T>(key: K, value: T[K]): (obj: T) => boolean {
   return (obj: T) => obj[key] === value;
 }
@@ -185,8 +258,22 @@ export function or<T>(...predicates: readonly ((val: T) => boolean)[]): (val: T)
   };
 }
 
-/** Inverts a predicate function (logical NOT). */
+/**
+ * Inverts a predicate function (logical NOT).
+ *
+ * @template T - Input parameter type.
+ * @param predicate - Predicate function to negate.
+ * @returns Inverted predicate function.
+ *
+ * @example
+ * ```typescript
+ * const isEven = (n: number) => n % 2 === 0;
+ * const isOdd = not(isEven);
+ * console.log(isOdd(3)); // => true
+ * ```
+ */
 export function not<T>(predicate: (val: T) => boolean): (val: T) => boolean {
   return (val: T) => !predicate(val);
 }
+
 

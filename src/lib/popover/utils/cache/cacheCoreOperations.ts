@@ -27,6 +27,11 @@ import { handlePromiseRejection } from './cacheRejection';
  * @param events - Event emitter for cache lifecycle notifications.
  * @param key - Cache key to inspect.
  * @returns The cached payload if valid and unexpired; otherwise `undefined`.
+ *
+ * @example
+ * ```typescript
+ * const value = readCacheEntry(storage, statsTracker, eventEmitter, 'item-1');
+ * ```
  */
 export function readCacheEntry<T>(
   storage: StorageAdapter<T>,
@@ -75,6 +80,11 @@ export function readCacheEntry<T>(
  * @param data - Payload value or promise to store.
  * @param ttlOrOpts - Numerical TTL in milliseconds or structured `CacheSetOptions`.
  * @param onEvict - Optional custom eviction callback.
+ *
+ * @example
+ * ```typescript
+ * writeCacheEntry(storage, 100, 60000, eventEmitter, 'key-1', { id: 1 }, { ttlMs: 30000 });
+ * ```
  */
 export function writeCacheEntry<T>(
   storage: StorageAdapter<T>,
@@ -127,6 +137,13 @@ export function writeCacheEntry<T>(
  * @param storage - Underlying storage adapter.
  * @param key - Storage key to query.
  * @returns `true` if a valid unexpired entry exists, otherwise `false`.
+ *
+ * @example
+ * ```typescript
+ * if (hasCacheEntry(storage, 'user-key')) {
+ *   console.log('Key exists and is fresh');
+ * }
+ * ```
  */
 export function hasCacheEntry<T>(storage: StorageAdapter<T>, key: string): boolean {
   if (!isValidStorageKey(key)) return false;
@@ -137,6 +154,7 @@ export function hasCacheEntry<T>(storage: StorageAdapter<T>, key: string): boole
   }
   return entry !== undefined;
 }
+
 
 /**
  * Evaluates the freshness status of a cache entry.
