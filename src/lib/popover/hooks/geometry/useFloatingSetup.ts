@@ -35,11 +35,11 @@ export * from './floatingObserver';
  */
 export function useGeometryStoreConfig() {
   return usePopoverStore(
-    (state) => ({
-      cascadeOffsetStep: state.cascadeOffsetStep,
-      defaultOffset: state.defaultOffset,
-      responsiveMode: state.responsiveMode,
-      mobileBreakpoint: state.mobileBreakpoint,
+    ({ cascadeOffsetStep, defaultOffset, responsiveMode, mobileBreakpoint }) => ({
+      cascadeOffsetStep,
+      defaultOffset,
+      responsiveMode,
+      mobileBreakpoint,
     }),
     shallowEqual,
   );

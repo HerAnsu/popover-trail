@@ -65,15 +65,23 @@ function resolveNavParams<TData = unknown, TPopoverKey extends string = string>(
   },
 ) {
   if (isCardKeyboardNavOptions<TData, TPopoverKey>(eventOrOptions)) {
-    const o = eventOrOptions;
+    const {
+      event: e,
+      cardElement: cardEl,
+      entry: cardEntry,
+      enableArrowNavigation: enableArrow,
+      isPinned: pinned,
+      trail: trailList = EMPTY_ARRAY,
+      actions: act,
+    } = eventOrOptions;
     return {
-      e: o.event,
-      cardEl: o.cardElement,
-      cardEntry: o.entry,
-      enableArrow: o.enableArrowNavigation,
-      pinned: o.isPinned,
-      trailList: o.trail ?? EMPTY_ARRAY,
-      act: o.actions,
+      e,
+      cardEl,
+      cardEntry,
+      enableArrow,
+      pinned,
+      trailList,
+      act,
     };
   }
   return {
@@ -129,18 +137,19 @@ export function handleCardKeyboard<TData = unknown, TPopoverKey extends string =
     closeByKey?: (key: TPopoverKey, options?: { transition?: boolean }) => void;
   },
 ): void {
-  const p = resolveNavParams<TData, TPopoverKey>(
-    eventOrOptions,
-    cardElement,
-    entry,
-    enableArrowNavigation,
-    isPinned,
-    trail,
-    actions,
-  );
-  if (!p.e || !p.cardEntry) return;
-  if (handleCustomShortcuts(p.e, p.cardEntry)) return;
-  if (!p.enableArrow) return;
-  handleVerticalArrows(p.e, p.cardEl ?? null);
-  handleHorizontalArrows(p.e, p.cardEntry, p.pinned, p.trailList, p.act);
+  const { e, cardEl, cardEntry, enableArrow, pinned, trailList, act } =
+    resolveNavParams<TData, TPopoverKey>(
+      eventOrOptions,
+      cardElement,
+      entry,
+      enableArrowNavigation,
+      isPinned,
+      trail,
+      actions,
+    );
+  if (!e || !cardEntry) return;
+  if (handleCustomShortcuts(e, cardEntry)) return;
+  if (!enableArrow) return;
+  handleVerticalArrows(e, cardEl ?? null);
+  handleHorizontalArrows(e, cardEntry, pinned, trailList, act);
 }

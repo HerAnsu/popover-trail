@@ -65,15 +65,17 @@ export function useCardFocusManagement(
     }
 
     const cardElement = cardRef.current;
+    const parentKey = entry.parentKey;
+    const returnFocus = entry.focusLockOptions?.returnFocus;
     return () => {
-      if (entry.focusLockOptions?.returnFocus === false) return;
-      restoreCardFocus(cardElement, previouslyFocusedElementRef.current, entry.parentKey);
+      if (returnFocus === false) return;
+      restoreCardFocus(cardElement, previouslyFocusedElementRef.current, parentKey);
     };
   }, [entry.parentKey, entry.focusLockOptions?.returnFocus, cardRef]);
 
   useEffect(() => {
-    if (!entry.focusLockOptions?.autoFocusElement || !isDOM()) return;
-    const autoFocus = entry.focusLockOptions.autoFocusElement;
+    const autoFocus = entry.focusLockOptions?.autoFocusElement;
+    if (!autoFocus || !isDOM()) return;
     const target = isFunction(autoFocus)
       ? autoFocus()
       : isNonEmptyString(autoFocus)
@@ -81,7 +83,7 @@ export function useCardFocusManagement(
         : null;
 
     target?.focus?.();
-  }, [entry.focusLockOptions, entry.focusLockOptions?.autoFocusElement]);
+  }, [entry.focusLockOptions?.autoFocusElement]);
 
   useBodyScrollLock(entry.focusLockOptions?.lockScroll);
 }

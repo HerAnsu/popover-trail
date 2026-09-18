@@ -154,7 +154,8 @@ export function resolveUnpinnedPosition(
   winHeight: number,
 ): { top: number; left: number } {
   if (entry?.pinnedLayoutPos) {
-    return { top: entry.pinnedLayoutPos.top, left: entry.pinnedLayoutPos.left };
+    const { top, left } = entry.pinnedLayoutPos;
+    return { top, left };
   }
 
   let direction: 'left' | 'right' | 'top' | 'bottom' = 'bottom';

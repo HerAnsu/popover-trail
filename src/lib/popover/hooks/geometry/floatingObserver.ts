@@ -27,17 +27,20 @@ export function useVirtualAnchorElement(anchorRect: DOMRect | PopoverRect | null
   return useMemo(() => {
     if (!isDOMRectOrPopoverRect(anchorRect)) return null;
     return {
-      getBoundingClientRect: (): DOMRect => ({
-        top: anchorRect.top,
-        left: anchorRect.left,
-        width: anchorRect.width,
-        height: anchorRect.height,
-        bottom: anchorRect.bottom ?? anchorRect.top + anchorRect.height,
-        right: anchorRect.right ?? anchorRect.left + anchorRect.width,
-        x: anchorRect.x ?? anchorRect.left,
-        y: anchorRect.y ?? anchorRect.top,
-        toJSON: () => anchorRect,
-      }),
+      getBoundingClientRect: (): DOMRect => {
+        const { top, left, width, height, bottom, right, x, y } = anchorRect;
+        return {
+          top,
+          left,
+          width,
+          height,
+          bottom: bottom ?? top + height,
+          right: right ?? left + width,
+          x: x ?? left,
+          y: y ?? top,
+          toJSON: () => anchorRect,
+        };
+      },
     };
   }, [anchorRect]);
 }

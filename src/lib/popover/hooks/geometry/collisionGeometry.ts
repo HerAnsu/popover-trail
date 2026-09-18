@@ -77,5 +77,9 @@ export function applySpatialCollisionNudge(
     0.5,
   );
 
-  return optimal ? { top: optimal.y, left: optimal.x } : { top: top + 16, left: left + 16 };
+  if (optimal) {
+    const { x: optX, y: optY } = optimal;
+    return { top: optY, left: optX };
+  }
+  return { top: top + 16, left: left + 16 };
 }

@@ -63,22 +63,33 @@ export function useCardStoreSlice<TData = unknown, TPopoverKey extends string = 
 ): CardStoreSliceData<TData, TPopoverKey> {
   return usePopoverStore<CardStoreSliceData<TData, TPopoverKey>, TData, unknown, TPopoverKey>(
     useCallback(
-      (
-        state: PopoverStore<TData, unknown, TPopoverKey>,
-      ): CardStoreSliceData<TData, TPopoverKey> => ({
-        offset: state.offsets[entryKey] ?? ZERO_OFFSET,
-        zIndex: state.zIndexOrder.indexOf(entryKey),
-
-        isTop: last(state.zIndexOrder) === entryKey,
-        enableArrowNavigation: state.enableArrowNavigation,
-        trail: state.trail,
-        floating: state.floating,
-        baseZIndex: state.baseZIndex,
-        mountingClassName: state.mountingClassName,
-        unmountingClassName: state.unmountingClassName,
-        mountedClassName: state.mountedClassName,
-        zIndexBaseMap: state.zIndexBaseMap,
-      }),
+      (state: PopoverStore<TData, unknown, TPopoverKey>): CardStoreSliceData<TData, TPopoverKey> => {
+        const {
+          offsets,
+          zIndexOrder,
+          enableArrowNavigation,
+          trail,
+          floating,
+          baseZIndex,
+          mountingClassName,
+          unmountingClassName,
+          mountedClassName,
+          zIndexBaseMap,
+        } = state;
+        return {
+          offset: offsets[entryKey] ?? ZERO_OFFSET,
+          zIndex: zIndexOrder.indexOf(entryKey),
+          isTop: last(zIndexOrder) === entryKey,
+          enableArrowNavigation,
+          trail,
+          floating,
+          baseZIndex,
+          mountingClassName,
+          unmountingClassName,
+          mountedClassName,
+          zIndexBaseMap,
+        };
+      },
       [entryKey],
     ),
     shallowEqual,

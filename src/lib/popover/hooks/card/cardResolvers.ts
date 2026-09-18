@@ -134,11 +134,12 @@ export function resolveButtonControls<TData = unknown, TPopoverKey extends strin
   entry: TrailEntry<TData, TPopoverKey>,
   cardFeatures?: { enablePin?: boolean; enableClose?: boolean; enableDrag?: boolean },
 ) {
+  const { buttonControls } = entry;
   return {
-    enablePin: cardFeatures?.enablePin ?? entry.buttonControls?.enablePin ?? true,
-    enableClose: cardFeatures?.enableClose ?? entry.buttonControls?.enableClose ?? true,
-    enableDrag: cardFeatures?.enableDrag ?? entry.buttonControls?.enableDrag ?? true,
-    customButtons: entry.buttonControls?.customButtons ?? EMPTY_ARRAY,
+    enablePin: cardFeatures?.enablePin ?? buttonControls?.enablePin ?? true,
+    enableClose: cardFeatures?.enableClose ?? buttonControls?.enableClose ?? true,
+    enableDrag: cardFeatures?.enableDrag ?? buttonControls?.enableDrag ?? true,
+    customButtons: buttonControls?.customButtons ?? EMPTY_ARRAY,
   };
 }
 

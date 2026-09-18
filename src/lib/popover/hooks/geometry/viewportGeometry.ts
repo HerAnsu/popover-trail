@@ -73,7 +73,8 @@ export function resolveAutoPlacement(
   if (!anchorRect) return 'right';
 
   const screenCenterX = isBrowser() ? window.innerWidth / 2 : 500;
-  const anchorCenterX = anchorRect.left + anchorRect.width / 2;
+  const { left, width } = anchorRect;
+  const anchorCenterX = left + width / 2;
 
   return anchorCenterX > screenCenterX ? 'left' : 'right';
 }
