@@ -77,7 +77,7 @@ export interface UsePopoverTimelineResult<TData = unknown> {
  * ```
  */
 export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<TData> {
-  const actions = usePopoverActions<TData>();
+  const { undo, redo, closeFrom, bringToFront } = usePopoverActions<TData>();
 
   // Reactively track undo/redo availability from store state
   const canUndo = usePopoverStore((state) => state.canUndo?.() ?? false);
@@ -127,15 +127,15 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
       if (!targetStep) return;
 
       if (trail.length > 0 && stepIndex < trail.length - 1) {
-        actions.closeFrom(stepIndex + 1);
+        closeFrom(stepIndex + 1);
       }
 
       // Bring target popover to front and focus
       if (targetStep.primaryKey) {
-        actions.bringToFront(targetStep.primaryKey);
+        bringToFront(targetStep.primaryKey);
       }
     },
-    [history, trail.length, actions],
+    [history, trail.length, closeFrom, bringToFront],
   );
 
   useDebugValue(
@@ -147,8 +147,8 @@ export function usePopoverTimeline<TData = unknown>(): UsePopoverTimelineResult<
     currentIndex,
     canUndo,
     canRedo,
-    undo: actions.undo,
-    redo: actions.redo,
+    undo,
+    redo,
     jumpToStep,
   };
 }

@@ -70,11 +70,12 @@ export function usePopoverAction<TData, TInput = void, TPopoverKey extends strin
     (nextData: TData) => {
       store.setState((state) => {
         if (!isPopoverActive(state, cardKey)) return state;
-        const entry = findEntryInStore(state.floating, state.trail, cardKey);
+        const { floating, trail } = state;
+        const entry = findEntryInStore(floating, trail, cardKey);
         if (!entry) return state;
 
         const updatedEntry = { ...entry, data: nextData, isLoading: false };
-        const patch = updateEntryInLists(state.floating, state.trail, cardKey, updatedEntry);
+        const patch = updateEntryInLists(floating, trail, cardKey, updatedEntry);
         return { ...state, ...patch };
       });
     },
@@ -136,10 +137,8 @@ export function usePopoverAction<TData, TInput = void, TPopoverKey extends strin
     [action, updateCardData, callbacksRef],
   );
 
-  const actionTuple = useCrossVersionActionState<TData, TInput>(wrappedAction, initialState);
-  const actionState = actionTuple[0];
-  const dispatchAction = actionTuple[1];
-  const isPending = actionTuple[2];
+  const [actionState, dispatchAction, isPending = false] =
+    useCrossVersionActionState<TData, TInput>(wrappedAction, initialState);
 
   const execute = useCallback(
     (input: TInput) => {

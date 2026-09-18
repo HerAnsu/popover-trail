@@ -90,9 +90,9 @@ export function useEventListener<E extends Event = Event>(
   const savedHandler = useLatestRef(handler);
 
   const isBoolean = typeof options === 'boolean';
-  const capture = isBoolean ? options : options?.capture;
-  const passive = isBoolean ? undefined : options?.passive;
-  const once = isBoolean ? undefined : options?.once;
+  const { capture, passive, once } = isBoolean
+    ? { capture: options, passive: undefined, once: undefined }
+    : (options ?? {});
 
   useEffect(() => {
     const target = element ?? (isBrowser() ? window : null);

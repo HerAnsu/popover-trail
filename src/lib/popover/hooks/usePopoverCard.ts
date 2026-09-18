@@ -64,37 +64,48 @@ export function usePopoverCard<
   isPinned,
   placement = 'bottom',
 }: UsePopoverCardOptions<TData, TPopoverKey>): UsePopoverCardResult<TData, TContext, TPopoverKey> {
-  const slice = useCardStoreSlice<TData, TPopoverKey>(entry.key);
+  const { key, transitionStatus, mountingClassName, unmountingClassName, mountedClassName } = entry;
+  const slice = useCardStoreSlice<TData, TPopoverKey>(key);
+  const {
+    mountingClassName: sliceMounting,
+    unmountingClassName: sliceUnmounting,
+    mountedClassName: sliceMounted,
+    zIndexBaseMap,
+    baseZIndex: sliceBaseZIndex,
+    offset,
+    zIndex,
+    enableArrowNavigation,
+    trail,
+    floating,
+    isTop,
+  } = slice;
+
   const actions = usePopoverActions<TData, TContext, TPopoverKey>();
 
-  useCardMountingTransition(entry.key, entry.transitionStatus, actions);
+  useCardMountingTransition(key, transitionStatus, actions);
 
   const transitionClassName = resolveTransitionClass(
-    entry.transitionStatus,
+    transitionStatus,
     {
-      mounting: entry.mountingClassName,
-      unmounting: entry.unmountingClassName,
-      mounted: entry.mountedClassName,
+      mounting: mountingClassName,
+      unmounting: unmountingClassName,
+      mounted: mountedClassName,
     },
     {
-      mounting: slice.mountingClassName,
-      unmounting: slice.unmountingClassName,
-      mounted: slice.mountedClassName,
+      mounting: sliceMounting,
+      unmounting: sliceUnmounting,
+      mounted: sliceMounted,
     },
   );
 
-  const baseZIndex = resolveBaseZIndex(
-    entry,
-    slice.zIndexBaseMap,
-    slice.baseZIndex,
-  );
+  const baseZIndex = resolveBaseZIndex(entry, zIndexBaseMap, sliceBaseZIndex);
   const { ref, setCombinedRef, style } = useCardPositioning({
     entry,
     index,
     isPinned,
     placement,
-    offset: slice.offset,
-    zIndex: slice.zIndex,
+    offset,
+    zIndex,
     baseZIndex,
   });
 
@@ -105,15 +116,15 @@ export function usePopoverCard<
     isPinned,
     cardRef: ref,
     actions,
-    enableArrowNavigation: slice.enableArrowNavigation,
-    trail: slice.trail,
-    floatingCount: slice.floating.length,
+    enableArrowNavigation,
+    trail,
+    floatingCount: floating.length,
   });
 
   return {
     ref: setCombinedRef,
     style,
-    isTop: slice.isTop,
+    isTop,
     isDragging: false,
     actions,
     dragHandleProps: {},

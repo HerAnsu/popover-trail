@@ -144,8 +144,9 @@ export function usePopoverDragAndDrop({
   const tiltTargetRef = useRef({ rotationX: 0, rotationY: 0 });
 
   useEffect(() => {
-    transformXRef.current = dragAxis === 'y' ? 0 : (transform?.x ?? 0);
-    transformYRef.current = dragAxis === 'x' ? 0 : (transform?.y ?? 0);
+    const { x = 0, y = 0 } = transform ?? {};
+    transformXRef.current = dragAxis === 'y' ? 0 : x;
+    transformYRef.current = dragAxis === 'x' ? 0 : y;
   }, [transform, dragAxis]);
 
   const prefersReducedMotion = React.useSyncExternalStore(
@@ -241,8 +242,9 @@ export function usePopoverDragAndDrop({
     return () => cancelAnimationFrame(frameId);
   }, [isDragging, enableTilt, tiltDecay, cardRef, prefersReducedMotion]);
 
-  const dragX = dragAxis === 'y' ? 0 : (transform?.x ?? 0);
-  const dragY = dragAxis === 'x' ? 0 : (transform?.y ?? 0);
+  const { x: tx = 0, y: ty = 0 } = transform ?? {};
+  const dragX = dragAxis === 'y' ? 0 : tx;
+  const dragY = dragAxis === 'x' ? 0 : ty;
 
   validateDragOffset(dragX, dragY);
   useDebugValue(
@@ -251,10 +253,11 @@ export function usePopoverDragAndDrop({
       : 'Idle',
   );
 
+  const { z: rotation, x: rotationX, y: rotationY } = rotationRef.current;
   return {
-    rotation: rotationRef.current.z,
-    rotationX: rotationRef.current.x,
-    rotationY: rotationRef.current.y,
+    rotation,
+    rotationX,
+    rotationY,
     dragX,
     dragY,
   };

@@ -15,7 +15,7 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
   onOpenHandler: (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => void,
   explicitIsOpen?: boolean,
 ) {
-  const actions = usePopoverActions();
+  const { hoverLeave } = usePopoverActions();
   const optionsRef = useLatestRef(options);
   const onOpenHandlerRef = useLatestRef(onOpenHandler);
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,9 +61,9 @@ function usePopoverTriggerBase<TOptions extends PopoverDisplayOptions>(
         clearTimeout(openTimerRef.current);
       }
       const delay = hoverOpts.closeDelay ?? 300;
-      actions.hoverLeave(key, delay);
+      hoverLeave(key, delay);
     }
-  }, [actions, key, optionsRef]);
+  }, [hoverLeave, key, optionsRef]);
 
   const hoverEnabled = Boolean(options?.hover?.enabled);
   const storeIsOpen = usePopoverIsOpen(key);
@@ -111,7 +111,7 @@ export function usePopoverTrigger(
   options?: OpenRootOptions,
   explicitIsOpen?: boolean,
 ) {
-  const actions = usePopoverActions();
+  const { openRootWithResolver } = usePopoverActions();
   const onOpenHandler = useCallback(
     (e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => {
       const fakeEvent: AnchorEventLike = {
@@ -120,9 +120,9 @@ export function usePopoverTrigger(
           e.stopPropagation?.();
         },
       };
-      void actions.openRootWithResolver(key, fakeEvent, options);
+      void openRootWithResolver(key, fakeEvent, options);
     },
-    [actions, key, options],
+    [openRootWithResolver, key, options],
   );
 
   return usePopoverTriggerBase(key, options, onOpenHandler, explicitIsOpen);
@@ -157,16 +157,16 @@ export function usePopoverNestedTrigger(
   options?: OpenNestedOptions,
   explicitIsOpen?: boolean,
 ) {
-  const actions = usePopoverActions();
+  const { openNestedWithResolver } = usePopoverActions();
   const onOpenHandler = useCallback(
     (_e: React.MouseEvent<HTMLElement>, currentTarget: HTMLElement) => {
       const rect = currentTarget.getBoundingClientRect();
-      void actions.openNestedWithResolver(key, sourceKey, {
+      void openNestedWithResolver(key, sourceKey, {
         ...options,
         triggerRect: rect,
       });
     },
-    [actions, key, sourceKey, options],
+    [openNestedWithResolver, key, sourceKey, options],
   );
 
   return usePopoverTriggerBase(key, options, onOpenHandler, explicitIsOpen);

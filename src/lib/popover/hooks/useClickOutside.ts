@@ -45,10 +45,13 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
   store,
   clickOutside,
 }: UseClickOutsideOptions<TData, TContext>): void {
-  const enabled = clickOutside?.enabled;
-  const ignoreClass = clickOutside?.ignoreClass;
-  const selector = clickOutside?.popoverSelector ?? '.popover-card';
-  const ignoreRef = useLatestRef(clickOutside?.shouldIgnoreClick);
+  const {
+    enabled = false,
+    ignoreClass,
+    popoverSelector: selector = '.popover-card',
+    shouldIgnoreClick,
+  } = clickOutside ?? {};
+  const ignoreRef = useLatestRef(shouldIgnoreClick);
 
   useEffect(() => {
     if (!enabled) return;
@@ -58,15 +61,15 @@ export function useClickOutside<TData = unknown, TContext = unknown>({
       const now = Date.now();
       if (now - lastInteractionTime < 50 || shouldIgnoreEvent(e, ignoreRef.current)) return;
 
-      const state = store.getState();
+      const { ownerId, anchorElement, clearTrail } = store.getState();
       if (
-        isInsidePopoverOrAnchor(e, selector, ignoreClass, state.ownerId, state.anchorElement)
+        isInsidePopoverOrAnchor(e, selector, ignoreClass, ownerId, anchorElement)
       ) {
         lastInteractionTime = now;
         return;
       }
 
-      state.clearTrail({ transition: true });
+      clearTrail({ transition: true });
     };
 
     const eventType = isBrowser() && 'PointerEvent' in window ? 'pointerdown' : 'mousedown';

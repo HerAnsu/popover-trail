@@ -62,14 +62,18 @@ export function useSafeCorridor({
       const targetBox = sharedBoxPool.acquire();
 
       try {
-        pAnchor.x = tRect.left + tRect.width / 2;
-        pAnchor.y = tRect.top + tRect.height / 2;
-        pCursor.x = e.clientX;
-        pCursor.y = e.clientY;
-        targetBox.x = r.left;
-        targetBox.y = r.top;
-        targetBox.width = r.width;
-        targetBox.height = r.height;
+        const { left: tLeft, top: tTop, width: tWidth, height: tHeight } = tRect;
+        const { left: rLeft, top: rTop, width: rWidth, height: rHeight } = r;
+        const { clientX, clientY } = e;
+
+        pAnchor.x = tLeft + tWidth / 2;
+        pAnchor.y = tTop + tHeight / 2;
+        pCursor.x = clientX;
+        pCursor.y = clientY;
+        targetBox.x = rLeft;
+        targetBox.y = rTop;
+        targetBox.width = rWidth;
+        targetBox.height = rHeight;
 
         const inside = isCursorInSafeCorridor(pCursor, pAnchor, targetBox);
         setIsInside(inside);

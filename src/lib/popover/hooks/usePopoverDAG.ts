@@ -41,18 +41,19 @@ export function usePopoverDAG<
   TPopoverKey extends string = RegisteredKeys,
 >(): UsePopoverDAGResult<TPopoverKey> {
   const actions = usePopoverActions<TData, TContext, TPopoverKey>();
-  const dag = actions.getDAG();
+  const { getDAG, getParents, getChildren, getBreadcrumbs, addEdge, removeEdge } = actions;
+  const dag = getDAG();
 
   return useMemo(
     () => ({
       dag,
-      getParents: actions.getParents,
-      getChildren: actions.getChildren,
-      getBreadcrumbs: actions.getBreadcrumbs,
-      addEdge: actions.addEdge,
-      removeEdge: actions.removeEdge,
+      getParents,
+      getChildren,
+      getBreadcrumbs,
+      addEdge,
+      removeEdge,
     }),
-    [dag, actions],
+    [dag, getParents, getChildren, getBreadcrumbs, addEdge, removeEdge],
   );
 }
 
@@ -73,15 +74,15 @@ export function useBreadcrumbPath<
   TContext = unknown,
   TPopoverKey extends string = RegisteredKeys,
 >(key: TPopoverKey): readonly TPopoverKey[] {
-  const actions = usePopoverActions<TData, TContext, TPopoverKey>();
+  const { getBreadcrumbs } = usePopoverActions<TData, TContext, TPopoverKey>();
   return usePopoverStore<readonly TPopoverKey[], TData, TContext, TPopoverKey>(
     useCallback(
-      (s) => {
-        void s.trail;
-        void s.floating;
-        return actions.getBreadcrumbs(key);
+      ({ trail, floating }) => {
+        void trail;
+        void floating;
+        return getBreadcrumbs(key);
       },
-      [actions, key],
+      [getBreadcrumbs, key],
     ),
     shallowEqualArray,
   );
@@ -109,15 +110,15 @@ export function usePopoverParents<
   TContext = unknown,
   TPopoverKey extends string = RegisteredKeys,
 >(key: TPopoverKey): ReadonlySet<TPopoverKey> {
-  const actions = usePopoverActions<TData, TContext, TPopoverKey>();
+  const { getParents } = usePopoverActions<TData, TContext, TPopoverKey>();
   return usePopoverStore<ReadonlySet<TPopoverKey>, TData, TContext, TPopoverKey>(
     useCallback(
-      (s) => {
-        void s.trail;
-        void s.floating;
-        return actions.getParents(key);
+      ({ trail, floating }) => {
+        void trail;
+        void floating;
+        return getParents(key);
       },
-      [actions, key],
+      [getParents, key],
     ),
     areSetsEqual,
   );
@@ -151,15 +152,15 @@ export function usePopoverChildren<
   TContext = unknown,
   TPopoverKey extends string = RegisteredKeys,
 >(key: TPopoverKey): ReadonlySet<TPopoverKey> {
-  const actions = usePopoverActions<TData, TContext, TPopoverKey>();
+  const { getChildren } = usePopoverActions<TData, TContext, TPopoverKey>();
   return usePopoverStore<ReadonlySet<TPopoverKey>, TData, TContext, TPopoverKey>(
     useCallback(
-      (s) => {
-        void s.trail;
-        void s.floating;
-        return actions.getChildren(key);
+      ({ trail, floating }) => {
+        void trail;
+        void floating;
+        return getChildren(key);
       },
-      [actions, key],
+      [getChildren, key],
     ),
     areSetsEqual,
   );

@@ -48,10 +48,16 @@ export function usePopoverCacheQuery<TData = unknown>(
 ): UsePopoverCacheQueryResult<TData> {
   const { cache, mutate: cacheMutate } = usePopoverCache<TData>();
   const swrCache = asSWRCompatibleCache(cache);
-  const isEnabled = opts?.enabled ?? true;
+  const {
+    enabled: isEnabled = true,
+    initialData,
+    revalidateOnMount,
+    revalidateOnFocus,
+    revalidateOnReconnect,
+  } = opts ?? {};
 
   const [state, setState] = useState<PopoverCacheQueryState<TData>>(() =>
-    computeInitialQueryState(key, cache, isEnabled, opts?.initialData),
+    computeInitialQueryState(key, cache, isEnabled, initialData),
   );
 
   useEffect(() => {
@@ -84,19 +90,19 @@ export function usePopoverCacheQuery<TData = unknown>(
   }, [fetcher, isEnabled, key, opts, swrCache]);
 
   const shouldFetchOnMount = Boolean(
-    isEnabled && fetcher && (opts?.revalidateOnMount !== false || state.status === 'loading'),
+    isEnabled && fetcher && (revalidateOnMount !== false || state.status === 'loading'),
   );
   useEffect(() => {
     if (shouldFetchOnMount) void revalidate();
   }, [key, shouldFetchOnMount, revalidate]);
 
   useEffect(() => {
-    if (!fetcher || !isEnabled || (!opts?.revalidateOnFocus && !opts?.revalidateOnReconnect))
+    if (!fetcher || !isEnabled || (!revalidateOnFocus && !revalidateOnReconnect))
       return;
     return globalCacheEventRevalidator.register(() => {
       void revalidate();
     });
-  }, [fetcher, isEnabled, opts?.revalidateOnFocus, opts?.revalidateOnReconnect, revalidate]);
+  }, [fetcher, isEnabled, revalidateOnFocus, revalidateOnReconnect, revalidate]);
 
   const mutate = useCallback(
     (updater: TData | ((prev: TData | undefined) => TData)) => {
