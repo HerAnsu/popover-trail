@@ -9,7 +9,20 @@ import { extractDisplayOptions } from '../../../utils/displayOptions';
 import { resolveEntryStatus } from './entryStatus';
 
 /**
- * Constructs an initial TrailEntry node for newly registered triggers.
+ * Constructs an initial `TrailEntry` node for newly registered triggers before data resolution begins.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param key - Popover key identifier.
+ * @param options - Optional root/nested open options and trigger rect.
+ * @param _ownerId - Optional trail owner identifier.
+ * @param parentKey - Optional parent popover key.
+ * @returns Initialized `TrailEntry` instance.
+ *
+ * @example
+ * ```typescript
+ * const entry = createInitialTrailEntry('card-1', { rect: triggerRect }, 'user-session');
+ * ```
  */
 export function createInitialTrailEntry<TData = unknown, TPopoverKey extends string = string>(
   key: TPopoverKey,
@@ -31,7 +44,21 @@ export function createInitialTrailEntry<TData = unknown, TPopoverKey extends str
 }
 
 /**
- * Transitions an existing TrailEntry to resolved payload or error state.
+ * Transitions an existing `TrailEntry` to a resolved payload or error state.
+ * Preserves object identity if no properties changed.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param baseEntry - Original baseline entry.
+ * @param data - Resolved data payload.
+ * @param error - Optional error instance if failed.
+ * @param isLoading - Whether the entry is still loading.
+ * @returns Updated `TrailEntry` (or unchanged `baseEntry` reference).
+ *
+ * @example
+ * ```typescript
+ * const updated = createResolvedTrailEntry(entry, { title: 'Loaded' });
+ * ```
  */
 export function createResolvedTrailEntry<TData = unknown, TPopoverKey extends string = string>(
   baseEntry: TrailEntry<TData, TPopoverKey>,

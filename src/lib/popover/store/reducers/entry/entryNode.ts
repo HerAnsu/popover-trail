@@ -11,7 +11,19 @@ export interface EntryFactoryOptions {
 }
 
 /**
- * Normalizes TrailEntry nodes guaranteeing structural sharing and immutability.
+ * Normalizes `TrailEntry` nodes, guaranteeing structural sharing and immutability.
+ * Sets `originalParentKey` and `originalRect` fallback fields, preventing self-referential parent cycles.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param entry - Candidate TrailEntry to normalize.
+ * @param options - Optional factory flags (e.g. `isRoot`).
+ * @returns Normalized `TrailEntry` instance, or identical reference if already normalized.
+ *
+ * @example
+ * ```typescript
+ * const node = createTrailEntryNode(rawEntry, { isRoot: false });
+ * ```
  */
 export function createTrailEntryNode<TData = unknown, TPopoverKey extends string = string>(
   entry: TrailEntry<TData, TPopoverKey>,

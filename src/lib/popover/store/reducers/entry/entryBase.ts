@@ -12,7 +12,24 @@ import { resolveEntryGeometryMetadata } from './entryGeometry';
 export { createTrailEntryNode } from './entryNode';
 
 /**
- * Constructs a fully initialized TrailEntry object with default properties and geometry.
+ * Constructs a fully initialized `TrailEntry` object with merged display options, geometry, and status.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param key - Unique popover key identifier.
+ * @param parentKey - Optional parent popover key.
+ * @param rect - Optional DOMRect or PopoverRect representing the trigger bounds.
+ * @param options - Optional root or nested display and placement options.
+ * @param existingEntry - Optional prior entry to preserve data, status, and geometry from.
+ * @param data - Optional pre-resolved data payload.
+ * @param error - Optional error instance if failed.
+ * @param isLoading - Whether the entry is currently waiting on an async data resolver.
+ * @returns Fully constructed `TrailEntry` instance.
+ *
+ * @example
+ * ```typescript
+ * const entry = createTrailEntry('card-1', 'root-card', triggerRect, { placement: 'right-start' });
+ * ```
  */
 export function createTrailEntry<TData = unknown, TPopoverKey extends string = string>(
   key: TPopoverKey,
