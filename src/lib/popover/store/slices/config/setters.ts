@@ -43,26 +43,25 @@ export function createConfigSetters<
 
   return {
     ...basicSetters,
-    setContext: (context: TContext) => {
-      if (get().context !== context && !isDeepEqual(get().context, context)) {
-        set({ context });
+    setContext: (nextContext: TContext) => {
+      const { context } = get();
+      if (context !== nextContext && !isDeepEqual(context, nextContext)) {
+        set({ context: nextContext });
       }
     },
     setResolveData: (newResolver: PopoverResolver<TData, TContext>) => {
-      if (get().resolveData !== newResolver) {
-        deps.abortAllControllers?.();
-        if (deps.inFlightPromises && deps.inFlightPromises.size > 0) {
-          deps.inFlightPromises.clear();
-        }
-        deps.markAllCountersStale?.();
+      const { resolveData } = get();
+      if (resolveData !== newResolver) {
+        const { abortAllControllers, inFlightPromises, markAllCountersStale } = deps;
+        abortAllControllers?.();
+        inFlightPromises?.clear();
+        markAllCountersStale?.();
         set({ resolveData: newResolver });
       }
     },
     setCollisionConfig: (config: CollisionConfig | null) => {
-      if (
-        get().collisionConfig !== config &&
-        !isCollisionConfigEqual(get().collisionConfig, config)
-      ) {
+      const { collisionConfig } = get();
+      if (collisionConfig !== config && !isCollisionConfigEqual(collisionConfig, config)) {
         set({ collisionConfig: config });
       }
     },
@@ -81,16 +80,13 @@ export function createConfigSetters<
       }
     },
     setSlotComponents: (components: PopoverSlotComponents | null) => {
-      if (get().components === components || isDeepEqual(get().components, components)) return;
+      const { components: currentComponents } = get();
+      if (currentComponents === components || isDeepEqual(currentComponents, components)) return;
       set({ components });
     },
     setZIndexBaseMap: (zIndexBaseMap: ZIndexBaseMap | null) => {
-      if (
-        get().zIndexBaseMap === zIndexBaseMap ||
-        isDeepEqual(get().zIndexBaseMap, zIndexBaseMap)
-      ) {
-        return;
-      }
+      const { zIndexBaseMap: currentMap } = get();
+      if (currentMap === zIndexBaseMap || isDeepEqual(currentMap, zIndexBaseMap)) return;
       set({ zIndexBaseMap });
     },
   };

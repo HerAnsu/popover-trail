@@ -71,14 +71,19 @@ export function applyRehydratedState<TData, TContext, TPopoverKey extends string
   set: (patch: StatePatch<TData, TContext, TPopoverKey>) => void,
   dag?: { clear: () => void; addNode: (key: TPopoverKey, parentKey?: TPopoverKey) => void },
 ): boolean {
-  const rawFloating = parsed.floating ?? parsed.pinned;
+  const {
+    floating: rawFloating,
+    offsets: rawOffsets,
+    pinnedStates: rawPinnedStates,
+    zIndexOrder: rawZIndexOrder,
+  } = parsed;
   if (!isArray(rawFloating)) return false;
 
   const nextFloating = parseFloating<TData, TPopoverKey>(rawFloating);
   const activeKeys = new Set<TPopoverKey>(nextFloating.map(prop('key')));
-  const cleanOffsets = buildCleanOffsets(parsed.offsets, activeKeys);
-  const cleanPinned = buildCleanPinnedStates(parsed.pinnedStates, activeKeys);
-  const rawZOrder = buildCleanZIndexOrder(parsed.zIndexOrder, activeKeys);
+  const cleanOffsets = buildCleanOffsets(rawOffsets, activeKeys);
+  const cleanPinned = buildCleanPinnedStates(rawPinnedStates, activeKeys);
+  const rawZOrder = buildCleanZIndexOrder(rawZIndexOrder, activeKeys);
 
   restoreDAGFromState(dag, [], nextFloating);
   set({

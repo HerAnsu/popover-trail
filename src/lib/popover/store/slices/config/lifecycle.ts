@@ -48,10 +48,10 @@ export function createLifecycleSlice<
       if (!entry || entry.transitionStatus === status) return;
       if (!isValidTransitionStatusChange(entry.transitionStatus, status)) return;
 
-      set((state) =>
+      set(({ floating, trail }) =>
         patchEntryInLists<TData, TContext, TPopoverKey>(
-          state.floating,
-          state.trail,
+          floating,
+          trail,
           key,
           (prev) => ({
             ...prev,

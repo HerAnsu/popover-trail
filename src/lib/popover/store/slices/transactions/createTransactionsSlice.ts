@@ -78,21 +78,27 @@ export function createTransactionsSlice<
     batchUpdates: (fn) => {
       startBatch();
       try {
-        fn(get().actions);
+        const { actions } = get();
+        fn(actions);
       } finally {
         endBatch();
       }
     },
-    runTransition: (fn) => executeWithTransition(() => fn(get().actions), scheduleTransition),
+    runTransition: (fn) => {
+      const { actions } = get();
+      return executeWithTransition(() => fn(actions), scheduleTransition);
+    },
     useMiddleware: (middleware) => middlewareEngine.use(middleware),
     canUndo: () => historyManager?.canUndo() ?? false,
     canRedo: () => historyManager?.canRedo() ?? false,
     undo: () => {
-      const prev = historyManager?.undo(get());
+      const currentState = get();
+      const prev = historyManager?.undo(currentState);
       if (prev) handleHistoryTransition(prev);
     },
     redo: () => {
-      const next = historyManager?.redo(get());
+      const currentState = get();
+      const next = historyManager?.redo(currentState);
       if (next) handleHistoryTransition(next);
     },
     transaction: async (fn) => {

@@ -70,11 +70,10 @@ export function createConfigSlice<
         }
 
         if (key === 'resolveData') {
-          deps.abortAllControllers?.();
-          if (deps.inFlightPromises && deps.inFlightPromises.size > 0) {
-            deps.inFlightPromises.clear();
-          }
-          deps.markAllCountersStale?.();
+          const { abortAllControllers, inFlightPromises, markAllCountersStale } = deps;
+          abortAllControllers?.();
+          inFlightPromises?.clear();
+          markAllCountersStale?.();
         }
 
         Reflect.set(diff, key, nextVal);

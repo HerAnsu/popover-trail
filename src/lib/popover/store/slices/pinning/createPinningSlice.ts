@@ -82,7 +82,8 @@ export function createPinningSlice<
       if (typeof xOrOffset === 'number' && typeof maybeY === 'number') {
         nextOffset = toDragOffset(xOrOffset, maybeY);
       } else if (typeof xOrOffset === 'function') {
-        const current = get().offsets[key] ?? ZERO_OFFSET;
+        const { offsets } = get();
+        const current = offsets[key] ?? ZERO_OFFSET;
         nextOffset = xOrOffset(current);
       } else if (typeof xOrOffset === 'object' && xOrOffset !== null) {
         nextOffset = xOrOffset;

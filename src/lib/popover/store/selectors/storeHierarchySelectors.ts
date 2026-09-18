@@ -56,8 +56,10 @@ export function collectChildrenKeys<TPopoverKey extends string = string, TData =
  */
 export const selectChildrenKeys =
   <TPopoverKey extends string = string, TData = unknown>(key: string) =>
-  (state: HasActiveEntriesState<TData, TPopoverKey>): readonly TPopoverKey[] =>
-    collectChildrenKeys<TPopoverKey, TData>(state.floating, state.trail, key);
+  (state: HasActiveEntriesState<TData, TPopoverKey>): readonly TPopoverKey[] => {
+    const { floating, trail } = state;
+    return collectChildrenKeys<TPopoverKey, TData>(floating, trail, key);
+  };
 
 /**
  * Builds a fast Map index pairing keys with their corresponding `TrailEntry`.
@@ -134,8 +136,10 @@ export function buildBreadcrumbPath<TPopoverKey extends string = string, TData =
  */
 export const selectBreadcrumbs =
   <TPopoverKey extends string = string, TData = unknown>(key: string) =>
-  (state: HasActiveEntriesState<TData, TPopoverKey>): readonly TPopoverKey[] =>
-    buildBreadcrumbPath<TPopoverKey, TData>(state.floating, state.trail, key);
+  (state: HasActiveEntriesState<TData, TPopoverKey>): readonly TPopoverKey[] => {
+    const { floating, trail } = state;
+    return buildBreadcrumbPath<TPopoverKey, TData>(floating, trail, key);
+  };
 
 /**
  * Higher-order selector calculating the integer nesting depth of a popover (0 = root).
@@ -155,10 +159,11 @@ export function selectPopoverDepth<TPopoverKey extends string = string, TData = 
   key: string,
 ) {
   return (state: HasActiveEntriesState<TData, TPopoverKey>): number => {
+    const { floating, trail } = state;
     let depth = 0;
     let currentKey: string | undefined = key;
     const visited = new Set<string>();
-    const index = buildEntryIndex<TData, TPopoverKey>(state.floating, state.trail);
+    const index = buildEntryIndex<TData, TPopoverKey>(floating, trail);
     while (currentKey && !visited.has(currentKey)) {
       visited.add(currentKey);
       const entry = index.get(currentKey);
@@ -200,10 +205,11 @@ export function selectTrailBranch<TPopoverKey extends string = string, TData = u
   return (
     state: HasActiveEntriesState<TData, TPopoverKey>,
   ): readonly TrailEntry<TData, TPopoverKey>[] => {
-    const breadcrumbs = buildBreadcrumbPath<TPopoverKey, TData>(state.floating, state.trail, key);
-    const children = collectChildrenKeys<TPopoverKey, TData>(state.floating, state.trail, key);
+    const { floating, trail } = state;
+    const breadcrumbs = buildBreadcrumbPath<TPopoverKey, TData>(floating, trail, key);
+    const children = collectChildrenKeys<TPopoverKey, TData>(floating, trail, key);
     const keys = setUnion(new Set(breadcrumbs), new Set(children));
-    return collectBranchMatches<TPopoverKey, TData>(state.floating, state.trail, keys);
+    return collectBranchMatches<TPopoverKey, TData>(floating, trail, keys);
   };
 }
 

@@ -34,8 +34,10 @@ import type {
  */
 export const selectEntryByKey =
   <TData = unknown, TPopoverKey extends string = string>(key: string) =>
-  (state: HasActiveEntriesState<TData, TPopoverKey>): TrailEntry<TData, TPopoverKey> | undefined =>
-    findEntryInStore(state.floating, state.trail, key);
+  (state: HasActiveEntriesState<TData, TPopoverKey>): TrailEntry<TData, TPopoverKey> | undefined => {
+    const { floating, trail } = state;
+    return findEntryInStore(floating, trail, key);
+  };
 
 /**
  * Selector factory checking whether an entry with the given key is currently active.
@@ -52,8 +54,10 @@ export const selectEntryByKey =
  */
 export const selectHasEntry =
   <TData = unknown, TPopoverKey extends string = string>(key: string) =>
-  (state: HasActiveEntriesState<TData, TPopoverKey>): boolean =>
-    hasEntryWithKey(state.floating, state.trail, key);
+  (state: HasActiveEntriesState<TData, TPopoverKey>): boolean => {
+    const { floating, trail } = state;
+    return hasEntryWithKey(floating, trail, key);
+  };
 
 /**
  * Selects the root entry of the active cascading trail (depth 0).
@@ -90,8 +94,10 @@ export function selectRootEntry<TData = unknown, TPopoverKey extends string = st
  */
 export const selectIsLoading =
   <TData = unknown, TPopoverKey extends string = string>(key: string) =>
-  (state: HasActiveEntriesState<TData, TPopoverKey>): boolean =>
-    findEntryInStore(state.floating, state.trail, key)?.isLoading ?? false;
+  (state: HasActiveEntriesState<TData, TPopoverKey>): boolean => {
+    const { floating, trail } = state;
+    return findEntryInStore(floating, trail, key)?.isLoading ?? false;
+  };
 
 /**
  * Selector factory returning any resolution error associated with the specified popover key.
@@ -109,8 +115,10 @@ export const selectIsLoading =
  */
 export const selectError =
   <TData = unknown, TPopoverKey extends string = string>(key: string) =>
-  (state: HasActiveEntriesState<TData, TPopoverKey>): Error | null =>
-    findEntryInStore(state.floating, state.trail, key)?.error ?? null;
+  (state: HasActiveEntriesState<TData, TPopoverKey>): Error | null => {
+    const { floating, trail } = state;
+    return findEntryInStore(floating, trail, key)?.error ?? null;
+  };
 
 /**
  * Selector factory returning the resolved payload data for the specified popover key.
@@ -127,8 +135,10 @@ export const selectError =
  */
 export const selectData =
   <TData = unknown, TPopoverKey extends string = string>(key: string) =>
-  (state: HasActiveEntriesState<TData, TPopoverKey>): TData | null =>
-    findEntryInStore(state.floating, state.trail, key)?.data ?? null;
+  (state: HasActiveEntriesState<TData, TPopoverKey>): TData | null => {
+    const { floating, trail } = state;
+    return findEntryInStore(floating, trail, key)?.data ?? null;
+  };
 
 /**
  * Selector factory returning the parent key of the specified popover.
@@ -245,6 +255,7 @@ export function selectTopmostEntry<TData = unknown, TPopoverKey extends string =
 export function selectDiscriminatedStatus<TData = unknown, TPopoverKey extends string = string>(
   state: HasStatusState<TData, TPopoverKey>,
 ): 'idle' | 'active-trail' | 'pinned-only' {
-  if (state.trail.length > 0) return 'active-trail';
-  return state.floating.length > 0 ? 'pinned-only' : 'idle';
+  const { trail, floating } = state;
+  if (trail.length > 0) return 'active-trail';
+  return floating.length > 0 ? 'pinned-only' : 'idle';
 }

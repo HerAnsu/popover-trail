@@ -63,9 +63,9 @@ export function createTrailDAGActions<
       if (!success) return false;
 
       const parents = popoverDAG.getParents(childKey);
-      set((state) => ({
-        trail: updateEntryParents(state.trail, childKey, parents),
-        floating: updateEntryParents(state.floating, childKey, parents),
+      set(({ trail, floating }) => ({
+        trail: updateEntryParents(trail, childKey, parents),
+        floating: updateEntryParents(floating, childKey, parents),
       }));
 
       dispatchEffects([
@@ -79,9 +79,9 @@ export function createTrailDAGActions<
       popoverDAG.removeEdge(parentKey, childKey);
 
       const parents = popoverDAG.getParents(childKey);
-      set((state) => ({
-        trail: updateEntryParents(state.trail, childKey, parents),
-        floating: updateEntryParents(state.floating, childKey, parents),
+      set(({ trail, floating }) => ({
+        trail: updateEntryParents(trail, childKey, parents),
+        floating: updateEntryParents(floating, childKey, parents),
       }));
 
       dispatchEffects([

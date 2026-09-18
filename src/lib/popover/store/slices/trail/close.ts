@@ -75,7 +75,8 @@ export function createTrailCloseActions<
   };
 
   const closeFromKey = (key: TPopoverKey, options?: CloseTransitionOptions): void => {
-    closeFromIndex(findEntryIndex(get().floating, get().trail, key), options);
+    const { floating, trail } = get();
+    closeFromIndex(findEntryIndex(floating, trail, key), options);
   };
 
   const closeTopmostEntry = (options?: CloseTransitionOptions): void => {

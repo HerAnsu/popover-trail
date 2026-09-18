@@ -23,6 +23,16 @@ export type HoverSliceActions<
  * Creates the Hover Intent and Delay action sub-slice.
  * Provides hierarchical hover cancellation and scheduled dismissal.
  *
+ * @example
+ * ```ts
+ * const hoverSlice = createHoverSlice(ctx);
+ * hoverSlice.hoverEnter('card-1');
+ * hoverSlice.hoverLeave('card-1', 150);
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
  * @param ctx - Slice dependency injection context.
  * @returns Object implementing HoverSliceActions methods.
  */
@@ -60,10 +70,12 @@ export function createHoverSlice<
     /** Schedules delayed dismissal if the card is not pinned. */
     hoverLeave: (key: TPopoverKey, delay = DEFAULT_HOVER_CLOSE_DELAY_MS) => {
       if (!key) return;
-      if (isPinnedEntry(get().pinnedStates, key)) return;
+      const { pinnedStates } = get();
+      if (isPinnedEntry(pinnedStates, key)) return;
       const performClose = () => {
-        if (isPinnedEntry(get().pinnedStates, key)) return;
-        get().actions.closeByKey(key, { transition: true });
+        const { pinnedStates: currentPinned, actions } = get();
+        if (isPinnedEntry(currentPinned, key)) return;
+        actions.closeByKey(key, { transition: true });
       };
       transitionScheduler.scheduleHoverLeave(key, delay, performClose);
     },

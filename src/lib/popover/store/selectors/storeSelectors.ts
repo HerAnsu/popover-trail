@@ -64,7 +64,10 @@ export const selectFloatingEntries = <
 export const selectTotalActiveCount = (state: {
   readonly trail: readonly unknown[];
   readonly floating: readonly unknown[];
-}): number => state.trail.length + state.floating.length;
+}): number => {
+  const { trail, floating } = state;
+  return trail.length + floating.length;
+};
 
 /**
  * Returns whether all popovers are closed (both trail and floating are empty).
@@ -80,7 +83,10 @@ export const selectTotalActiveCount = (state: {
 export const selectIsIdle = (state: {
   readonly trail: readonly unknown[];
   readonly floating: readonly unknown[];
-}): boolean => state.trail.length === 0 && state.floating.length === 0;
+}): boolean => {
+  const { trail, floating } = state;
+  return trail.length === 0 && floating.length === 0;
+};
 
 /**
  * Selects the dictionary mapping popover keys to custom 2D drag offsets.

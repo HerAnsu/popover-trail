@@ -20,7 +20,11 @@ export type ControlsSliceActions<
 >;
 
 /**
- * Creates button controls action helpers.
+ * @example
+ * ```ts
+ * const controlsSlice = createControlsSlice(ctx);
+ * controlsSlice.setButtonControls('card-1', { enablePin: false });
+ * ```
  *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
@@ -49,8 +53,8 @@ export function createControlsSlice<
     const nextControls = updater(entry.buttonControls);
     if (shallowEqual(entry.buttonControls, nextControls)) return;
 
-    set((state) =>
-      patchEntryInLists<TData, TContext, TPopoverKey>(state.floating, state.trail, key, (prev) => ({
+    set(({ floating: f, trail: t }) =>
+      patchEntryInLists<TData, TContext, TPopoverKey>(f, t, key, (prev) => ({
         ...prev,
         buttonControls: nextControls,
       })),
