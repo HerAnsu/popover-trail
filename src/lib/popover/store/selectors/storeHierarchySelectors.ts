@@ -16,6 +16,13 @@ import type { HasActiveEntriesState } from './storeSelectorTypes';
 /**
  * Traverses floating and trail popovers to collect all child keys directly opened by `key`.
  *
+ * @example
+ * ```ts
+ * const childKeys = collectChildrenKeys(state.floating, state.trail, 'root-popover');
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
  * @param floating - Readonly array of floating/pinned entries.
  * @param trail - Readonly array of active cascading trail entries.
  * @param key - Identifier of the parent popover.
@@ -37,6 +44,13 @@ export function collectChildrenKeys<TPopoverKey extends string = string, TData =
 /**
  * Higher-order selector returning all direct child keys of a popover.
  *
+ * @example
+ * ```ts
+ * const children = selectChildrenKeys('parent-card')(store.getState());
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
  * @param key - Identifier of the parent popover.
  * @returns Selector function mapping store state to child keys array.
  */
@@ -48,6 +62,14 @@ export const selectChildrenKeys =
 /**
  * Builds a fast Map index pairing keys with their corresponding `TrailEntry`.
  *
+ * @example
+ * ```ts
+ * const index = buildEntryIndex(state.floating, state.trail);
+ * const entry = index.get('my-card');
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Union of valid popover keys.
  * @param floating - Readonly array of floating/pinned entries.
  * @param trail - Readonly array of active cascading trail entries.
  * @returns Map index for O(1) entry lookup.
@@ -65,6 +87,14 @@ export function buildEntryIndex<TData, TPopoverKey extends string>(
 /**
  * Backtracks via parent pointers to construct the breadcrumb trail path from root to the target popover.
  *
+ * @example
+ * ```ts
+ * const path = buildBreadcrumbPath(state.floating, state.trail, 'leaf-popover');
+ * // ['root', 'child', 'leaf-popover']
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
  * @param floating - Readonly array of floating/pinned entries.
  * @param trail - Readonly array of active cascading trail entries.
  * @param key - Target popover key.
@@ -92,6 +122,13 @@ export function buildBreadcrumbPath<TPopoverKey extends string = string, TData =
 /**
  * Higher-order selector returning the breadcrumb keys from root down to the target popover.
  *
+ * @example
+ * ```ts
+ * const breadcrumbs = selectBreadcrumbs('deep-card')(store.getState());
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
  * @param key - Target popover key.
  * @returns Selector mapping state to breadcrumb keys array.
  */
@@ -103,6 +140,14 @@ export const selectBreadcrumbs =
 /**
  * Higher-order selector calculating the integer nesting depth of a popover (0 = root).
  *
+ * @example
+ * ```ts
+ * const depth = selectPopoverDepth('child-popover')(store.getState());
+ * console.log('Nesting depth:', depth);
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
  * @param key - Target popover key.
  * @returns Selector mapping state to integer depth.
  */
@@ -138,6 +183,14 @@ function collectBranchMatches<TPopoverKey extends string = string, TData = unkno
 /**
  * Higher-order selector returning all active entries along the branch (ancestor path + direct children).
  *
+ * @example
+ * ```ts
+ * const branch = selectTrailBranch('middle-node')(store.getState());
+ * console.log('Active branch entries:', branch.map(e => e.key));
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TData - Popover payload data type.
  * @param key - Focus popover key.
  * @returns Selector mapping state to array of TrailEntry items.
  */
