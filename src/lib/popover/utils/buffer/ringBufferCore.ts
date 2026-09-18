@@ -28,7 +28,7 @@ import {
   peekFirstRingResult,
   itemAtRingResult,
 } from './bufferMonadic';
-import { swapBufferItems, reverseBuffer, fillBuffer } from './bufferMutation';
+import { swapBufferItems, reverseBuffer, fillBuffer, removeAtInRing, removeInRing } from './bufferMutation';
 import {
   forEachItem,
   forEachReversedItem,
@@ -36,6 +36,7 @@ import {
   createBufferIterator,
   createBufferEntriesIterator,
   createBufferKeysIterator,
+  createBufferReversedIterator,
   bufferToArray,
   bufferToReversedArray,
 } from './bufferIteration';
@@ -129,15 +130,17 @@ export class RingBuffer<T> implements ReadonlyRingBuffer<T>, ScopeDisposable {
   get isFull(): boolean { return isBufferFull(this.state); }
   get revision(): BufferRevision { return this.state.revision; }
 
-  // --- Deque Mutators ---
+  // --- Deque Mutators (Fluent Chaining) ---
 
-  push(item: T): void {
+  push(item: T): this {
     pushItem(this.state, this.metrics, item, (cap) => this.resize(cap));
+    return this;
   }
 
-  pushMany(items: Iterable<T>): void {
-    if (!isIterable(items)) return;
+  pushMany(items: Iterable<T>): this {
+    if (!isIterable(items)) return this;
     for (const item of items) this.push(item);
+    return this;
   }
 
   tryPush(item: T): Result<void, BufferOverflowError> {
@@ -164,27 +167,42 @@ export class RingBuffer<T> implements ReadonlyRingBuffer<T>, ScopeDisposable {
     return shiftRingResult(this.state, this.metrics);
   }
 
-  unshift(item: T): void {
+  unshift(item: T): this {
     unshiftItem(this.state, this.metrics, item, (cap) => this.resize(cap));
+    return this;
+  }
+
+  remove(item: T): boolean {
+    return removeInRing(this.state, item);
+  }
+
+  removeAt(index: BufferRelativeIndex): T | undefined {
+    return removeAtInRing(this.state, index);
   }
 
   swap(indexA: BufferRelativeIndex, indexB: BufferRelativeIndex): boolean {
     return swapBufferItems(this.state, indexA, indexB);
   }
 
-  reverse(): void {
+  reverse(): this {
     reverseBuffer(this.state);
+    return this;
   }
 
-  fill(value: T): void {
+  fill(value: T): this {
     fillBuffer(this.state, value);
+    return this;
   }
 
-  clear(): void {
+  clear(): this {
     clearRingBufferState(this.state);
+    return this;
   }
 
   // --- Inspection & Peek ---
+
+  get first(): T | undefined { return this.peekFirst(); }
+  get last(): T | undefined { return this.peekLast(); }
 
   peek(): T | undefined { return this.at(-1); }
   peekOldest(): T | undefined { return this.at(0); }
@@ -277,6 +295,14 @@ export class RingBuffer<T> implements ReadonlyRingBuffer<T>, ScopeDisposable {
 
   [Symbol.iterator](): IterableIterator<T> {
     return this.values();
+  }
+
+  valuesReversed(): IterableIterator<T> {
+    return createBufferReversedIterator(this.state);
+  }
+
+  toJSON(): T[] {
+    return this.toArray();
   }
 
   toArray(): T[] {

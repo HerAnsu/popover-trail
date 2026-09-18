@@ -156,6 +156,20 @@ export class FixedPool<T> {
   }
 
   /**
+   * Ensures the pool has at least `count` pre-allocated instances ready in its slots.
+   *
+   * @param count - Desired target capacity to prewarm (capped at `capacity`).
+   * @returns `this` for fluent chaining.
+   */
+  prewarm(count: number): this {
+    const target = Math.min(count, this.capacity);
+    while (this.head < target) {
+      this.slots[this.head++] = this.factory();
+    }
+    return this;
+  }
+
+  /**
    * Empties the pool by resetting the available items pointer.
    */
   clear(): void {

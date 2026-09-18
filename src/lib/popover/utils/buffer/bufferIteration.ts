@@ -202,3 +202,37 @@ export function bufferToReversedArray<T>(state: ReadonlyRingBufferState<T>): T[]
   forEachReversedItem(state, (it) => res.push(it));
   return res;
 }
+
+/**
+ * Creates an iterable iterator yielding items in reverse logical order (newest to oldest).
+ * Operates with zero heap allocations.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @returns An `IterableIterator<T>` moving backwards from tail to head.
+ *
+ * @example
+ * ```typescript
+ * for (const item of createBufferReversedIterator(state)) {
+ *   console.log(item);
+ * }
+ * ```
+ */
+export function createBufferReversedIterator<T>(
+  state: ReadonlyRingBufferState<T>,
+): IterableIterator<T> {
+  let cur = state.count - 1;
+  return {
+    next(): IteratorResult<T> {
+      if (cur < 0) return { done: true, value: undefined };
+      const val = getBufferItem(state, toLogicalIndex(cur--));
+      return val !== undefined
+        ? { done: false, value: val }
+        : { done: true, value: undefined };
+    },
+    [Symbol.iterator]() {
+      return this;
+    },
+  };
+}
+

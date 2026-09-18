@@ -6,61 +6,22 @@
  */
 
 import { DISPOSE_SYMBOL, type ScopeDisposable } from '../resource/disposableTypes';
-import type { ObjectPoolMetrics, ObjectPoolOptions } from './poolTypes';
-import { ObjectPool } from './objectPoolCore';
-import { FixedPool } from './fixedPool';
+import type {
+  ObjectPoolMetrics,
+  Pooled,
+  PooledTuple,
+  PoolResetPolicy,
+  TupleOf,
+  UnifiedPoolOptions,
+} from './poolTypes';
 import { KeyedPool, type KeyedPoolOptions } from './keyedPool';
 import type { PoolCapacity } from './poolBranded';
+import { attachDisposableHandle } from './poolScope';
+import { tryResetItem } from './poolOperations';
+import { type PoolDriver, createPoolDriver } from './poolDriver';
 
-/**
- * Compile-time tuple type representing an exact length array of `T`.
- */
-export type TupleOf<T, N extends number> =
-  N extends 1 ? [T] :
-  N extends 2 ? [T, T] :
-  N extends 3 ? [T, T, T] :
-  N extends 4 ? [T, T, T, T] :
-  N extends 5 ? [T, T, T, T, T] :
-  N extends 6 ? [T, T, T, T, T, T] :
-  N extends 7 ? [T, T, T, T, T, T, T] :
-  N extends 8 ? [T, T, T, T, T, T, T, T] :
-  T[];
-
-/**
- * An acquired pooled item augmented with synchronous RAII disposal contracts.
- * Compatible with the native ECMAScript / TypeScript `using` keyword.
- *
- * @template T - Type of pooled object.
- */
-export type Pooled<T> = T & ScopeDisposable & {
-  readonly [DISPOSE_SYMBOL]: () => void;
-  dispose: () => void;
-  readonly isDisposed: boolean;
-};
-
-/**
- * Configuration options for `Pool.create`.
- */
-export interface UnifiedPoolOptions<T> extends Partial<Omit<ObjectPoolOptions<T>, 'factory'>> {
-  readonly factory?: () => T;
-  readonly mode?: 'dynamic' | 'fixed';
-}
-
-/**
- * Underlying implementation driver contract for `Pool<T>`.
- */
-interface PoolDriver<T> {
-  acquire(): T;
-  release(item?: T | null): boolean;
-  clear(): void;
-  dispose(): void;
-  readonly size: number;
-  readonly inUse: number;
-  readonly capacity: number;
-  readonly isFull: boolean;
-  readonly isEmpty: boolean;
-  getMetrics?(): ObjectPoolMetrics;
-}
+export type { Pooled, PooledTuple, TupleOf, UnifiedPoolOptions, PoolResetPolicy };
+export type { PoolDriver };
 
 /**
  * Unified, ergonomic object pool for zero-allocation performance and modern DX.
@@ -96,6 +57,8 @@ interface PoolDriver<T> {
 export class Pool<T extends object> implements ScopeDisposable {
   private readonly driver: PoolDriver<T>;
   private readonly activeHandles = new WeakSet<T>();
+  private readonly resetCallback?: (item: T) => void;
+  private readonly resetOnAcquire: boolean;
 
   /**
    * Creates a dynamic auto-scaling `Pool<T>`.
@@ -149,45 +112,10 @@ export class Pool<T extends object> implements ScopeDisposable {
     factory: () => T,
     options: UnifiedPoolOptions<T> = {},
   ) {
-    const { mode = 'dynamic', reset, initialCapacity = 32, maxCapacity = 256 } = options;
-
-    if (mode === 'fixed') {
-      const fixed = new FixedPool<T>(factory, initialCapacity, reset);
-      this.driver = {
-        acquire: () => fixed.acquire(),
-        release: (item) => fixed.release(item),
-        clear: () => fixed.clear(),
-        dispose: () => fixed.dispose(),
-        get size() { return fixed.size; },
-        get inUse() { return fixed.inUse; },
-        get capacity() { return fixed.capacity; },
-        get isFull() { return fixed.isFull; },
-        get isEmpty() { return fixed.isEmpty; },
-      };
-    } else {
-      const dyn = new ObjectPool<T>({
-        ...options,
-        factory,
-        reset,
-        initialCapacity,
-        maxCapacity,
-      });
-      this.driver = {
-        acquire: () => dyn.acquire(),
-        release: (item) => {
-          dyn.release(item);
-          return true;
-        },
-        clear: () => dyn.clear(),
-        dispose: () => dyn.dispose(),
-        get size() { return dyn.size; },
-        get inUse() { return dyn.inUse; },
-        get capacity() { return dyn.capacity; },
-        get isFull() { return dyn.size >= dyn.capacity; },
-        get isEmpty() { return dyn.size === 0; },
-        getMetrics: () => dyn.getMetrics(),
-      };
-    }
+    const resolved = createPoolDriver(factory, options);
+    this.driver = resolved.driver;
+    this.resetCallback = resolved.resetCallback;
+    this.resetOnAcquire = resolved.resetOnAcquire;
   }
 
   /**
@@ -196,7 +124,11 @@ export class Pool<T extends object> implements ScopeDisposable {
    * @returns An acquired instance from the pool.
    */
   acquire(): T {
-    return this.driver.acquire();
+    const item = this.driver.acquire();
+    if (this.resetOnAcquire) {
+      tryResetItem(this.resetCallback, item);
+    }
+    return item;
   }
 
   /**
@@ -227,32 +159,59 @@ export class Pool<T extends object> implements ScopeDisposable {
    * ```
    */
   borrow(): Pooled<T> {
-    const item = this.driver.acquire();
+    const item = this.acquire();
     this.activeHandles.add(item);
+    return attachDisposableHandle(item, () => this.release(item));
+  }
 
-    let released = false;
-    const dispose = () => {
-      if (released) return;
-      released = true;
-      this.release(item);
-    };
+  /**
+   * Borrows multiple items from the pool as a strongly typed tuple augmented with RAII disposal.
+   * When disposed (via `using` or `.dispose()`), all items in the tuple are released back to the pool.
+   *
+   * @template N - Number of items to borrow.
+   * @param count - Count of items to borrow (1 to 8).
+   * @returns Typed tuple array with RAII disposal contracts.
+   *
+   * @example
+   * ```typescript
+   * {
+   *   using items = pool.borrowMany(2);
+   *   const [p1, p2] = items;
+   *   p1.x = 10;
+   *   p2.x = 20;
+   * } // Both p1 and p2 are automatically released!
+   * ```
+   */
+  borrowMany<N extends number>(count: N): PooledTuple<T, N> {
+    const safeCount = Math.max(1, count);
+    const items: T[] = [];
+    for (let i = 0; i < safeCount; i++) {
+      const item = this.acquire();
+      this.activeHandles.add(item);
+      items.push(item);
+    }
+    return attachDisposableHandle(items, () => {
+      for (const item of items) {
+        this.release(item);
+      }
+    }) as PooledTuple<T, N>;
+  }
 
-    Object.defineProperty(item, DISPOSE_SYMBOL, {
-      value: dispose,
-      configurable: true,
-      writable: true,
-    });
-    Object.defineProperty(item, 'dispose', {
-      value: dispose,
-      configurable: true,
-      writable: true,
-    });
-    Object.defineProperty(item, 'isDisposed', {
-      get: () => released,
-      configurable: true,
-    });
-
-    return item as Pooled<T>;
+  /**
+   * Pre-allocates and warms up the pool storage up to `count` items.
+   * Ensures that subsequent hot-path acquisitions are immediate zero-allocation hits.
+   *
+   * @param count - Minimum number of idle items to ensure in the pool.
+   * @returns `this` for fluent chaining.
+   *
+   * @example
+   * ```typescript
+   * const pointPool = Pool.create(() => ({ x: 0, y: 0 })).prewarm(64);
+   * ```
+   */
+  prewarm(count: number): this {
+    this.driver.prewarm?.(count);
+    return this;
   }
 
   /**

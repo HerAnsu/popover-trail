@@ -74,4 +74,55 @@ describe('RingBuffer Core', () => {
     expect(ring.size).toBe(0);
     expect(ring.isEmpty).toBe(true);
   });
+
+  it('supports fluent method chaining', () => {
+    const ring = new RingBuffer<string>(5);
+    ring.push('step-1').push('step-2').push('step-3');
+    expect(ring.toArray()).toEqual(['step-1', 'step-2', 'step-3']);
+  });
+
+  it('provides first and last getters matching oldest and newest elements', () => {
+    const ring = new RingBuffer<string>(4);
+    expect(ring.first).toBeUndefined();
+    expect(ring.last).toBeUndefined();
+
+    ring.push('first-item').push('middle').push('last-item');
+    expect(ring.first).toBe('first-item');
+    expect(ring.last).toBe('last-item');
+  });
+
+  it('iterates backwards from newest to oldest via valuesReversed', () => {
+    const ring = new RingBuffer<number>(5);
+    ring.push(10).push(20).push(30);
+
+    const reversed = [...ring.valuesReversed()];
+    expect(reversed).toEqual([30, 20, 10]);
+  });
+
+  it('serializes cleanly into JSON array via toJSON', () => {
+    const ring = new RingBuffer<string>(3);
+    ring.push('alpha').push('beta');
+
+    expect(JSON.stringify(ring)).toBe('["alpha","beta"]');
+  });
+
+  it('removes elements in-place with remove and removeAt', () => {
+    const ring = new RingBuffer<string>(5);
+    ring.push('a').push('b').push('c').push('d');
+
+    // remove by item
+    const removedB = ring.remove('b');
+    expect(removedB).toBe(true);
+    expect(ring.toArray()).toEqual(['a', 'c', 'd']);
+
+    // remove by relative index (-1 = last element)
+    const removedD = ring.removeAt(-1);
+    expect(removedD).toBe('d');
+    expect(ring.toArray()).toEqual(['a', 'c']);
+
+    // remove non-existent
+    expect(ring.remove('non-existent')).toBe(false);
+    expect(ring.removeAt(10)).toBeUndefined();
+  });
 });
+

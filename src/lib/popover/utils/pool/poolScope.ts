@@ -5,7 +5,7 @@
  * @module utils/pool/poolScope
  */
 
-import { DISPOSE_SYMBOL } from '../disposable';
+import { DISPOSE_SYMBOL, type ScopeDisposable } from '../disposable';
 import type { Result } from '../result';
 import type { ScopedPooledItem } from './poolTypes';
 
@@ -142,3 +142,50 @@ export function createScopedItem<T>(
   };
   return { value: item, release: doRelease, dispose: doRelease, [DISPOSE_SYMBOL]: doRelease };
 }
+
+/**
+ * Augments an object or tuple array with modern synchronous RAII disposal contracts.
+ * Compatible with the native ECMAScript / TypeScript `using` keyword.
+ *
+ * @template T - Target object type.
+ * @param target - The object or tuple to augment.
+ * @param onDispose - Cleanup routine invoked upon disposal.
+ * @returns The target augmented with `[DISPOSE_SYMBOL]`, `dispose()`, and `isDisposed`.
+ */
+export function attachDisposableHandle<T extends object>(
+  target: T,
+  onDispose: () => void,
+): T & ScopeDisposable & {
+  readonly [DISPOSE_SYMBOL]: () => void;
+  dispose: () => void;
+  readonly isDisposed: boolean;
+} {
+  let released = false;
+  const dispose = () => {
+    if (released) return;
+    released = true;
+    onDispose();
+  };
+
+  Object.defineProperty(target, DISPOSE_SYMBOL, {
+    value: dispose,
+    configurable: true,
+    writable: true,
+  });
+  Object.defineProperty(target, 'dispose', {
+    value: dispose,
+    configurable: true,
+    writable: true,
+  });
+  Object.defineProperty(target, 'isDisposed', {
+    get: () => released,
+    configurable: true,
+  });
+
+  return target as T & ScopeDisposable & {
+    readonly [DISPOSE_SYMBOL]: () => void;
+    dispose: () => void;
+    readonly isDisposed: boolean;
+  };
+}
+

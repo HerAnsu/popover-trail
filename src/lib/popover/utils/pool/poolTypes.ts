@@ -5,7 +5,7 @@
  * @module utils/pool/poolTypes
  */
 
-import { DISPOSE_SYMBOL } from '../disposable';
+import { DISPOSE_SYMBOL, type ScopeDisposable } from '../disposable';
 import type { PoolCapacity, PoolSize, PoolTimeoutMs } from './poolBranded';
 
 export interface ObjectPoolOptions<T> {
@@ -18,6 +18,62 @@ export interface ObjectPoolOptions<T> {
   readonly enableLeakDetection?: boolean;
   readonly leakTimeoutMs?: number | PoolTimeoutMs;
 }
+
+/**
+ * Execution timing policy for the pool reset callback.
+ * - 'release': executes when items are returned to the pool (default).
+ * - 'acquire': executes when items are borrowed from the pool.
+ * - 'both': executes on both acquisition and release.
+ */
+export type PoolResetPolicy = 'acquire' | 'release' | 'both';
+
+/**
+ * Configuration options for `Pool.create`.
+ */
+export interface UnifiedPoolOptions<T> extends Partial<Omit<ObjectPoolOptions<T>, 'factory'>> {
+  readonly factory?: () => T;
+  readonly mode?: 'dynamic' | 'fixed';
+  readonly resetOn?: PoolResetPolicy;
+}
+
+/**
+ * Compile-time tuple type representing an exact length array of `T`.
+ */
+export type TupleOf<T, N extends number> =
+  N extends 1 ? [T] :
+  N extends 2 ? [T, T] :
+  N extends 3 ? [T, T, T] :
+  N extends 4 ? [T, T, T, T] :
+  N extends 5 ? [T, T, T, T, T] :
+  N extends 6 ? [T, T, T, T, T, T] :
+  N extends 7 ? [T, T, T, T, T, T, T] :
+  N extends 8 ? [T, T, T, T, T, T, T, T] :
+  T[];
+
+/**
+ * An acquired pooled item augmented with synchronous RAII disposal contracts.
+ * Compatible with the native ECMAScript / TypeScript `using` keyword.
+ *
+ * @template T - Type of pooled object.
+ */
+export type Pooled<T> = T & ScopeDisposable & {
+  readonly [DISPOSE_SYMBOL]: () => void;
+  dispose: () => void;
+  readonly isDisposed: boolean;
+};
+
+/**
+ * An acquired tuple of pooled items augmented with synchronous RAII disposal contracts.
+ * Compatible with the native ECMAScript / TypeScript `using` keyword.
+ *
+ * @template T - Type of pooled object.
+ * @template N - Tuple item count.
+ */
+export type PooledTuple<T, N extends number> = TupleOf<T, N> & ScopeDisposable & {
+  readonly [DISPOSE_SYMBOL]: () => void;
+  dispose: () => void;
+  readonly isDisposed: boolean;
+};
 
 export interface ObjectPoolMetrics {
   readonly allocated: number;

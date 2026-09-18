@@ -69,4 +69,13 @@ export interface ReadonlyRingBuffer<T> extends Iterable<T> {
   toArray(): T[];
   toReversedArray(): T[];
   toReadonlyArray(): readonly T[];
+  /** Oldest (first inserted) item currently resting in the buffer. */
+  readonly first: T | undefined;
+  /** Most recently inserted item currently resting in the buffer. */
+  readonly last: T | undefined;
+  /** Zero-allocation iterator yielding items from newest to oldest. */
+  valuesReversed(): IterableIterator<T>;
+  /** Serializes the buffer elements into a plain JSON array for JSON.stringify. */
+  toJSON(): T[];
 }
+

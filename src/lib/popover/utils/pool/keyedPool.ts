@@ -6,9 +6,10 @@
  */
 
 import { DISPOSE_SYMBOL } from '../disposable';
-import type { ObjectPoolMetrics, ObjectPoolOptions } from './poolTypes';
+import type { ObjectPoolMetrics, ObjectPoolOptions, Pooled, PooledTuple, TupleOf } from './poolTypes';
 import { ObjectPool } from './objectPoolCore';
 import { last } from '../arrayUtils';
+import { attachDisposableHandle } from './poolScope';
 
 export interface KeyedPoolOptions<K, T> {
   factory: (key: K) => T;
@@ -84,6 +85,59 @@ export class KeyedPool<K, T> {
   }
 
   /**
+   * Borrows an item from the partition pool mapped to `key`, augmented with RAII disposal contracts.
+   * Compatible with the native ECMAScript / TypeScript `using` keyword.
+   *
+   * @param key - Partition key.
+   * @returns The pooled item wrapped with RAII disposal contracts.
+   *
+   * @example
+   * ```typescript
+   * {
+   *   using buf = keyedPool.borrow('scratch');
+   *   buf.fill(0);
+   * } // automatically released back to partition 'scratch' at scope exit!
+   * ```
+   */
+  borrow(key: K): Pooled<T> {
+    const item = this.acquire(key);
+    return attachDisposableHandle(item as object, () => this.release(key, item)) as Pooled<T>;
+  }
+
+  /**
+   * Borrows multiple items from partition `key` as a strongly typed tuple augmented with RAII disposal.
+   *
+   * @template N - Number of items to borrow.
+   * @param key - Partition key.
+   * @param count - Count of items to borrow.
+   * @returns Typed tuple array with RAII disposal contracts.
+   */
+  borrowMany<N extends number>(key: K, count: N): PooledTuple<T, N> {
+    const safeCount = Math.max(1, count);
+    const items: T[] = [];
+    for (let i = 0; i < safeCount; i++) {
+      items.push(this.acquire(key));
+    }
+    return attachDisposableHandle(items, () => {
+      for (const item of items) {
+        this.release(key, item);
+      }
+    }) as PooledTuple<T, N>;
+  }
+
+  /**
+   * Pre-warms the partition pool associated with `key` up to `count` items.
+   *
+   * @param key - Partition key.
+   * @param count - Desired target capacity to prewarm.
+   * @returns `this` for fluent chaining.
+   */
+  prewarm(key: K, count: number): this {
+    this.getPool(key).warmup(count);
+    return this;
+  }
+
+  /**
    * Scoped execution helper: borrows an item from the partition pool, executes `fn`,
    * and automatically guarantees that the item is released upon return or error.
    *
@@ -102,15 +156,37 @@ export class KeyedPool<K, T> {
   }
 
   /**
-   * Alias for `runWith`.
-   *
-   * @template R - Return value type.
-   * @param key - Partition key.
-   * @param fn - Work function receiving the borrowed item.
-   * @returns The result produced by `fn`.
+   * Scoped execution helper for partition `key`: borrows an item, executes `fn`,
+   * and automatically guarantees that the item is released upon return or error.
    */
-  use<R>(key: K, fn: (item: T) => R): R {
-    return this.runWith(key, fn);
+  use<R>(key: K, fn: (item: T) => R): R;
+  /**
+   * Scoped execution helper for `count` items from partition `key`, provided as a strongly typed tuple.
+   */
+  use<N extends number, R>(key: K, count: N, fn: (items: TupleOf<T, N>) => R): R;
+  use<R>(
+    key: K,
+    first: ((item: T) => R) | number,
+    second?: (items: never) => R,
+  ): R {
+    if (typeof first === 'function') {
+      return this.runWith(key, first);
+    }
+    if (typeof second !== 'function') {
+      throw new TypeError('Expected callback function');
+    }
+    const count = Math.max(1, first);
+    const items: T[] = [];
+    try {
+      for (let i = 0; i < count; i++) {
+        items.push(this.acquire(key));
+      }
+      return second(items as never);
+    } finally {
+      for (const item of items) {
+        this.release(key, item);
+      }
+    }
   }
 
   /**

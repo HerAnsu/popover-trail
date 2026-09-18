@@ -46,6 +46,7 @@ export * from './utils/clsx';
 
 // Resource Management & Disposables
 export * from './utils/resource';
+export * from './utils/pool';
 export * from './utils/buffer';
 export * from './utils/cache';
 

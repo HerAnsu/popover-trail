@@ -84,3 +84,65 @@ export function fillBuffer<T>(state: RingBufferState<T>, value: T): void {
   }
   state.revision = nextRevision(state.revision);
 }
+
+/**
+ * Removes an element at the specified relative or logical index, shifting subsequent elements in-place.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @param index - Target index (supports negative relative offsets).
+ * @returns The removed element or undefined if index is out of bounds.
+ *
+ * @example
+ * ```typescript
+ * const removed = removeAtInRing(state, 2);
+ * ```
+ */
+export function removeAtInRing<T>(
+  state: RingBufferState<T>,
+  index: BufferRelativeIndex,
+): T | undefined {
+  if (state.count === 0) return undefined;
+  const offset = index < 0 ? state.count + index : index;
+  if (!isLogicalIndex(offset) || offset >= state.count) return undefined;
+
+  const targetPhys = getPhysicalIndex(state, offset);
+  const removed = state.buffer[targetPhys];
+
+  for (let i = offset; i < state.count - 1; i++) {
+    const currPhys = getPhysicalIndex(state, i);
+    const nextPhys = getPhysicalIndex(state, i + 1);
+    state.buffer[currPhys] = state.buffer[nextPhys];
+  }
+
+  const lastPhys = getPhysicalIndex(state, state.count - 1);
+  state.buffer[lastPhys] = undefined;
+  state.count--;
+  state.revision = nextRevision(state.revision);
+  return removed;
+}
+
+/**
+ * Removes the first occurrence of an item from the buffer, shifting elements in-place.
+ *
+ * @template T - Type of elements stored in the buffer.
+ * @param state - Target buffer state.
+ * @param item - Value to locate and remove.
+ * @returns `true` if item was found and removed; `false` otherwise.
+ *
+ * @example
+ * ```typescript
+ * const removed = removeInRing(state, 'card-1');
+ * ```
+ */
+export function removeInRing<T>(state: RingBufferState<T>, item: T): boolean {
+  for (let i = 0; i < state.count; i++) {
+    const phys = getPhysicalIndex(state, i);
+    if (state.buffer[phys] === item) {
+      removeAtInRing(state, i);
+      return true;
+    }
+  }
+  return false;
+}
+
