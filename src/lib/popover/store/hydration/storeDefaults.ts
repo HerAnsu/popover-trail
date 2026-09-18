@@ -85,6 +85,18 @@ export const RESETTABLE_STORE_PATCH: ResettableStorePatch<string> = Object.freez
   anchorRect: null,
 });
 
+/**
+ * Returns a clean, frozen patch for resetting dynamic store properties to initial empty values.
+ *
+ * @example
+ * ```ts
+ * const patch = getResettableStorePatch();
+ * store.setState(patch);
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @returns ResettableStorePatch containing empty arrays, records, and zero counters.
+ */
 export function getResettableStorePatch<
   TPopoverKey extends string = string,
 >(): ResettableStorePatch<TPopoverKey> {
@@ -100,9 +112,25 @@ export function getResettableStorePatch<
   };
 }
 
+/**
+ * Constructs the complete baseline initial state object for a newly initialized popover store.
+ *
+ * @example
+ * ```ts
+ * const initialState = getInitialStoreState(resolveData, initialContext, cache);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param resolveData - Async data resolver function.
+ * @param initialContext - Optional initial context object.
+ * @param cache - Optional cache instance override.
+ * @returns Complete initial PopoverStateData object.
+ */
 export function getInitialStoreState<
-  TData = unknown,
-  TContext = unknown,
+  TData,
+  TContext,
   TPopoverKey extends string = string,
 >(
   resolveData: PopoverResolver<TData, TContext>,

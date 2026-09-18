@@ -12,6 +12,20 @@ export interface HydrationState {
   nestedHydrationRequestCounters: Record<string, number>;
 }
 
+/**
+ * Creates a hydration monotonicity manager for tracking root, nested, and epoch staleness counters.
+ *
+ * @example
+ * ```ts
+ * const hydration = createHydrationManager();
+ * const token = hydration.incrementRootCounter();
+ * if (hydration.isRootStale(token)) {
+ *   // aborted by concurrent request
+ * }
+ * ```
+ *
+ * @returns HydrationManager instance with monotonicity and invalidation methods.
+ */
 export function createHydrationManager() {
   let rootCounter = 0;
   let epoch = 0;

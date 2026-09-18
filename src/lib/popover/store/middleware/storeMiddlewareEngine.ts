@@ -24,6 +24,14 @@ function isStorePatchObject<TData, TContext, TPopoverKey extends string>(
  * - Middleware runs inside isolated `try/catch` blocks so an error in custom logic never crashes the store.
  * - Uses Copy-On-Write: the original patch is only cloned if a middleware actually modifies it.
  *
+ * @example
+ * ```ts
+ * const engine = new PopoverMiddlewareEngine();
+ * engine.use((patch, state) => {
+ *   console.log('Patch proposed:', patch);
+ * });
+ * ```
+ *
  * @template TData - Popover payload data type.
  * @template TContext - Global application context type.
  * @template TPopoverKey - Registered string key identifiers.
@@ -118,6 +126,15 @@ export class PopoverMiddlewareEngine<
  * Executes registered middleware in linear sequence. Short-circuits immediately if any middleware
  * returns `false`. Clones the patch container lazily on the first patch mutation (Copy-On-Write).
  *
+ * @example
+ * ```ts
+ * const pipeline = composeMiddlewares(loggerMiddleware, authGuardMiddleware);
+ * store.useMiddleware(pipeline);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global application context type.
+ * @template TPopoverKey - Registered string key identifiers.
  * @param middlewares - Variable list of middleware callbacks.
  * @returns Composed composite middleware function.
  */

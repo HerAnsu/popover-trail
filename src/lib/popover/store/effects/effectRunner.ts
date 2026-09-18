@@ -79,6 +79,23 @@ function runSingleEffect<TData, TPopoverKey extends string, TContext>(
   }
 }
 
+/**
+ * Executes a sequential sequence of declarative side effects within fault boundaries.
+ *
+ * @example
+ * ```ts
+ * runEffects([
+ *   { type: 'CANCEL_TIMER_FOR_KEY', key: 'card-1' },
+ *   { type: 'EMIT_EVENT', event: { type: 'close', key: 'card-1' } },
+ * ], runnerDependencies);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TContext - Global shared store context type.
+ * @param effects - Readonly array of declarative side effect descriptors.
+ * @param deps - Effect runner dependencies providing timers, DAG, bus, and abort controllers.
+ */
 export function runEffects<TData, TPopoverKey extends string = string, TContext = unknown>(
   effects: readonly Effect<TData, TPopoverKey, TContext>[],
   deps: EffectRunnerDependencies<TData, TPopoverKey, TContext>,

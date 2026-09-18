@@ -13,6 +13,26 @@ import type { TransitionBatchHandle } from './transitionSchedulerTypes';
 
 export type { TransitionBatchHandle };
 
+/**
+ * RAII-compliant scheduler managing enter, exit, and hover transition timers.
+ *
+ * @remarks
+ * Coordinates micro-delays for hover-intent closing and exit CSS/JS transition animations.
+ * Ensures that timers associated with removed or unmounted popovers are cleanly cancelled.
+ *
+ * @example
+ * ```ts
+ * const scheduler = new PopoverTransitionScheduler();
+ * scheduler.scheduleHoverLeave('card-1', 150, () => {
+ *   store.actions.closeByKey('card-1');
+ * });
+ *
+ * // Cancel when user re-enters:
+ * scheduler.cancelHover('card-1');
+ * ```
+ *
+ * @template _TPopoverKey - Union of valid popover string keys.
+ */
 export class PopoverTransitionScheduler<
   _TPopoverKey extends string = string,
 > implements ScopeDisposable {
