@@ -35,10 +35,12 @@ export function isSchemaNode<TData = unknown, TParentData = unknown, TContext = 
   val: unknown,
 ): val is PopoverSchemaNode<TData, TParentData, TContext> {
   if (!isPlainObject(val)) return false;
+  const { resolver, children, defaultPlacement, placement } = val as Record<string, unknown>;
 
-  if (typeof val.resolver !== 'function') return false;
-  if (val.children !== undefined && !isArray(val.children)) return false;
-  if (val.defaultPlacement !== undefined && !isPopoverPlacement(val.defaultPlacement)) {
+  if (typeof resolver !== 'function') return false;
+  if (children !== undefined && !isArray(children)) return false;
+  const testPlacement = placement ?? defaultPlacement;
+  if (testPlacement !== undefined && !isPopoverPlacement(testPlacement)) {
     return false;
   }
 

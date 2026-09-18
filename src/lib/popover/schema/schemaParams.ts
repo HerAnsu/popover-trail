@@ -59,11 +59,12 @@ export function parseResolverInvocationParams<TC>(
   signal?: AbortSignal,
 ): { key: string; parentData: unknown; context: TC | undefined; signal: AbortSignal | undefined } {
   if (isParsedKeyParams<TC>(rawKey)) {
+    const { key: rKey, parentData: rData, context: rContext, signal: rSignal } = rawKey;
     return {
-      key: String(rawKey.key ?? ''),
-      parentData: rawKey.parentData ?? parentData,
-      context: rawKey.context ?? context,
-      signal: rawKey.signal ?? signal,
+      key: String(rKey ?? ''),
+      parentData: rData ?? parentData,
+      context: rContext ?? context,
+      signal: rSignal ?? signal,
     };
   }
   return {

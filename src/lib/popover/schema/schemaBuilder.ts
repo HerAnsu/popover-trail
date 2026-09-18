@@ -79,17 +79,18 @@ export function createPopoverSchema<
   > => {
     return (rawKey: string | object, parentData?: unknown, context?: TC, signal?: AbortSignal) => {
       const parsed = parseResolverInvocationParams(rawKey, parentData, context, signal);
-      const isKey = isValidSchemaKey(definition, parsed.key);
-      validateSchemaKey(isKey, parsed.key);
-      if (isValidSchemaKey(definition, parsed.key)) {
-        const node = definition[parsed.key];
+      const { key: parsedKey, parentData: pData, context: pContext, signal: pSignal } = parsed;
+      const isKey = isValidSchemaKey(definition, parsedKey);
+      validateSchemaKey(isKey, parsedKey);
+      if (isKey) {
+        const node = definition[parsedKey];
         if (node && typeof node.resolver === 'function') {
           return Promise.resolve(
-            node.resolver(parsed.key, parsed.parentData, parsed.context, parsed.signal),
+            node.resolver(parsedKey, pData, pContext, pSignal),
           ) as Promise<SchemaData<TSchema, SchemaKeys<TSchema>>>;
         }
       }
-      return Promise.reject(new Error(`No schema resolver defined for key: "${parsed.key}"`));
+      return Promise.reject(new Error(`No schema resolver defined for key: "${parsedKey}"`));
     };
   };
 

@@ -33,8 +33,9 @@ export function createSchemaTrigger<TSchema extends PopoverSchemaDefinition>(
     Omit<PopoverTriggerProps, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }
   > = ({ popoverKey, placement, offset, options, ...restProps }) => {
     const node = definition[popoverKey];
-    const mergedPlacement = placement ?? node?.placement;
-    const mergedOffset = offset ?? node?.offset;
+    const { placement: nodePlacement, offset: nodeOffset } = node ?? {};
+    const mergedPlacement = placement ?? nodePlacement;
+    const mergedOffset = offset ?? nodeOffset;
     const mergedOptions = useMemo(() => mergeSchemaNodeOptions(node, options), [node, options]);
 
     return (

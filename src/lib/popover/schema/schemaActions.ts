@@ -42,6 +42,19 @@ export function createSchemaActionsHook<
 >(definition: TSchema): () => SchemaActionsHook<TSchema> {
   return function useActions(): SchemaActionsHook<TSchema> {
     const actions = usePopoverActions<unknown, TContext, SchemaKeys<TSchema>>();
+    const {
+      openRootWithResolver,
+      openNestedWithResolver,
+      closeByKey,
+      closeAll,
+      togglePin,
+      bringToFront,
+      retryPopover,
+      prefetchPopover,
+      invalidate,
+      subscribeKey,
+      clear,
+    } = actions;
 
     return useMemo(
       () => ({
@@ -52,7 +65,7 @@ export function createSchemaActionsHook<
         ) => {
           const node = definition[key];
           validateSchemaKey(Boolean(node), String(key));
-          return actions.openRootWithResolver(
+          return openRootWithResolver(
             key,
             anchorEvent,
             mergeSchemaNodeOptions(node, options),
@@ -66,32 +79,44 @@ export function createSchemaActionsHook<
           const strKey = String(key);
           const node = definition[strKey];
           validateSchemaKey(Boolean(node), strKey);
-          return actions.openNestedWithResolver(
+          return openNestedWithResolver(
             key,
             sourceKey,
             mergeSchemaNodeOptions(node, options),
           );
         },
         close: (key: SchemaKeys<TSchema>, options?: { transition?: boolean }) =>
-          actions.closeByKey(key, options),
-        closeAll: () => actions.closeAll(),
-        togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) => actions.togglePin(key, rect),
-        bringToFront: (key: SchemaKeys<TSchema>) => actions.bringToFront(key),
-        retryPopover: (key: SchemaKeys<TSchema>) => actions.retryPopover(key),
+          closeByKey(key, options),
+        closeAll: () => closeAll(),
+        togglePin: (key: SchemaKeys<TSchema>, rect?: DOMRect) => togglePin(key, rect),
+        bringToFront: (key: SchemaKeys<TSchema>) => bringToFront(key),
+        retryPopover: (key: SchemaKeys<TSchema>) => retryPopover(key),
         prefetchPopover: (key: SchemaKeys<TSchema>, parentData?: unknown) =>
-          actions.prefetchPopover(key, parentData),
+          prefetchPopover(key, parentData),
         invalidate: (keyOrKeys: SchemaKeys<TSchema> | readonly SchemaKeys<TSchema>[]) =>
-          actions.invalidate(keyOrKeys),
+          invalidate(keyOrKeys),
         subscribeKey: <K extends SchemaKeys<TSchema>>(
           key: K,
           listener: (
             entry: TrailEntry<SchemaData<TSchema, K>, K> | undefined,
             prevEntry: TrailEntry<SchemaData<TSchema, K>, K> | undefined,
           ) => void,
-        ) => actions.subscribeKey<K, SchemaData<TSchema, K>>(key, listener),
-        clear: () => actions.clear(),
+        ) => subscribeKey<K, SchemaData<TSchema, K>>(key, listener),
+        clear: () => clear(),
       }),
-      [actions],
+      [
+        openRootWithResolver,
+        openNestedWithResolver,
+        closeByKey,
+        closeAll,
+        togglePin,
+        bringToFront,
+        retryPopover,
+        prefetchPopover,
+        invalidate,
+        subscribeKey,
+        clear,
+      ],
     );
   };
 }

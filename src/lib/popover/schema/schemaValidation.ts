@@ -51,8 +51,9 @@ export function toSchemaKey<TSchema extends PopoverSchemaDefinition, K extends S
  */
 export function validateSchemaIntegrity(definition: PopoverSchemaDefinition): void {
   for (const [parentKey, node] of Object.entries(definition)) {
-    if (!node?.children) continue;
-    for (const childKey of node.children) {
+    const { children } = node ?? {};
+    if (!children) continue;
+    for (const childKey of children) {
       validateSchemaCircularChild(parentKey, childKey);
       if (!isValidSchemaChildKey(definition, childKey)) {
         validateSchemaKey(false, childKey);

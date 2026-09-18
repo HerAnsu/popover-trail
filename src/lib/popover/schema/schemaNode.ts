@@ -41,7 +41,8 @@ export function defineSchemaNode<TData, TParentData = unknown, TContext = unknow
 export function getAllowedChildren<TData, TParent, TContext>(
   node: PopoverSchemaNode<TData, TParent, TContext>,
 ): readonly string[] {
-  return node.children ? [...node.children] : [];
+  const { children } = node;
+  return children ? [...children] : [];
 }
 
 /**
@@ -60,5 +61,6 @@ export function hasAllowedChild<TData, TParent, TContext>(
   node: PopoverSchemaNode<TData, TParent, TContext>,
   childKey: string,
 ): boolean {
-  return node.children ? node.children.includes(childKey) : false;
+  const { children } = node;
+  return children ? children.includes(childKey) : false;
 }
