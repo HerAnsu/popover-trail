@@ -40,7 +40,7 @@ const REACT_USE: (<T>(usable: Promise<T>) => T) | undefined =
  * ```
  */
 export function usePopoverOffsets() {
-  return usePopoverStore((state) => state.offsets, shallowEqual);
+  return usePopoverStore(({ offsets }) => offsets, shallowEqual);
 }
 
 /**
@@ -150,11 +150,13 @@ export function usePopoverData<
   TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
 >(key: K): TData | null | undefined {
   const entry = usePopoverEntry<K, TData>(key);
-  if (entry?.error) return entry.data;
-  if (entry?.dataPromise && REACT_USE) {
-    return REACT_USE(entry.dataPromise);
+  if (!entry) return undefined;
+  const { error, dataPromise, data } = entry;
+  if (error) return data;
+  if (dataPromise && REACT_USE) {
+    return REACT_USE(dataPromise);
   }
-  return entry?.data;
+  return data;
 }
 
 /**

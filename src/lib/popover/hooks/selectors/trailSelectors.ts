@@ -101,7 +101,7 @@ export function usePopoverRootEntry<
  * ```
  */
 export function usePopoverActiveCount(): number {
-  return usePopoverStore((state) => state.floating.length + state.trail.length);
+  return usePopoverStore(({ floating, trail }) => floating.length + trail.length);
 }
 
 /**
@@ -121,7 +121,7 @@ export function usePopoverActiveCount(): number {
  * ```
  */
 export function usePopoverIsIdle(): boolean {
-  return usePopoverStore((state) => state.floating.length === 0 && state.trail.length === 0);
+  return usePopoverStore(({ floating, trail }) => floating.length === 0 && trail.length === 0);
 }
 
 /**

@@ -45,7 +45,7 @@ export function usePopoverIsPinned<TPopoverKey extends string = RegisteredKeys>(
  * ```
  */
 export function usePopoverZIndex<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
-  return usePopoverStore((state) => state.zIndexOrder.indexOf(key));
+  return usePopoverStore(({ zIndexOrder }) => zIndexOrder.indexOf(key));
 }
 
 /**
@@ -66,7 +66,7 @@ export function usePopoverZIndex<TPopoverKey extends string = RegisteredKeys>(ke
  * ```
  */
 export function usePopoverIsTopMost<TPopoverKey extends string = RegisteredKeys>(key: TPopoverKey) {
-  return usePopoverStore((state) => last(state.zIndexOrder) === key);
+  return usePopoverStore(({ zIndexOrder }) => last(zIndexOrder) === key);
 }
 
 /**
@@ -85,7 +85,7 @@ export function usePopoverIsTopMost<TPopoverKey extends string = RegisteredKeys>
  * ```
  */
 export function usePopoverContext<TContext = unknown>() {
-  return usePopoverStore((state: PopoverStore<unknown, TContext>) => state.context);
+  return usePopoverStore(({ context }: PopoverStore<unknown, TContext>) => context);
 }
 
 /**
@@ -99,7 +99,7 @@ export function usePopoverContext<TContext = unknown>() {
  * ```
  */
 export function usePopoverCollisionConfig() {
-  return usePopoverStore((state) => state.collisionConfig);
+  return usePopoverStore(({ collisionConfig }) => collisionConfig);
 }
 
 /**

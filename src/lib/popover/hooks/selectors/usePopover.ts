@@ -65,33 +65,34 @@ export function usePopover<
   const slice = usePopoverStore(
     useCallback(
       (state: PopoverStore<TData, TContext>) => {
-        const entry = findEntryInStore(state.floating, state.trail, key);
+        const { floating, trail, pinnedStates, zIndexOrder, offsets } = state;
+        const entry = findEntryInStore(floating, trail, key);
         return {
           entry,
           isOpen: entry !== undefined,
-
-          isPinned: state.pinnedStates[key] ?? false,
-          zIndex: state.zIndexOrder.indexOf(key),
-          isTop: last(state.zIndexOrder) === key,
-          offset: state.offsets[key] ?? ZERO_OFFSET,
+          isPinned: pinnedStates[key] ?? false,
+          zIndex: zIndexOrder.indexOf(key),
+          isTop: last(zIndexOrder) === key,
+          offset: offsets[key] ?? ZERO_OFFSET,
         };
-
       },
       [key],
     ),
     shallowEqual,
   );
 
-  const actions = usePopoverActions<TData, TContext, K>();
-  const close = useCallback(() => actions.closeByKey(key, { transition: true }), [actions, key]);
+  const { closeByKey, togglePin, bringToFront: bringToFrontAction, updateOffset: updateOffsetAction } =
+    usePopoverActions<TData, TContext, K>();
+
+  const close = useCallback(() => closeByKey(key, { transition: true }), [closeByKey, key]);
   const pin = useCallback(
-    (rect?: DOMRect | PopoverRect) => actions.togglePin(key, rect),
-    [actions, key],
+    (rect?: DOMRect | PopoverRect) => togglePin(key, rect),
+    [togglePin, key],
   );
-  const bringToFront = useCallback(() => actions.bringToFront(key), [actions, key]);
+  const bringToFront = useCallback(() => bringToFrontAction(key), [bringToFrontAction, key]);
   const updateOffset = useCallback(
-    (x: number, y: number) => actions.updateOffset(key, x, y),
-    [actions, key],
+    (x: number, y: number) => updateOffsetAction(key, x, y),
+    [updateOffsetAction, key],
   );
 
   useDebugValue(
@@ -101,18 +102,20 @@ export function usePopover<
   );
 
   return useMemo((): UsePopoverResult<TData> => {
-    if (slice.isOpen && slice.entry) {
+    const { isOpen, entry, isPinned, zIndex, isTop, offset } = slice;
+    if (isOpen && entry) {
+      const { isLoading = false, data = null, error = null } = entry;
       return {
         isOpen: true,
-        entry: slice.entry,
-        state: getEntryState(slice.entry),
-        isPinned: slice.isPinned,
-        zIndex: slice.zIndex,
-        isTop: slice.isTop,
-        offset: slice.offset,
-        isLoading: slice.entry.isLoading ?? false,
-        data: slice.entry.data ?? null,
-        error: slice.entry.error ?? null,
+        entry,
+        state: getEntryState(entry),
+        isPinned,
+        zIndex,
+        isTop,
+        offset,
+        isLoading,
+        data,
+        error,
         close,
         pin,
         bringToFront,
@@ -126,7 +129,7 @@ export function usePopover<
       isPinned: false,
       zIndex: -1,
       isTop: false,
-      offset: slice.offset,
+      offset,
       isLoading: false,
       data: undefined,
       error: undefined,

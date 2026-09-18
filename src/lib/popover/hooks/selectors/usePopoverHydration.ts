@@ -53,11 +53,11 @@ export function usePopoverHydration<
   K extends RegisteredKeys = RegisteredKeys,
   TData = ResolveRegisteredData<K, RegisteredDataMap[RegisteredKeys]>,
 >(key: K) {
-  const actions = usePopoverActions();
+  const { retryPopover } = usePopoverActions();
   const entry = usePopoverEntry<K, TData>(key);
   const reload = useCallback(() => {
-    void actions.retryPopover(key);
-  }, [actions, key]);
+    void retryPopover(key);
+  }, [retryPopover, key]);
 
   let state: PopoverHydrationState<TData> = {
     status: 'idle',
@@ -68,7 +68,8 @@ export function usePopoverHydration<
   };
 
   if (entry) {
-    if (entry.isLoading) {
+    const { isLoading, error, data } = entry;
+    if (isLoading) {
       state = {
         status: 'hydrating',
         isHydrating: true,
@@ -76,30 +77,32 @@ export function usePopoverHydration<
         data: undefined,
         error: null,
       };
-    } else if (entry.error) {
+    } else if (error) {
       state = {
         status: 'error',
         isHydrating: false,
         isHydrated: false,
         data: undefined,
-        error: entry.error,
+        error,
       };
-    } else if (!entry.isLoading && !entry.error) {
+    } else {
       state = {
         status: 'hydrated',
         isHydrating: false,
         isHydrated: true,
-        data: entry.data ?? null,
+        data: data ?? null,
         error: null,
       };
     }
   }
 
+  const { isHydrating: isLoading, error, data } = state;
+
   return {
     state,
-    isLoading: state.isHydrating,
-    error: state.error,
-    data: state.data,
+    isLoading,
+    error,
+    data,
     reload,
   };
 }
