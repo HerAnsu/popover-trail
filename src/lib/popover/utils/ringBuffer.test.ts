@@ -63,4 +63,15 @@ describe('RingBuffer Core', () => {
     expect(ring.isEmpty).toBe(true);
     expect(ring.toArray()).toEqual([]);
   });
+
+  it('supports RAII Symbol.dispose and clears buffer', () => {
+    const ring = new RingBuffer<string>(3);
+    ring.push('x');
+    ring.push('y');
+    expect(ring.size).toBe(2);
+
+    ring.dispose();
+    expect(ring.size).toBe(0);
+    expect(ring.isEmpty).toBe(true);
+  });
 });

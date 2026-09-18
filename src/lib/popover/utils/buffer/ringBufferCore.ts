@@ -1,24 +1,63 @@
 /**
- * High-Performance Bounded Ring Buffer & Container.
+ * High-Performance Bounded Circular Ring Buffer & Deque Container.
  * Clean Architecture Layer 1: Core Kernel (Pure Functional Domain).
  *
  * @module utils/buffer/ringBufferCore
  */
 
-import { DISPOSE_SYMBOL, type ScopeDisposable } from '../resource';
+import { DISPOSE_SYMBOL, type ScopeDisposable } from '../resource/disposableTypes';
 import type { Result } from '../result';
 import { resolveBufferConfig } from './bufferConfig';
-import { createRingBufferState } from './bufferState';
-import { cloneRing, resizeRing, shrinkRingToFit } from './bufferSlice';
+import { createRingBufferState, clearRingBufferState } from './bufferState';
+import { cloneRing, resizeRing, shrinkRingToFit, sliceRing, copyRingTo } from './bufferSlice';
 import { mapRingBuffer, filterRingBuffer, flatMapRingBuffer } from './bufferTransform';
 import {
   createRingBufferSafe,
   createRingBufferFromSafe,
   type BufferDomainError,
 } from './bufferResult';
-import { isArray } from './bufferGuards';
-import { RingBufferDeque } from './ringBufferDeque';
-import type { BufferCapacity } from './bufferBranded';
+import { isArray, isIterable, isBufferEmpty, isBufferFull } from './bufferGuards';
+import { BufferMetricsTracker } from './bufferMetrics';
+import { pushItem, popItem, shiftItem, unshiftItem } from './bufferQueue';
+import {
+  popRingResult,
+  shiftRingResult,
+  tryPushRing,
+  tryUnshiftRing,
+  peekRingResult,
+  peekFirstRingResult,
+  itemAtRingResult,
+} from './bufferMonadic';
+import { swapBufferItems, reverseBuffer, fillBuffer } from './bufferMutation';
+import {
+  forEachItem,
+  forEachReversedItem,
+  itemAt,
+  createBufferIterator,
+  createBufferEntriesIterator,
+  createBufferKeysIterator,
+  bufferToArray,
+  bufferToReversedArray,
+} from './bufferIteration';
+import {
+  findInRing,
+  findIndexInRing,
+  findLastInRing,
+  findLastIndexInRing,
+  indexOfInRing,
+  lastIndexOfInRing,
+  includesInRing,
+  someInRing,
+  everyInRing,
+  reduceInRing,
+  reduceRightInRing,
+} from './bufferSearch';
+import type {
+  BufferCapacity,
+  BufferRevision,
+  BufferLogicalIndex,
+  BufferRelativeIndex,
+} from './bufferBranded';
 import type {
   RingBufferOptions,
   RingBufferMetrics,
@@ -27,11 +66,16 @@ import type {
   BufferPredicate,
   BufferTypeGuard,
   BufferTransform,
+  BufferConsumer,
+  BufferReducer,
 } from './bufferTypes';
+import type { BufferEmptyError, BufferOverflowError, IndexOutOfBoundsError } from './bufferErrors';
 
 /**
  * High-performance, zero-allocation bounded circular ring buffer with deque semantics (`push`, `pop`, `shift`, `unshift`).
  * Automatically reuses internal slots in O(1) time and evicts oldest items when capacity is reached.
+ *
+ * Implemented as a single, cohesive flat class with functional composition and native `Symbol.dispose` support.
  *
  * @template T - Stored element type.
  *
@@ -45,28 +89,12 @@ import type {
  * console.log(buffer.toArray()); // ['b', 'c', 'd']
  * ```
  */
-export class RingBuffer<T>
-  extends RingBufferDeque<T>
-  implements ReadonlyRingBuffer<T>, ScopeDisposable
-{
-
-  override readonly state: RingBufferState<T>;
+export class RingBuffer<T> implements ReadonlyRingBuffer<T>, ScopeDisposable {
+  readonly state: RingBufferState<T>;
+  protected readonly metrics = new BufferMetricsTracker();
 
   /**
    * Safely instantiates a new `RingBuffer` validating capacity bounds and returning a Result monad.
-   *
-   * @template T - Buffer element type.
-   * @param opt - Capacity number or options configuration object.
-   * @param evict - Optional eviction callback.
-   * @returns `Result.Ok` containing the `RingBuffer` or `Result.Err` with `BufferDomainError`.
-   *
-   * @example
-   * ```typescript
-   * const result = RingBuffer.create<number>(10);
-   * if (result.isOk()) {
-   *   const buf = result.value;
-   * }
-   * ```
    */
   static create<T>(
     opt: BufferCapacity | number | RingBufferOptions<T>,
@@ -77,16 +105,6 @@ export class RingBuffer<T>
 
   /**
    * Safely instantiates a new `RingBuffer` pre-populated with items from an Iterable.
-   *
-   * @template T - Buffer element type.
-   * @param items - Iterable sequence of initial elements.
-   * @param cap - Buffer capacity.
-   * @returns `Result.Ok` containing the buffer or `Result.Err` on validation failure.
-   *
-   * @example
-   * ```typescript
-   * const result = RingBuffer.from(['a', 'b', 'c'], 5);
-   * ```
    */
   static from<T>(
     items: Iterable<T>,
@@ -99,87 +117,216 @@ export class RingBuffer<T>
     options: BufferCapacity | number | RingBufferOptions<T>,
     onEvict?: (item: T) => void,
   ) {
-    super();
     this.state = createRingBufferState(resolveBufferConfig(options, onEvict));
     if (typeof options === 'object' && options.initialItems) this.pushMany(options.initialItems);
   }
 
-  /**
-   * Transforms elements through a mapping function into a new `RingBuffer`.
-   *
-   * @template U - Transformed element type.
-   * @param fn - Mapping function receiving element and index.
-   * @returns New `RingBuffer<U>` containing mapped elements.
-   *
-   * @example
-   * ```typescript
-   * const lengths = buffer.map((s) => s.length);
-   * ```
-   */
+  // --- Capacity and Status Getters ---
+
+  get capacity(): BufferCapacity { return this.state.capacity; }
+  get size(): number { return this.state.count; }
+  get isEmpty(): boolean { return isBufferEmpty(this.state); }
+  get isFull(): boolean { return isBufferFull(this.state); }
+  get revision(): BufferRevision { return this.state.revision; }
+
+  // --- Deque Mutators ---
+
+  push(item: T): void {
+    pushItem(this.state, this.metrics, item, (cap) => this.resize(cap));
+  }
+
+  pushMany(items: Iterable<T>): void {
+    if (!isIterable(items)) return;
+    for (const item of items) this.push(item);
+  }
+
+  tryPush(item: T): Result<void, BufferOverflowError> {
+    return tryPushRing(this.state, this.metrics, item, (cap) => this.resize(cap));
+  }
+
+  tryUnshift(item: T): Result<void, BufferOverflowError> {
+    return tryUnshiftRing(this.state, this.metrics, item, (cap) => this.resize(cap));
+  }
+
+  pop(): T | undefined {
+    return popItem(this.state, this.metrics);
+  }
+
+  popResult(): Result<T, BufferEmptyError> {
+    return popRingResult(this.state, this.metrics);
+  }
+
+  shift(): T | undefined {
+    return shiftItem(this.state, this.metrics);
+  }
+
+  shiftResult(): Result<T, BufferEmptyError> {
+    return shiftRingResult(this.state, this.metrics);
+  }
+
+  unshift(item: T): void {
+    unshiftItem(this.state, this.metrics, item, (cap) => this.resize(cap));
+  }
+
+  swap(indexA: BufferRelativeIndex, indexB: BufferRelativeIndex): boolean {
+    return swapBufferItems(this.state, indexA, indexB);
+  }
+
+  reverse(): void {
+    reverseBuffer(this.state);
+  }
+
+  fill(value: T): void {
+    fillBuffer(this.state, value);
+  }
+
+  clear(): void {
+    clearRingBufferState(this.state);
+  }
+
+  // --- Inspection & Peek ---
+
+  peek(): T | undefined { return this.at(-1); }
+  peekOldest(): T | undefined { return this.at(0); }
+  peekFirst(): T | undefined { return this.at(0); }
+  peekLast(): T | undefined { return this.at(-1); }
+
+  peekResult(): Result<T, BufferEmptyError> { return peekRingResult(this.state); }
+  peekFirstResult(): Result<T, BufferEmptyError> { return peekFirstRingResult(this.state); }
+  peekLastResult(): Result<T, BufferEmptyError> { return peekRingResult(this.state); }
+
+  at(relativeIndex: BufferRelativeIndex): T | undefined {
+    return itemAt(this.state, relativeIndex);
+  }
+
+  atResult(relativeIndex: BufferRelativeIndex): Result<T, IndexOutOfBoundsError> {
+    return itemAtRingResult(this.state, relativeIndex);
+  }
+
+  // --- Queries & Searches ---
+
+  find<S extends T>(predicate: BufferTypeGuard<T, S>): S | undefined;
+  find(predicate: BufferPredicate<T>): T | undefined;
+  find(predicate: BufferPredicate<T>): T | undefined {
+    return findInRing(this.state, predicate);
+  }
+
+  findIndex(predicate: BufferPredicate<T>): BufferLogicalIndex | -1 {
+    return findIndexInRing(this.state, predicate);
+  }
+
+  findLast<S extends T>(predicate: BufferTypeGuard<T, S>): S | undefined;
+  findLast(predicate: BufferPredicate<T>): T | undefined;
+  findLast(predicate: BufferPredicate<T>): T | undefined {
+    return findLastInRing(this.state, predicate);
+  }
+
+  findLastIndex(predicate: BufferPredicate<T>): BufferLogicalIndex | -1 {
+    return findLastIndexInRing(this.state, predicate);
+  }
+
+  indexOf(item: T, fromIndex?: BufferRelativeIndex): BufferLogicalIndex | -1 {
+    return indexOfInRing(this.state, item, fromIndex);
+  }
+
+  lastIndexOf(item: T, fromIndex?: BufferRelativeIndex): BufferLogicalIndex | -1 {
+    return lastIndexOfInRing(this.state, item, fromIndex);
+  }
+
+  includes(item: T, fromIndex?: BufferRelativeIndex): boolean {
+    return includesInRing(this.state, item, fromIndex);
+  }
+
+  some(predicate: BufferPredicate<T>): boolean {
+    return someInRing(this.state, predicate);
+  }
+
+  every(predicate: BufferPredicate<T>): boolean {
+    return everyInRing(this.state, predicate);
+  }
+
+  reduce<U>(reducer: BufferReducer<T, U>, initialValue: U): U {
+    return reduceInRing(this.state, reducer, initialValue);
+  }
+
+  reduceRight<U>(reducer: BufferReducer<T, U>, initialValue: U): U {
+    return reduceRightInRing(this.state, reducer, initialValue);
+  }
+
+  // --- Iteration & Conversions ---
+
+  forEach(consumer: BufferConsumer<T>): void {
+    forEachItem(this.state, consumer);
+  }
+
+  forEachReversed(consumer: BufferConsumer<T>): void {
+    forEachReversedItem(this.state, consumer);
+  }
+
+  keys(): IterableIterator<BufferLogicalIndex> {
+    return createBufferKeysIterator(this.state);
+  }
+
+  values(): IterableIterator<T> {
+    return createBufferIterator(this.state);
+  }
+
+  entries(): IterableIterator<[BufferLogicalIndex, T]> {
+    return createBufferEntriesIterator(this.state);
+  }
+
+  [Symbol.iterator](): IterableIterator<T> {
+    return this.values();
+  }
+
+  toArray(): T[] {
+    return bufferToArray(this.state);
+  }
+
+  toReversedArray(): T[] {
+    return bufferToReversedArray(this.state);
+  }
+
+  toReadonlyArray(): readonly T[] {
+    return this.toArray();
+  }
+
+  slice(start?: BufferRelativeIndex, end?: BufferRelativeIndex): T[] {
+    return sliceRing(this.state, start, end);
+  }
+
+  copyTo(target: (T | undefined)[], offset: BufferRelativeIndex = 0): number {
+    return copyRingTo(this.state, target, offset);
+  }
+
+  // --- Transformations & Structural Operations ---
+
   map<U>(fn: BufferTransform<T, U>): RingBuffer<U> {
     return mapRingBuffer(this.state, fn, (cap) => new RingBuffer<U>(cap));
   }
 
-  /**
-   * Transforms each element into an Iterable and flattens into a new `RingBuffer`.
-   *
-   * @template U - Transformed element type.
-   * @param fn - Mapping function returning iterable items or individual items.
-   * @returns New `RingBuffer<U>` with flattened values.
-   */
   flatMap<U>(fn: BufferTransform<T, Iterable<U> | U>): RingBuffer<U> {
     return flatMapRingBuffer(this.state, fn, (cap) => new RingBuffer<U>(cap));
   }
 
-  /**
-   * Filters elements matching a predicate into a new `RingBuffer`.
-   *
-   * @param predicate - Filter predicate or type guard.
-   * @returns New `RingBuffer` with elements that satisfy `predicate`.
-   */
   filter<S extends T>(predicate: BufferTypeGuard<T, S>): RingBuffer<S>;
   filter(predicate: BufferPredicate<T>): RingBuffer<T>;
   filter(predicate: BufferPredicate<T>): RingBuffer<T> {
     return filterRingBuffer(this.state, predicate, (cap) => new RingBuffer(cap));
   }
 
-  /**
-   * Creates an independent clone of this `RingBuffer` preserving elements and capacity.
-   *
-   * @returns New cloned `RingBuffer`.
-   */
   clone(): RingBuffer<T> {
     return cloneRing(this.state, (opt) => new RingBuffer<T>(opt));
   }
 
-  /**
-   * Adjusts the maximum capacity of the ring buffer, evicting oldest elements if capacity is decreased.
-   *
-   * @param newCapacity - New maximum capacity.
-   */
   resize(newCapacity: BufferCapacity | number): void {
     resizeRing(this.state, newCapacity);
   }
 
-  /**
-   * Shrinks internal buffer capacity to match the current count of elements.
-   */
   shrinkToFit(): void {
     shrinkRingToFit(this.state);
   }
 
-  /**
-   * Moves all buffer elements into the specified target array and clears the buffer.
-   *
-   * @param target - Destination array.
-   * @returns Number of elements transferred.
-   *
-   * @example
-   * ```typescript
-   * const out: string[] = [];
-   * const count = buffer.drainInto(out);
-   * ```
-   */
   drainInto(target: T[]): number {
     if (!isArray(target)) return 0;
     const count = this.state.count;
@@ -188,9 +335,8 @@ export class RingBuffer<T>
     return count;
   }
 
-  /**
-   * Disposes the ring buffer by clearing all element references.
-   */
+  // --- Lifecycle & Metrics ---
+
   dispose(): void {
     this.clear();
   }
@@ -199,20 +345,10 @@ export class RingBuffer<T>
     this.dispose();
   }
 
-  /**
-   * Returns a snapshot of buffer performance and utilization metrics.
-   *
-   * @returns Snapshot metrics object.
-   */
   getMetrics(): RingBufferMetrics {
     return this.metrics.getSnapshot(this.state.count, this.state.capacity);
   }
 
-  /**
-   * Returns a read-only view of this `RingBuffer`.
-   *
-   * @returns Readonly ring buffer interface.
-   */
   asReadonly(): ReadonlyRingBuffer<T> {
     return this;
   }

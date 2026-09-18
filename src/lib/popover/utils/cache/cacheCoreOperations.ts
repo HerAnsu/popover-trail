@@ -11,7 +11,22 @@ import { isValidStorageKey } from '../safeKeys';
 import { ensureCapacity } from './cacheEviction';
 import { estimateByteWeight } from './cacheWeightEstimator';
 
-import { handlePromiseRejection } from './cacheRejection';
+function isCatchable(val: unknown): val is { catch: (onRejected: () => void) => unknown } {
+  return (
+    typeof val === 'object' && val !== null && 'catch' in val && typeof (val as { catch: unknown }).catch === 'function'
+  );
+}
+
+/**
+ * Handles async promise rejections by automatically purging failed in-flight promises from cache.
+ */
+export function handlePromiseRejection<T>(storage: StorageAdapter<T>, key: string, data: T): void {
+  if (isCatchable(data)) {
+    data.catch(() => {
+      if (storage.get(key)?.data === data) storage.delete(key);
+    });
+  }
+}
 
 /**
  * Retrieves a cached entry by key, validating temporal expiration and updating LRU positioning.

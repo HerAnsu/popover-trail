@@ -32,3 +32,4 @@ export * from './poolObserver';
 export * from './keyedPool';
 export * from './poolBase';
 export * from './objectPoolCore';
+export * from './pool';
