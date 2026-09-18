@@ -6,7 +6,7 @@
  */
 
 import type { BoundingBox, QuadItem } from '../guards/spatialGuards';
-import { withPooledSeen } from './spatialQueryPool';
+import { borrowPooledSeen } from './spatialQueryPool';
 import { visitQuadItems } from './spatialQuery';
 import type { QuadTree } from './quadTreeCore';
 
@@ -34,24 +34,23 @@ export function hasCollisionInNodes<TId extends string>(
   target: BoundingBox,
   excludeId?: TId,
 ): boolean {
-  return withPooledSeen((seen) => {
-    let found = false;
-    visitQuadItems(
-      nodes,
-      items,
-      bounds,
-      target,
-      (item) => {
-        if (item.id !== excludeId) {
-          found = true;
-          return false;
-        }
-        return true;
-      },
-      seen,
-    );
-    return found;
-  });
+  using seen = borrowPooledSeen();
+  let found = false;
+  visitQuadItems(
+    nodes,
+    items,
+    bounds,
+    target,
+    (item) => {
+      if (item.id !== excludeId) {
+        found = true;
+        return false;
+      }
+      return true;
+    },
+    seen,
+  );
+  return found;
 }
 
 /**
@@ -78,22 +77,21 @@ export function findFirstInNodes<TId extends string>(
   target: BoundingBox,
   predicate?: (item: QuadItem<TId>) => boolean,
 ): QuadItem<TId> | undefined {
-  return withPooledSeen((seen) => {
-    let match: QuadItem<TId> | undefined;
-    visitQuadItems(
-      nodes,
-      items,
-      bounds,
-      target,
-      (item) => {
-        if (!predicate || predicate(item)) {
-          match = item;
-          return false;
-        }
-        return true;
-      },
-      seen,
-    );
-    return match;
-  });
+  using seen = borrowPooledSeen();
+  let match: QuadItem<TId> | undefined;
+  visitQuadItems(
+    nodes,
+    items,
+    bounds,
+    target,
+    (item) => {
+      if (!predicate || predicate(item)) {
+        match = item;
+        return false;
+      }
+      return true;
+    },
+    seen,
+  );
+  return match;
 }

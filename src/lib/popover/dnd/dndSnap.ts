@@ -38,36 +38,33 @@ export function createMagneticSnapModifier(
   return ({ transform, activeNodeRect, active }) => {
     if (!activeNodeRect || !active) return transform;
 
-    const currentBounds = sharedBoxPool.acquire();
-    try {
-      const { left, top, width, height } = activeNodeRect;
-      const { x: tx, y: ty } = transform;
-      currentBounds.x = left + tx;
-      currentBounds.y = top + ty;
-      currentBounds.width = width;
-      currentBounds.height = height;
+    const { left, top, width, height } = activeNodeRect;
+    const { x: tx, y: ty } = transform;
+    using currentBounds = sharedBoxPool.borrowWith((b) => {
+      b.x = left + tx;
+      b.y = top + ty;
+      b.width = width;
+      b.height = height;
+    });
 
-      const activeId = String(active.id);
-      const allTargets = getObstacles();
-      const obstacles: BoundingBox[] = [];
-      for (const t of allTargets) {
-        if (t && t.id !== activeId) {
-          obstacles.push(t.rect);
-        }
+    const activeId = String(active.id);
+    const allTargets = getObstacles();
+    const obstacles: BoundingBox[] = [];
+    for (const t of allTargets) {
+      if (t && t.id !== activeId) {
+        obstacles.push(t.rect);
       }
-
-      if (obstacles.length === 0) return transform;
-
-      const snap = findMagneticSnap(currentBounds, obstacles, threshold);
-      const { snapX, snapY } = snap;
-
-      return {
-        ...transform,
-        x: snapX !== undefined ? snapX - left : tx,
-        y: snapY !== undefined ? snapY - top : ty,
-      };
-    } finally {
-      sharedBoxPool.release(currentBounds);
     }
+
+    if (obstacles.length === 0) return transform;
+
+    const snap = findMagneticSnap(currentBounds, obstacles, threshold);
+    const { snapX, snapY } = snap;
+
+    return {
+      ...transform,
+      x: snapX !== undefined ? snapX - left : tx,
+      y: snapY !== undefined ? snapY - top : ty,
+    };
   };
 }

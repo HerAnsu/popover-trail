@@ -6,28 +6,22 @@
  */
 
 import type { AggregatedPoolMetrics, ObjectPoolMetrics } from './poolTypes';
-import { ObjectPoolBase } from './poolBase';
 
 export interface AnyObjectPool {
-  drain(keepCapacity?: number): void;
+  drain?(keepCapacity?: number): void;
   clear(): void;
-  getMetrics(): ObjectPoolMetrics;
-}
-
-function isObjectPoolBase<T>(val: unknown): val is ObjectPoolBase<T> {
-  return val instanceof ObjectPoolBase;
+  getMetrics(): ObjectPoolMetrics | undefined;
 }
 
 export class ObjectPoolRegistry {
   private readonly pools = new Map<string, AnyObjectPool>();
 
-  register<T>(name: string, pool: ObjectPoolBase<T>): void {
+  register<T extends AnyObjectPool = AnyObjectPool>(name: string, pool: T): void {
     this.pools.set(name, pool);
   }
 
-  get<T>(name: string): ObjectPoolBase<T> | undefined {
-    const pool = this.pools.get(name);
-    return isObjectPoolBase<T>(pool) ? pool : undefined;
+  get<T = AnyObjectPool>(name: string): T | undefined {
+    return this.pools.get(name) as T | undefined;
   }
 
   has(name: string): boolean {
@@ -39,7 +33,7 @@ export class ObjectPoolRegistry {
   }
 
   drainAll(keepCapacity?: number): void {
-    for (const pool of this.pools.values()) pool.drain(keepCapacity);
+    for (const pool of this.pools.values()) pool.drain?.(keepCapacity);
   }
 
   clearAll(): void {
@@ -54,10 +48,12 @@ export class ObjectPoolRegistry {
 
     for (const pool of this.pools.values()) {
       const m = pool.getMetrics();
-      totalAllocated += m.allocated;
-      totalInUse += m.inUse;
-      totalAvailable += m.available;
-      sumHitRate += m.hitRate;
+      if (m) {
+        totalAllocated += m.allocated;
+        totalInUse += m.inUse;
+        totalAvailable += m.available;
+        sumHitRate += m.hitRate;
+      }
     }
 
     const totalPools = this.pools.size;

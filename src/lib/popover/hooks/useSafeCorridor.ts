@@ -57,34 +57,30 @@ export function useSafeCorridor({
       if (!r) return;
 
       const tRect = trigger.getBoundingClientRect();
-      const pAnchor = sharedPointPool.acquire();
-      const pCursor = sharedPointPool.acquire();
-      const targetBox = sharedBoxPool.acquire();
+      const { left: tLeft, top: tTop, width: tWidth, height: tHeight } = tRect;
+      const { left: rLeft, top: rTop, width: rWidth, height: rHeight } = r;
+      const { clientX, clientY } = e;
 
-      try {
-        const { left: tLeft, top: tTop, width: tWidth, height: tHeight } = tRect;
-        const { left: rLeft, top: rTop, width: rWidth, height: rHeight } = r;
-        const { clientX, clientY } = e;
+      using pAnchor = sharedPointPool.borrowWith((p) => {
+        p.x = tLeft + tWidth / 2;
+        p.y = tTop + tHeight / 2;
+      });
+      using pCursor = sharedPointPool.borrowWith((p) => {
+        p.x = clientX;
+        p.y = clientY;
+      });
+      using targetBox = sharedBoxPool.borrowWith((b) => {
+        b.x = rLeft;
+        b.y = rTop;
+        b.width = rWidth;
+        b.height = rHeight;
+      });
 
-        pAnchor.x = tLeft + tWidth / 2;
-        pAnchor.y = tTop + tHeight / 2;
-        pCursor.x = clientX;
-        pCursor.y = clientY;
-        targetBox.x = rLeft;
-        targetBox.y = rTop;
-        targetBox.width = rWidth;
-        targetBox.height = rHeight;
+      const inside = isCursorInSafeCorridor(pCursor, pAnchor, targetBox);
+      setIsInside(inside);
 
-        const inside = isCursorInSafeCorridor(pCursor, pAnchor, targetBox);
-        setIsInside(inside);
-
-        if (!inside && onLeaveRef.current) {
-          onLeaveRef.current();
-        }
-      } finally {
-        sharedPointPool.release(pAnchor);
-        sharedPointPool.release(pCursor);
-        sharedBoxPool.release(targetBox);
+      if (!inside && onLeaveRef.current) {
+        onLeaveRef.current();
       }
     };
 

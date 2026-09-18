@@ -15,7 +15,7 @@ import {
   queryQuadItems,
   visitQuadItems,
 } from './spatialQuery';
-import { withPooledSeen } from './spatialQueryPool';
+import { borrowPooledSeen } from './spatialQueryPool';
 import { findNearestQuadItem } from './spatialKNN';
 import { insertQuadItem, removeQuadItem, splitQuadNodes } from './spatialInsert';
 import { tryCoalesceQuadTree } from './spatialCoalesce';
@@ -227,11 +227,9 @@ export class QuadTree<TId extends string = string> {
     visitor: (item: QuadItem<TId>) => boolean | void,
     seen?: Set<string>,
   ): boolean {
-    return seen
-      ? visitQuadItems(this.nodes, this.items, this.bounds, target, visitor, seen)
-      : withPooledSeen((s) =>
-          visitQuadItems(this.nodes, this.items, this.bounds, target, visitor, s),
-        );
+    if (seen) return visitQuadItems(this.nodes, this.items, this.bounds, target, visitor, seen);
+    using pooledSeen = borrowPooledSeen();
+    return visitQuadItems(this.nodes, this.items, this.bounds, target, visitor, pooledSeen);
   }
 
   /**
@@ -253,11 +251,12 @@ export class QuadTree<TId extends string = string> {
     seen?: Set<string>,
   ): QuadItem<TId>[] {
     const b = bounds ?? this.bounds;
-    if (seen) queryQuadItems(this.nodes, this.items, this.bounds, b, returnItems, seen);
-    else
-      withPooledSeen((s) =>
-        queryQuadItems(this.nodes, this.items, this.bounds, b, returnItems, s),
-      );
+    if (seen) {
+      queryQuadItems(this.nodes, this.items, this.bounds, b, returnItems, seen);
+    } else {
+      using pooledSeen = borrowPooledSeen();
+      queryQuadItems(this.nodes, this.items, this.bounds, b, returnItems, pooledSeen);
+    }
     return returnItems;
   }
 

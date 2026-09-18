@@ -11,6 +11,7 @@ import {
   type BufferEmptyError,
 } from '../../utils/buffer';
 import type { Result } from '../../utils/result';
+import { DISPOSE_SYMBOL, type ScopeDisposable } from '../../utils/resource/disposableTypes';
 import { EMPTY_ARRAY } from '../hydration/storeDefaults';
 import { clamp } from '../../utils/math';
 import {
@@ -70,7 +71,9 @@ export function createHistorySnapshot<TData = unknown, TPopoverKey extends strin
  * const previous = pool.pop();
  * ```
  */
-export class HistorySnapshotPool<TData, TPopoverKey extends string = string> {
+export class HistorySnapshotPool<TData, TPopoverKey extends string = string>
+  implements ScopeDisposable
+{
   private readonly buffer: RingBuffer<HistorySnapshot<TData, TPopoverKey>>;
 
   /**
@@ -153,8 +156,41 @@ export class HistorySnapshotPool<TData, TPopoverKey extends string = string> {
     return this.buffer.asReadonly();
   }
 
+  /**
+   * Yields adjacent historical snapshot transitions `[prev, next]`.
+   * Ideal for computing state diffs and transition journals.
+   */
+  slidingPairs(): IterableIterator<
+    [HistorySnapshot<TData, TPopoverKey>, HistorySnapshot<TData, TPopoverKey>]
+  > {
+    return this.buffer.slidingPairs();
+  }
+
+  /**
+   * Retrieves the most recent `count` snapshots from the history pool (chronological order).
+   */
+  takeRecent(count: number): HistorySnapshot<TData, TPopoverKey>[] {
+    return this.buffer.takeLast(count);
+  }
+
+  /**
+   * Destructively drains snapshots from the history pool in FIFO order.
+   */
+  drain(): IterableIterator<HistorySnapshot<TData, TPopoverKey>> {
+    return this.buffer.drain();
+  }
+
   /** Returns buffer throughput telemetry metrics. */
   getMetrics(): RingBufferMetrics {
     return this.buffer.getMetrics();
+  }
+
+  /** Disposes the history pool, clearing all snapshots. */
+  dispose(): void {
+    this.clear();
+  }
+
+  [DISPOSE_SYMBOL](): void {
+    this.dispose();
   }
 }

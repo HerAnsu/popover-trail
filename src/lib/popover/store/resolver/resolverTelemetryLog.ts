@@ -7,6 +7,7 @@
 
 import type { ResolutionMetric } from '../../types';
 import { RingBuffer, type ReadonlyRingBuffer, type RingBufferMetrics } from '../../utils/buffer';
+import { DISPOSE_SYMBOL, type ScopeDisposable } from '../../utils/resource/disposableTypes';
 
 /**
  * Rolling diagnostic telemetry buffer storing recent popover resolution performance metrics.
@@ -25,7 +26,7 @@ import { RingBuffer, type ReadonlyRingBuffer, type RingBufferMetrics } from '../
  * const failures = telemetryLog.findFailures();
  * ```
  */
-export class ResolverTelemetryLog<TPopoverKey extends string = string> {
+export class ResolverTelemetryLog<TPopoverKey extends string = string> implements ScopeDisposable {
   private readonly buffer: RingBuffer<ResolutionMetric<TPopoverKey>>;
 
   /**
@@ -93,7 +94,28 @@ export class ResolverTelemetryLog<TPopoverKey extends string = string> {
     if (count === undefined || count >= this.buffer.size) {
       return this.buffer.toArray();
     }
-    return this.buffer.slice(this.buffer.size - count);
+    return this.buffer.takeLast(count);
+  }
+
+  /**
+   * Fast count of failed resolution attempts without allocating intermediate arrays.
+   */
+  countFailures(): number {
+    return this.buffer.count((m) => !m.success);
+  }
+
+  /**
+   * Fast count of successful resolution attempts without allocating intermediate arrays.
+   */
+  countSuccesses(): number {
+    return this.buffer.count((m) => m.success);
+  }
+
+  /**
+   * Iterates sliding windows of recent telemetry metrics for trend analysis.
+   */
+  windows(size: number, step?: number): IterableIterator<ResolutionMetric<TPopoverKey>[]> {
+    return this.buffer.windows(size, step);
   }
 
   /**
@@ -132,5 +154,16 @@ export class ResolverTelemetryLog<TPopoverKey extends string = string> {
    */
   clear(): void {
     this.buffer.clear();
+  }
+
+  /**
+   * Disposes the telemetry log, clearing all stored metrics.
+   */
+  dispose(): void {
+    this.clear();
+  }
+
+  [DISPOSE_SYMBOL](): void {
+    this.dispose();
   }
 }

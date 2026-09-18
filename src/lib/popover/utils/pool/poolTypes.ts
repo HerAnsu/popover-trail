@@ -56,8 +56,9 @@ export type TupleOf<T, N extends number> =
  *
  * @template T - Type of pooled object.
  */
-export type Pooled<T> = T & ScopeDisposable & {
+export type Pooled<T> = T & Disposable & ScopeDisposable & {
   readonly [DISPOSE_SYMBOL]: () => void;
+  [Symbol.dispose]: () => void;
   dispose: () => void;
   readonly isDisposed: boolean;
 };
@@ -69,8 +70,9 @@ export type Pooled<T> = T & ScopeDisposable & {
  * @template T - Type of pooled object.
  * @template N - Tuple item count.
  */
-export type PooledTuple<T, N extends number> = TupleOf<T, N> & ScopeDisposable & {
+export type PooledTuple<T, N extends number> = TupleOf<T, N> & Disposable & ScopeDisposable & {
   readonly [DISPOSE_SYMBOL]: () => void;
+  [Symbol.dispose]: () => void;
   dispose: () => void;
   readonly isDisposed: boolean;
 };

@@ -39,17 +39,16 @@ export function computeTeardownPlan<TPopoverKey extends string>(
   includeRoot = false,
 ): TPopoverKey[] {
   const order: TPopoverKey[] = [];
-  sharedSetPool.use((visited) => {
-    // Post-order DFS ensures deepest children are visited and collected first
-    const postOrder = (k: TPopoverKey): void => {
-      if (visited.has(k)) return;
-      visited.add(k);
-      const node = nodes.get(k);
-      if (node) for (const c of node.childrenKeys) postOrder(c);
-      if (k !== rootKey || includeRoot) order.push(k);
-    };
-    postOrder(rootKey);
-  });
+  using visited = sharedSetPool.borrow();
+  // Post-order DFS ensures deepest children are visited and collected first
+  const postOrder = (k: TPopoverKey): void => {
+    if (visited.has(k)) return;
+    visited.add(k);
+    const node = nodes.get(k);
+    if (node) for (const c of node.childrenKeys) postOrder(c);
+    if (k !== rootKey || includeRoot) order.push(k);
+  };
+  postOrder(rootKey);
   return order;
 }
 
@@ -196,20 +195,19 @@ export function computeTopologicalZIndex<TPopoverKey extends string>(
 ): Map<TPopoverKey, number> {
   const result = new Map<TPopoverKey, number>();
   let currentZ = baseZIndex;
-  sharedSetPool.use((visited) => {
-    // DFS traversal assigns strictly increasing z-indices from parents to descendants
-    const visit = (k: TPopoverKey): void => {
-      if (visited.has(k)) return;
-      visited.add(k);
-      const node = nodes.get(k);
-      if (!node) return;
-      result.set(k, currentZ++);
-      for (const c of node.childrenKeys) visit(c);
-    };
-    // Visit all root nodes first
-    for (const [k, n] of nodes.entries()) if (n.parentKeys.size === 0 || !n.parentKey) visit(k);
-    // Cover any disconnected components
-    for (const k of nodes.keys()) if (!visited.has(k)) visit(k);
-  });
+  using visited = sharedSetPool.borrow();
+  // DFS traversal assigns strictly increasing z-indices from parents to descendants
+  const visit = (k: TPopoverKey): void => {
+    if (visited.has(k)) return;
+    visited.add(k);
+    const node = nodes.get(k);
+    if (!node) return;
+    result.set(k, currentZ++);
+    for (const c of node.childrenKeys) visit(c);
+  };
+  // Visit all root nodes first
+  for (const [k, n] of nodes.entries()) if (n.parentKeys.size === 0 || !n.parentKey) visit(k);
+  // Cover any disconnected components
+  for (const k of nodes.keys()) if (!visited.has(k)) visit(k);
   return result;
 }

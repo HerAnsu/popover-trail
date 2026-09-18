@@ -8,7 +8,7 @@ import { QuadTree } from '../spatial/quadTreeCore';
 
 describe('Spatial Pools Deep Integration', () => {
   it('dndSnap borrows and releases sharedBoxPool with zero leaks', () => {
-    const hitsBefore = sharedBoxPool.getMetrics().hits;
+    const hitsBefore = sharedBoxPool.getMetrics()?.hits ?? 0;
     const modifier = createMagneticSnapModifier(
       () => [{ id: 'obstacle-1', rect: { x: 100, y: 100, width: 50, height: 50 } }],
       15,
@@ -41,25 +41,25 @@ describe('Spatial Pools Deep Integration', () => {
       windowRect: null,
     });
 
-    expect(sharedBoxPool.getMetrics().hits).toBeGreaterThan(hitsBefore);
+    expect(sharedBoxPool.getMetrics()?.hits ?? 0).toBeGreaterThan(hitsBefore);
     expect(sharedBoxPool.inUse).toBe(0);
     expect(res.x).toBe(5); // 150 (obstacle right edge) - 145 = 5
   });
 
   it('spatialCorridor borrows and releases sharedPointPool with zero leaks', () => {
-    const hitsBefore = sharedPointPool.getMetrics().hits;
+    const hitsBefore = sharedPointPool.getMetrics()?.hits ?? 0;
     const cursor = { x: 120, y: 120 };
     const anchor = { x: 50, y: 50 };
     const targetBounds = { x: 100, y: 100, width: 100, height: 100 };
 
     const inside = isCursorInSafeTriangle(cursor, anchor, targetBounds);
     expect(typeof inside).toBe('boolean');
-    expect(sharedPointPool.getMetrics().hits).toBeGreaterThanOrEqual(hitsBefore + 2);
+    expect(sharedPointPool.getMetrics()?.hits ?? 0).toBeGreaterThanOrEqual(hitsBefore + 2);
     expect(sharedPointPool.inUse).toBe(0);
   });
 
   it('spatialEnergy placement optimization uses sharedBoxPool without leaking', () => {
-    const hitsBefore = sharedBoxPool.getMetrics().hits;
+    const hitsBefore = sharedBoxPool.getMetrics()?.hits ?? 0;
     const candidates = [
       { x: 100, y: 100 },
       { x: 200, y: 200 },
@@ -71,7 +71,7 @@ describe('Spatial Pools Deep Integration', () => {
 
     const best = selectLowestEnergyPlacement(candidates, size, obstacles, preferred);
     expect(best).toEqual({ x: 300, y: 300 });
-    expect(sharedBoxPool.getMetrics().hits).toBeGreaterThan(hitsBefore);
+    expect(sharedBoxPool.getMetrics()?.hits ?? 0).toBeGreaterThan(hitsBefore);
     expect(sharedBoxPool.inUse).toBe(0);
 
     const firstCandidate = candidates[0];
@@ -83,7 +83,7 @@ describe('Spatial Pools Deep Integration', () => {
   });
 
   it('QuadTree queries use sharedSetPool with zero leaks', () => {
-    const hitsBefore = sharedSetPool.getMetrics().hits;
+    const hitsBefore = sharedSetPool.getMetrics()?.hits ?? 0;
     const tree = new QuadTree({ x: 0, y: 0, width: 1000, height: 1000 });
     tree.insert({ id: 'item-1', bounds: { x: 10, y: 10, width: 20, height: 20 } });
     tree.insert({ id: 'item-2', bounds: { x: 50, y: 50, width: 20, height: 20 } });
@@ -104,7 +104,7 @@ describe('Spatial Pools Deep Integration', () => {
     const retrieved = tree.retrieve();
     expect(retrieved).toHaveLength(2);
 
-    expect(sharedSetPool.getMetrics().hits).toBeGreaterThanOrEqual(hitsBefore + 4);
+    expect(sharedSetPool.getMetrics()?.hits ?? 0).toBeGreaterThanOrEqual(hitsBefore + 4);
     expect(sharedSetPool.inUse).toBe(0);
   });
 

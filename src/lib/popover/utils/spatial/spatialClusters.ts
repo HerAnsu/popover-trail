@@ -65,16 +65,18 @@ export function findSpatialClusters<TId extends string>(
   const clusters: SpatialCluster<TId>[] = [];
   const visited = new Set<TId>();
 
+  const queue = new RingBuffer<QuadItem<TId>>({
+    capacity: Math.max(16, items.length),
+    autoExpand: true,
+  });
+
   for (const seed of items) {
     if (visited.has(seed.id)) continue;
 
     visited.add(seed.id);
     const clusterItems: QuadItem<TId>[] = [seed];
     let clusterBounds = seed.bounds;
-    const queue = new RingBuffer<QuadItem<TId>>({
-      capacity: Math.max(16, items.length),
-      autoExpand: true,
-    });
+    queue.clear();
     queue.push(seed);
 
     while (!queue.isEmpty) {

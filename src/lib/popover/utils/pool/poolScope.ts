@@ -5,9 +5,9 @@
  * @module utils/pool/poolScope
  */
 
-import { DISPOSE_SYMBOL, type ScopeDisposable } from '../disposable';
+import { DISPOSE_SYMBOL } from '../disposable';
 import type { Result } from '../result';
-import type { ScopedPooledItem } from './poolTypes';
+import type { ScopedPooledItem, Pooled } from './poolTypes';
 
 /**
  * Executes a function with a borrowed pooled item and guarantees its release via `finally`.
@@ -60,7 +60,7 @@ export function runWithItem<T, R>(
  * const res = runWithItemResult(
  *   () => pool.acquire(),
  *   (item) => pool.release(item),
- *   (box) => Ok(box.width * box.height),
+ *   (buffer) => processBufferResult(buffer),
  * );
  * ```
  */
@@ -78,14 +78,14 @@ export function runWithItemResult<T, R, E>(
 }
 
 /**
- * Executes an asynchronous function with a borrowed pooled item and guarantees its release.
+ * Asynchronously executes a function with a borrowed pooled item and guarantees its release.
  *
  * @template T - Type of pooled resource.
- * @template R - Resolved promise value type.
+ * @template R - Return value type of async callback.
  * @param acquire - Factory callback to borrow the item.
  * @param release - Teardown callback to return the item.
  * @param fn - Async work callback receiving the borrowed item.
- * @returns Promise resolving to the result of `fn`.
+ * @returns Promise resolving to the return value of `fn`.
  *
  * @example
  * ```typescript
@@ -155,11 +155,7 @@ export function createScopedItem<T>(
 export function attachDisposableHandle<T extends object>(
   target: T,
   onDispose: () => void,
-): T & ScopeDisposable & {
-  readonly [DISPOSE_SYMBOL]: () => void;
-  dispose: () => void;
-  readonly isDisposed: boolean;
-} {
+): Pooled<T> {
   let released = false;
   const dispose = () => {
     if (released) return;
@@ -172,6 +168,13 @@ export function attachDisposableHandle<T extends object>(
     configurable: true,
     writable: true,
   });
+  if (typeof Symbol.dispose === 'symbol' && (DISPOSE_SYMBOL as symbol) !== Symbol.dispose) {
+    Object.defineProperty(target, Symbol.dispose, {
+      value: dispose,
+      configurable: true,
+      writable: true,
+    });
+  }
   Object.defineProperty(target, 'dispose', {
     value: dispose,
     configurable: true,
@@ -182,10 +185,5 @@ export function attachDisposableHandle<T extends object>(
     configurable: true,
   });
 
-  return target as T & ScopeDisposable & {
-    readonly [DISPOSE_SYMBOL]: () => void;
-    dispose: () => void;
-    readonly isDisposed: boolean;
-  };
+  return target as Pooled<T>;
 }
-

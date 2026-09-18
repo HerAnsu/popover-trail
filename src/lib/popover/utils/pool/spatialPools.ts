@@ -6,7 +6,7 @@
  */
 
 import type { BoundingBox } from '../guards/spatialGuards';
-import { ObjectPool } from './objectPoolCore';
+import { Pool } from './pool';
 import { globalPoolRegistry } from './poolRegistry';
 
 /**
@@ -30,7 +30,7 @@ export interface PooledBox extends BoundingBox {
  *
  * @param initial - Initial pre-allocated capacity (default: 32).
  * @param max - Maximum pool capacity before overflow items are discarded (default: 256).
- * @returns An `ObjectPool<PooledPoint>` instance.
+ * @returns A `Pool<PooledPoint>` instance.
  *
  * @example
  * ```ts
@@ -41,9 +41,8 @@ export interface PooledBox extends BoundingBox {
  * pointPool.release(pt);
  * ```
  */
-export function createPointPool(initial = 32, max = 256): ObjectPool<PooledPoint> {
-  return new ObjectPool<PooledPoint>({
-    factory: () => ({ x: 0, y: 0 }),
+export function createPointPool(initial = 32, max = 256): Pool<PooledPoint> {
+  return Pool.create<PooledPoint>(() => ({ x: 0, y: 0 }), {
     reset: (pt) => {
       pt.x = 0;
       pt.y = 0;
@@ -58,7 +57,7 @@ export function createPointPool(initial = 32, max = 256): ObjectPool<PooledPoint
  *
  * @param initial - Initial pre-allocated capacity (default: 16).
  * @param max - Maximum pool capacity before overflow items are discarded (default: 128).
- * @returns An `ObjectPool<PooledBox>` instance.
+ * @returns A `Pool<PooledBox>` instance.
  *
  * @example
  * ```ts
@@ -69,20 +68,22 @@ export function createPointPool(initial = 32, max = 256): ObjectPool<PooledPoint
  * boxPool.release(box);
  * ```
  */
-export function createBoxPool(initial = 16, max = 128): ObjectPool<PooledBox> {
-  return new ObjectPool<PooledBox>({
-    factory: () => ({ x: 0, y: 0, top: 0, left: 0, width: 0, height: 0 }),
-    reset: (box) => {
-      box.x = 0;
-      box.y = 0;
-      box.top = 0;
-      box.left = 0;
-      box.width = 0;
-      box.height = 0;
+export function createBoxPool(initial = 16, max = 128): Pool<PooledBox> {
+  return Pool.create<PooledBox>(
+    () => ({ x: 0, y: 0, top: 0, left: 0, width: 0, height: 0 }),
+    {
+      reset: (box) => {
+        box.x = 0;
+        box.y = 0;
+        box.top = 0;
+        box.left = 0;
+        box.width = 0;
+        box.height = 0;
+      },
+      initialCapacity: initial,
+      maxCapacity: max,
     },
-    initialCapacity: initial,
-    maxCapacity: max,
-  });
+  );
 }
 
 /**
@@ -91,7 +92,7 @@ export function createBoxPool(initial = 16, max = 128): ObjectPool<PooledBox> {
  * @template T - Type of items stored in the set.
  * @param initial - Initial capacity (default: 8).
  * @param max - Maximum capacity (default: 64).
- * @returns An `ObjectPool<Set<T>>` instance.
+ * @returns A `Pool<Set<T>>` instance.
  *
  * @example
  * ```ts
@@ -101,9 +102,8 @@ export function createBoxPool(initial = 16, max = 128): ObjectPool<PooledBox> {
  * setPool.release(set); // automatically clears the set
  * ```
  */
-export function createSetPool<T = string>(initial = 8, max = 64): ObjectPool<Set<T>> {
-  return new ObjectPool<Set<T>>({
-    factory: () => new Set<T>(),
+export function createSetPool<T = string>(initial = 8, max = 64): Pool<Set<T>> {
+  return Pool.create<Set<T>>(() => new Set<T>(), {
     reset: (set) => set.clear(),
     initialCapacity: initial,
     maxCapacity: max,

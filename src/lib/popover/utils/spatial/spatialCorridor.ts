@@ -98,40 +98,35 @@ export function isCursorInSafeTriangle(
   anchorOrigin: Point2D,
   targetBounds: BoundingBox,
 ): boolean {
-  const pA = sharedPointPool.acquire();
-  const pB = sharedPointPool.acquire();
-  try {
-    const { x, y, width, height } = targetBounds;
-    if (anchorOrigin.x <= x) {
-      // Child popover is positioned to the right: base on left edge
-      pA.x = x;
-      pA.y = y;
-      pB.x = x;
-      pB.y = y + height;
-    } else if (anchorOrigin.x > x + width) {
-      // Child popover is positioned to the left: base on right edge
-      pA.x = x + width;
-      pA.y = y;
-      pB.x = x + width;
-      pB.y = y + height;
-    } else if (anchorOrigin.y <= y) {
-      // Child popover is positioned below: base on top edge
-      pA.x = x;
-      pA.y = y;
-      pB.x = x + width;
-      pB.y = y;
-    } else {
-      // Child popover is positioned above: base on bottom edge
-      pA.x = x;
-      pA.y = y + height;
-      pB.x = x + width;
-      pB.y = y + height;
-    }
-    return isPointInTriangle(cursor, anchorOrigin, pA, pB);
-  } finally {
-    sharedPointPool.release(pA);
-    sharedPointPool.release(pB);
+  using pair = sharedPointPool.borrowMany(2);
+  const [pA, pB] = pair;
+  const { x, y, width, height } = targetBounds;
+  if (anchorOrigin.x <= x) {
+    // Child popover is positioned to the right: base on left edge
+    pA.x = x;
+    pA.y = y;
+    pB.x = x;
+    pB.y = y + height;
+  } else if (anchorOrigin.x > x + width) {
+    // Child popover is positioned to the left: base on right edge
+    pA.x = x + width;
+    pA.y = y;
+    pB.x = x + width;
+    pB.y = y + height;
+  } else if (anchorOrigin.y <= y) {
+    // Child popover is positioned below: base on top edge
+    pA.x = x;
+    pA.y = y;
+    pB.x = x + width;
+    pB.y = y;
+  } else {
+    // Child popover is positioned above: base on bottom edge
+    pA.x = x;
+    pA.y = y + height;
+    pB.x = x + width;
+    pB.y = y + height;
   }
+  return isPointInTriangle(cursor, anchorOrigin, pA, pB);
 }
 
 /**

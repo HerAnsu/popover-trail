@@ -89,17 +89,14 @@ export function cascadePlacementEnergy(
 ): number {
   const { x, y } = position;
   const { width, height } = size;
-  const cardBox = sharedBoxPool.acquire();
-  try {
-    cardBox.x = x;
-    cardBox.y = y;
-    cardBox.width = width;
-    cardBox.height = height;
-    const distSq = distanceSquared2D(position, preferredPosition);
-    return totalOverlapArea(cardBox, obstacles) + lambda * distSq;
-  } finally {
-    sharedBoxPool.release(cardBox);
-  }
+  using cardBox = sharedBoxPool.borrowWith((b) => {
+    b.x = x;
+    b.y = y;
+    b.width = width;
+    b.height = height;
+  });
+  const distSq = distanceSquared2D(position, preferredPosition);
+  return totalOverlapArea(cardBox, obstacles) + lambda * distSq;
 }
 
 /**
@@ -137,22 +134,19 @@ export function selectLowestEnergyPlacement(
   let minEnergy = Infinity;
 
   const { width, height } = size;
-  const cardBox = sharedBoxPool.acquire();
-  try {
-    cardBox.width = width;
-    cardBox.height = height;
-    for (const pos of candidates) {
-      cardBox.x = pos.x;
-      cardBox.y = pos.y;
-      const distSq = distanceSquared2D(pos, preferredPosition);
-      const energy = totalOverlapArea(cardBox, obstacles) + lambda * distSq;
-      if (energy < minEnergy) {
-        minEnergy = energy;
-        bestPos = pos;
-      }
+  using cardBox = sharedBoxPool.borrowWith((b) => {
+    b.width = width;
+    b.height = height;
+  });
+  for (const pos of candidates) {
+    cardBox.x = pos.x;
+    cardBox.y = pos.y;
+    const distSq = distanceSquared2D(pos, preferredPosition);
+    const energy = totalOverlapArea(cardBox, obstacles) + lambda * distSq;
+    if (energy < minEnergy) {
+      minEnergy = energy;
+      bestPos = pos;
     }
-  } finally {
-    sharedBoxPool.release(cardBox);
   }
   return bestPos;
 }
