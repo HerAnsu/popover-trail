@@ -64,7 +64,8 @@ export function bindFSMRegistryToEventBus<TData = unknown, TPopoverKey extends s
       return;
     }
     if (isEvent(e, 'popover:resolve_success')) {
-      fsmRegistry.send(e.detail.key, { type: 'RESOLVE_SUCCESS', data: e.detail.data });
+      const { key, data } = e.detail;
+      fsmRegistry.send(key, { type: 'RESOLVE_SUCCESS', data });
       return;
     }
     if (isEvent(e, 'popover:resolve_error')) {
@@ -73,23 +74,26 @@ export function bindFSMRegistryToEventBus<TData = unknown, TPopoverKey extends s
       return;
     }
     if (isEvent(e, 'popover:pin')) {
-      const m = fsmRegistry.get(e.detail.key);
+      const { key } = e.detail;
+      const m = fsmRegistry.get(key);
       if (m && !isPinnedFSM(m.getState())) {
-        fsmRegistry.send(e.detail.key, { type: 'TOGGLE_PIN' });
+        fsmRegistry.send(key, { type: 'TOGGLE_PIN' });
       }
       return;
     }
     if (isEvent(e, 'popover:unpin')) {
-      const m = fsmRegistry.get(e.detail.key);
+      const { key } = e.detail;
+      const m = fsmRegistry.get(key);
       if (m && isPinnedFSM(m.getState())) {
-        fsmRegistry.send(e.detail.key, { type: 'TOGGLE_PIN' });
+        fsmRegistry.send(key, { type: 'TOGGLE_PIN' });
       }
       return;
     }
     if (isEvent(e, 'popover:close')) {
+      const { key, keys } = e.detail;
       const keysToClose = unique([
-        ...(e.detail.key ? [e.detail.key] : []),
-        ...(e.detail.keys ?? EMPTY_ARRAY),
+        ...(key ? [key] : []),
+        ...(keys ?? EMPTY_ARRAY),
       ]);
       for (const k of keysToClose) fsmRegistry.send(k, { type: 'CLOSE' });
       return;

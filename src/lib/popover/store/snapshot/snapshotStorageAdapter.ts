@@ -23,6 +23,21 @@ function getStorage(type: 'localStorage' | 'sessionStorage' | 'none'): Storage |
   return unwrapOr(fromThrowable(() => window[type]), null);
 }
 
+/**
+ * Persists a snapshot to platform storage (localStorage or sessionStorage) and broadcasts across tabs.
+ *
+ * @template TData - Popover payload data type.
+ * @param storageType - Storage mechanism ('localStorage', 'sessionStorage', or 'none').
+ * @param storageKey - Storage key identifier.
+ * @param snapshot - Popover snapshot data structure to persist.
+ * @param broadcastChannel - Optional BroadcastChannel instance for cross-tab replication.
+ * @param serializer - Optional custom serialization function.
+ *
+ * @example
+ * ```typescript
+ * saveSnapshotToPlatform('localStorage', 'my_key', snapshot, channel);
+ * ```
+ */
 export function saveSnapshotToPlatform<TData>(
   storageType: 'localStorage' | 'sessionStorage' | 'none',
   storageKey: string,
@@ -43,6 +58,20 @@ export function saveSnapshotToPlatform<TData>(
   }
 }
 
+/**
+ * Loads and validates a persisted popover snapshot from platform storage.
+ *
+ * @template TData - Popover payload data type.
+ * @param storageType - Storage mechanism ('localStorage', 'sessionStorage', or 'none').
+ * @param storageKey - Storage key identifier.
+ * @param deserializer - Optional custom deserialization function.
+ * @returns Validated snapshot data or `null` if empty or invalid.
+ *
+ * @example
+ * ```typescript
+ * const snapshot = loadSnapshotFromPlatform('localStorage', 'my_key');
+ * ```
+ */
 export function loadSnapshotFromPlatform<TData>(
   storageType: 'localStorage' | 'sessionStorage' | 'none',
   storageKey: string,
@@ -62,9 +91,19 @@ export function loadSnapshotFromPlatform<TData>(
     );
     return null;
   }
-
 }
 
+/**
+ * Removes a persisted popover snapshot from platform storage.
+ *
+ * @param storageType - Storage mechanism ('localStorage', 'sessionStorage', or 'none').
+ * @param storageKey - Storage key identifier.
+ *
+ * @example
+ * ```typescript
+ * removeSnapshotFromPlatform('localStorage', 'my_key');
+ * ```
+ */
 export function removeSnapshotFromPlatform(
   storageType: 'localStorage' | 'sessionStorage' | 'none',
   storageKey: string,

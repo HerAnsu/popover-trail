@@ -76,13 +76,15 @@ export function sanitizePayloads<TData>(
  */
 export function isValidSnapshot<TData>(val: unknown): val is PopoverSnapshotData<TData> {
   if (!isPlainObject(val)) return false;
+  const { version, timestamp, tabId, trailKeys, pinnedKeys, offsets } =
+    val as Partial<PopoverSnapshotData<TData>>;
   return (
-    val.version === SNAPSHOT_VERSION &&
-    typeof val.timestamp === 'number' &&
-    typeof val.tabId === 'string' &&
-    isArray(val.trailKeys) &&
-    isArray(val.pinnedKeys) &&
-    typeof val.offsets === 'object' &&
-    val.offsets !== null
+    version === SNAPSHOT_VERSION &&
+    typeof timestamp === 'number' &&
+    typeof tabId === 'string' &&
+    isArray(trailKeys) &&
+    isArray(pinnedKeys) &&
+    typeof offsets === 'object' &&
+    offsets !== null
   );
 }

@@ -38,13 +38,22 @@ export { areSnapshotsEqual };
 export function createHistorySnapshot<TData = unknown, TPopoverKey extends string = string>(
   state: HistorySnapshotState<TData, TPopoverKey>,
 ): HistorySnapshot<TData, TPopoverKey> {
+  const {
+    trail = EMPTY_ARRAY,
+    floating = EMPTY_ARRAY,
+    offsets,
+    pinnedStates,
+    zIndexOrder,
+    ownerId = null,
+  } = state;
+
   return {
-    trail: state.trail ?? EMPTY_ARRAY,
-    floating: state.floating ?? EMPTY_ARRAY,
-    offsets: cloneNonEmptyRecord(state.offsets),
-    pinnedStates: cloneNonEmptyRecord(state.pinnedStates),
-    zIndexOrder: cloneNonEmptyArray(state.zIndexOrder),
-    ownerId: state.ownerId ?? null,
+    trail,
+    floating,
+    offsets: cloneNonEmptyRecord(offsets),
+    pinnedStates: cloneNonEmptyRecord(pinnedStates),
+    zIndexOrder: cloneNonEmptyArray(zIndexOrder),
+    ownerId,
   };
 }
 

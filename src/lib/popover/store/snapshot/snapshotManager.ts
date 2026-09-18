@@ -58,17 +58,25 @@ export class PopoverSnapshotManager<TData = unknown> {
    * @param options - Storage configuration, serialization callbacks, and broadcast options.
    */
   constructor(options: SnapshotManagerOptions<TData> = {}) {
-    this.storageKey = options.storageKey ?? DEFAULT_SNAPSHOT_STORAGE_KEY;
+    const {
+      storageKey = DEFAULT_SNAPSHOT_STORAGE_KEY,
+      storageType = 'none',
+      serialize,
+      deserialize,
+      enableBroadcastChannel,
+      onSnapshotRestored,
+    } = options;
+    this.storageKey = storageKey;
     validateStorageKey(this.storageKey);
-    this.storageType = options.storageType ?? 'none';
-    this.serializer = options.serialize;
-    this.deserializer = options.deserialize;
+    this.storageType = storageType;
+    this.serializer = serialize;
+    this.deserializer = deserialize;
 
-    if (options.enableBroadcastChannel) {
+    if (enableBroadcastChannel) {
       const { channel, handler } = initSnapshotChannel(
         this.storageKey,
         this.tabId,
-        options.onSnapshotRestored,
+        onSnapshotRestored,
       );
       this.broadcastChannel = channel;
       this.messageHandler = handler;

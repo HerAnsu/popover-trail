@@ -28,14 +28,8 @@ export function applyHistorySnapshot<TData = unknown, TPopoverKey extends string
   store: { setState?: (patch: unknown) => void } | ((patch: unknown) => void),
   snapshot: HistorySnapshot<TData, TPopoverKey>,
 ): void {
-  const patch = {
-    trail: snapshot.trail,
-    floating: snapshot.floating,
-    offsets: snapshot.offsets,
-    pinnedStates: snapshot.pinnedStates,
-    zIndexOrder: snapshot.zIndexOrder,
-    ownerId: snapshot.ownerId,
-  };
+  const { trail, floating, offsets, pinnedStates, zIndexOrder, ownerId } = snapshot;
+  const patch = { trail, floating, offsets, pinnedStates, zIndexOrder, ownerId };
   if ('setState' in store && typeof store.setState === 'function') {
     store.setState(patch);
   } else if (typeof store === 'function') {
