@@ -20,6 +20,23 @@ import {
 } from './storeOptions';
 import { safeAssign } from '../../utils/cleanObject';
 
+/**
+ * Normalizes store initialization arguments into a structured config object.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TSlices - Custom slices tuple type.
+ * @param initialContextOrOptions - Either ambient context or full options object.
+ * @param cache - Optional cache instance override.
+ * @returns NormalizedStoreConfig bundle.
+ *
+ * @example
+ * ```typescript
+ * const config = normalizeStoreConfig({ initialContext: { user: 'Alice' } });
+ * console.log(config.effectiveContext); // { user: 'Alice' }
+ * ```
+ */
 export function normalizeStoreConfig<
   TData = unknown,
   TContext = unknown,
@@ -42,6 +59,24 @@ export function normalizeStoreConfig<
   return { options, effectiveContext, effectiveCache, customSlices };
 }
 
+/**
+ * Builds the initial store state by merging the core default state with any custom slice initial states.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TSlices - Custom slices tuple type.
+ * @param resolveData - Async data resolver function.
+ * @param effectiveContext - Ambient context value or undefined.
+ * @param effectiveCache - Resolved cache instance.
+ * @param customSlices - Optional custom slice descriptors.
+ * @returns Merged initial store state data.
+ *
+ * @example
+ * ```typescript
+ * const state = buildMergedInitialState(resolveData, ctx, cache, customSlices);
+ * ```
+ */
 export function buildMergedInitialState<
   TData = unknown,
   TContext = unknown,
@@ -62,9 +97,9 @@ export function buildMergedInitialState<
     InferSliceStateFromTuple<TSlices>;
 
   if (customSlices) {
-    for (const slice of customSlices) {
-      if (slice.initialState) {
-        merged = safeAssign(merged, slice.initialState);
+    for (const { initialState } of customSlices) {
+      if (initialState) {
+        merged = safeAssign(merged, initialState);
       }
     }
   }

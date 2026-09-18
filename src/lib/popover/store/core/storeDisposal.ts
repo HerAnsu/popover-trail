@@ -17,6 +17,14 @@ import type { SliceContext } from '../slices/context';
 import { wrapResult, isErr } from '../../utils/result';
 import { logger } from '../../utils/logger';
 
+/**
+ * Configuration of store subsystems and managers required to perform resource disposal.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TStore - Popover store type.
+ */
 export interface StoreDisposalConfig<
   TData = unknown,
   TContext = unknown,
@@ -27,20 +35,48 @@ export interface StoreDisposalConfig<
     TPopoverKey
   >,
 > {
-  store: StoreApi<TStore>;
-  customSlices?: readonly StoreSliceDescriptor<object, object, TData, TContext, TPopoverKey>[];
-  dependencies: ActionRegistryDependencies<TData, TContext, TPopoverKey>;
-  controllerManager: ControllerManager<TData, TPopoverKey>;
-  transitionScheduler: PopoverTransitionScheduler<TPopoverKey>;
-  eventBus: PopoverEventBus<TData, TPopoverKey>;
-  eventListeners: Set<unknown>;
-  popoverDAG: PopoverDAG<TPopoverKey>;
-  middlewareEngine: PopoverMiddlewareEngine<TData, TContext, TPopoverKey>;
-  batchingManager: BatchingManager;
-  fsmRegistry?: { destroyAll: () => void };
-  unbindFSM?: () => void;
+  /** Zustand store instance. */
+  readonly store: StoreApi<TStore>;
+  /** Optional custom slice descriptors. */
+  readonly customSlices?: readonly StoreSliceDescriptor<object, object, TData, TContext, TPopoverKey>[];
+  /** Unified action registry dependencies. */
+  readonly dependencies: ActionRegistryDependencies<TData, TContext, TPopoverKey>;
+  /** Controller manager. */
+  readonly controllerManager: ControllerManager<TData, TPopoverKey>;
+  /** Transition scheduler. */
+  readonly transitionScheduler: PopoverTransitionScheduler<TPopoverKey>;
+  /** Decoupled popover event bus. */
+  readonly eventBus: PopoverEventBus<TData, TPopoverKey>;
+  /** External registered event listeners set. */
+  readonly eventListeners: Set<unknown>;
+  /** Directed acyclic graph instance. */
+  readonly popoverDAG: PopoverDAG<TPopoverKey>;
+  /** Middleware interceptor engine. */
+  readonly middlewareEngine: PopoverMiddlewareEngine<TData, TContext, TPopoverKey>;
+  /** Batching and microtask coalescing manager. */
+  readonly batchingManager: BatchingManager;
+  /** Optional FSM registry instance. */
+  readonly fsmRegistry?: { destroyAll: () => void };
+  /** Optional FSM event bus unbinder. */
+  readonly unbindFSM?: () => void;
 }
 
+/**
+ * Invokes the `dispose` lifecycle hook on all registered custom slices.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TStore - Popover store type.
+ * @param store - Store API instance.
+ * @param customSlices - Registered custom slice descriptors.
+ * @param deps - Action registry dependencies.
+ *
+ * @example
+ * ```typescript
+ * disposeCustomSlices(store, slices, dependencies);
+ * ```
+ */
 export function disposeCustomSlices<
   TData,
   TContext,
@@ -68,11 +104,11 @@ export function disposeCustomSlices<
     deps,
   };
 
-  for (const slice of customSlices) {
-    if (!slice.dispose) continue;
-    const res = wrapResult(() => slice.dispose?.(sliceCtx));
+  for (const { dispose, name } of customSlices) {
+    if (!dispose) continue;
+    const res = wrapResult(() => dispose(sliceCtx));
     if (isErr(res)) {
-      logger.error(`[popover-trail]: Error in slice "${slice.name}" dispose hook:`, res.error);
+      logger.error(`[popover-trail]: Error in slice "${name}" dispose hook:`, res.error);
     }
   }
 }
@@ -80,16 +116,16 @@ export function disposeCustomSlices<
 /**
  * Disposes all store subsystems, active abort controllers, timers, and custom slice resources.
  *
- * @example
- * ```ts
- * runStoreDisposal(config);
- * ```
- *
  * @template TData - Popover payload data type.
  * @template TContext - Ambient context data type.
  * @template TPopoverKey - Union of valid popover keys.
  * @template TStore - Popover store type.
  * @param cfg - Disposal configuration object containing subsystems to dismantle.
+ *
+ * @example
+ * ```typescript
+ * runStoreDisposal(config);
+ * ```
  */
 export function runStoreDisposal<
   TData,
@@ -101,15 +137,30 @@ export function runStoreDisposal<
     TPopoverKey
   >,
 >(cfg: StoreDisposalConfig<TData, TContext, TPopoverKey, TStore>): void {
-  cfg.unbindFSM?.();
-  cfg.fsmRegistry?.destroyAll();
-  if (cfg.customSlices) disposeCustomSlices(cfg.store, cfg.customSlices, cfg.dependencies);
-  cfg.store.getState().destroy();
-  cfg.controllerManager.dispose();
-  cfg.transitionScheduler.dispose();
-  cfg.eventBus.clear();
-  cfg.eventListeners.clear();
-  cfg.popoverDAG.clear();
-  cfg.middlewareEngine.dispose();
-  cfg.batchingManager.dispose();
+  const {
+    unbindFSM,
+    fsmRegistry,
+    customSlices,
+    store,
+    dependencies,
+    controllerManager,
+    transitionScheduler,
+    eventBus,
+    eventListeners,
+    popoverDAG,
+    middlewareEngine,
+    batchingManager,
+  } = cfg;
+
+  unbindFSM?.();
+  fsmRegistry?.destroyAll();
+  if (customSlices) disposeCustomSlices(store, customSlices, dependencies);
+  store.getState().destroy();
+  controllerManager.dispose();
+  transitionScheduler.dispose();
+  eventBus.clear();
+  eventListeners.clear();
+  popoverDAG.clear();
+  middlewareEngine.dispose();
+  batchingManager.dispose();
 }

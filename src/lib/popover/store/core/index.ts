@@ -12,4 +12,6 @@ export * from './storeReset';
 export * from './storeDisposal';
 export * from './storeManagers';
 export * from './storeExtensions';
+export * from './storeResolverBinding';
+export * from './storeStateInitializer';
 export * from './storeFactory';

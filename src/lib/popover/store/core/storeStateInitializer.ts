@@ -32,23 +32,54 @@ export type CombinedStoreState<
 > = PopoverStore<TData, TContext, TPopoverKey, InferSliceActionsFromTuple<TSlices>> &
   InferSliceStateFromTuple<TSlices>;
 
+/**
+ * Configuration payload required to build the Zustand store state creator.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TSlices - Custom slices tuple type.
+ */
 export interface StoreStateInitializerConfig<
   TData,
   TContext,
   TPopoverKey extends string,
   TSlices extends readonly unknown[],
 > {
-  mgrs: StoreManagers<TData, TContext, TPopoverKey>;
-  effectiveCache: PopoverCache<TData>;
-  effectiveContext: TContext | undefined;
-  resolveData: PopoverResolver<TData, TContext>;
-  customSlices?: readonly StoreSliceDescriptor<object, object, TData, TContext, TPopoverKey>[];
-  mergedState: PopoverStateData<TData, TContext, TPopoverKey> & InferSliceStateFromTuple<TSlices>;
-  getStoreInstance: () => StoreApi<
+  /** Headless store managers bundle. */
+  readonly mgrs: StoreManagers<TData, TContext, TPopoverKey>;
+  /** Resolved cache instance. */
+  readonly effectiveCache: PopoverCache<TData>;
+  /** Ambient context value or undefined. */
+  readonly effectiveContext: TContext | undefined;
+  /** Async data resolver function. */
+  readonly resolveData: PopoverResolver<TData, TContext>;
+  /** Optional custom store slices. */
+  readonly customSlices?: readonly StoreSliceDescriptor<object, object, TData, TContext, TPopoverKey>[];
+  /** Merged initial store state. */
+  readonly mergedState: PopoverStateData<TData, TContext, TPopoverKey> & InferSliceStateFromTuple<TSlices>;
+  /** Getter returning the lazily initialized store instance. */
+  readonly getStoreInstance: () => StoreApi<
     CombinedStoreState<TData, TContext, TPopoverKey, TSlices>
   > | null;
 }
 
+/**
+ * Builds the Zustand `StateCreator` function initializing state, safeSet, and action dispatchers.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TSlices - Custom slices tuple type.
+ * @param cfg - Store state initializer configuration bundle.
+ * @returns StateCreator function passed to createStore.
+ *
+ * @example
+ * ```typescript
+ * const initializer = buildStoreStateInitializer(config);
+ * const store = createStore(initializer);
+ * ```
+ */
 export function buildStoreStateInitializer<
   TData,
   TContext,
@@ -60,24 +91,30 @@ export function buildStoreStateInitializer<
   type CombinedStore = CombinedStoreState<TData, TContext, TPopoverKey, TSlices>;
 
   return (set, get): CombinedStore => {
+    const { mgrs, effectiveCache, customSlices, mergedState, getStoreInstance } = cfg;
+    const { middlewareEngine } = mgrs;
+
     const safeSet = createSafeSet<CombinedStore, TData, TContext, TPopoverKey>(
       set,
       get,
-      cfg.mgrs.middlewareEngine,
+      middlewareEngine,
     );
-    const findEntryByKey = (k: string) => findEntryInStore(get().floating, get().trail, k);
-    const resetStoreState = () => executeStoreReset({ ...cfg.mgrs, safeSet });
+    const findEntryByKey = (k: string) => {
+      const { floating, trail } = get();
+      return findEntryInStore(floating, trail, k);
+    };
+    const resetStoreState = () => executeStoreReset({ ...mgrs, safeSet });
     const boundResolve = createBoundResolver(get, cfg, safeSet, findEntryByKey);
 
     const deps = buildStoreDependencies<TData, TContext, TPopoverKey>({
-      ...cfg.mgrs,
-      effectiveCache: cfg.effectiveCache,
-      customSlices: cfg.customSlices,
+      ...mgrs,
+      effectiveCache,
+      customSlices,
       findEntryByKey,
       resolvePopoverEntry: boundResolve,
       resetStoreState,
       getStoreState: get,
-      subscribeState: (l) => cfg.getStoreInstance()?.subscribe(l) ?? noop,
+      subscribeState: (l) => getStoreInstance()?.subscribe(l) ?? noop,
     });
 
     const actions = Object.freeze(
@@ -88,7 +125,7 @@ export function buildStoreStateInitializer<
       ),
     );
     return {
-      ...cfg.mergedState,
+      ...mergedState,
       ...actions,
       get actions() {
         return actions;

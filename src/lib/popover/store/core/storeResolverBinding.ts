@@ -10,6 +10,25 @@ import { resolvePopoverEntry, type ResolvePopoverEntryParams } from '../storeRes
 import type { SafeSetFn } from './storeSafeSet';
 import type { StoreStateInitializerConfig } from './storeStateInitializer';
 
+/**
+ * Creates a bound popover resolver function pre-wired with cache, DAG, controllers, and safeSet.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TSlices - Custom slices tuple type.
+ * @param get - State getter function.
+ * @param cfg - Store state initializer configuration.
+ * @param safeSet - Safe state mutation dispatcher.
+ * @param findEntryByKey - Entry lookup function.
+ * @returns Bound async resolver function.
+ *
+ * @example
+ * ```typescript
+ * const resolver = createBoundResolver(get, cfg, safeSet, findEntryByKey);
+ * await resolver({ key: 'user' });
+ * ```
+ */
 export function createBoundResolver<
   TData,
   TContext,
@@ -21,18 +40,22 @@ export function createBoundResolver<
   safeSet: SafeSetFn<TData, TContext, TPopoverKey>,
   findEntryByKey: (k: string) => TrailEntry<TData, TPopoverKey> | undefined,
 ) {
+  const { mgrs, effectiveCache, resolveData, effectiveContext } = cfg;
+  const { popoverDAG, controllerManager, eventBus, eventListeners } = mgrs;
+  const { inFlightPromises, registerController, removeController } = controllerManager;
+
   return (params: ResolvePopoverEntryParams<TData, TContext, TPopoverKey>) =>
     resolvePopoverEntry(get, params, {
-      popoverDAG: cfg.mgrs.popoverDAG,
-      cache: cfg.effectiveCache,
-      resolveData: cfg.resolveData,
-      initialContext: cfg.effectiveContext,
-      inFlightPromises: cfg.mgrs.controllerManager.inFlightPromises,
-      registerController: cfg.mgrs.controllerManager.registerController,
-      removeController: cfg.mgrs.controllerManager.removeController,
+      popoverDAG,
+      cache: effectiveCache,
+      resolveData,
+      initialContext: effectiveContext,
+      inFlightPromises,
+      registerController,
+      removeController,
       safeSet,
       findEntryByKey,
-      eventBus: cfg.mgrs.eventBus,
-      eventListeners: cfg.mgrs.eventListeners,
+      eventBus,
+      eventListeners,
     });
 }

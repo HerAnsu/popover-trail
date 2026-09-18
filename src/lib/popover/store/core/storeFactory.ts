@@ -19,6 +19,15 @@ import { initStoreManagers } from './storeManagers';
 import { buildStoreStateInitializer } from './storeStateInitializer';
 import { attachStoreExtensions, type StoreLifecycleExtensions } from './storeExtensions';
 
+/**
+ * Complete store instance returned by `createPopoverStore`, combining vanilla Zustand store API
+ * with popover actions, custom slices, and lifecycle extensions (`dispose`, `fsmRegistry`, `getDAG`).
+ *
+ * @template TData - Data payload resolved for each popover card.
+ * @template TContext - Global shared ambient context.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @template TSlices - Tuple of custom store slice extensions.
+ */
 export type PopoverStoreInstance<
   TData = unknown,
   TContext = unknown,
@@ -39,7 +48,7 @@ export type PopoverStoreInstance<
  * undo/redo history, FSM card registries, and custom slice extensions.
  *
  * @example
- * ```ts
+ * ```typescript
  * const store = createPopoverStore(
  *   async (key) => {
  *     const res = await fetch(`/api/cards/${key}`);
@@ -53,7 +62,7 @@ export type PopoverStoreInstance<
  *
  * @template TData - Data payload resolved for each popover card.
  * @template TContext - Global shared ambient context.
- * @template TPopoverKey - Union of valid popover string keys.
+ * @template TPopoverKey - Union of valid popover keys.
  * @template TSlices - Tuple of custom store slice extensions.
  * @param resolveData - Async data resolution function for fetching popover contents.
  * @param initialContextOrOptions - Initial context object or configuration options.
@@ -85,6 +94,8 @@ export function createPopoverStore<
     TSlices
   >(initialContextOrOptions, cache);
   const mgrs = initStoreManagers<TData, TContext, TPopoverKey>(customSlices);
+  const { batchingManager } = mgrs;
+
   const mergedState = buildMergedInitialState<TData, TContext, TPopoverKey, TSlices>(
     resolveData,
     effectiveContext,
@@ -105,7 +116,7 @@ export function createPopoverStore<
 
   const store = createStore<CombinedStore>(initializer);
   storeInstance = store;
-  mgrs.batchingManager.attachSubscriber(store);
+  batchingManager.attachSubscriber(store);
 
   return attachStoreExtensions({
     store,

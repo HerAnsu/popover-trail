@@ -8,6 +8,14 @@ import type { StatePatch, PopoverStore } from '../../types';
 import type { PopoverMiddlewareEngine } from '../storeMiddlewareEngine';
 import { isEmptyRecord } from '../../utils/cleanObject';
 
+/**
+ * Dispatches a partial state patch or patch producer through middleware.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param partial - Partial state patch object or updater function.
+ */
 export type SafeSetFn<TData, TContext, TPopoverKey extends string> = (
   partial:
     | StatePatch<TData, TContext, TPopoverKey>
@@ -19,20 +27,20 @@ export type SafeSetFn<TData, TContext, TPopoverKey extends string> = (
 /**
  * Creates a safe state patch applier that runs middleware and increments state revision.
  *
- * @example
- * ```ts
- * const safeSet = createSafeSet(set, get, middlewareEngine);
- * safeSet({ activeStackGroup: 'groupA' });
- * ```
- *
  * @template TStore - Popover store type.
  * @template TData - Popover payload data type.
  * @template TContext - Ambient context data type.
  * @template TPopoverKey - Union of valid popover keys.
- * @param set - Raw store setter.
- * @param get - Raw store getter.
+ * @param set - Raw store setter function.
+ * @param get - Raw store getter function.
  * @param middlewareEngine - Middleware interceptor engine.
  * @returns SafeSetFn dispatching patches through middleware.
+ *
+ * @example
+ * ```typescript
+ * const safeSet = createSafeSet(set, get, middlewareEngine);
+ * safeSet({ activeStackGroup: 'groupA' });
+ * ```
  */
 export function createSafeSet<
   TStore extends PopoverStore<TData, TContext, TPopoverKey>,
@@ -52,9 +60,10 @@ export function createSafeSet<
       if (!nextPatch) return state;
       if (typeof nextPatch === 'object' && isEmptyRecord(nextPatch)) return state;
 
+      const { stateRevision = 0 } = get();
       const patchWithRevision = {
         ...nextPatch,
-        stateRevision: (get().stateRevision ?? 0) + 1,
+        stateRevision: stateRevision + 1,
       };
       return patchWithRevision as Partial<TStore>;
     });

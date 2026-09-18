@@ -73,7 +73,9 @@ export function initStoreManagers<TData, TContext, TPopoverKey extends string>(
 ): StoreManagers<TData, TContext, TPopoverKey> {
   const middlewareEngine = new PopoverMiddlewareEngine<TData, TContext, TPopoverKey>();
   if (customSlices) {
-    for (const slice of customSlices) if (slice.middleware) middlewareEngine.use(slice.middleware);
+    for (const { middleware } of customSlices) {
+      if (middleware) middlewareEngine.use(middleware);
+    }
   }
 
   const eventBus = new PopoverEventBus<TData, TPopoverKey>();
