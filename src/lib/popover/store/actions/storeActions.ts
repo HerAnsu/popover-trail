@@ -12,6 +12,18 @@ import { createActionRegistry } from './storeActionRegistry';
 import { logger } from '../../utils/logger';
 import { togglePinState, updateOffsetState } from '../reducers/pinning/pinReducers';
 
+/**
+ * Checks whether a given popover key is currently marked as pinned.
+ *
+ * @example
+ * ```ts
+ * const pinned = isPinnedEntry(state.pinnedStates, 'profileCard');
+ * ```
+ *
+ * @param pinnedStates - Dictionary of pinned boolean flags by key.
+ * @param key - Popover key to check.
+ * @returns True if the key is pinned.
+ */
 export function isPinnedEntry(
   pinnedStates: Readonly<Partial<Record<string, boolean>>>,
   key: string,
@@ -19,10 +31,38 @@ export function isPinnedEntry(
   return Boolean(pinnedStates[key]);
 }
 
+/**
+ * Checks whether a popover key is present in the z-index ordering list.
+ *
+ * @example
+ * ```ts
+ * const present = isKeyInZIndexOrder(state.zIndexOrder, 'profileCard');
+ * ```
+ *
+ * @param zIndexOrder - Ordered array of popover keys.
+ * @param key - Popover key to check.
+ * @returns True if key is present in zIndexOrder.
+ */
 export function isKeyInZIndexOrder(zIndexOrder: readonly string[], key: string): boolean {
   return zIndexOrder.includes(key);
 }
 
+/**
+ * Pure reducer helper computing state patch when toggling pin mode.
+ *
+ * @example
+ * ```ts
+ * const patch = reduceTogglePinState(state, 'card-1', rect);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param state - Current store state snapshot.
+ * @param key - Popover key to toggle.
+ * @param rect - Optional active bounding rectangle.
+ * @returns State patch with toggled pin state.
+ */
 export function reduceTogglePinState<TData, TContext, TPopoverKey extends string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
   key: TPopoverKey,
@@ -31,6 +71,22 @@ export function reduceTogglePinState<TData, TContext, TPopoverKey extends string
   return togglePinState(state, key, rect);
 }
 
+/**
+ * Pure reducer helper computing state patch when updating drag offset coordinates.
+ *
+ * @example
+ * ```ts
+ * const patch = reduceUpdateOffsetState(state, 'card-1', { x: 10, y: 20 });
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param state - Current store state snapshot.
+ * @param key - Identifier of dragged popover.
+ * @param offset - New drag coordinates `{ x, y }`.
+ * @returns State patch with updated offsets.
+ */
 export function reduceUpdateOffsetState<TData, TContext, TPopoverKey extends string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
   key: TPopoverKey,
@@ -39,6 +95,24 @@ export function reduceUpdateOffsetState<TData, TContext, TPopoverKey extends str
   return updateOffsetState(state, key, offset);
 }
 
+/**
+ * Composition root factory aggregating all core and custom store actions.
+ *
+ * @example
+ * ```ts
+ * const actions = createStoreActions(set, get, dependencies);
+ * actions.openRoot('root');
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TCustomActions - Type of additional custom slice actions.
+ * @param set - Store setter function.
+ * @param get - Store getter function.
+ * @param deps - Action registry dependencies.
+ * @returns Unified object containing all store actions.
+ */
 export function createStoreActions<
   TData = unknown,
   TContext = unknown,

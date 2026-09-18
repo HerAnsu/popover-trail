@@ -57,6 +57,14 @@ export interface StoreManagers<TData, TContext, TPopoverKey extends string> {
 /**
  * Instantiates and wires all headless store managers and registry infrastructure.
  *
+ * @example
+ * ```ts
+ * const managers = initStoreManagers(customSlices);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
  * @param customSlices - Optional list of user-provided custom slices with middleware hooks.
  * @returns Fully initialized StoreManagers bundle.
  */

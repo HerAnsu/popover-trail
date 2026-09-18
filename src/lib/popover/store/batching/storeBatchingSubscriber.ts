@@ -32,6 +32,12 @@ type SelectorSubscribeDelegate<TState> = (
  * when autoBatchMicrotasks is enabled or when an explicit batch is open,
  * and passes through selector-based subscriptions directly to the underlying engine.
  *
+ * @example
+ * ```ts
+ * const coordinator = new BatchingCoordinator(true);
+ * attachStoreSubscriber(vanillaStore, coordinator);
+ * ```
+ *
  * @template TState - Store state shape.
  * @param store - Vanilla Zustand store API to wrap.
  * @param coord - Batching coordinator tracking batch depth and active subscribers.

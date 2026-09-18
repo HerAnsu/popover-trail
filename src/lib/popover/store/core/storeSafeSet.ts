@@ -16,6 +16,24 @@ export type SafeSetFn<TData, TContext, TPopoverKey extends string> = (
       ) => StatePatch<TData, TContext, TPopoverKey>),
 ) => void;
 
+/**
+ * Creates a safe state patch applier that runs middleware and increments state revision.
+ *
+ * @example
+ * ```ts
+ * const safeSet = createSafeSet(set, get, middlewareEngine);
+ * safeSet({ activeStackGroup: 'groupA' });
+ * ```
+ *
+ * @template TStore - Popover store type.
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param set - Raw store setter.
+ * @param get - Raw store getter.
+ * @param middlewareEngine - Middleware interceptor engine.
+ * @returns SafeSetFn dispatching patches through middleware.
+ */
 export function createSafeSet<
   TStore extends PopoverStore<TData, TContext, TPopoverKey>,
   TData = unknown,

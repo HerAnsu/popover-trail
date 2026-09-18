@@ -77,6 +77,20 @@ export function disposeCustomSlices<
   }
 }
 
+/**
+ * Disposes all store subsystems, active abort controllers, timers, and custom slice resources.
+ *
+ * @example
+ * ```ts
+ * runStoreDisposal(config);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TStore - Popover store type.
+ * @param cfg - Disposal configuration object containing subsystems to dismantle.
+ */
 export function runStoreDisposal<
   TData,
   TContext,

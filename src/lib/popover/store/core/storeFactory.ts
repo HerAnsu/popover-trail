@@ -30,6 +30,36 @@ export type PopoverStoreInstance<
 > &
   StoreLifecycleExtensions<TData, TContext, TPopoverKey, TSlices>;
 
+/**
+ * Creates a fully configured headless popover-trail store instance.
+ *
+ * @remarks
+ * Assembles the full headless architecture including DAG hierarchy tracking,
+ * microtask batching, LRU/custom caching, async cancellation pipelines,
+ * undo/redo history, FSM card registries, and custom slice extensions.
+ *
+ * @example
+ * ```ts
+ * const store = createPopoverStore(
+ *   async (key) => {
+ *     const res = await fetch(`/api/cards/${key}`);
+ *     return res.json();
+ *   },
+ *   { initialContext: { userId: '123' } },
+ * );
+ *
+ * store.getState().actions.openRoot('userProfile');
+ * ```
+ *
+ * @template TData - Data payload resolved for each popover card.
+ * @template TContext - Global shared ambient context.
+ * @template TPopoverKey - Union of valid popover string keys.
+ * @template TSlices - Tuple of custom store slice extensions.
+ * @param resolveData - Async data resolution function for fetching popover contents.
+ * @param initialContextOrOptions - Initial context object or configuration options.
+ * @param cache - Optional cache instance override for data deduplication.
+ * @returns Fully typed and extended PopoverStore instance.
+ */
 export function createPopoverStore<
   TData = unknown,
   TContext = unknown,

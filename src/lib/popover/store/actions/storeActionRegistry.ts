@@ -21,6 +21,22 @@ import type { ActionRegistryDependencies } from './storeActionRegistryTypes';
 export * from './storeActionRegistryTypes';
 export { createStoreActions } from './storeActions';
 
+/**
+ * Aggregates all core slice actions into a single object.
+ *
+ * @example
+ * ```ts
+ * const coreActions = createActionRegistry(set, get, dependencies);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param set - Store setter function.
+ * @param get - Store getter function.
+ * @param dependencies - Action registry dependencies.
+ * @returns Unified object containing all core store actions.
+ */
 export function createActionRegistry<
   TData = unknown,
   TContext = unknown,

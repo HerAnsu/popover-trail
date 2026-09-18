@@ -17,6 +17,23 @@ export interface PopoverStoreOptions<
   readonly customSlices?: TSlices;
 }
 
+/**
+ * Type guard verifying whether an argument represents store configuration options.
+ *
+ * @example
+ * ```ts
+ * if (isStoreOptions(arg)) {
+ *   console.log(arg.customSlices);
+ * }
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TSlices - Custom slices tuple type.
+ * @param val - Unknown value to inspect.
+ * @returns True if value conforms to PopoverStoreOptions.
+ */
 export function isStoreOptions<
   TData,
   TContext,

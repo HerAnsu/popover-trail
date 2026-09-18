@@ -25,6 +25,19 @@ export interface ResetStoreSubsystems<
   safeSet: SafeSetFn<TData, TContext, TPopoverKey>;
 }
 
+/**
+ * Resets store state and clears all active controllers, timers, and DAG nodes.
+ *
+ * @example
+ * ```ts
+ * executeStoreReset(subsystems);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param subsystems - Bundle of store managers and safeSet function.
+ */
 export function executeStoreReset<TData, TContext = unknown, TPopoverKey extends string = string>(
   subsystems: ResetStoreSubsystems<TData, TContext, TPopoverKey>,
 ): void {
