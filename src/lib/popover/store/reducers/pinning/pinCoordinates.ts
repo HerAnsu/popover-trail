@@ -31,11 +31,12 @@ export function resolvePinnedLayoutPos(
   if (isFiniteRect(rect)) {
     return { top: rect.top, left: rect.left };
   }
-  if (entry?.pinnedLayoutPos) {
-    return entry.pinnedLayoutPos;
+  const { pinnedLayoutPos, rect: entryRect } = entry ?? {};
+  if (pinnedLayoutPos) {
+    return pinnedLayoutPos;
   }
-  if (isFiniteRect(entry?.rect)) {
-    return { top: entry.rect.top, left: entry.rect.left };
+  if (isFiniteRect(entryRect)) {
+    return { top: entryRect.top, left: entryRect.left };
   }
   return undefined;
 }

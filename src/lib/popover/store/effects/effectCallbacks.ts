@@ -29,11 +29,12 @@ export function notifyUserCallback<TData, TPopoverKey extends string>(
   key: TPopoverKey,
   payload?: unknown,
 ): void {
+  const { onClose, onPin, onOpen } = entry;
   if (type === 'onClose') {
-    safeCallback(entry.onClose, [key], { contextName: 'onClose' });
+    safeCallback(onClose, [key], { contextName: 'onClose' });
   } else if (type === 'onPin') {
-    safeCallback(entry.onPin, [key, Boolean(payload)], { contextName: 'onPin' });
+    safeCallback(onPin, [key, Boolean(payload)], { contextName: 'onPin' });
   } else if (type === 'onOpen') {
-    safeCallback(entry.onOpen, [entry], { contextName: 'onOpen' });
+    safeCallback(onOpen, [entry], { contextName: 'onOpen' });
   }
 }

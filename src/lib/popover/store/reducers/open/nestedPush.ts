@@ -61,7 +61,8 @@ export function computeNextTrailForNestedPush<
   index: number,
   finalEntry: TrailEntry<TData, TPopoverKey>,
 ): TrailEntry<TData, TPopoverKey>[] | null {
-  return index < state.floating.length
-    ? computeFloatingNestedPush(state.floating, index, finalEntry)
-    : computeTrailNestedPush(state.trail, index - state.floating.length, finalEntry);
+  const { floating, trail } = state;
+  return index < floating.length
+    ? computeFloatingNestedPush(floating, index, finalEntry)
+    : computeTrailNestedPush(trail, index - floating.length, finalEntry);
 }

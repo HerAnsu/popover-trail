@@ -50,11 +50,12 @@ export function collectActiveStateSlices<
   state: PopoverStateData<TData, TContext, TPopoverKey>,
   nextTrail: readonly TrailEntry<TData, TPopoverKey>[],
 ): ActiveStateSlices<TPopoverKey> {
-  const activeKeys = getActiveKeys(state.floating, nextTrail);
-  const nextOffsets = filterByAllowedKeys<DragOffset, TPopoverKey>(state.offsets, activeKeys);
-  const nextPinnedStates = filterByAllowedKeys<boolean, TPopoverKey>(state.pinnedStates, activeKeys);
+  const { floating, offsets, pinnedStates, nestedHydrationRequestCounters } = state;
+  const activeKeys = getActiveKeys(floating, nextTrail);
+  const nextOffsets = filterByAllowedKeys<DragOffset, TPopoverKey>(offsets, activeKeys);
+  const nextPinnedStates = filterByAllowedKeys<boolean, TPopoverKey>(pinnedStates, activeKeys);
   const nextCounters = filterByAllowedKeys<number, TPopoverKey>(
-    state.nestedHydrationRequestCounters ?? emptyRecord(),
+    nestedHydrationRequestCounters ?? emptyRecord(),
     activeKeys,
   );
 

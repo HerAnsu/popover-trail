@@ -31,15 +31,26 @@ export interface EffectRunnerDependencies<
   readonly scheduleTransition?: (callback: () => void) => void;
 }
 
+/**
+ * Handles recording a history state snapshot during effect execution.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Popover key identifier.
+ * @template TContext - Application context type.
+ * @param effect - RECORD_HISTORY_SNAPSHOT effect descriptor.
+ * @param deps - Effect runner dependencies.
+ */
 export function handleHistorySnapshot<TData, TPopoverKey extends string, TContext>(
   effect: Extract<Effect<TData, TPopoverKey, TContext>, { type: 'RECORD_HISTORY_SNAPSHOT' }>,
   deps: EffectRunnerDependencies<TData, TPopoverKey, TContext>,
 ): void {
-  if (effect.state && deps.pushSnapshot) {
-    deps.pushSnapshot(effect.state);
-  } else if (deps.pushSnapshot && deps.getStoreState) {
-    deps.pushSnapshot(deps.getStoreState());
+  const { state } = effect;
+  const { pushSnapshot, getStoreState, recordHistorySnapshot } = deps;
+  if (state && pushSnapshot) {
+    pushSnapshot(state);
+  } else if (pushSnapshot && getStoreState) {
+    pushSnapshot(getStoreState());
   } else {
-    deps.recordHistorySnapshot?.(effect.state);
+    recordHistorySnapshot?.(state);
   }
 }

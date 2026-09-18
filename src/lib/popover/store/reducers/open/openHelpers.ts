@@ -36,6 +36,7 @@ export function buildActiveTrailPatch<
   activeKey: TPopoverKey,
   extraPatch?: StatePatch<TData, TContext, TPopoverKey>,
 ): StatePatch<TData, TContext, TPopoverKey> {
+  const { zIndexOrder } = state;
   const { activeKeys, nextOffsets, nextPinnedStates, nextCounters } = collectActiveStateSlices(
     state,
     nextTrail,
@@ -47,6 +48,6 @@ export function buildActiveTrailPatch<
     offsets: nextOffsets,
     pinnedStates: nextPinnedStates,
     nestedHydrationRequestCounters: nextCounters,
-    zIndexOrder: getNextZIndexOrder(state.zIndexOrder, activeKeys, activeKey),
+    zIndexOrder: getNextZIndexOrder(zIndexOrder, activeKeys, activeKey),
   };
 }

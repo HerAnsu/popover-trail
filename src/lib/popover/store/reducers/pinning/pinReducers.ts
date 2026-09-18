@@ -41,13 +41,14 @@ export function updateOffsetState<TData, TContext, TPopoverKey extends string = 
   if (!isFinitePoint(offset)) {
     return EMPTY_OBJECT;
   }
-  const currentOffset = state.offsets[key];
+  const { offsets } = state;
+  const currentOffset = offsets[key];
   if (isDragOffsetEqual(currentOffset, offset)) {
     return EMPTY_OBJECT;
   }
   return {
     offsets: {
-      ...state.offsets,
+      ...offsets,
       [key]: offset,
     },
   };
@@ -79,12 +80,13 @@ export function togglePinState<TData, TContext, TPopoverKey extends string = str
   key: TPopoverKey,
   rect?: DOMRect | PopoverRect | null,
 ): StatePatch<TData, TContext, TPopoverKey> {
-  const floatingIndex = findEntryIndex(state.floating, key);
+  const { floating, trail } = state;
+  const floatingIndex = findEntryIndex(floating, key);
   if (floatingIndex !== -1) {
     return unpinFloatingEntry(state, key, floatingIndex);
   }
 
-  const trailIndex = findEntryIndex(state.trail, key);
+  const trailIndex = findEntryIndex(trail, key);
   if (trailIndex !== -1) {
     return pinTrailEntry(state, key, trailIndex, rect);
   }

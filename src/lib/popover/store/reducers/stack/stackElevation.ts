@@ -36,10 +36,11 @@ export function bringToFrontPatch<TData, TContext, TPopoverKey extends string = 
   key: TPopoverKey,
   dag?: PopoverDAG<TPopoverKey>,
 ): StatePatch<TData, TContext, TPopoverKey> {
+  const { floating, trail, zIndexOrder } = state;
   const descendants = getAllDescendants<TData, TPopoverKey>(
     [key],
-    state.floating,
-    state.trail,
+    floating,
+    trail,
     true,
     dag,
   );
@@ -47,15 +48,15 @@ export function bringToFrontPatch<TData, TContext, TPopoverKey extends string = 
   const keysToElevate: readonly TPopoverKey[] = unique([key, ...descendants]);
   const elevateSet = new Set<TPopoverKey>(keysToElevate);
 
-  const activeKeys = getActiveKeys<TData, TPopoverKey>(state.floating, state.trail);
-  const nextOrder = state.zIndexOrder.filter((k) => !elevateSet.has(k));
+  const activeKeys = getActiveKeys<TData, TPopoverKey>(floating, trail);
+  const nextOrder = zIndexOrder.filter((k) => !elevateSet.has(k));
   for (const k of keysToElevate) {
     if (activeKeys.has(k)) {
       nextOrder.push(k);
     }
   }
 
-  if (shallowEqualArray(state.zIndexOrder, nextOrder)) {
+  if (shallowEqualArray(zIndexOrder, nextOrder)) {
     return EMPTY_OBJECT;
   }
 

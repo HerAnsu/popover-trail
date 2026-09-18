@@ -40,21 +40,29 @@ export function pinTrailEntry<TData, TContext, TPopoverKey extends string = stri
   trailIndex: number,
   rect?: DOMRect | PopoverRect | null,
 ): StatePatch<TData, TContext, TPopoverKey> {
-  const entry = state.trail[trailIndex];
+  const {
+    trail,
+    floating,
+    offsets,
+    pinnedStates,
+    zIndexOrder,
+    nestedHydrationRequestCounters,
+  } = state;
+  const entry = trail[trailIndex];
   if (!entry) return EMPTY_OBJECT;
 
-  const nextTrail = filterOutEntry(state.trail, key);
+  const nextTrail = filterOutEntry(trail, key);
   const nextFloating: TrailEntry<TData, TPopoverKey>[] = [
-    ...state.floating,
+    ...floating,
     toFloatingEntry(entry, rect),
   ];
   const nextOffsets: Partial<Record<TPopoverKey, DragOffset>> = {
-    ...state.offsets,
+    ...offsets,
     [key]: ZERO_OFFSET,
   };
 
-  const nextPinned: Partial<Record<TPopoverKey, boolean>> = { ...state.pinnedStates, [key]: true };
-  const nextZIndexOrder = elevateKeyInOrder(state.zIndexOrder, key);
+  const nextPinned: Partial<Record<TPopoverKey, boolean>> = { ...pinnedStates, [key]: true };
+  const nextZIndexOrder = elevateKeyInOrder(zIndexOrder, key);
 
   const cleanupPatch = getCleanupStatePatch<TData, TContext, TPopoverKey>(
     nextFloating,
@@ -62,7 +70,7 @@ export function pinTrailEntry<TData, TContext, TPopoverKey extends string = stri
     nextOffsets,
     nextZIndexOrder,
     nextPinned,
-    state.nestedHydrationRequestCounters ?? EMPTY_OBJECT,
+    nestedHydrationRequestCounters ?? EMPTY_OBJECT,
   );
 
   return { floating: nextFloating, trail: nextTrail, ...cleanupPatch };
@@ -90,21 +98,29 @@ export function unpinFloatingEntry<TData, TContext, TPopoverKey extends string =
   key: TPopoverKey,
   floatingIndex: number,
 ): StatePatch<TData, TContext, TPopoverKey> {
-  const entry = state.floating[floatingIndex];
+  const {
+    floating,
+    trail,
+    offsets,
+    pinnedStates,
+    zIndexOrder,
+    nestedHydrationRequestCounters,
+  } = state;
+  const entry = floating[floatingIndex];
   if (!entry) return EMPTY_OBJECT;
 
-  const nextFloating = filterOutEntry(state.floating, key);
-  const nextTrail: TrailEntry<TData, TPopoverKey>[] = [...state.trail, toTrailEntry(entry)];
-  const nextOffsets = omitKey(state.offsets, key);
-  const nextPinned: Partial<Record<TPopoverKey, boolean>> = { ...state.pinnedStates, [key]: false };
+  const nextFloating = filterOutEntry(floating, key);
+  const nextTrail: TrailEntry<TData, TPopoverKey>[] = [...trail, toTrailEntry(entry)];
+  const nextOffsets = omitKey(offsets, key);
+  const nextPinned: Partial<Record<TPopoverKey, boolean>> = { ...pinnedStates, [key]: false };
 
   const cleanupPatch = getCleanupStatePatch<TData, TContext, TPopoverKey>(
     nextFloating,
     nextTrail,
     nextOffsets,
-    state.zIndexOrder,
+    zIndexOrder,
     nextPinned,
-    state.nestedHydrationRequestCounters ?? EMPTY_OBJECT,
+    nestedHydrationRequestCounters ?? EMPTY_OBJECT,
   );
 
   return { floating: nextFloating, trail: nextTrail, ...cleanupPatch };

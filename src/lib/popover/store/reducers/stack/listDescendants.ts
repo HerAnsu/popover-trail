@@ -15,13 +15,13 @@ function collectChildrenFromList<TData, TPopoverKey extends string = string>(
 ): void {
   for (const entry of list) {
     if (!entry) continue;
-    const parentKey = entry.parentKey;
+    const { parentKey, originalParentKey, key } = entry;
     const effectiveParent = closePinnedDescendants
-      ? (entry.originalParentKey ?? parentKey)
+      ? (originalParentKey ?? parentKey)
       : parentKey;
 
-    if (effectiveParent === current && !visited.has(entry.key)) {
-      queue.push(entry.key);
+    if (effectiveParent === current && !visited.has(key)) {
+      queue.push(key);
     }
   }
 }

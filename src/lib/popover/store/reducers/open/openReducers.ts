@@ -38,14 +38,15 @@ export function openRootState<TData, TContext, TPopoverKey extends string = stri
   ownerId: string,
   entry: TrailEntry<TData, TPopoverKey>,
 ): StatePatch<TData, TContext, TPopoverKey> {
+  const { floating, trail, ownerId: currentOwnerId } = state;
   // If this key is already pinned in the floating stack, bring it to the front
-  const elevatePatch = findFloatingElevationPatch(state.floating, state, entry.key);
+  const elevatePatch = findFloatingElevationPatch(floating, state, entry.key);
   if (elevatePatch) return elevatePatch;
 
   const nextEntry = createTrailEntryNode(entry, { isRoot: true });
   const nextTrail =
-    state.ownerId === ownerId
-      ? [...filterOutEntry(state.trail, entry.key), nextEntry]
+    currentOwnerId === ownerId
+      ? [...filterOutEntry(trail, entry.key), nextEntry]
       : [nextEntry];
 
   return buildActiveTrailPatch(state, nextTrail, entry.key, { ownerId });
@@ -118,9 +119,10 @@ export function pushNestedByKeyState<TData, TContext, TPopoverKey extends string
   parentKey: TPopoverKey,
   entry: TrailEntry<TData, TPopoverKey>,
 ): StatePatch<TData, TContext, TPopoverKey> {
-  const unifiedIndex = findUnifiedEntryIndex(state.floating, state.trail, parentKey);
+  const { floating, trail, ownerId } = state;
+  const unifiedIndex = findUnifiedEntryIndex(floating, trail, parentKey);
   if (unifiedIndex !== -1) {
     return pushNestedState(state, unifiedIndex, entry);
   }
-  return openRootState(state, state.ownerId ?? 'root', entry);
+  return openRootState(state, ownerId ?? 'root', entry);
 }

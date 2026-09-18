@@ -66,16 +66,23 @@ export function createResolvedTrailEntry<TData = unknown, TPopoverKey extends st
   error?: Error | null,
   isLoading = false,
 ): TrailEntry<TData, TPopoverKey> {
-  const finalError = error !== undefined ? error : baseEntry.error;
-  const finalData = data ?? baseEntry.data;
-  const nextStatus = resolveEntryStatus(finalData, finalError, isLoading, baseEntry.status);
+  const {
+    error: baseError,
+    data: baseData,
+    status: baseStatus,
+    isLoading: baseLoading,
+    dataPromise,
+  } = baseEntry;
+  const finalError = error !== undefined ? error : baseError;
+  const finalData = data ?? baseData;
+  const nextStatus = resolveEntryStatus(finalData, finalError, isLoading, baseStatus);
 
   if (
-    finalData === baseEntry.data &&
-    finalError === baseEntry.error &&
-    isLoading === baseEntry.isLoading &&
-    nextStatus === baseEntry.status &&
-    baseEntry.dataPromise === undefined
+    finalData === baseData &&
+    finalError === baseError &&
+    isLoading === baseLoading &&
+    nextStatus === baseStatus &&
+    dataPromise === undefined
   ) {
     return baseEntry;
   }

@@ -51,10 +51,11 @@ export function toFloatingEntry<TData, TPopoverKey extends string = string>(
 export function toTrailEntry<TData, TPopoverKey extends string = string>(
   entry: TrailEntry<TData, TPopoverKey>,
 ): TrailEntry<TData, TPopoverKey> {
+  const { originalRect, rect, originalParentKey, parentKey } = entry;
   return {
     ...entry,
-    rect: entry.originalRect ?? entry.rect,
-    parentKey: entry.originalParentKey ?? entry.parentKey,
+    rect: originalRect ?? rect,
+    parentKey: originalParentKey ?? parentKey,
     pinnedLayoutPos: undefined,
   };
 }

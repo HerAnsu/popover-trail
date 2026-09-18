@@ -30,14 +30,21 @@ export function createTrailEntryNode<TData = unknown, TPopoverKey extends string
   options?: EntryFactoryOptions,
 ): TrailEntry<TData, TPopoverKey> {
   const isRoot = options?.isRoot ?? false;
-  const parentKey = isRoot || entry.parentKey === entry.key ? undefined : entry.parentKey;
-  const originalParentKey = entry.originalParentKey ?? entry.parentKey;
-  const originalRect = entry.originalRect ?? entry.rect;
+  const {
+    key,
+    parentKey: entryParentKey,
+    originalParentKey: entryOriginalParentKey,
+    originalRect: entryOriginalRect,
+    rect,
+  } = entry;
+  const parentKey = isRoot || entryParentKey === key ? undefined : entryParentKey;
+  const originalParentKey = entryOriginalParentKey ?? entryParentKey;
+  const originalRect = entryOriginalRect ?? rect;
 
   if (
-    entry.parentKey === parentKey &&
-    entry.originalParentKey === originalParentKey &&
-    entry.originalRect === originalRect
+    entryParentKey === parentKey &&
+    entryOriginalParentKey === originalParentKey &&
+    entryOriginalRect === originalRect
   ) {
     return entry;
   }

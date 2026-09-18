@@ -27,13 +27,14 @@ export function getSnapshotStatePatch<
   TContext = unknown,
   TPopoverKey extends string = string,
 >(snapshot: HistorySnapshot<TData, TPopoverKey>): StatePatch<TData, TContext, TPopoverKey> {
+  const { trail, floating, offsets, pinnedStates, zIndexOrder, ownerId } = snapshot;
   return {
-    trail: snapshot.trail,
-    floating: snapshot.floating,
-    offsets: snapshot.offsets,
-    pinnedStates: snapshot.pinnedStates,
-    zIndexOrder: snapshot.zIndexOrder,
-    ownerId: snapshot.ownerId,
-    ...(snapshot.trail.length === 0 ? { anchorElement: null, anchorRect: null } : {}),
+    trail,
+    floating,
+    offsets,
+    pinnedStates,
+    zIndexOrder,
+    ownerId,
+    ...(trail.length === 0 ? { anchorElement: null, anchorRect: null } : {}),
   };
 }

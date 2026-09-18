@@ -40,28 +40,38 @@ export function closeFromState<TData, TContext, TPopoverKey extends string = str
   index: number,
   dag?: PopoverDAG<TPopoverKey>,
 ): StatePatch<TData, TContext, TPopoverKey> {
+  const {
+    floating,
+    trail,
+    closePinnedDescendants,
+    pinnedStates,
+    offsets,
+    zIndexOrder,
+    nestedHydrationRequestCounters,
+  } = state;
+
   const closeInfo = getRemovedKeysForClose(
-    state.floating,
-    state.trail,
+    floating,
+    trail,
     index,
-    state.closePinnedDescendants,
-    state.pinnedStates,
+    closePinnedDescendants,
+    pinnedStates,
     dag,
   );
 
   if (!closeInfo || closeInfo.removedKeys.size === 0) return EMPTY_OBJECT;
 
   const { removedKeys } = closeInfo;
-  const nextFloating = filterRetainedEntries(state.floating, removedKeys);
-  const nextTrail = filterRetainedEntries(state.trail, removedKeys);
+  const nextFloating = filterRetainedEntries(floating, removedKeys);
+  const nextTrail = filterRetainedEntries(trail, removedKeys);
 
   const cleanupPatch = getCleanupStatePatch<TData, TContext, TPopoverKey>(
     nextFloating,
     nextTrail,
-    omitRemovedRecordKeys(state.offsets, removedKeys),
-    state.zIndexOrder,
-    omitRemovedRecordKeys(state.pinnedStates, removedKeys),
-    omitRemovedRecordKeys(state.nestedHydrationRequestCounters, removedKeys),
+    omitRemovedRecordKeys(offsets, removedKeys),
+    zIndexOrder,
+    omitRemovedRecordKeys(pinnedStates, removedKeys),
+    omitRemovedRecordKeys(nestedHydrationRequestCounters, removedKeys),
   );
 
   return {
@@ -97,7 +107,8 @@ export function closeByTargetKeyState<TData, TContext, TPopoverKey extends strin
   targetKey: TPopoverKey,
   dag?: PopoverDAG<TPopoverKey>,
 ): StatePatch<TData, TContext, TPopoverKey> {
-  const unifiedIndex = findUnifiedEntryIndex(state.floating, state.trail, targetKey);
+  const { floating, trail } = state;
+  const unifiedIndex = findUnifiedEntryIndex(floating, trail, targetKey);
   if (unifiedIndex === -1) return EMPTY_OBJECT;
   return closeFromState(state, unifiedIndex, dag);
 }
