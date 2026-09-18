@@ -35,6 +35,34 @@ import { createSchemaTrigger } from './schemaTrigger';
 import { createSchemaActionsHook } from './schemaActions';
 import { isValidSchemaKey } from './schemaGuards';
 
+/**
+ * Creates a strongly typed popover schema instance from a declarative dictionary of schema nodes.
+ *
+ * Provides type-safe access to keys, data resolvers, polymorphic triggers, specialized hooks
+ * (`useData`, `useEntry`, `usePopover`, `useBreadcrumbs`, etc.), and typed actions.
+ *
+ * @example
+ * ```tsx
+ * const schema = createPopoverSchema({
+ *   user: defineSchemaNode({
+ *     resolver: async (key: string) => fetchUser(key),
+ *     children: ['profile', 'settings'],
+ *   }),
+ *   profile: defineSchemaNode({
+ *     resolver: async (key, parentData: User) => fetchProfile(parentData.id),
+ *   }),
+ * });
+ *
+ * export function App() {
+ *   return <PopoverProvider schema={schema}><Main /></PopoverProvider>;
+ * }
+ * ```
+ *
+ * @template TSchema - Declarative map of node keys to PopoverSchemaNode configurations.
+ * @template TContext - Inferred ambient context type across schema nodes.
+ * @param definition - Schema configuration dictionary.
+ * @returns PopoverSchemaInstance with typed keys, hooks, Trigger component, and resolver factory.
+ */
 export function createPopoverSchema<
   const TSchema extends PopoverSchemaDefinition,
   TContext = InferSchemaContext<TSchema>,
