@@ -123,14 +123,14 @@ export function createStoreActions<
   get: StoreGetFn<TData, TContext, TPopoverKey>,
   deps: ActionRegistryDependencies<TData, TContext, TPopoverKey>,
 ): PopoverActions<TData, TContext, TPopoverKey> & TCustomActions {
-  const ctx: SliceContext<TData, TContext, TPopoverKey> = { set, get, deps };
   const coreActions = createActionRegistry<TData, TContext, TPopoverKey>(set, get, deps);
-  const customSlices = deps.customSlices;
+  const { customSlices } = deps;
   if (!customSlices || customSlices.length === 0) {
     return coreActions as PopoverActions<TData, TContext, TPopoverKey> & TCustomActions;
   }
   const reservedCoreActionNames: ReadonlySet<string> = new Set(Object.keys(coreActions));
   const mergedActions: Record<string, unknown> = { ...coreActions };
+  const ctx: SliceContext<TData, TContext, TPopoverKey> = { set, get, deps };
   for (const descriptor of customSlices) {
     const extension = descriptor.create(ctx);
     if (!extension || typeof extension !== 'object') continue;

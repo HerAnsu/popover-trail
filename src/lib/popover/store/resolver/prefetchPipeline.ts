@@ -100,5 +100,6 @@ export async function retryResolution<TData, TContext, TPopoverKey extends strin
   key: TPopoverKey,
   _entry?: TrailEntry<TData, TPopoverKey>,
 ): Promise<void> {
-  await store.getState().retryPopover(key);
+  const { retryPopover } = store.getState();
+  await retryPopover(key);
 }
