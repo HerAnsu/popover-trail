@@ -26,7 +26,19 @@ function insertEntriesIntoDAG<TData, TPopoverKey extends string = string>(
 }
 
 /**
- * Restores Directed Acyclic Graph relationships from persisted trail and floating entries.
+ * Reconstructs Directed Acyclic Graph (DAG) parent-child relationships from persisted trail and floating entries.
+ * Clears existing topology and inserts nodes with their corresponding parent references in top-down topological order.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param dag - Target DAG instance to rebuild into.
+ * @param trail - Active cascading trail entries.
+ * @param floating - Pinned or detached floating entries.
+ *
+ * @example
+ * ```typescript
+ * restoreDAGFromState(dag, persistedState.trail, persistedState.floating);
+ * ```
  */
 export function restoreDAGFromState<TData, TPopoverKey extends string = string>(
   dag: PopoverDAG<TPopoverKey> | DAGRestorationTarget<TPopoverKey> | undefined,
@@ -42,7 +54,16 @@ export function restoreDAGFromState<TData, TPopoverKey extends string = string>(
 }
 
 /**
- * Executes a state mutation optionally wrapped in a transition scheduler.
+ * Executes a state mutation action, optionally delegating execution to a transition scheduler
+ * (such as React 18/19 `startTransition` or a custom microtask scheduler).
+ *
+ * @param action - State mutation callback to execute.
+ * @param scheduler - Optional transition scheduling runner.
+ *
+ * @example
+ * ```typescript
+ * executeWithTransition(() => store.setState({ count: 1 }), React.startTransition);
+ * ```
  */
 export function executeWithTransition(
   action: () => void,

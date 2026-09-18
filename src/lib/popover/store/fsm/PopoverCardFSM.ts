@@ -12,7 +12,7 @@ import type {
   PopoverFSMInterpreter,
 } from './fsmTypes';
 import { STATE_VALUE_TO_BIT_MAP, FSMStatusBit } from './fsmMatrix';
-import { buildInitialFSMState, type PopoverFSMOptions } from './fsmInitializer';
+import { createInitialFSMState, type PopoverFSMOptions } from './fsmInitializer';
 import { transitionFSMState } from './fsmTransitions';
 import { isResolvedFSM } from './fsmGuards';
 import { safeCallback } from '../../utils/safeCallback';
@@ -53,7 +53,7 @@ export class PopoverCardFSM<
   private isDisposed = false;
 
   constructor(keyOrOptions: TPopoverKey | PopoverFSMOptions<TData, TPopoverKey>) {
-    this.state = buildInitialFSMState(keyOrOptions);
+    this.state = createInitialFSMState(keyOrOptions);
   }
 
   /**

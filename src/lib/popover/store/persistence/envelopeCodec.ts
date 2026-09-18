@@ -17,7 +17,19 @@ import { parseEntryList, parsePinnedStates, parseZIndexOrder } from './envelopeP
 export { CURRENT_SCHEMA_VERSION };
 
 /**
- * Encodes current popover state into a serializable PersistedEnvelope.
+ * Encodes current popover store state into a serializable `PersistedEnvelope`.
+ * Safely extracts trail entries, floating entries, offsets, pinned states, and z-index ordering.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param state - Current immutable store state snapshot.
+ * @returns Serializable envelope object with the current schema version stamped.
+ *
+ * @example
+ * ```typescript
+ * const envelope = encodePersistedEnvelope(store.getState());
+ * const jsonString = JSON.stringify(envelope);
+ * ```
  */
 export function encodePersistedEnvelope<TData = unknown, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, unknown, TPopoverKey>,
@@ -34,7 +46,21 @@ export function encodePersistedEnvelope<TData = unknown, TPopoverKey extends str
 }
 
 /**
- * Safely decodes a raw JSON string into a validated PersistedEnvelope.
+ * Safely decodes and validates a raw JSON string or object into a validated `PersistedEnvelope`.
+ * Sanitizes entries, offsets, pinned states, and z-index arrays, returning a Result monad.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param raw - Raw string or parsed object from storage.
+ * @returns `Ok(PersistedEnvelope)` if valid; otherwise `Err(PopoverError)`.
+ *
+ * @example
+ * ```typescript
+ * const result = decodePersistedEnvelope(localStorage.getItem('popover_state'));
+ * if (isOk(result)) {
+ *   console.log('Decoded trail length:', result.value.trail.length);
+ * }
+ * ```
  */
 export function decodePersistedEnvelope<TData = unknown, TPopoverKey extends string = string>(
   raw: unknown,

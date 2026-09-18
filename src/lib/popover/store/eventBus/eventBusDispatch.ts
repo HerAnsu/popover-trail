@@ -14,6 +14,21 @@ import {
   createPopoverEvent,
 } from './eventBusTypes';
 
+/**
+ * Helper creator returning a descriptor and typed factory function for a specific event type.
+ *
+ * @template K - Target popover event type.
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param type - Name of the event.
+ * @returns Object containing the event type string and a typed factory function.
+ *
+ * @example
+ * ```typescript
+ * const rootOpenEvent = defineCustomEvent('popover:open_root');
+ * const event = rootOpenEvent.create({ key: 'profile', ownerId: 'session-1' });
+ * ```
+ */
 export function defineCustomEvent<
   K extends PopoverEventType,
   TData = unknown,
@@ -26,6 +41,20 @@ export function defineCustomEvent<
   };
 }
 
+/**
+ * Translates an internal `PopoverStoreEvent` into a typed `PopoverEventBus` emission.
+ * Handles event name mapping, detail payload normalisation, and dispatching.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param eventBus - Destination event bus instance.
+ * @param event - Internal store event to translate and emit.
+ *
+ * @example
+ * ```typescript
+ * emitStoreEventToBus(bus, { type: 'pin', key: 'card-1' });
+ * ```
+ */
 export function emitStoreEventToBus<TData, TPopoverKey extends string = string>(
   eventBus: PopoverEventBus<TData, TPopoverKey>,
   event: PopoverStoreEvent<TData, TPopoverKey>,
@@ -98,6 +127,22 @@ export function emitStoreEventToBus<TData, TPopoverKey extends string = string>(
   }
 }
 
+/**
+ * Dispatches an internal store event to raw subscriber listeners and an optional event bus.
+ * Fault-isolates listener invocations using `safeCallback` to prevent consumer exceptions
+ * from interrupting event propagation.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param eventListeners - Iterable collection of direct subscriber callbacks.
+ * @param event - The store event being dispatched.
+ * @param eventBus - Optional event bus to mirror the event to.
+ *
+ * @example
+ * ```typescript
+ * dispatchStoreEvent(storeListeners, event, storeEventBus);
+ * ```
+ */
 export function dispatchStoreEvent<TData, TPopoverKey extends string = string>(
   eventListeners: Iterable<(event: PopoverStoreEvent<TData, TPopoverKey>) => void> | undefined,
   event: PopoverStoreEvent<TData, TPopoverKey>,

@@ -7,7 +7,7 @@
 import type { PopoverFSMEvent, PopoverFSMState, PopoverStateValue } from './fsmTypes';
 import { isValidTransition } from './fsmMatrix';
 
-export { buildInitialFSMState, type PopoverFSMOptions } from './fsmInitializer';
+export { createInitialFSMState, type PopoverFSMOptions } from './fsmInitializer';
 
 /**
  * Pure state transition reducer for a popover card finite state machine.

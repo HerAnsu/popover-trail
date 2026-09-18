@@ -22,7 +22,23 @@ const NOOP_BROADCASTER: CrossTabBroadcaster = Object.freeze({
 });
 
 /**
- * Creates a CrossTabBroadcaster instance using BroadcastChannel or StorageEvent fallback.
+ * Creates a `CrossTabBroadcaster` instance for synchronizing popover state changes across browser tabs.
+ * Prefers the modern native `BroadcastChannel` API and falls back gracefully to `StorageEvent`
+ * or a no-op implementation in non-browser/restricted environments.
+ *
+ * @param channelName - Unique communication channel identifier (defaults to `'popover_trail_sync'`).
+ * @returns Initialized `CrossTabBroadcaster` implementing message posting and disposal.
+ *
+ * @example
+ * ```typescript
+ * const broadcaster = createCrossTabBroadcaster('my_app_popovers');
+ *
+ * broadcaster.onMessage((msg) => {
+ *   console.log('Received cross-tab message:', msg);
+ * });
+ *
+ * broadcaster.postMessage({ type: 'sync' });
+ * ```
  */
 export function createCrossTabBroadcaster(channelName = 'popover_trail_sync'): CrossTabBroadcaster {
   if (!isBrowser()) {

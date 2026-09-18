@@ -15,7 +15,17 @@ function isEntryCandidate<TData, TPopoverKey extends string>(
 }
 
 /**
- * Parses raw trail or floating entry arrays safely discarding prototype-polluted keys.
+ * Parses raw trail or floating entry arrays, discarding non-records or entries with prototype-polluted keys.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param raw - Candidate array from deserialized JSON.
+ * @returns Filtered array of valid `TrailEntry` objects.
+ *
+ * @example
+ * ```typescript
+ * const entries = parseEntryList(parsedJson.trail);
+ * ```
  */
 export function parseEntryList<TData, TPopoverKey extends string>(
   raw: unknown,
@@ -31,7 +41,16 @@ export function parseEntryList<TData, TPopoverKey extends string>(
 }
 
 /**
- * Parses raw pinned states safely skipping prototype-polluted properties.
+ * Parses raw pinned states map, skipping prototype-polluted properties (`__proto__`, `constructor`).
+ *
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param raw - Candidate object from deserialized JSON.
+ * @returns Cleaned record of boolean pinned states.
+ *
+ * @example
+ * ```typescript
+ * const pinned = parsePinnedStates(parsedJson.pinnedStates);
+ * ```
  */
 export function parsePinnedStates<TPopoverKey extends string>(
   raw: unknown,
@@ -47,7 +66,16 @@ export function parsePinnedStates<TPopoverKey extends string>(
 }
 
 /**
- * Parses raw zIndexOrder arrays safely discarding unsafe strings.
+ * Parses raw z-index stacking order array, safely discarding unsafe strings or non-safe keys.
+ *
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param raw - Candidate array from deserialized JSON.
+ * @returns Cleaned array of valid popover keys in stacking order.
+ *
+ * @example
+ * ```typescript
+ * const zIndex = parseZIndexOrder(parsedJson.zIndexOrder);
+ * ```
  */
 export function parseZIndexOrder<TPopoverKey extends string>(raw: unknown): TPopoverKey[] {
   if (!isArray(raw)) return [];

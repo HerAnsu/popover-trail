@@ -14,6 +14,22 @@ import {
   createPopoverEvent,
 } from './eventBusTypes';
 
+/**
+ * Dispatches an event through the target DOM EventTarget, wildcard routers, key-filtered routers,
+ * and optionally mirrors the event to the global event bus.
+ *
+ * @template K - Target popover event type.
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param target - Underlying native `EventTarget` instance.
+ * @param router - Router managing wildcard and key-scoped subscriptions.
+ * @param type - Name of the event being emitted.
+ * @param payload - Structured event payload.
+ * @param options - Bus configuration options (e.g. `mirrorToGlobalBus`).
+ * @param globalBus - Reference to the application-wide global bus.
+ * @param currentBus - Reference to the issuing bus instance.
+ * @returns `true` if the event was dispatched successfully and not cancelled.
+ */
 export function dispatchEventWithMirror<
   K extends PopoverEventType,
   TData,

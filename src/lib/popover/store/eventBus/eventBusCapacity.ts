@@ -7,6 +7,12 @@
 
 import { logger } from '../../utils/logger';
 
+/**
+ * Emits a diagnostic warning if the current number of registered listeners reaches or exceeds the threshold.
+ *
+ * @param size - Current count of registered listeners.
+ * @param maxListeners - Maximum listener threshold before warning.
+ */
 export function warnIfOverCapacity(size: number, maxListeners: number): void {
   if (size >= maxListeners) {
     logger.warn(

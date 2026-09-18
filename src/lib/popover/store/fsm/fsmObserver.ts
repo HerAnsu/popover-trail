@@ -18,7 +18,26 @@ import { unique } from '../../utils/collections';
 import { EMPTY_ARRAY } from '../../constants';
 
 /**
- * Binds an FSM Registry as a shadow invariant watchdog to the store event bus.
+ * Connects a `PopoverFSMRegistry` to a `PopoverEventBus` as a shadow invariant watchdog.
+ *
+ * Automatically translates high-level event bus events (`popover:open_root`, `popover:resolve_success`,
+ * `popover:pin`, `popover:close`, etc.) into discrete FSM transitions on the corresponding card FSMs.
+ * This bridges Layer 2 Headless State Management and ensures individual card lifecycles stay in sync
+ * with global store operations.
+ *
+ * @template TData - Type of resolved data stored in FSM contexts.
+ * @template TPopoverKey - String identifier type for popover keys.
+ * @param fsmRegistry - Registry instance managing individual popover state machines.
+ * @param eventBus - Event bus emitting reactive lifecycle events.
+ * @returns An unbind cleanup function that detaches the event bus listener.
+ *
+ * @example
+ * ```typescript
+ * const unbind = bindFSMRegistryToEventBus(registry, eventBus);
+ *
+ * // Later during teardown:
+ * unbind();
+ * ```
  */
 export function bindFSMRegistryToEventBus<TData = unknown, TPopoverKey extends string = string>(
   fsmRegistry: PopoverFSMRegistry<TData, TPopoverKey>,
