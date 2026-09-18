@@ -67,32 +67,55 @@ export function usePopoverPropSync<
   const propsRef = useLatestRef(props);
 
   useEffect(() => {
-    const currentProps = propsRef.current;
+    const {
+      enableArrowNavigation = true,
+      allowDragWhenPinned = true,
+      allowDragWhenUnpinned = true,
+      debug = false,
+      closePinnedDescendants = false,
+      responsiveMode = 'auto',
+      cascadeOffsetStep = DEFAULT_CASCADE_OFFSET_STEP,
+      exitTransitionDuration = 0,
+      defaultOffset = DEFAULT_OFFSET_PX,
+      baseZIndex = DEFAULT_BASE_Z_INDEX,
+      mobileBreakpoint = DEFAULT_MOBILE_BREAKPOINT_PX,
+      mountingClassName = 'mounting',
+      unmountingClassName = 'unmounting',
+      mountedClassName = 'mounted',
+      initialContext,
+      stackGroup = null,
+      focusLockOptions = null,
+      collision = null,
+      components = null,
+      zIndexBaseMap = null,
+    } = propsRef.current;
+
     const patch: Partial<PopoverStateData<TData, TContext, string>> = {
-      enableArrowNavigation: Boolean(currentProps.enableArrowNavigation ?? true),
-      allowDragWhenPinned: Boolean(currentProps.allowDragWhenPinned ?? true),
-      allowDragWhenUnpinned: Boolean(currentProps.allowDragWhenUnpinned ?? true),
-      debug: Boolean(currentProps.debug ?? false),
-      closePinnedDescendants: Boolean(currentProps.closePinnedDescendants ?? false),
-      responsiveMode: currentProps.responsiveMode ?? 'auto',
-      cascadeOffsetStep: Number(currentProps.cascadeOffsetStep ?? DEFAULT_CASCADE_OFFSET_STEP),
-      exitTransitionDuration: Number(currentProps.exitTransitionDuration ?? 0),
-      defaultOffset: Number(currentProps.defaultOffset ?? DEFAULT_OFFSET_PX),
-      baseZIndex: Number(currentProps.baseZIndex ?? DEFAULT_BASE_Z_INDEX),
-      mobileBreakpoint: Number(currentProps.mobileBreakpoint ?? DEFAULT_MOBILE_BREAKPOINT_PX),
-      mountingClassName: String(currentProps.mountingClassName ?? 'mounting'),
-      unmountingClassName: String(currentProps.unmountingClassName ?? 'unmounting'),
-      mountedClassName: String(currentProps.mountedClassName ?? 'mounted'),
-      context: currentProps.initialContext,
+      enableArrowNavigation: Boolean(enableArrowNavigation),
+      allowDragWhenPinned: Boolean(allowDragWhenPinned),
+      allowDragWhenUnpinned: Boolean(allowDragWhenUnpinned),
+      debug: Boolean(debug),
+      closePinnedDescendants: Boolean(closePinnedDescendants),
+      responsiveMode,
+      cascadeOffsetStep: Number(cascadeOffsetStep),
+      exitTransitionDuration: Number(exitTransitionDuration),
+      defaultOffset: Number(defaultOffset),
+      baseZIndex: Number(baseZIndex),
+      mobileBreakpoint: Number(mobileBreakpoint),
+      mountingClassName: String(mountingClassName),
+      unmountingClassName: String(unmountingClassName),
+      mountedClassName: String(mountedClassName),
+      context: initialContext,
       resolveData: activeResolver,
-      activeStackGroup: currentProps.stackGroup ?? null,
-      focusLockOptions: currentProps.focusLockOptions ?? null,
-      collisionConfig: currentProps.collision ?? null,
-      components: currentProps.components ?? null,
-      zIndexBaseMap: currentProps.zIndexBaseMap ?? null,
+      activeStackGroup: stackGroup,
+      focusLockOptions,
+      collisionConfig: collision,
+      components,
+      zIndexBaseMap,
     };
 
-    store.getState().actions.updateConfig(patch);
+    const { updateConfig } = store.getState().actions;
+    updateConfig(patch);
   }, [
     store,
     propsRef,

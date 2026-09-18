@@ -21,11 +21,12 @@ export function usePopoverKeyboardShortcuts<TData, TContext>(
       if (!enableKeyboardClose || e.defaultPrevented) return;
       if (isEscapeKey(e)) {
         const state = store.getState();
-        const hasActive = state.trail.length > 0 || state.floating.length > 0;
+        const { trail, floating, closeTopmost } = state;
+        const hasActive = trail.length > 0 || floating.length > 0;
         if (hasActive) {
           e.preventDefault();
           e.stopPropagation();
-          state.closeTopmost();
+          closeTopmost();
         }
       }
     },

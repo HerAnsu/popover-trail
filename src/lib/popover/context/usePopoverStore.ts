@@ -114,5 +114,6 @@ export function usePopoverActions<
   TPopoverKey extends string = RegisteredKeys,
 >(): Readonly<PopoverStore<TData, TContext, TPopoverKey>['actions']> {
   const store = usePopoverStoreApi<TData, TContext, TPopoverKey>();
-  return store.getState().actions;
+  const { actions } = store.getState();
+  return actions;
 }

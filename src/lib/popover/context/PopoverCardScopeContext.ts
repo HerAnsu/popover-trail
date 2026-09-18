@@ -114,11 +114,12 @@ export function usePopoverCardStatic<
     return staticCtx;
   }
   assertCardScope<TData, TContext, TPopoverKey>(fullCtx);
+  const { entry, index, actions, cardRef } = fullCtx;
   return {
-    entryKey: fullCtx.entry.key,
-    entry: fullCtx.entry,
-    index: fullCtx.index,
-    actions: fullCtx.actions,
-    cardRef: fullCtx.cardRef,
+    entryKey: entry.key,
+    entry,
+    index,
+    actions,
+    cardRef,
   };
 }

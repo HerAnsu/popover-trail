@@ -114,7 +114,8 @@ export function PopoverProvider<
   // Cleanup on Provider unmount: abort all in-flight requests and reset state
   useEffect(() => {
     return () => {
-      store.getState().actions.closeAll();
+      const { closeAll } = store.getState().actions;
+      closeAll();
       store.dispose();
     };
   }, [store]);
