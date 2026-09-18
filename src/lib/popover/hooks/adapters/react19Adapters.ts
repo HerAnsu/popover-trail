@@ -10,6 +10,23 @@ import type { PopoverServerAction, PopoverActionState } from '../../types/react1
 import { wrapAsyncResult, isOk } from '../../utils/result';
 import { useLatestRef } from '../useHookUtils';
 
+/**
+ * Cross-version adapter for React 19's `useActionState` supporting concurrent transitions and error handling.
+ *
+ * @example
+ * ```tsx
+ * const [state, dispatch, isPending] = useCrossVersionActionState(
+ *   async (prev, newName: string) => ({ status: 'success', data: { name: newName } }),
+ *   { status: 'idle', data: null, error: null },
+ * );
+ * ```
+ *
+ * @template TData - Action result payload data type.
+ * @template TInput - Input argument type passed to dispatch.
+ * @param action - Asynchronous server action function.
+ * @param initialState - Initial state value before action is invoked.
+ * @returns Tuple of [state, dispatch, isPending].
+ */
 export function useCrossVersionActionState<TData, TInput = void>(
   action: PopoverServerAction<TData, TInput>,
   initialState: PopoverActionState<TData>,
@@ -49,6 +66,24 @@ export function useCrossVersionActionState<TData, TInput = void>(
   return [state, dispatch, isPending] as const;
 }
 
+/**
+ * Cross-version fallback for React 19's `useOptimistic` hook.
+ * Allows applying immediate optimistic patches to confirmed data.
+ *
+ * @example
+ * ```tsx
+ * const [optimisticTitle, setOptimisticTitle] = useCrossVersionOptimistic(
+ *   confirmedTitle,
+ *   (current, newTitle: string) => newTitle,
+ * );
+ * ```
+ *
+ * @template TData - Confirmed data type.
+ * @template TUpdate - Optimistic update patch type.
+ * @param currentData - Current confirmed data.
+ * @param updateFn - Pure reducer computing optimistic state from current data and patch.
+ * @returns Tuple of [optimisticData, applyOptimisticUpdate].
+ */
 export function useCrossVersionOptimistic<TData, TUpdate>(
   currentData: TData,
   updateFn: (currentState: TData, update: TUpdate) => TData,
