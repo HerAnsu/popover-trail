@@ -18,6 +18,24 @@ import type {
 import type { SchemaActionsHook } from './schemaActionTypes';
 import { mergeSchemaNodeOptions } from './schemaParams';
 
+/**
+ * Factory creating a React hook (`useActions`) bound to a specific popover schema definition.
+ *
+ * @template TSchema - Popover schema definition type.
+ * @template TContext - Ambient context type.
+ * @param definition - Popover schema definition object.
+ * @returns React hook returning strongly typed schema actions (`openRoot`, `pushNested`, `close`, etc.).
+ *
+ * @example
+ * ```typescript
+ * const useActions = createSchemaActionsHook(schemaDefinition);
+ *
+ * function MyComponent() {
+ *   const actions = useActions();
+ *   return <button onClick={(e) => actions.openRoot('user', e)}>Open</button>;
+ * }
+ * ```
+ */
 export function createSchemaActionsHook<
   TSchema extends PopoverSchemaDefinition,
   TContext = unknown,

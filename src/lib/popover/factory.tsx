@@ -34,15 +34,63 @@ function resolveSchemaInstance(val: object): PopoverSchemaInstance<PopoverSchema
   return null;
 }
 
+/**
+ * Creates a strongly typed popover-trail suite pre-configured with a declarative schema.
+ *
+ * @template TSchema - Schema definition mapping keys to node configurations.
+ * @param schema - Schema instance or declarative schema object defining nodes and child relationships.
+ * @returns Pre-bound suite including `PopoverProvider`, `PopoverTrigger`, `PopoverPortal`, and hooks.
+ *
+ * @example
+ * ```tsx
+ * import { createPopoverTrail } from 'popover-trail';
+ *
+ * const { PopoverProvider, PopoverTrigger, PopoverPortal, usePopover } = createPopoverTrail({
+ *   user: {
+ *     resolve: async (id: string) => fetchUser(id),
+ *     children: ['details', 'settings'],
+ *   },
+ *   details: {
+ *     resolve: async (id: string) => fetchDetails(id),
+ *   },
+ * });
+ * ```
+ */
 export function createPopoverTrail<TSchema extends PopoverSchemaDefinition>(
   schema: PopoverSchemaInstance<TSchema> | TSchema,
 ): FactorySchemaSuite<TSchema>;
 
+/**
+ * Creates a generic strongly typed popover-trail suite for custom data and ambient context types.
+ *
+ * @template TData - Popover resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @returns Pre-bound suite including `PopoverProvider`, `PopoverTrigger`, `PopoverPortal`, and hooks.
+ *
+ * @example
+ * ```tsx
+ * import { createPopoverTrail } from 'popover-trail';
+ *
+ * interface UserData {
+ *   id: string;
+ *   name: string;
+ * }
+ *
+ * const { PopoverProvider, PopoverTrigger, PopoverPortal, usePopover } =
+ *   createPopoverTrail<UserData>();
+ * ```
+ */
 export function createPopoverTrail<
   TData = RegisteredDataMap[RegisteredKeys],
   TContext = unknown,
 >(): FactoryGenericSuite<TData, TContext>;
 
+/**
+ * Root factory implementation for creating popover-trail suites.
+ *
+ * @param schema - Optional schema definition or instance.
+ * @returns Bound suite containing components and hooks.
+ */
 export function createPopoverTrail(schema?: unknown): object {
   if (isDevEnv() && isCurrentlyRenderingInReact()) validateFactoryPlacement(true);
 

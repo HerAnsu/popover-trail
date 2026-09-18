@@ -2,6 +2,13 @@
  * Compound Header Subcomponent for Popover Cards.
  * Clean Architecture Layer 4: Presentation & UI Components.
  *
+ * Provides a draggable header bar containing title text, pin button, and close button.
+ *
+ * @example
+ * ```tsx
+ * <PopoverCard.Header title="Card Details" showPin showClose />
+ * ```
+ *
  * @module components/card/PopoverCardHeader
  */
 

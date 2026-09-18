@@ -2,6 +2,13 @@
  * Accessible Close Button Subcomponent for Popover Cards.
  * Clean Architecture Layer 4: Presentation & UI Components.
  *
+ * Automatically dismisses the enclosing popover and its child cascade subtree when clicked.
+ *
+ * @example
+ * ```tsx
+ * <PopoverCard.CloseButton>✕</PopoverCard.CloseButton>
+ * ```
+ *
  * @module components/card/PopoverCardCloseButton
  */
 

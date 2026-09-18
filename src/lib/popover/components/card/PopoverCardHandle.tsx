@@ -18,6 +18,13 @@ export type PopoverCardHandleProps<E extends ElementType = 'header'> = Polymorph
 /**
  * Drag handle wrapper that binds DnD pointer listeners from the enclosing popover card scope.
  * Allows users to drag and reposition pinned/floating cards across the viewport canvas.
+ *
+ * @example
+ * ```tsx
+ * <PopoverCard.Handle as="div" className="custom-drag-handle">
+ *   <span>Drag handle</span>
+ * </PopoverCard.Handle>
+ * ```
  */
 export function PopoverCardHandle<E extends ElementType = 'header'>({
   as,

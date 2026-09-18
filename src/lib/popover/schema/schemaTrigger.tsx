@@ -10,6 +10,22 @@ import { PopoverTrigger, type PopoverTriggerProps } from '../components/PopoverT
 import type { PopoverSchemaDefinition, SchemaKeys } from './schemaTypes';
 import { mergeSchemaNodeOptions } from './schemaParams';
 
+/**
+ * Creates a schema-aware `<PopoverTrigger>` component pre-typed with the keys and display options of the schema.
+ *
+ * @template TSchema - Popover schema definition type.
+ * @param definition - Popover schema definition dictionary.
+ * @returns React component accepting typed `popoverKey` values from `TSchema`.
+ *
+ * @example
+ * ```tsx
+ * const SchemaTrigger = createSchemaTrigger(mySchema);
+ *
+ * function TriggerButton() {
+ *   return <SchemaTrigger popoverKey="user"><button>Open User</button></SchemaTrigger>;
+ * }
+ * ```
+ */
 export function createSchemaTrigger<TSchema extends PopoverSchemaDefinition>(
   definition: TSchema,
 ): ComponentType<Omit<PopoverTriggerProps, 'popoverKey'> & { popoverKey: SchemaKeys<TSchema> }> {

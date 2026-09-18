@@ -2,6 +2,13 @@
  * Accessible Pin/Unpin Toggle Button Subcomponent for Popover Cards.
  * Clean Architecture Layer 4: Presentation & UI Components.
  *
+ * Toggles the popover between the cascading trail and the persistent floating stack.
+ *
+ * @example
+ * ```tsx
+ * <PopoverCard.PinButton />
+ * ```
+ *
  * @module components/card/PopoverCardPinButton
  */
 import React, { useCallback, type ReactNode, type ElementType } from 'react';

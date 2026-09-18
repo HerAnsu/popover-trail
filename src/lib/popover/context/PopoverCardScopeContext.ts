@@ -57,6 +57,24 @@ function assertCardScope<TData, TContext = unknown, TPopoverKey extends string =
   }
 }
 
+/**
+ * Hook to access the full reactive scope of the enclosing `<PopoverCard>`.
+ * Returns the card's entry data, index, pinned status, card controller, and action dispatchers.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @returns Active `PopoverCardScope` object.
+ * @throws {Error} If rendered outside of a `<PopoverCard>` container.
+ *
+ * @example
+ * ```tsx
+ * function CardContent() {
+ *   const { entry, isPinned, actions } = usePopoverCardScope();
+ *   return <div>Card {entry.key} {isPinned ? '(Pinned)' : ''}</div>;
+ * }
+ * ```
+ */
 export function usePopoverCardScope<
   TData = unknown,
   TContext = unknown,
@@ -67,6 +85,24 @@ export function usePopoverCardScope<
   return ctx;
 }
 
+/**
+ * Hook to access static (infrequently changing) scope properties of the enclosing `<PopoverCard>`.
+ * Optimizes re-renders by bypassing dynamic positioning updates.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @returns Active `CardStaticScope` object containing `entry`, `index`, `actions`, and `cardRef`.
+ * @throws {Error} If rendered outside of a `<PopoverCard>` container.
+ *
+ * @example
+ * ```tsx
+ * function CardHeader() {
+ *   const { entryKey, actions } = usePopoverCardStatic();
+ *   return <button onClick={() => actions.close(entryKey)}>Close</button>;
+ * }
+ * ```
+ */
 export function usePopoverCardStatic<
   TData = unknown,
   TContext = unknown,

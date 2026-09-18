@@ -12,7 +12,22 @@ import type {
 } from './PopoverCardScopeContext';
 import { isPlainObject } from '../utils/guards/objectGuards';
 
-/** Validates whether an unknown value conforms to CardStaticScope. */
+/**
+ * Validates whether an unknown value conforms to CardStaticScope.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param val - Unknown value to test.
+ * @returns True if `val` is a valid CardStaticScope.
+ *
+ * @example
+ * ```typescript
+ * if (isCardStaticScope(scope)) {
+ *   console.log(scope.entryKey, scope.index);
+ * }
+ * ```
+ */
 export function isCardStaticScope<
   TData = unknown,
   TContext = unknown,
@@ -29,7 +44,19 @@ export function isCardStaticScope<
   );
 }
 
-/** Validates whether an unknown value conforms to CardDynamicScope. */
+/**
+ * Validates whether an unknown value conforms to CardDynamicScope.
+ *
+ * @param val - Unknown value to test.
+ * @returns True if `val` is a valid CardDynamicScope.
+ *
+ * @example
+ * ```typescript
+ * if (isCardDynamicScope(scope)) {
+ *   console.log(scope.isPinned, scope.card);
+ * }
+ * ```
+ */
 export function isCardDynamicScope(val: unknown): val is CardDynamicScope {
   return (
     isPlainObject(val) &&
@@ -39,7 +66,22 @@ export function isCardDynamicScope(val: unknown): val is CardDynamicScope {
   );
 }
 
-/** Validates whether an unknown value conforms to full PopoverCardScope. */
+/**
+ * Validates whether an unknown value conforms to full PopoverCardScope.
+ *
+ * @template TData - Resolved data payload type.
+ * @template TContext - Ambient context type.
+ * @template TPopoverKey - Popover key identifier type.
+ * @param val - Unknown value to test.
+ * @returns True if `val` is a valid PopoverCardScope.
+ *
+ * @example
+ * ```typescript
+ * if (isPopoverCardScope(ctx)) {
+ *   console.log(ctx.entry.key, ctx.actions);
+ * }
+ * ```
+ */
 export function isPopoverCardScope<
   TData = unknown,
   TContext = unknown,

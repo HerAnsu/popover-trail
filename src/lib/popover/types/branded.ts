@@ -128,6 +128,16 @@ export type HistoryCapacity = Brand<number, 'HistoryCapacity'>;
 
 /**
  * Generic brand constructor eliminating double type assertions across domain modules.
+ *
+ * @template T - Underlying primitive type.
+ * @template B - Brand literal tag.
+ * @param value - Primitive value to brand.
+ * @returns Strongly branded nominal type.
+ *
+ * @example
+ * ```typescript
+ * const key = createBrand<string, 'PopoverKey'>('card-1');
+ * ```
  */
 export function createBrand<T, B extends string>(value: T): Brand<T, B> {
   return value as Brand<T, B>;
@@ -157,6 +167,15 @@ export const EMPTY_SET: ReadonlySet<never> = Object.freeze(new Set<never>());
 /**
  * Type-safe accessor for the frozen empty record singleton.
  * Eliminates repetitive verbose type assertions across store slices, reducers, and initial states.
+ *
+ * @template K - Record key type.
+ * @template V - Record value type.
+ * @returns Frozen empty record typed as `Readonly<Partial<Record<K, V>>>`.
+ *
+ * @example
+ * ```typescript
+ * const initialData = emptyRecord<string, unknown>();
+ * ```
  */
 export function emptyRecord<K extends string = string, V = unknown>(): Readonly<
   Partial<Record<K, V>>
@@ -167,6 +186,14 @@ export function emptyRecord<K extends string = string, V = unknown>(): Readonly<
 /**
  * Type-safe accessor for the frozen empty Set singleton.
  * Eliminates duplicate empty set instantiations across DAG and query methods.
+ *
+ * @template T - Set element type.
+ * @returns Frozen empty `ReadonlySet<T>`.
+ *
+ * @example
+ * ```typescript
+ * const set = emptySet<string>();
+ * ```
  */
 export function emptySet<T = never>(): ReadonlySet<T> {
   return EMPTY_SET as ReadonlySet<T>;
