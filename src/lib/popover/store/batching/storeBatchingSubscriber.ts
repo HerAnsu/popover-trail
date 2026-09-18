@@ -46,8 +46,9 @@ export function attachStoreSubscriber<TState = unknown>(
   store: StoreApi<TState>,
   coord: BatchingCoordinator<TState>,
 ): void {
-  coord.activeGetState = store.getState.bind(store);
-  const rawSubscribe = store.subscribe.bind(store);
+  const { getState, subscribe } = store;
+  coord.activeGetState = getState.bind(store);
+  const rawSubscribe = subscribe.bind(store);
 
   coord.masterUnsubscribe = rawSubscribe((state, prevState) => {
     if (coord.isDisposed) return;

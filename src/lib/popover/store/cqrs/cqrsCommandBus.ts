@@ -44,16 +44,48 @@ export class PopoverCommandBus<
     this.getActions = () => resolveCommandActions<TData, TContext, TPopoverKey>(target);
   }
 
-  /** Opens or replaces the root popover anchor card. */
+  /**
+   * Opens or replaces the root popover anchor card.
+   *
+   * @param ownerId - Identifier for the session or entity owning the trail.
+   * @param entry - Trail entry definition to mount as root.
+   *
+   * @example
+   * ```typescript
+   * commandBus.openRoot('session-1', { key: 'root-card', isLoading: false, error: null });
+   * ```
+   */
   openRoot(ownerId: string, entry: TrailEntry<TData, TPopoverKey>): void {
     this.getActions().openRoot(ownerId, entry);
   }
-  /** Pushes a nested child popover card at a specific cascade depth tier. */
+
+  /**
+   * Pushes a nested child popover card at a specific cascade depth tier.
+   *
+   * @param depthIndex - Target nesting depth level (0-indexed).
+   * @param entry - Child trail entry definition to insert.
+   *
+   * @example
+   * ```typescript
+   * commandBus.pushNested(1, { key: 'child-card', parentKey: 'root-card', isLoading: false, error: null });
+   * ```
+   */
   pushNested(depthIndex: number, entry: TrailEntry<TData, TPopoverKey>): void {
     this.getActions().pushNested(depthIndex, entry);
   }
 
-  /** Opens root popover card resolving payload asynchronously via registered data resolver. */
+  /**
+   * Opens root popover card resolving payload asynchronously via registered data resolver.
+   *
+   * @param key - Popover key to mount as root.
+   * @param anchor - Optional DOM event or element establishing spatial anchoring.
+   * @param options - Additional configuration for opening root popovers.
+   *
+   * @example
+   * ```typescript
+   * await commandBus.openRootWithResolver('profile', event);
+   * ```
+   */
   async openRootWithResolver(
     key: TPopoverKey,
     anchor?: AnchorEventLike,
@@ -62,7 +94,18 @@ export class PopoverCommandBus<
     await this.getActions().openRootWithResolver(key, anchor, options);
   }
 
-  /** Opens child popover resolving payload asynchronously. */
+  /**
+   * Opens child popover resolving payload asynchronously.
+   *
+   * @param parentKey - Parent popover key anchoring this cascade tier.
+   * @param key - Child popover key to resolve and mount.
+   * @param options - Additional options for nested child popovers.
+   *
+   * @example
+   * ```typescript
+   * await commandBus.openNestedWithResolver('profile', 'profile-details');
+   * ```
+   */
   async openNestedWithResolver(
     parentKey: TPopoverKey,
     key: TPopoverKey,
@@ -71,57 +114,135 @@ export class PopoverCommandBus<
     await this.getActions().openNestedWithResolver(parentKey, key, options);
   }
 
-  /** Closes a popover by key with optional exit transition scheduling. */
+  /**
+   * Closes a popover by key with optional exit transition scheduling.
+   *
+   * @param key - Popover key to close.
+   * @param options - Optional transition options.
+   *
+   * @example
+   * ```typescript
+   * commandBus.closeByKey('profile-details', { transition: true });
+   * ```
+   */
   closeByKey(key: TPopoverKey, options?: { transition?: boolean }): void {
     this.getActions().closeByKey(key, options);
   }
-  /** Dismisses the topmost focused popover. */
+
+  /**
+   * Dismisses the topmost focused popover.
+   *
+   * @param options - Optional transition options.
+   *
+   * @example
+   * ```typescript
+   * commandBus.closeTopmost();
+   * ```
+   */
   closeTopmost(options?: { transition?: boolean }): void {
     this.getActions().closeTopmost(options);
   }
-  /** Closes all active trail popovers, leaving pinned floating cards intact. */
+
+  /**
+   * Closes all active trail popovers, leaving pinned floating cards intact.
+   *
+   * @param options - Optional transition options.
+   */
   clearTrail(options?: { transition?: boolean }): void {
     this.getActions().clearTrail(options);
   }
-  /** Closes all active popovers (both trail and pinned floating cards). */
+
+  /**
+   * Closes all active popovers (both trail and pinned floating cards).
+   */
   clearAll(): void {
     this.getActions().closeAll();
   }
-  /** Purges all popovers and resets store to initial blank state. */
+
+  /**
+   * Purges all popovers and resets store to initial blank state.
+   */
   clear(): void {
     this.getActions().clear();
   }
-  /** Pins or unpins a popover, transitioning between trail cascade and floating modes. */
+
+  /**
+   * Pins or unpins a popover, transitioning between trail cascade and floating modes.
+   *
+   * @param key - Popover key to pin or unpin.
+   * @param rect - Optional DOMRect capturing the card's screen geometry at time of pin.
+   *
+   * @example
+   * ```typescript
+   * commandBus.togglePin('card-1');
+   * ```
+   */
   togglePin(key: TPopoverKey, rect?: DOMRect): void {
     this.getActions().togglePin(key, rect);
   }
-  /** Elevates a popover to the top of visual stacking and focus order. */
+
+  /**
+   * Elevates a popover to the top of visual stacking and focus order.
+   *
+   * @param key - Popover key to bring to front.
+   */
   bringToFront(key: TPopoverKey): void {
     this.getActions().bringToFront(key);
   }
-  /** Updates custom drag/docking coordinate offset. */
+
+  /**
+   * Updates custom drag/docking coordinate offset.
+   *
+   * @param key - Popover key whose coordinates are changing.
+   * @param x - Horizontal offset in pixels.
+   * @param y - Vertical offset in pixels.
+   */
   updateOffset(key: TPopoverKey, x: number, y: number): void {
     this.getActions().updateOffset(key, x, y);
   }
-  /** Re-executes the async resolver for a failed popover entry. */
+
+  /**
+   * Re-executes the async resolver for a failed popover entry.
+   *
+   * @param key - Popover key to retry.
+   * @param options - Optional options such as bypassing cached payloads.
+   */
   async retry(key: TPopoverKey, options?: Readonly<{ forceRefresh?: boolean }>): Promise<void> {
     await (options !== undefined
       ? this.getActions().retryPopover(key, options)
       : this.getActions().retryPopover(key));
   }
-  /** Warm-up prefetch for a popover key ahead of user hover/interaction. */
+
+  /**
+   * Warm-up prefetch for a popover key ahead of user hover/interaction.
+   *
+   * @param key - Popover key to prefetch.
+   * @param parentData - Optional parent payload for dependent queries.
+   * @returns Resolved data or undefined.
+   */
   async prefetch(key: TPopoverKey, parentData?: TData): Promise<TData | undefined> {
     return this.getActions().prefetchPopover(key, parentData);
   }
-  /** Updates global store configuration settings. */
+
+  /**
+   * Updates global store configuration settings.
+   *
+   * @param patch - Partial state patch to merge into active config.
+   */
   updateConfig(patch: Partial<PopoverStateData<TData, TContext, TPopoverKey>>): void {
     this.getActions().updateConfig(patch);
   }
-  /** Restores previous state snapshot from undo journal ring buffer. */
+
+  /**
+   * Restores previous state snapshot from undo journal ring buffer.
+   */
   undo(): void {
     this.getActions().undo();
   }
-  /** Re-applies subsequent state snapshot from redo journal ring buffer. */
+
+  /**
+   * Re-applies subsequent state snapshot from redo journal ring buffer.
+   */
   redo(): void {
     this.getActions().redo();
   }

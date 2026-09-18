@@ -1,5 +1,6 @@
 /**
  * Routing and Multi-Channel Listener Management for PopoverEventBus.
+ * Clean Architecture Layer 2: Headless State Management.
  *
  * @module eventBusRouter
  */
@@ -23,14 +24,42 @@ function isDetailWithKey<TPopoverKey>(val: unknown): val is EventDetailWithKey<T
   return typeof val === 'object' && val !== null && ('key' in val || 'keys' in val);
 }
 
+/**
+ * Routes events to wildcard subscribers and key-filtered subscribers.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ *
+ * @example
+ * ```typescript
+ * const router = new EventBusRouter();
+ * const token = router.subscribeKey('card-1', (event) => {
+ *   console.log('Key-scoped event:', event.type);
+ * });
+ * ```
+ */
 export class EventBusRouter<TData, TPopoverKey extends string = string> {
+  /** Maximum listener capacity before triggering warning. */
   public readonly maxListeners = 100;
+  /** Set of active wildcard listeners. */
   public readonly wildcardListeners = new Set<PopoverWildcardListener<TData, TPopoverKey>>();
+  /** Map of key-scoped listener sets indexed by popover key. */
   public readonly listenersByKey = new Map<
     string,
     Set<PopoverWildcardListener<TData, TPopoverKey>>
   >();
 
+  /**
+   * Registers a wildcard listener invoked on all events.
+   *
+   * @param listener - Wildcard listener function.
+   * @returns Subscription token to unsubscribe.
+   *
+   * @example
+   * ```typescript
+   * const token = router.subscribeAny((e) => console.log(e.type, e.detail));
+   * ```
+   */
   public subscribeAny(
     listener: PopoverWildcardListener<TData, TPopoverKey>,
   ): PopoverSubscriptionToken {
@@ -38,6 +67,18 @@ export class EventBusRouter<TData, TPopoverKey extends string = string> {
     return createSubscriptionToken(() => this.wildcardListeners.delete(listener));
   }
 
+  /**
+   * Registers a listener receiving events only when they target the specified key.
+   *
+   * @param targetKey - Key identifier to filter by.
+   * @param listener - Callback invoked when an event matches the key.
+   * @returns Subscription token to unsubscribe.
+   *
+   * @example
+   * ```typescript
+   * const token = router.subscribeKey('card-1', (e) => console.log('Card 1 event:', e.type));
+   * ```
+   */
   public subscribeKey(
     targetKey: TPopoverKey,
     listener: PopoverWildcardListener<TData, TPopoverKey>,
@@ -58,12 +99,23 @@ export class EventBusRouter<TData, TPopoverKey extends string = string> {
     });
   }
 
+  /**
+   * Dispatches an event to all registered wildcard listeners with fault isolation.
+   *
+   * @param event - Custom popover event to dispatch.
+   */
   public dispatchWildcards(event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>): void {
     for (const listener of this.wildcardListeners) {
       safeCallback(listener, [event], { contextName: 'EventBus:wildcard' });
     }
   }
 
+  /**
+   * Dispatches an event to key-scoped listeners matching either `payload.key` or `payload.keys`.
+   *
+   * @param event - Custom popover event to dispatch.
+   * @param payload - Structured event payload containing key metadata.
+   */
   public dispatchKeys(
     event: PopoverCustomEvent<PopoverEventType, TData, TPopoverKey>,
     payload: unknown,
@@ -86,6 +138,9 @@ export class EventBusRouter<TData, TPopoverKey extends string = string> {
     }
   }
 
+  /**
+   * Clears all wildcard and key-scoped event listeners.
+   */
   public clear(): void {
     this.wildcardListeners.clear();
     this.listenersByKey.clear();

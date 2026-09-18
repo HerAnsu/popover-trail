@@ -75,7 +75,6 @@ export function createBatchingManager(autoBatchMicrotasks = true): BatchingManag
     startBatch,
     endBatch,
     flushSync,
-    flush: flushSync,
     attachSubscriber: <TState>(store: StoreApi<TState>) =>
       attachStoreSubscriber(store, coord as BatchingCoordinator<TState>),
     dispose,

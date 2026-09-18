@@ -188,7 +188,8 @@ export class PopoverQueryBus<
    * @returns Drag offset { x, y } in pixels, or { x: 0, y: 0 } if unset.
    */
   public getOffset(key: TPopoverKey): DragOffset {
-    return this.getStoreState().offsets[key] ?? ZERO_OFFSET;
+    const { offsets } = this.getStoreState();
+    return offsets[key] ?? ZERO_OFFSET;
   }
 
   /**
@@ -208,7 +209,8 @@ export class PopoverQueryBus<
    * @returns `true` if pinned, `false` otherwise.
    */
   public isPinned(key: TPopoverKey): boolean {
-    return Boolean(this.getStoreState().pinnedStates[key]);
+    const { pinnedStates } = this.getStoreState();
+    return Boolean(pinnedStates[key]);
   }
 
   /**
@@ -218,7 +220,8 @@ export class PopoverQueryBus<
    * @returns `true` if on top, `false` otherwise.
    */
   public isTopmost(key: TPopoverKey): boolean {
-    return last(this.getStoreState().zIndexOrder) === key;
+    const { zIndexOrder } = this.getStoreState();
+    return last(zIndexOrder) === key;
   }
 
   /**
