@@ -63,18 +63,6 @@ export function isStoreOptions<
   return 'customSlices' in val || 'cache' in val || 'initialContext' in val;
 }
 
-/**
- * Pair of resolved ambient context and data cache.
- *
- * @template TData - Popover payload data type.
- * @template TContext - Ambient context data type.
- */
-export interface StoreContextAndCache<TData, TContext> {
-  /** Effective resolved context or undefined. */
-  readonly effectiveContext: TContext | undefined;
-  /** Effective resolved data cache instance. */
-  readonly effectiveCache: PopoverCache<TData>;
-}
 
 /**
  * Normalized store configuration unpacked from context or options arguments.
