@@ -38,6 +38,23 @@ export interface EntryGeometryMetadata<TPopoverKey extends string = string> {
 
 /**
  * Resolves geometry metadata ensuring pure cloned DOMRect and original parent persistence.
+ *
+ * @example
+ * ```ts
+ * const meta = resolveEntryGeometryMetadata(
+ *   triggerRect,
+ *   'rootKey',
+ *   existingEntry,
+ * );
+ * console.log(meta.rect, meta.originalParentKey);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param rect - Optional active or trigger DOMRect/PopoverRect.
+ * @param parentKey - Optional key of the direct parent card.
+ * @param existingEntry - Optional prior entry to retain original geometry from.
+ * @returns Geometry metadata containing cloned rect, originalRect, and originalParentKey.
  */
 export function resolveEntryGeometryMetadata<TData = unknown, TPopoverKey extends string = string>(
   rect?: DOMRect | PopoverRect | null,

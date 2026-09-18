@@ -15,6 +15,8 @@ import { last } from '../../../utils/arrayUtils';
  * const idx = findEntryIndex(trail, 'profileCard');
  * ```
  *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Valid popover key union.
  * @param list - Array of TrailEntry objects.
  * @param key - Popover key to search for.
  * @returns Index if found, or -1.
@@ -38,6 +40,8 @@ export function findEntryIndex<TData = unknown, TPopoverKey extends string = str
  * const uIdx = findUnifiedEntryIndex(floating, trail, 'nestedCard');
  * ```
  *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Valid popover key union.
  * @param floating - Readonly array of floating pinned entries.
  * @param trail - Readonly array of cascading trail entries.
  * @param key - Popover key to locate.
@@ -65,6 +69,8 @@ export function findUnifiedEntryIndex<TData = unknown, TPopoverKey extends strin
  * const remaining = filterOutEntry(trail, 'closedKey');
  * ```
  *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Valid popover key union.
  * @param list - Source TrailEntry array.
  * @param key - Key of the entry to omit.
  * @returns New array without target entry, or original list if key was not found.
@@ -94,6 +100,7 @@ export function filterOutEntry<TData = unknown, TPopoverKey extends string = str
  * // => ['b', 'c', 'a']
  * ```
  *
+ * @template TPopoverKey - Valid popover key union.
  * @param order - Readonly array of popover keys in stacking order.
  * @param key - Popover key to elevate to top.
  * @returns New array with key positioned last, or original array if already last.

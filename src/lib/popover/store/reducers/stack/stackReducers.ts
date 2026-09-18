@@ -15,6 +15,23 @@ export { getSnapshotStatePatch } from './stackSnapshot';
 
 /**
  * Updates a single entry in floating or trail lists using an updated entry object.
+ *
+ * @example
+ * ```ts
+ * const patch = updateEntryInLists(floating, trail, 'card-1', updatedEntry);
+ * if (patch.trail || patch.floating) {
+ *   store.setState(patch);
+ * }
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param floating - Readonly collection of floating pinned entries.
+ * @param trail - Readonly collection of active trail entries.
+ * @param key - Popover key to replace.
+ * @param updatedEntry - Complete replacement TrailEntry object.
+ * @returns State patch updating the corresponding collection, or EMPTY_OBJECT if not found or unchanged.
  */
 export function updateEntryInLists<TData, TContext = unknown, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],
@@ -51,6 +68,24 @@ export function updateEntryInLists<TData, TContext = unknown, TPopoverKey extend
 
 /**
  * Builds a minimal structural-sharing patch transforming the entry identified by key through updater.
+ *
+ * @example
+ * ```ts
+ * const patch = patchEntryInLists(floating, trail, 'card-1', (prev) => ({
+ *   ...prev,
+ *   data: { ...prev.data, updated: true },
+ * }));
+ * store.setState(patch);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param floating - Readonly collection of floating pinned entries.
+ * @param trail - Readonly collection of active trail entries.
+ * @param key - Popover key to update.
+ * @param update - Transformation function receiving current entry and returning updated entry.
+ * @returns State patch containing the modified collection, or EMPTY_OBJECT if not found.
  */
 export function patchEntryInLists<TData, TContext = unknown, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],

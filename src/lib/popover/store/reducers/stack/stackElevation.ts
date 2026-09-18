@@ -14,6 +14,22 @@ import { unique } from '../../../utils/collections';
 
 /**
  * Pure state reducer elevating target popover key and its subtree to front of stacking order.
+ *
+ * @example
+ * ```ts
+ * const patch = bringToFrontPatch(state, 'card-2', dag);
+ * if (patch.zIndexOrder) {
+ *   store.setState(patch);
+ * }
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param state - Current store state snapshot.
+ * @param key - Popover key to elevate to front.
+ * @param dag - Optional directed acyclic graph instance to resolve child keys.
+ * @returns State patch with elevated zIndexOrder, or EMPTY_OBJECT if already frontmost.
  */
 export function bringToFrontPatch<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,

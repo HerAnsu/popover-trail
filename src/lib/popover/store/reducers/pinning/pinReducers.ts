@@ -19,6 +19,15 @@ import { pinTrailEntry, unpinFloatingEntry } from './pinOperations';
  * Checks for value equality (`isDragOffsetEqual`) to return `EMPTY_OBJECT` if unchanged,
  * preventing unnecessary store revisions or re-renders.
  *
+ * @example
+ * ```ts
+ * const patch = updateOffsetState(state, 'card-1', { x: 120, y: 85 });
+ * store.setState(patch);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Valid popover key union.
  * @param state - Current store state snapshot.
  * @param key - Identifier of the dragged popover.
  * @param offset - New 2D drag offset coordinates `{ x, y }`.
@@ -51,6 +60,15 @@ export function updateOffsetState<TData, TContext, TPopoverKey extends string = 
  * - If the card is currently floating/pinned, transitions it back into the active trail.
  * - If the card is currently in the active trail, detaches it into the pinned floating stack.
  *
+ * @example
+ * ```ts
+ * const patch = togglePinState(state, 'card-1', boundingBox);
+ * store.setState(patch);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Valid popover key union.
  * @param state - Current store state snapshot.
  * @param key - Identifier of the popover to toggle.
  * @param rect - Optional bounding rectangle captured at the moment of pinning to preserve exact coordinates.

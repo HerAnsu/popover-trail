@@ -29,6 +29,18 @@ function filterZIndexOrder<TPopoverKey extends string = string>(
 
 /**
  * Collects active state slices and synchronizes dictionary records with active keys.
+ *
+ * @example
+ * ```ts
+ * const { activeKeys, nextOffsets } = collectActiveStateSlices(state, updatedTrail);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param state - Current store state snapshot.
+ * @param nextTrail - Next active trail list.
+ * @returns Synchronized active state slices matching currently open keys.
  */
 export function collectActiveStateSlices<
   TData = unknown,
@@ -51,6 +63,29 @@ export function collectActiveStateSlices<
 
 /**
  * Computes dangling state cleanup patch filtering orphaned records.
+ *
+ * @example
+ * ```ts
+ * const cleanupPatch = getCleanupStatePatch(
+ *   nextFloating,
+ *   nextTrail,
+ *   state.offsets,
+ *   state.zIndexOrder,
+ *   state.pinnedStates,
+ * );
+ * store.setState(cleanupPatch);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param nextFloating - Candidate floating entries.
+ * @param nextTrail - Candidate active trail entries.
+ * @param offsets - Offsets map to sanitize.
+ * @param zIndexOrder - Stacking order to sanitize.
+ * @param pinnedStates - Optional pinned states map to sanitize.
+ * @param counters - Optional hydration request counters to sanitize.
+ * @returns State patch removing references to closed keys.
  */
 export function getCleanupStatePatch<
   TData = unknown,

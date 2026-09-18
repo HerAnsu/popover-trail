@@ -15,6 +15,20 @@ function isEntryKey<TData, TPopoverKey extends string = string>(
 
 /**
  * Checks shallow property equality between an existing entry and partial updates.
+ *
+ * @example
+ * ```ts
+ * const unchanged = areEntriesShallowEqual(existingEntry, { rect: existingEntry.rect });
+ * if (!unchanged) {
+ *   // apply update
+ * }
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param existing - Existing TrailEntry object.
+ * @param patch - Partial TrailEntry properties to compare.
+ * @returns True if all properties in patch are strictly identical in existing.
  */
 export function areEntriesShallowEqual<TData, TPopoverKey extends string = string>(
   existing: TrailEntry<TData, TPopoverKey>,

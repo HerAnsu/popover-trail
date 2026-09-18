@@ -27,6 +27,19 @@ function shouldPreserveRecord<V, K extends string>(
 
 /**
  * Pure Record filtering keeping only allowed keys without allocating intermediate objects when possible.
+ *
+ * @example
+ * ```ts
+ * const allowed = new Set(['a', 'b']);
+ * const sanitized = filterByAllowedKeys({ a: 1, b: 2, c: 3 }, allowed);
+ * // => { a: 1, b: 2 }
+ * ```
+ *
+ * @template V - Value type within the record dictionary.
+ * @template K - Allowed string key type.
+ * @param record - Source record to filter.
+ * @param allowedKeys - Set of valid keys to retain.
+ * @returns Cleaned record containing only allowed keys, or original if unchanged.
  */
 export function filterByAllowedKeys<V, K extends string = string>(
   record: Readonly<Partial<Record<K, V>>> | undefined,
@@ -41,6 +54,18 @@ export function filterByAllowedKeys<V, K extends string = string>(
 
 /**
  * Extracts set of active popover keys from floating and trail lists without extra arrays.
+ *
+ * @example
+ * ```ts
+ * const activeKeys = getActiveKeys(floating, trail);
+ * console.log(activeKeys.has('card-1'));
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param floating - Readonly collection of floating pinned entries.
+ * @param trail - Readonly collection of active trail entries.
+ * @returns Set containing unique keys from all active entries.
  */
 export function getActiveKeys<TData, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],

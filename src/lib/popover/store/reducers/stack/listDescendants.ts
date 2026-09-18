@@ -28,6 +28,20 @@ function collectChildrenFromList<TData, TPopoverKey extends string = string>(
 
 /**
  * Enqueues unvisited child keys from floating and trail lists into the queue.
+ *
+ * @example
+ * ```ts
+ * enqueueListChildren(floating, trail, 'card-1', true, visitedSet, queue);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param floating - Readonly array of floating pinned entries.
+ * @param trail - Readonly array of active cascading trail entries.
+ * @param current - Current parent key being expanded.
+ * @param closePinned - Whether pinned children should also be enqueued.
+ * @param visited - Set of already visited keys.
+ * @param queue - Queue to push unvisited child keys into.
  */
 export function enqueueListChildren<TData, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],

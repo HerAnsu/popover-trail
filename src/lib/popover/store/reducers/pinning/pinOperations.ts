@@ -18,6 +18,21 @@ import { toFloatingEntry, toTrailEntry } from './pinGeometry';
 
 /**
  * Transforms a cascading trail card into a modeless floating pinned card.
+ *
+ * @example
+ * ```ts
+ * const patch = pinTrailEntry(state, 'card-1', 0, cardBoundingRect);
+ * store.setState(patch);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param state - Current popover store state data.
+ * @param key - Popover key to pin.
+ * @param trailIndex - Index of the key within the active trail array.
+ * @param rect - Optional active bounding rect captured at pinning.
+ * @returns State patch moving the card from trail to floating.
  */
 export function pinTrailEntry<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
@@ -55,6 +70,20 @@ export function pinTrailEntry<TData, TContext, TPopoverKey extends string = stri
 
 /**
  * Reverts a floating pinned card back into a cascading trail card.
+ *
+ * @example
+ * ```ts
+ * const patch = unpinFloatingEntry(state, 'card-1', 0);
+ * store.setState(patch);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Ambient context data type.
+ * @template TPopoverKey - Valid popover key union.
+ * @param state - Current popover store state data.
+ * @param key - Popover key to unpin.
+ * @param floatingIndex - Index of the key within the floating array.
+ * @returns State patch moving the card from floating back to trail.
  */
 export function unpinFloatingEntry<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,

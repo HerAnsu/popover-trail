@@ -8,6 +8,17 @@ import type { PopoverDAG } from '../../../utils/dag';
 
 /**
  * Enqueues unvisited child keys from the DAG node into the traversal queue.
+ *
+ * @example
+ * ```ts
+ * enqueueDagChildren(dag, 'parentCard', visitedSet, traversalQueue);
+ * ```
+ *
+ * @template TPopoverKey - Valid popover key union.
+ * @param dag - Directed acyclic graph instance.
+ * @param current - Current popover key being inspected.
+ * @param visited - Set of already visited popover keys.
+ * @param queue - Queue to push unvisited child keys into.
  */
 export function enqueueDagChildren<TPopoverKey extends string = string>(
   dag: PopoverDAG<TPopoverKey>,

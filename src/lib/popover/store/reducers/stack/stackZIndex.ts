@@ -11,6 +11,19 @@ export { bringToFrontPatch } from './stackElevation';
 
 /**
  * Computes next z-index ordering placing the active key at the top.
+ *
+ * @example
+ * ```ts
+ * const activeKeys = new Set(['card-1', 'card-2']);
+ * const nextOrder = getNextZIndexOrder(['card-1', 'card-2'], activeKeys, 'card-1');
+ * // => ['card-2', 'card-1']
+ * ```
+ *
+ * @template TPopoverKey - Valid popover key union.
+ * @param currentOrder - Current readonly array of keys in stacking order.
+ * @param activeKeys - Set of currently active/open keys in the store.
+ * @param activeKey - Popover key to place at top of stacking order.
+ * @returns Reordered array of keys, or currentOrder if already properly ordered.
  */
 export function getNextZIndexOrder<TPopoverKey extends string = string>(
   currentOrder: readonly TPopoverKey[],

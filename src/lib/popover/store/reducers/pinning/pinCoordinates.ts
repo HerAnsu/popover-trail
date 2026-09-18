@@ -8,6 +8,18 @@ export interface PinnedLayoutCoordinates {
 
 /**
  * Resolves pinned layout coordinates ensuring finite float numbers.
+ *
+ * @example
+ * ```ts
+ * const pos = resolvePinnedLayoutPos(rect, entry);
+ * if (pos) {
+ *   console.log(`Pinned at top: ${pos.top}, left: ${pos.left}`);
+ * }
+ * ```
+ *
+ * @param rect - Optional active or trigger bounding rect.
+ * @param entry - Optional existing entry containing prior pinnedLayoutPos or rect.
+ * @returns Bounded `{ top, left }` pinned coordinates, or undefined if not determinable.
  */
 export function resolvePinnedLayoutPos(
   rect?: DOMRect | PopoverRect | null,
