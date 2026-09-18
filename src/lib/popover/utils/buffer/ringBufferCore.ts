@@ -28,7 +28,14 @@ import {
   peekFirstRingResult,
   itemAtRingResult,
 } from './bufferMonadic';
-import { swapBufferItems, reverseBuffer, fillBuffer, removeAtInRing, removeInRing } from './bufferMutation';
+import {
+  swapBufferItems,
+  reverseBuffer,
+  fillBuffer,
+  removeAtInRing,
+  removeInRing,
+  drainRing,
+} from './bufferMutation';
 import {
   forEachItem,
   forEachReversedItem,
@@ -37,6 +44,8 @@ import {
   createBufferEntriesIterator,
   createBufferKeysIterator,
   createBufferReversedIterator,
+  createSlidingPairsIterator,
+  createWindowsIterator,
   bufferToArray,
   bufferToReversedArray,
 } from './bufferIteration';
@@ -50,6 +59,9 @@ import {
   includesInRing,
   someInRing,
   everyInRing,
+  countInRing,
+  takeFromRing,
+  takeLastFromRing,
   reduceInRing,
   reduceRightInRing,
 } from './bufferSearch';
@@ -112,6 +124,20 @@ export class RingBuffer<T> implements ReadonlyRingBuffer<T>, ScopeDisposable {
     cap?: BufferCapacity | number,
   ): Result<RingBuffer<T>, BufferDomainError> {
     return createRingBufferFromSafe(items, cap, (o, e) => new RingBuffer(o, e));
+  }
+
+  /**
+   * Instantiates a `RingBuffer` populated with the specified elements.
+   *
+   * @template T - Stored element type.
+   * @param items - Items to populate into the buffer.
+   * @returns Configured `RingBuffer<T>` instance.
+   */
+  static of<T>(...items: T[]): RingBuffer<T> {
+    const cap = Math.max(1, items.length);
+    const ring = new RingBuffer<T>(cap);
+    ring.pushMany(items);
+    return ring;
   }
 
   constructor(
@@ -263,6 +289,10 @@ export class RingBuffer<T> implements ReadonlyRingBuffer<T>, ScopeDisposable {
     return everyInRing(this.state, predicate);
   }
 
+  count(predicate: BufferPredicate<T>): number {
+    return countInRing(this.state, predicate);
+  }
+
   reduce<U>(reducer: BufferReducer<T, U>, initialValue: U): U {
     return reduceInRing(this.state, reducer, initialValue);
   }
@@ -273,57 +303,23 @@ export class RingBuffer<T> implements ReadonlyRingBuffer<T>, ScopeDisposable {
 
   // --- Iteration & Conversions ---
 
-  forEach(consumer: BufferConsumer<T>): void {
-    forEachItem(this.state, consumer);
-  }
-
-  forEachReversed(consumer: BufferConsumer<T>): void {
-    forEachReversedItem(this.state, consumer);
-  }
-
-  keys(): IterableIterator<BufferLogicalIndex> {
-    return createBufferKeysIterator(this.state);
-  }
-
-  values(): IterableIterator<T> {
-    return createBufferIterator(this.state);
-  }
-
-  entries(): IterableIterator<[BufferLogicalIndex, T]> {
-    return createBufferEntriesIterator(this.state);
-  }
-
-  [Symbol.iterator](): IterableIterator<T> {
-    return this.values();
-  }
-
-  valuesReversed(): IterableIterator<T> {
-    return createBufferReversedIterator(this.state);
-  }
-
-  toJSON(): T[] {
-    return this.toArray();
-  }
-
-  toArray(): T[] {
-    return bufferToArray(this.state);
-  }
-
-  toReversedArray(): T[] {
-    return bufferToReversedArray(this.state);
-  }
-
-  toReadonlyArray(): readonly T[] {
-    return this.toArray();
-  }
-
-  slice(start?: BufferRelativeIndex, end?: BufferRelativeIndex): T[] {
-    return sliceRing(this.state, start, end);
-  }
-
-  copyTo(target: (T | undefined)[], offset: BufferRelativeIndex = 0): number {
-    return copyRingTo(this.state, target, offset);
-  }
+  forEach(consumer: BufferConsumer<T>): void { forEachItem(this.state, consumer); }
+  forEachReversed(consumer: BufferConsumer<T>): void { forEachReversedItem(this.state, consumer); }
+  keys(): IterableIterator<BufferLogicalIndex> { return createBufferKeysIterator(this.state); }
+  values(): IterableIterator<T> { return createBufferIterator(this.state); }
+  entries(): IterableIterator<[BufferLogicalIndex, T]> { return createBufferEntriesIterator(this.state); }
+  [Symbol.iterator](): IterableIterator<T> { return this.values(); }
+  valuesReversed(): IterableIterator<T> { return createBufferReversedIterator(this.state); }
+  slidingPairs(): IterableIterator<[T, T]> { return createSlidingPairsIterator(this.state); }
+  windows(size: number, step = 1): IterableIterator<T[]> { return createWindowsIterator(this.state, size, step); }
+  take(n: number): T[] { return takeFromRing(this.state, n); }
+  takeLast(n: number): T[] { return takeLastFromRing(this.state, n); }
+  toJSON(): T[] { return this.toArray(); }
+  toArray(): T[] { return bufferToArray(this.state); }
+  toReversedArray(): T[] { return bufferToReversedArray(this.state); }
+  toReadonlyArray(): readonly T[] { return this.toArray(); }
+  slice(start?: BufferRelativeIndex, end?: BufferRelativeIndex): T[] { return sliceRing(this.state, start, end); }
+  copyTo(target: (T | undefined)[], offset: BufferRelativeIndex = 0): number { return copyRingTo(this.state, target, offset); }
 
   // --- Transformations & Structural Operations ---
 
@@ -345,12 +341,18 @@ export class RingBuffer<T> implements ReadonlyRingBuffer<T>, ScopeDisposable {
     return cloneRing(this.state, (opt) => new RingBuffer<T>(opt));
   }
 
-  resize(newCapacity: BufferCapacity | number): void {
+  resize(newCapacity: BufferCapacity | number): this {
     resizeRing(this.state, newCapacity);
+    return this;
   }
 
-  shrinkToFit(): void {
+  shrinkToFit(): this {
     shrinkRingToFit(this.state);
+    return this;
+  }
+
+  drain(): IterableIterator<T> {
+    return drainRing(this.state, this.metrics);
   }
 
   drainInto(target: T[]): number {
@@ -363,19 +365,8 @@ export class RingBuffer<T> implements ReadonlyRingBuffer<T>, ScopeDisposable {
 
   // --- Lifecycle & Metrics ---
 
-  dispose(): void {
-    this.clear();
-  }
-
-  [DISPOSE_SYMBOL](): void {
-    this.dispose();
-  }
-
-  getMetrics(): RingBufferMetrics {
-    return this.metrics.getSnapshot(this.state.count, this.state.capacity);
-  }
-
-  asReadonly(): ReadonlyRingBuffer<T> {
-    return this;
-  }
+  dispose(): void { this.clear(); }
+  [DISPOSE_SYMBOL](): void { this.dispose(); }
+  getMetrics(): RingBufferMetrics { return this.metrics.getSnapshot(this.state.count, this.state.capacity); }
+  asReadonly(): ReadonlyRingBuffer<T> { return this; }
 }

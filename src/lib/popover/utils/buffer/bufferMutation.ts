@@ -8,6 +8,8 @@
 import { getPhysicalIndex } from './bufferIndex';
 import { isLogicalIndex, nextRevision, type BufferRelativeIndex } from './bufferBranded';
 import type { RingBufferState } from './bufferStateTypes';
+import { shiftItem } from './bufferQueue';
+import type { BufferMetricsTracker } from './bufferMetrics';
 
 /**
  * Swaps two elements in-place within the ring buffer using logical or negative relative indices.
@@ -145,4 +147,29 @@ export function removeInRing<T>(state: RingBufferState<T>, item: T): boolean {
   }
   return false;
 }
+
+/**
+ * Destructive iterator that sequentially shifts items from the buffer until empty.
+ *
+ * @template T - Stored element type.
+ * @param state - Mutable ring buffer state.
+ * @param metrics - Buffer telemetry metrics tracker.
+ * @returns Iterator yielding elements while draining the buffer.
+ */
+export function drainRing<T>(
+  state: RingBufferState<T>,
+  metrics: BufferMetricsTracker,
+): IterableIterator<T> {
+  return {
+    next(): IteratorResult<T> {
+      if (state.count === 0) return { done: true, value: undefined };
+      const val = shiftItem(state, metrics);
+      return val !== undefined ? { done: false, value: val } : { done: true, value: undefined };
+    },
+    [Symbol.iterator]() {
+      return this;
+    },
+  };
+}
+
 

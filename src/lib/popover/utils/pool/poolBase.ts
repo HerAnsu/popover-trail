@@ -17,7 +17,6 @@ import { PoolStorage } from './poolStorage';
 import { acquirePooled, releasePooled, tryEvictItem, tryResetItem } from './poolOperations';
 import { type PoolDomainError, createPoolDisposedError } from './poolErrors';
 import { shrinkPoolToFit, warmupPool } from './poolMemory';
-import { assessPoolHealth, type PoolHealthReport } from './poolHealth';
 import { PoolObserverHub, type PoolObserver } from './poolObserver';
 
 export abstract class ObjectPoolBase<T> {
@@ -100,9 +99,6 @@ export abstract class ObjectPoolBase<T> {
   }
   resetItem(item: T): void {
     tryResetItem(this.reset, item);
-  }
-  getHealth(): PoolHealthReport {
-    return assessPoolHealth(this.getMetrics(), this.sentinel.getLeakedItems().size);
   }
   inspect(): string {
     return `[ObjectPool size=${this.storage.size}/${this.storage.capacity} inUse=${this.inUse} hitRate=${Math.trunc(this.getMetrics().hitRate * 100)}%]`;

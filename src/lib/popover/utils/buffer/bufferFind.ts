@@ -124,3 +124,70 @@ export function findLastInRing<T>(
   const idx = findLastIndexInRing(state, pred);
   return idx === -1 ? undefined : getBufferItem(state, idx);
 }
+
+/**
+ * Counts the number of elements in the ring buffer satisfying a predicate.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param pred - Predicate function tested against each element.
+ * @returns Number of matching elements.
+ */
+export function countInRing<T>(
+  state: ReadonlyRingBufferState<T>,
+  pred: BufferPredicate<T>,
+): number {
+  let matched = 0;
+  for (let i = 0; i < state.count; i++) {
+    const idx = toLogicalIndex(i);
+    const item = getBufferItem(state, idx);
+    if (item !== undefined && pred(item, idx)) {
+      matched++;
+    }
+  }
+  return matched;
+}
+
+/**
+ * Returns the first `n` logical items from the buffer as an array.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param n - Count of items to take.
+ * @returns Array containing up to `n` elements from the head.
+ */
+export function takeFromRing<T>(
+  state: ReadonlyRingBufferState<T>,
+  n: number,
+): T[] {
+  const limit = Math.min(Math.max(0, n), state.count);
+  const res: T[] = [];
+  for (let i = 0; i < limit; i++) {
+    const item = getBufferItem(state, toLogicalIndex(i));
+    if (item !== undefined) res.push(item);
+  }
+  return res;
+}
+
+/**
+ * Returns the last `n` logical items from the buffer as an array.
+ *
+ * @template T - Stored item type.
+ * @param state - Readonly ring buffer state.
+ * @param n - Count of items to take from the tail.
+ * @returns Array containing up to `n` elements from the tail.
+ */
+export function takeLastFromRing<T>(
+  state: ReadonlyRingBufferState<T>,
+  n: number,
+): T[] {
+  const limit = Math.min(Math.max(0, n), state.count);
+  const start = state.count - limit;
+  const res: T[] = [];
+  for (let i = start; i < state.count; i++) {
+    const item = getBufferItem(state, toLogicalIndex(i));
+    if (item !== undefined) res.push(item);
+  }
+  return res;
+}
+

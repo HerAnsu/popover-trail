@@ -236,3 +236,75 @@ export function createBufferReversedIterator<T>(
   };
 }
 
+/**
+ * Creates an iterator yielding adjacent pairs `[prev, curr]` of active buffer elements.
+ * Operates with zero heap allocations during iterator stepping.
+ *
+ * @template T - Stored element type.
+ * @param state - Readonly ring buffer state.
+ * @returns Iterator yielding tuples of adjacent pairs.
+ */
+export function createSlidingPairsIterator<T>(
+  state: ReadonlyRingBufferState<T>,
+): IterableIterator<[T, T]> {
+  let idx = 0;
+  return {
+    next(): IteratorResult<[T, T]> {
+      if (idx >= state.count - 1) return { done: true, value: undefined };
+      const a = getBufferItem(state, toLogicalIndex(idx));
+      const b = getBufferItem(state, toLogicalIndex(idx + 1));
+      idx++;
+      if (a === undefined || b === undefined) return { done: true, value: undefined };
+      return { done: false, value: [a, b] };
+    },
+    [Symbol.iterator]() {
+      return this;
+    },
+  };
+}
+
+/**
+ * Creates an iterator yielding sliding windows of `size` elements with optional `step`.
+ *
+ * @template T - Stored element type.
+ * @param state - Readonly ring buffer state.
+ * @param size - Window size (at least 1).
+ * @param step - Advance step (default: 1).
+ * @returns Iterator yielding arrays representing each window.
+ */
+export function createWindowsIterator<T>(
+  state: ReadonlyRingBufferState<T>,
+  size: number,
+  step = 1,
+): IterableIterator<T[]> {
+  if (size <= 0 || step <= 0 || !Number.isFinite(size) || !Number.isFinite(step)) {
+    return {
+      next(): IteratorResult<T[]> {
+        return { done: true, value: undefined };
+      },
+      [Symbol.iterator]() {
+        return this;
+      },
+    };
+  }
+  const windowSize = Math.floor(size);
+  const stepSize = Math.floor(step);
+  let cur = 0;
+  return {
+    next(): IteratorResult<T[]> {
+      if (cur + windowSize > state.count) return { done: true, value: undefined };
+      const window: T[] = [];
+      for (let i = 0; i < windowSize; i++) {
+        const val = getBufferItem(state, toLogicalIndex(cur + i));
+        if (val !== undefined) window.push(val);
+      }
+      cur += stepSize;
+      return { done: false, value: window };
+    },
+    [Symbol.iterator]() {
+      return this;
+    },
+  };
+}
+
+

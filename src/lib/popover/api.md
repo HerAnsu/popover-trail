@@ -22832,18 +22832,6 @@ export function createPoolDisposedError(msg?: string): PoolDisposedError
 ---
 
 
-## 📁 `utils/pool/poolHealth.ts`
-
-### `assessPoolHealth`
-
-```typescript
-export function assessPoolHealth(metrics: ObjectPoolMetrics, leakedCount = 0): PoolHealthReport
-```
-
-*JSDoc отсутствует*
-
----
-
 
 ## 📁 `utils/pool/poolMemory.ts`
 

@@ -11,7 +11,6 @@ export * from './poolErrors';
 export * from './poolStorage';
 export * from './poolOperations';
 export * from './poolMemory';
-export * from './poolHealth';
 export * from './poolReset';
 export * from './poolMetrics';
 export * from './poolConfig';

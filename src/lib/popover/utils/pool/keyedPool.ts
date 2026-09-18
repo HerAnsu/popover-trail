@@ -305,11 +305,38 @@ export function findNextBucket(buckets: readonly number[], minSize: number): num
  * const buf = typedArrayPool.acquireBucket(50); // acquires from bucket 64
  * ```
  */
-export function createBucketPool<T>(
+/**
+ * Extended KeyedPool interface supporting size-bucketed allocation and RAII scopes.
+ */
+export interface BucketedPool<T extends object> extends KeyedPool<number, T> {
+  acquireBucket(minSize: number): T;
+  borrowBucket(minSize: number): Pooled<T>;
+}
+
+/**
+ * Factory creating a size-bucketed object pool for variable-sized resources (e.g., buffers, typed arrays).
+ *
+ * @template T - Pooled item type.
+ * @param buckets - List of supported bucket capacities.
+ * @param factory - Factory creating an item of specified bucket size.
+ * @param reset - Optional callback to reset item state upon return.
+ * @returns Keyed pool extended with `acquireBucket(minSize)` and `borrowBucket(minSize)` methods.
+ *
+ * @example
+ * ```typescript
+ * const typedArrayPool = createBucketPool(
+ *   [16, 64, 256],
+ *   (size) => new Float32Array(size),
+ *   (arr) => arr.fill(0)
+ * );
+ * const buf = typedArrayPool.acquireBucket(50); // acquires from bucket 64
+ * ```
+ */
+export function createBucketPool<T extends object>(
   buckets: readonly number[],
   factory: (bucketSize: number) => T,
   reset?: (item: T) => void,
-): KeyedPool<number, T> & { acquireBucket(minSize: number): T } {
+): BucketedPool<T> {
   const sorted = [...buckets].sort((a, b) => a - b);
   const pool = new KeyedPool<number, T>((size) => factory(size), {
     factory: () => factory(0),
@@ -320,5 +347,10 @@ export function createBucketPool<T>(
       const bucket = findNextBucket(sorted, minSize);
       return pool.acquire(bucket);
     },
+    borrowBucket(minSize: number): Pooled<T> {
+      const bucket = findNextBucket(sorted, minSize);
+      return pool.borrow(bucket);
+    },
   });
 }
+

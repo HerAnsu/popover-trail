@@ -77,5 +77,15 @@ export interface ReadonlyRingBuffer<T> extends Iterable<T> {
   valuesReversed(): IterableIterator<T>;
   /** Serializes the buffer elements into a plain JSON array for JSON.stringify. */
   toJSON(): T[];
+  /** Yields adjacent pairs [prev, curr] of logical elements with zero GC churn. */
+  slidingPairs(): IterableIterator<[T, T]>;
+  /** Yields sliding windows of `size` elements with optional `step`. */
+  windows(size: number, step?: number): IterableIterator<T[]>;
+  /** Returns the count of elements matching predicate. */
+  count(predicate: BufferPredicate<T>): number;
+  /** Returns up to `n` oldest elements as an array. */
+  take(n: number): T[];
+  /** Returns up to `n` newest elements as an array. */
+  takeLast(n: number): T[];
 }
 

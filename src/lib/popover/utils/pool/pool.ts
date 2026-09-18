@@ -14,14 +14,15 @@ import type {
   TupleOf,
   UnifiedPoolOptions,
 } from './poolTypes';
-import { KeyedPool, type KeyedPoolOptions } from './keyedPool';
+import { KeyedPool, type KeyedPoolOptions, createBucketPool, type BucketedPool } from './keyedPool';
 import type { PoolCapacity } from './poolBranded';
 import { attachDisposableHandle } from './poolScope';
 import { tryResetItem } from './poolOperations';
 import { type PoolDriver, createPoolDriver } from './poolDriver';
+import { RingBuffer } from '../buffer/ringBufferCore';
 
 export type { Pooled, PooledTuple, TupleOf, UnifiedPoolOptions, PoolResetPolicy };
-export type { PoolDriver };
+export type { PoolDriver, BucketedPool };
 
 /**
  * Unified, ergonomic object pool for zero-allocation performance and modern DX.
@@ -56,7 +57,7 @@ export type { PoolDriver };
  */
 export class Pool<T extends object> implements ScopeDisposable {
   private readonly driver: PoolDriver<T>;
-  private readonly activeHandles = new WeakSet<T>();
+  private readonly activeHandles = new Set<T>();
   private readonly resetCallback?: (item: T) => void;
   private readonly resetOnAcquire: boolean;
 
@@ -108,6 +109,30 @@ export class Pool<T extends object> implements ScopeDisposable {
     return new KeyedPool<K, T>(factory, options?.poolOptions);
   }
 
+  /**
+   * Creates a size-bucketed pool for variable-sized resources (e.g., buffers, typed arrays).
+   */
+  static bucketed<T extends object>(
+    buckets: readonly number[],
+    factory: (bucketSize: number) => T,
+    reset?: (item: T) => void,
+  ): BucketedPool<T> {
+    return createBucketPool(buckets, factory, reset);
+  }
+
+  /**
+   * Creates a pool of reusable `RingBuffer<E>` instances with automatic clearing upon release.
+   */
+  static ringBuffer<E>(
+    capacity: number,
+    options?: UnifiedPoolOptions<RingBuffer<E>>,
+  ): Pool<RingBuffer<E>> {
+    return new Pool<RingBuffer<E>>(
+      () => new RingBuffer<E>(capacity),
+      { reset: (buf) => buf.clear(), ...options },
+    );
+  }
+
   constructor(
     factory: () => T,
     options: UnifiedPoolOptions<T> = {},
@@ -125,6 +150,7 @@ export class Pool<T extends object> implements ScopeDisposable {
    */
   acquire(): T {
     const item = this.driver.acquire();
+    this.activeHandles.add(item);
     if (this.resetOnAcquire) {
       tryResetItem(this.resetCallback, item);
     }
@@ -160,7 +186,25 @@ export class Pool<T extends object> implements ScopeDisposable {
    */
   borrow(): Pooled<T> {
     const item = this.acquire();
-    this.activeHandles.add(item);
+    return attachDisposableHandle(item, () => this.release(item));
+  }
+
+  /**
+   * Borrows an item initialized via `init` and wrapped with RAII `[Symbol.dispose]` semantics.
+   *
+   * @param init - Initializer invoked immediately upon acquisition.
+   * @returns The initialized pooled item wrapped with RAII disposal contracts.
+   *
+   * @example
+   * ```typescript
+   * {
+   *   using point = pool.borrowWith((p) => { p.x = 10; p.y = 20; });
+   * }
+   * ```
+   */
+  borrowWith(init: (item: T) => void): Pooled<T> {
+    const item = this.acquire();
+    init(item);
     return attachDisposableHandle(item, () => this.release(item));
   }
 
@@ -186,15 +230,27 @@ export class Pool<T extends object> implements ScopeDisposable {
     const safeCount = Math.max(1, count);
     const items: T[] = [];
     for (let i = 0; i < safeCount; i++) {
-      const item = this.acquire();
-      this.activeHandles.add(item);
-      items.push(item);
+      items.push(this.acquire());
     }
     return attachDisposableHandle(items, () => {
       for (const item of items) {
         this.release(item);
       }
     }) as PooledTuple<T, N>;
+  }
+
+  /**
+   * Forcefully recovers all currently borrowed active handles back into the pool.
+   *
+   * @returns Count of active items recovered and returned to the pool.
+   */
+  drainActive(): number {
+    let count = 0;
+    for (const item of this.activeHandles) {
+      if (this.driver.release(item)) count++;
+    }
+    this.activeHandles.clear();
+    return count;
   }
 
   /**
@@ -224,10 +280,7 @@ export class Pool<T extends object> implements ScopeDisposable {
    * Automatically guarantees that all borrowed items are released upon return or error.
    */
   use<N extends number, R>(count: N, fn: (items: TupleOf<T, N>) => R): R;
-  use<R>(
-    first: ((item: T) => R) | number,
-    second?: (items: never) => R,
-  ): R {
+  use<R>(first: ((item: T) => R) | number, second?: (items: never) => R): R {
     if (typeof first === 'function') {
       const item = this.acquire();
       try {
@@ -236,22 +289,14 @@ export class Pool<T extends object> implements ScopeDisposable {
         this.release(item);
       }
     }
-
-    if (typeof second !== 'function') {
-      throw new TypeError('Expected callback function');
-    }
-
+    if (typeof second !== 'function') throw new TypeError('Expected callback function');
     const count = Math.max(1, first);
     const items: T[] = [];
     try {
-      for (let i = 0; i < count; i++) {
-        items.push(this.acquire());
-      }
+      for (let i = 0; i < count; i++) items.push(this.acquire());
       return second(items as never);
     } finally {
-      for (const item of items) {
-        this.release(item);
-      }
+      for (const item of items) this.release(item);
     }
   }
 
@@ -275,82 +320,35 @@ export class Pool<T extends object> implements ScopeDisposable {
         this.release(item);
       }
     }
-
-    if (typeof second !== 'function') {
-      throw new TypeError('Expected callback function');
-    }
-
+    if (typeof second !== 'function') throw new TypeError('Expected callback function');
     const count = Math.max(1, first);
     const items: T[] = [];
     try {
-      for (let i = 0; i < count; i++) {
-        items.push(this.acquire());
-      }
+      for (let i = 0; i < count; i++) items.push(this.acquire());
       return await second(items as never);
     } finally {
-      for (const item of items) {
-        this.release(item);
-      }
+      for (const item of items) this.release(item);
     }
   }
 
-  /**
-   * Number of available (unborrowed) instances currently resting in the pool.
-   */
-  get size(): number {
-    return this.driver.size;
-  }
-
-  /**
-   * Number of instances currently borrowed from the pool.
-   */
-  get inUse(): number {
-    return this.driver.inUse;
-  }
-
-  /**
-   * Maximum capacity of the pool.
-   */
-  get capacity(): number {
-    return this.driver.capacity;
-  }
-
-  /**
-   * Whether all pool slots are currently returned and available (`size === capacity`).
-   */
-  get isFull(): boolean {
-    return this.driver.isFull;
-  }
-
-  /**
-   * Whether the pool is currently exhausted (`size === 0`).
-   */
-  get isEmpty(): boolean {
-    return this.driver.isEmpty;
-  }
-
-  /**
-   * Telemetry metrics snapshot, if supported by the underlying driver.
-   */
-  getMetrics(): ObjectPoolMetrics | undefined {
-    return this.driver.getMetrics?.();
-  }
-
-  /**
-   * Empties the pool by clearing all cached idle instances.
-   */
-  clear(): void {
-    this.driver.clear();
-  }
-
-  /**
-   * Disposes the pool and destroys all pooled items.
-   */
+  /** Number of available (unborrowed) instances currently resting in the pool. */
+  get size(): number { return this.driver.size; }
+  /** Number of instances currently borrowed from the pool. */
+  get inUse(): number { return this.driver.inUse; }
+  /** Maximum capacity of the pool. */
+  get capacity(): number { return this.driver.capacity; }
+  /** Whether all pool slots are currently returned and available (`size === capacity`). */
+  get isFull(): boolean { return this.driver.isFull; }
+  /** Whether the pool is currently exhausted (`size === 0`). */
+  get isEmpty(): boolean { return this.driver.isEmpty; }
+  /** Telemetry metrics snapshot, if supported by the underlying driver. */
+  getMetrics(): ObjectPoolMetrics | undefined { return this.driver.getMetrics?.(); }
+  /** Empties the pool by clearing all cached idle instances. */
+  clear(): void { this.driver.clear(); }
+  /** Disposes the pool, drains active handles, and destroys all pooled items. */
   dispose(): void {
+    this.drainActive();
     this.driver.dispose();
   }
-
-  [DISPOSE_SYMBOL](): void {
-    this.dispose();
-  }
+  [DISPOSE_SYMBOL](): void { this.dispose(); }
 }

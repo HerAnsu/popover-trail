@@ -7,12 +7,10 @@
 
 import type { AggregatedPoolMetrics, ObjectPoolMetrics } from './poolTypes';
 import { ObjectPoolBase } from './poolBase';
-import type { PoolHealthReport } from './poolHealth';
 
 export interface AnyObjectPool {
   drain(keepCapacity?: number): void;
   clear(): void;
-  getHealth(): PoolHealthReport;
   getMetrics(): ObjectPoolMetrics;
 }
 
@@ -46,14 +44,6 @@ export class ObjectPoolRegistry {
 
   clearAll(): void {
     for (const pool of this.pools.values()) pool.clear();
-  }
-
-  getHealthSummary(): Map<string, PoolHealthReport> {
-    const map = new Map<string, PoolHealthReport>();
-    for (const [name, pool] of this.pools.entries()) {
-      map.set(name, pool.getHealth());
-    }
-    return map;
   }
 
   getAggregatedMetrics(): AggregatedPoolMetrics {
