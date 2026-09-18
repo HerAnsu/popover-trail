@@ -40,6 +40,22 @@ export type BasicConfigSetters<
   | 'setResponsiveMode'
 >;
 
+/**
+ * Creates primitive and numeric configuration property setters.
+ *
+ * @example
+ * ```ts
+ * const basicSetters = createBasicConfigSetters(sliceContext);
+ * basicSetters.setDebug(true);
+ * basicSetters.setBaseZIndex(1000);
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors.
+ * @returns Basic configuration setter actions.
+ */
 export function createBasicConfigSetters<
   TData = unknown,
   TContext = unknown,

@@ -16,6 +16,19 @@ import { createConfigSetters } from './setters';
 
 /**
  * Creates the Configuration & Display sub-slice.
+ *
+ * @example
+ * ```ts
+ * const configSlice = createConfigSlice(sliceContext);
+ * configSlice.setDebug(true);
+ * configSlice.updateConfig({ defaultOffset: 12 });
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors and dependencies.
+ * @returns Combined configuration, hover, lifecycle, and display actions.
  */
 export function createConfigSlice<
   TData = unknown,

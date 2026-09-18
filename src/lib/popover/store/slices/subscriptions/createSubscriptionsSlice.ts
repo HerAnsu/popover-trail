@@ -16,6 +16,14 @@ import { noop } from '../../../utils/functional';
 /**
  * Creates the Subscriptions and Event Bus domain slice.
  *
+ * @example
+ * ```ts
+ * const subSlice = createSubscriptionsSlice(ctx);
+ * const unsubscribe = subSlice.subscribeEvent((event) => {
+ *   console.log('Store event:', event.type);
+ * });
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
  * @template TPopoverKey - Union of valid popover keys.

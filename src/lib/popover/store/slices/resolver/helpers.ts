@@ -10,6 +10,15 @@ import { safeCallback } from '../../../utils/safeCallback';
 
 /**
  * Extracts DOM bounding rectangle from anchor event or options override.
+ *
+ * @example
+ * ```ts
+ * const rect = resolveTriggerBoundingRect(clickEvent, options?.triggerRect);
+ * ```
+ *
+ * @param anchorEvent - Optional DOM synthetic or native click event.
+ * @param optionsRect - Optional explicit bounding rect override.
+ * @returns Bounding rect if resolved, or null.
  */
 export function resolveTriggerBoundingRect(
   anchorEvent?: AnchorEventLike,
@@ -28,6 +37,16 @@ export function resolveTriggerBoundingRect(
 
 /**
  * Fires the `onOpen` lifecycle callback for a target popover entry safely.
+ *
+ * @example
+ * ```ts
+ * notifyEntryOpen(findEntryByKey, 'profileCard');
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param findEntryByKey - Entry lookup function.
+ * @param key - Popover key whose onOpen callback should be invoked.
  */
 export function notifyEntryOpen<TData, TPopoverKey extends string>(
   findEntryByKey: (key: string) => TrailEntry<TData, TPopoverKey> | undefined,
@@ -68,6 +87,15 @@ export async function invokeResolver<TData, TContext>(
 
 /**
  * Cancels active controllers and timers for stale active popover keys.
+ *
+ * @example
+ * ```ts
+ * cancelStaleActiveKeys(['card-1', 'card-2'], deps);
+ * ```
+ *
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param activeKeys - Collection of keys to abort and cancel timers for.
+ * @param deps - Dependencies providing abortControllersForKeys and transitionScheduler.
  */
 export function cancelStaleActiveKeys<TPopoverKey extends string = string>(
   activeKeys: readonly TPopoverKey[],

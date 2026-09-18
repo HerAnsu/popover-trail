@@ -14,6 +14,14 @@ export interface ResolvedStorageEngine {
 
 /**
  * Resolves storage key and target storage engine from configuration.
+ *
+ * @example
+ * ```ts
+ * const { storageKey, engine } = resolveStorageEngine(persistConfig);
+ * ```
+ *
+ * @param config - Optional persistence configuration options.
+ * @returns Object containing resolved `storageKey` and `engine`.
  */
 export function resolveStorageEngine(config?: PopoverPersistConfig): ResolvedStorageEngine {
   const storageKey = config?.key ?? 'popover-trail-state';

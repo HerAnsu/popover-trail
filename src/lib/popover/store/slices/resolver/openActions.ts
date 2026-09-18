@@ -11,6 +11,11 @@ import { createResolverOpenNestedAction } from './openNested';
 /**
  * Creates the combined root and nested open actions.
  *
+ * @example
+ * ```ts
+ * const { openRootWithResolver, openNestedWithResolver } = createResolverOpenActions(ctx, bringToFront);
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
  * @template TPopoverKey - Union of valid popover keys.

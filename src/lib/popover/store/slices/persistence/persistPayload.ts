@@ -38,6 +38,20 @@ function buildCleanPinned<TPopoverKey extends string>(
 
 /**
  * Builds a sanitized, filtered snapshot payload for persistence.
+ *
+ * @example
+ * ```ts
+ * const payload = buildPersistPayload(state, 'tab-123', persistConfig);
+ * console.log(payload.version, payload.floating.length);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param state - Current store state snapshot.
+ * @param tabId - Unique identifier of the current browser tab.
+ * @param config - Optional persistence configuration with key and filter rules.
+ * @returns Sanitized persistence snapshot payload.
  */
 export function buildPersistPayload<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,

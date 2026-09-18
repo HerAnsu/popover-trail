@@ -15,6 +15,18 @@ export { getActiveKeys };
 
 /**
  * Zero-GC helper to prune DAG nodes directly from entry lists without intermediate array allocations.
+ *
+ * @example
+ * ```ts
+ * pruneDAGNodes(dag, entriesToPrune, remainingFloating, remainingTrail);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param dag - Popover DAG instance.
+ * @param entriesToPrune - List of entries that were removed or candidate for pruning.
+ * @param remainingFloating - Surviving floating entries.
+ * @param remainingTrail - Surviving active trail entries.
  */
 export function pruneDAGNodes<TData, TPopoverKey extends string = string>(
   dag: PopoverDAG<TPopoverKey> | undefined,
@@ -33,6 +45,18 @@ export function pruneDAGNodes<TData, TPopoverKey extends string = string>(
 
 /**
  * Prunes nodes beyond the target trail index in the cascade DAG without intermediate array allocations.
+ *
+ * @example
+ * ```ts
+ * pruneTruncatedTrailNodes(dag, floating, trail, 2);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param dag - Popover DAG instance.
+ * @param floating - Active floating entries.
+ * @param trail - Active cascading trail entries.
+ * @param trailIdx - Truncation boundary index in trail.
  */
 export function pruneTruncatedTrailNodes<TData, TPopoverKey extends string>(
   dag: PopoverDAG<TPopoverKey> | undefined,

@@ -28,6 +28,19 @@ export type ResolverPrefetchAndInvalidateActions<
 
 /**
  * Creates the resolver prefetch and invalidation actions.
+ *
+ * @example
+ * ```ts
+ * const { prefetchPopover, invalidate } = createResolverPrefetchActions(ctx, retryPopover);
+ * await prefetchPopover('userMenu');
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors and deps.
+ * @param retryPopover - Retry delegate for invalidation refetching.
+ * @returns Object providing `prefetchPopover` and `invalidate` methods.
  */
 export function createResolverPrefetchActions<
   TData = unknown,

@@ -18,6 +18,18 @@ export type LifecycleSliceActions<
 
 /**
  * Creates the Lifecycle transition status action sub-slice.
+ *
+ * @example
+ * ```ts
+ * const lifecycleSlice = createLifecycleSlice(sliceContext);
+ * lifecycleSlice.setTransitionStatus('card-1', 'mounted');
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors.
+ * @returns Object providing lifecycle transition status setter.
  */
 export function createLifecycleSlice<
   TData = unknown,

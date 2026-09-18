@@ -11,6 +11,11 @@ import { isNonEmptyArray } from '../../../utils/typeGuards';
 /**
  * Determines whether the requested root popover is already mounted and active in the trail.
  *
+ * @example
+ * ```ts
+ * const active = isRootAlreadyActive(trail, 'owner-1', 'owner-1', 'profileCard');
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TPopoverKey - Union of valid popover keys.
  * @param trail - Active trailing popovers stack.
@@ -41,6 +46,11 @@ export function isRootAlreadyActive<TData, TPopoverKey extends string>(
 /**
  * Determines whether a nested child popover is already mounted under the source parent.
  *
+ * @example
+ * ```ts
+ * const active = isNestedAlreadyActive(entry, 'parentCard');
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TPopoverKey - Union of valid popover keys.
  * @param existingEntry - Active popover entry instance if present.
@@ -61,6 +71,11 @@ export function isNestedAlreadyActive<TData, TPopoverKey extends string>(
 
 /**
  * Determines whether a popover is already mounted and active in the floating collection.
+ *
+ * @example
+ * ```ts
+ * const active = isFloatingActive(floating, 'floatingCard');
+ * ```
  *
  * @template TData - Resolved popover data payload type.
  * @template TPopoverKey - Union of valid popover keys.

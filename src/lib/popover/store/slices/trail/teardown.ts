@@ -13,6 +13,12 @@ import { createTrailTeardownExecution } from './teardownExecution';
 /**
  * Creates the Trail Teardown scheduling runner.
  *
+ * @example
+ * ```ts
+ * const runner = createTrailTeardownRunner(ctx);
+ * runner.closeByTargetKeys(new Set(['card-1']), true);
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
  * @template TPopoverKey - Union of valid popover keys.

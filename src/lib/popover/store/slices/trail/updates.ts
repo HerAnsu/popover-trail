@@ -27,6 +27,15 @@ export type TrailUpdateActions<
  * Creates synchronous list modification actions for trail and floating entries.
  * Manages DAG consistency pruning whenever collection structures change.
  *
+ * @example
+ * ```ts
+ * const updateActions = createTrailUpdateActions(ctx);
+ * updateActions.updateEntry('card-1', { data: newPayload });
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
  * @param ctx - Slice dependency injection context.
  * @returns Object implementing TrailUpdateActions methods.
  */

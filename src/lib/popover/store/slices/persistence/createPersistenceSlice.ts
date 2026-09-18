@@ -14,6 +14,22 @@ import { buildPersistPayload } from './persistPayload';
 import { applyRehydratedState } from './rehydrationApplier';
 import { resolveStorageEngine } from './storageEngineResolver';
 
+/**
+ * Creates the state persistence, rehydration, and disposal action sub-slice.
+ *
+ * @example
+ * ```ts
+ * const persistence = createPersistenceSlice(ctx);
+ * await persistence.persistState();
+ * await persistence.rehydrateState();
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Store slice context with accessors and action dependencies.
+ * @returns Object providing `persistState`, `rehydrateState`, and `destroy` actions.
+ */
 export function createPersistenceSlice<TData, TContext, TPopoverKey extends string = string>(
   ctx: SliceContext<TData, TContext, TPopoverKey>,
 ): Pick<

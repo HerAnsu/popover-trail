@@ -32,6 +32,16 @@ function abortActiveControllers(activeControllers: Map<string, AbortController>)
 
 /**
  * Tears down all store resources, controllers, caches, and listeners.
+ *
+ * @example
+ * ```ts
+ * destroyStoreResources(sliceContext);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Store slice context containing dependencies to dismantle.
  */
 export function destroyStoreResources<TData, TContext, TPopoverKey extends string>(
   ctx: SliceContext<TData, TContext, TPopoverKey>,

@@ -16,6 +16,12 @@ import { createResolverOpenActions } from './openActions';
  * Creates the Data Resolver domain action slice.
  * Combines root and nested resolver actions, retry mechanisms, and prefetching.
  *
+ * @example
+ * ```ts
+ * const resolverSlice = createResolverSlice(ctx);
+ * await resolverSlice.openRootWithResolver('profile');
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
  * @template TPopoverKey - Union of valid popover keys.

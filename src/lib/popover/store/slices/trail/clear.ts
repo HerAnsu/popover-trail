@@ -14,6 +14,12 @@ import { collectClosedEntryEffects } from './teardownHelpers';
 /**
  * Creates the Trail Clear actions.
  *
+ * @example
+ * ```ts
+ * const { clearTrail, clear } = createTrailClearActions(ctx, closeAllEntries);
+ * clearTrail();
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
  * @template TPopoverKey - Union of valid popover keys.

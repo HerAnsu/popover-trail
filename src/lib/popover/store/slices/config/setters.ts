@@ -18,6 +18,18 @@ import { createBasicConfigSetters } from './settersBasic';
 
 /**
  * Creates dynamic property setter actions for store configuration state.
+ *
+ * @example
+ * ```ts
+ * const setters = createConfigSetters(sliceContext);
+ * setters.setContext({ theme: 'dark' });
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors and dependencies.
+ * @returns Object providing configuration setters.
  */
 export function createConfigSetters<
   TData = unknown,

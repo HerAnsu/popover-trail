@@ -17,6 +17,13 @@ import { createTrailDAGActions } from './dagActions';
  * Creates the Trail Stack domain action slice.
  * Combines open, close, update, clear, and teardown orchestration methods.
  *
+ * @example
+ * ```ts
+ * const trailSlice = createTrailSlice(ctx);
+ * trailSlice.openRoot('owner-1', rootEntry);
+ * trailSlice.closeByKey('rootEntryKey');
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
  * @template TPopoverKey - Union of valid popover keys.

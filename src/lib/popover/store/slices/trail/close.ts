@@ -28,6 +28,23 @@ export type TrailCloseActions<
   'closeFrom' | 'close' | 'closeByKey' | 'closeAll' | 'closeTopmost' | 'clearTrail' | 'clear'
 >;
 
+/**
+ * Creates the Trail Close actions.
+ *
+ * @example
+ * ```ts
+ * const closeActions = createTrailCloseActions(ctx, closeByTargetKeys);
+ * closeActions.closeByKey('card-1');
+ * closeActions.closeAll();
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors.
+ * @param closeByTargetKeys - Delegate executing key removal with animation/history.
+ * @returns Trail closing methods (`closeFrom`, `close`, `closeByKey`, `closeAll`, `closeTopmost`, `clearTrail`, `clear`).
+ */
 export function createTrailCloseActions<
   TData = unknown,
   TContext = unknown,

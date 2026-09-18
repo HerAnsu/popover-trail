@@ -11,6 +11,20 @@ import { setDifference } from '../../../utils/setOperations';
 
 /**
  * Computes declarative side effects (PRUNE_DAG, NOTIFY_USER_CALLBACK) and updates nextPinnedStates.
+ *
+ * @example
+ * ```ts
+ * const effects = collectClosedEntryEffects(removedKeys, floating, trail, pinnedStates);
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @template TContext - Global shared store context type.
+ * @param removedKeys - Set of keys being unmounted.
+ * @param nextFloating - Surviving floating entries.
+ * @param nextTrail - Surviving active trail entries.
+ * @param nextPinnedStates - Pinned states map to update in-place.
+ * @returns Array of declarative teardown effects.
  */
 export function collectClosedEntryEffects<
   TData,
@@ -48,6 +62,11 @@ export function collectClosedEntryEffects<
 
 /**
  * Resolves the longest exit transition duration among the removed entries.
+ *
+ * @example
+ * ```ts
+ * const duration = resolveMaxExitDuration(removedKeys, 300, findEntryByKey);
+ * ```
  *
  * @template TData - Resolved popover data payload type.
  * @template TPopoverKey - Union of valid popover keys.

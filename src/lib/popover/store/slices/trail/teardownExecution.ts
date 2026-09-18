@@ -28,6 +28,19 @@ const mapToUnmounting = <TData, TPopoverKey extends string>(
 
 /**
  * Creates the low-level teardown execution runner.
+ *
+ * @example
+ * ```ts
+ * const { applyUnmountingState, executeTeardown } = createTrailTeardownExecution(ctx);
+ * applyUnmountingState(removedKeySet);
+ * executeTeardown(removedKeySet);
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors.
+ * @returns Object providing `applyUnmountingState` and `executeTeardown` handlers.
  */
 export function createTrailTeardownExecution<
   TData = unknown,

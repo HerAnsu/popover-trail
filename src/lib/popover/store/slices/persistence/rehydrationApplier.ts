@@ -49,6 +49,22 @@ function buildCleanZIndexOrder<TPopoverKey extends string>(
 
 /**
  * Applies parsed state payload to store and restores topological DAG relationships.
+ *
+ * @example
+ * ```ts
+ * const restored = applyRehydratedState(parsedPayload, store.setState, popoverDAG);
+ * if (restored) {
+ *   console.log('State successfully rehydrated');
+ * }
+ * ```
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param parsed - Raw parsed object payload from storage.
+ * @param set - State updater function to apply reconstructed collections.
+ * @param dag - Optional directed acyclic graph instance to restore hierarchy into.
+ * @returns True if rehydration was valid and applied, false otherwise.
  */
 export function applyRehydratedState<TData, TContext, TPopoverKey extends string>(
   parsed: Record<string, unknown>,

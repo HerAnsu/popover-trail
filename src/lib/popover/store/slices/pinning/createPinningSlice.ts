@@ -17,6 +17,14 @@ import type { PinningSliceContext } from '../context';
 /**
  * Creates the Pinning & Layout domain slice.
  *
+ * @example
+ * ```ts
+ * const pinningSlice = createPinningSlice(ctx);
+ * pinningSlice.togglePin('card-1');
+ * pinningSlice.bringToFront('card-1');
+ * pinningSlice.updateOffset('card-1', 50, 100);
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
  * @template TPopoverKey - Union of valid popover keys.

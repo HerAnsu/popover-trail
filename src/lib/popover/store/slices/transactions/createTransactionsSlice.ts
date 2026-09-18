@@ -20,6 +20,21 @@ const executeWithTransition = (action: () => void, schedule?: (cb: () => void) =
 
 /**
  * Creates the Transactions, History, and Middleware slice.
+ *
+ * @example
+ * ```ts
+ * const txSlice = createTransactionsSlice(ctx);
+ * await txSlice.transaction(async (actions) => {
+ *   actions.openRoot('root');
+ *   actions.pushNested('child', 'root');
+ * });
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors and deps.
+ * @returns Transactions, history navigation (undo/redo), and middleware actions.
  */
 export function createTransactionsSlice<
   TData = unknown,

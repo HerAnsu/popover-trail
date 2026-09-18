@@ -16,6 +16,19 @@ import { isFloatingActive, isRootAlreadyActive } from './predicates';
 
 /**
  * Creates the action for resolving and mounting root popovers.
+ *
+ * @example
+ * ```ts
+ * const openRootWithResolver = createResolverOpenRootAction(ctx, bringToFront);
+ * await openRootWithResolver('profileCard');
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors.
+ * @param bringToFront - Callback to elevate popover z-index.
+ * @returns Async function resolving and opening a root popover.
  */
 export function createResolverOpenRootAction<
   TData = unknown,

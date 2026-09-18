@@ -51,6 +51,12 @@ function buildRetryPipelineParams<TData, TContext, TPopoverKey extends string = 
 /**
  * Creates the retry popover resolution action.
  *
+ * @example
+ * ```ts
+ * const retryPopover = createResolverRetryAction(ctx);
+ * await retryPopover('errorCard', { forceRefresh: true });
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
  * @template TPopoverKey - Union of valid popover keys.

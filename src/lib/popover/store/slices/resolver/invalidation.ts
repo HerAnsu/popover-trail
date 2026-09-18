@@ -13,6 +13,12 @@ import type { SliceContext } from '../context';
 /**
  * Creates the cache invalidation action.
  *
+ * @example
+ * ```ts
+ * const { invalidate } = createResolverInvalidationAction(ctx, retryPopover);
+ * await invalidate('profileCard');
+ * ```
+ *
  * @template TData - Resolved popover data payload type.
  * @template TContext - Global shared store context type.
  * @template TPopoverKey - Union of valid popover keys.

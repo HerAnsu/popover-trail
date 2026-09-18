@@ -23,6 +23,19 @@ export type TrailOpenActions<
 
 /**
  * Creates the Trail Open and Nested Push actions.
+ *
+ * @example
+ * ```ts
+ * const openActions = createTrailOpenActions(ctx);
+ * openActions.openRoot('owner-1', rootEntry);
+ * openActions.pushNested(0, childEntry);
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors.
+ * @returns Object providing `openRoot`, `pushNested`, and `pushNestedByKey` actions.
  */
 export function createTrailOpenActions<
   TData = unknown,

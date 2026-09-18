@@ -14,6 +14,19 @@ import { isNestedAlreadyActive } from './predicates';
 
 /**
  * Creates the action for resolving and mounting nested child popovers.
+ *
+ * @example
+ * ```ts
+ * const openNestedWithResolver = createResolverOpenNestedAction(ctx, bringToFront);
+ * await openNestedWithResolver('detailsCard', 'parentCard');
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors.
+ * @param bringToFront - Callback to elevate popover z-index.
+ * @returns Async function resolving and pushing a nested child popover.
  */
 export function createResolverOpenNestedAction<
   TData = unknown,

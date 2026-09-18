@@ -32,6 +32,22 @@ function updateEntryParents<TData, TPopoverKey extends string>(
   });
 }
 
+/**
+ * Creates DAG edge and hierarchy inspection actions.
+ *
+ * @example
+ * ```ts
+ * const dagActions = createTrailDAGActions(ctx);
+ * dagActions.addEdge('parentCard', 'childCard');
+ * const breadcrumbs = dagActions.getBreadcrumbs('childCard');
+ * ```
+ *
+ * @template TData - Resolved popover data payload type.
+ * @template TContext - Global shared store context type.
+ * @template TPopoverKey - Union of valid popover keys.
+ * @param ctx - Slice context container with Zustand accessors.
+ * @returns Object providing `addEdge`, `removeEdge`, `getParents`, `getChildren`, `getBreadcrumbs`, and `getDAG`.
+ */
 export function createTrailDAGActions<
   TData = unknown,
   TContext = unknown,
