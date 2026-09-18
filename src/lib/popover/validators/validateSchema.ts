@@ -1,7 +1,18 @@
 import { isNonEmptyString } from '../utils/typeGuards';
 import { isDevEnv, warnDevDetails, PopoverWarningCode } from './warningEngine';
 
-/** PT-108: Validates schema key presence. */
+/**
+ * Validates that a requested key is present in the schema definition.
+ * Emits dev warning `PT-108` if the key is missing or not a non-empty string.
+ *
+ * @param hasKey - True if schema contains the node definition.
+ * @param key - Popover key being resolved.
+ *
+ * @example
+ * ```typescript
+ * validateSchemaKey(schema.has('profile'), 'profile');
+ * ```
+ */
 export function validateSchemaKey(hasKey: boolean, key: string): void {
   if (!isDevEnv()) return;
 
@@ -13,7 +24,19 @@ export function validateSchemaKey(hasKey: boolean, key: string): void {
   }
 }
 
-/** PT-128: Validates schema circular child definitions. */
+/**
+ * Validates that a schema node does not declare itself as its own direct child.
+ * Emits dev warning `PT-128` if `parentKey` equals `childKey`.
+ *
+ * @param parentKey - Current schema node identifier.
+ * @param childKey - Child node identifier.
+ *
+ * @example
+ * ```typescript
+ * validateSchemaCircularChild('profile', 'settings'); // Valid
+ * validateSchemaCircularChild('profile', 'profile'); // Emits PT-128 warning in development
+ * ```
+ */
 export function validateSchemaCircularChild(parentKey: string, childKey: string): void {
   if (!isDevEnv()) return;
 
@@ -25,7 +48,18 @@ export function validateSchemaCircularChild(parentKey: string, childKey: string)
   }
 }
 
-/** PT-129: Validates resolver timeout duration. */
+/**
+ * Validates that asynchronous data resolution completes within expected bounds (<= 5000ms).
+ * Emits dev warning `PT-129` if resolution duration exceeds 5000ms.
+ *
+ * @param durationMs - Resolution duration in milliseconds.
+ * @param key - Popover key whose data was resolved.
+ *
+ * @example
+ * ```typescript
+ * validateResolverTimeout(6200, 'heavy-data'); // Emits PT-129 warning in development
+ * ```
+ */
 export function validateResolverTimeout(durationMs: number, key: string): void {
   if (!isDevEnv()) return;
 

@@ -15,7 +15,18 @@ export {
   validateResolverTimeout,
 } from './validateSchema';
 
-/** PT-117: Validates history snapshot stack capacity. */
+/**
+ * Validates history undo/redo capacity limit.
+ * Emits dev warning `PT-117` if `maxHistory` is not an integer between 1 and 500.
+ *
+ * @param maxHistory - Maximum number of historical snapshots retained.
+ *
+ * @example
+ * ```typescript
+ * validateHistoryCapacity(50); // Valid
+ * validateHistoryCapacity(1000); // Emits PT-117 warning in development
+ * ```
+ */
 export function validateHistoryCapacity(maxHistory: number): void {
   if (!isDevEnv()) return;
 
@@ -27,7 +38,17 @@ export function validateHistoryCapacity(maxHistory: number): void {
   }
 }
 
-/** PT-119: Validates SharedArrayBuffer worker support. */
+/**
+ * Validates browser runtime support for `SharedArrayBuffer` when shared memory mode is enabled.
+ * Emits dev warning `PT-119` if `SharedArrayBuffer` is undefined or not cross-origin isolated.
+ *
+ * @param useSharedMemory - Whether shared memory worker mode was requested.
+ *
+ * @example
+ * ```typescript
+ * validateSharedMemorySupport(options.useSharedMemory);
+ * ```
+ */
 export function validateSharedMemorySupport(useSharedMemory?: boolean): void {
   if (!isDevEnv() || !useSharedMemory) return;
 
@@ -40,7 +61,18 @@ export function validateSharedMemorySupport(useSharedMemory?: boolean): void {
   }
 }
 
-/** PT-120: Validates hydration error states. */
+/**
+ * Validates and logs errors encountered during popover data hydration.
+ * Emits dev warning `PT-120` with formatted error message.
+ *
+ * @param key - Popover identifier that failed hydration.
+ * @param error - Error object or rejection reason.
+ *
+ * @example
+ * ```typescript
+ * validateHydrationError('user-card', new Error('Network timeout'));
+ * ```
+ */
 export function validateHydrationError(key: string, error: unknown): void {
   if (!isDevEnv() || !error) return;
 
@@ -50,7 +82,18 @@ export function validateHydrationError(key: string, error: unknown): void {
   });
 }
 
-/** PT-122: Validates snapshot manager storage keys. */
+/**
+ * Validates persistence storage key identifier string.
+ * Emits dev warning `PT-122` if storageKey is empty or whitespace.
+ *
+ * @param storageKey - Storage identifier for snapshot manager.
+ *
+ * @example
+ * ```typescript
+ * validateStorageKey('popover-history-v1'); // Valid
+ * validateStorageKey(''); // Emits PT-122 warning in development
+ * ```
+ */
 export function validateStorageKey(storageKey: string): void {
   if (!isDevEnv()) return;
 
@@ -62,7 +105,18 @@ export function validateStorageKey(storageKey: string): void {
   }
 }
 
-/** PT-124: Validates FSM transition event types. */
+/**
+ * Validates FSM transition event type string.
+ * Emits dev warning `PT-124` if eventType is empty or non-string.
+ *
+ * @param eventType - Transition action type name.
+ *
+ * @example
+ * ```typescript
+ * validateFSMTransitionEvent('OPEN'); // Valid
+ * validateFSMTransitionEvent(''); // Emits PT-124 warning in development
+ * ```
+ */
 export function validateFSMTransitionEvent(eventType: string): void {
   if (!isDevEnv()) return;
 

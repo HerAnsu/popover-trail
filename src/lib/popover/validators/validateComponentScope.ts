@@ -1,6 +1,17 @@
 import { isDevEnv, warnDevDetails, PopoverWarningCode } from './warningEngine';
 
-/** PT-106: Validates card sub-component context placement. */
+/**
+ * Validates that card subcomponents (e.g. `Header`, `Body`, `CloseButton`) are rendered inside `<PopoverCard>`.
+ * Emits dev warning `PT-106` if context is absent.
+ *
+ * @param hasContext - Whether `<PopoverCard>` context is present.
+ * @param subComponentName - Name of the subcomponent being evaluated.
+ *
+ * @example
+ * ```typescript
+ * validateCardSubComponentScope(Boolean(cardContext), 'Header');
+ * ```
+ */
 export function validateCardSubComponentScope(hasContext: boolean, subComponentName: string): void {
   if (!isDevEnv()) return;
 
@@ -12,7 +23,18 @@ export function validateCardSubComponentScope(hasContext: boolean, subComponentN
   }
 }
 
-/** PT-107: Validates timeline sub-component context placement. */
+/**
+ * Validates that timeline subcomponents (e.g. `StepList`, `UndoButton`) are rendered inside `<PopoverTimeline>`.
+ * Emits dev warning `PT-107` if context is absent.
+ *
+ * @param hasContext - Whether `<PopoverTimeline>` context is present.
+ * @param subComponentName - Name of the subcomponent being evaluated.
+ *
+ * @example
+ * ```typescript
+ * validateTimelineSubComponentScope(Boolean(timelineContext), 'StepList');
+ * ```
+ */
 export function validateTimelineSubComponentScope(
   hasContext: boolean,
   subComponentName: string,
@@ -27,7 +49,17 @@ export function validateTimelineSubComponentScope(
   }
 }
 
-/** PT-125: Validates portal container DOM node existence. */
+/**
+ * Validates that a DOM portal target element exists and is mounted.
+ * Emits dev warning `PT-125` if container element is null.
+ *
+ * @param container - Target DOM Element or null.
+ *
+ * @example
+ * ```typescript
+ * validatePortalContainer(document.getElementById('portal-root'));
+ * ```
+ */
 export function validatePortalContainer(container: Element | null): void {
   if (!isDevEnv()) return;
 
@@ -39,7 +71,17 @@ export function validatePortalContainer(container: Element | null): void {
   }
 }
 
-/** PT-130: Validates portal exclusion element attributes. */
+/**
+ * Validates and logs notice for elements designated as portal exclusions from outside click dismissal.
+ * Emits dev warning `PT-130`.
+ *
+ * @param elementName - HTML tag or identifier of the excluded element.
+ *
+ * @example
+ * ```typescript
+ * validatePortalExclusion('dialog');
+ * ```
+ */
 export function validatePortalExclusion(elementName: string): void {
   if (!isDevEnv()) return;
 

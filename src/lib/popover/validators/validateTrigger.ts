@@ -4,7 +4,19 @@ import { isUnsafeKey } from '../utils/safeKeys';
 import { isNonEmptyString, isNonNegativeFinite, isPopoverPlacement } from '../utils/typeGuards';
 import { isDevEnv, warnDevDetails, PopoverWarningCode } from './warningEngine';
 
-/** PT-101: Validates popover key format. */
+/**
+ * Validates a popover key format and guards against prototype pollution / unsafe property names.
+ * Emits dev warning `PT-101` if key is missing, empty, or an unsafe JS identifier (e.g. `__proto__`, `constructor`).
+ *
+ * @param key - Popover key to validate.
+ *
+ * @example
+ * ```typescript
+ * validatePopoverKey('user-card'); // Valid
+ * validatePopoverKey('__proto__'); // Emits PT-101 warning in development
+ * validatePopoverKey(''); // Emits PT-101 warning in development
+ * ```
+ */
 export function validatePopoverKey(key: string | undefined): void {
   if (!isDevEnv()) return;
 
@@ -24,7 +36,18 @@ export function validatePopoverKey(key: string | undefined): void {
   }
 }
 
-/** PT-102: Validates placement string. */
+/**
+ * Validates whether the given placement string is a recognized Floating UI placement.
+ * Emits dev warning `PT-102` if placement is invalid.
+ *
+ * @param placement - Placement string to check (e.g. 'bottom-start', 'top').
+ *
+ * @example
+ * ```typescript
+ * validatePlacement('bottom-start'); // Valid
+ * validatePlacement('center' as any); // Emits PT-102 warning in development
+ * ```
+ */
 export function validatePlacement(placement: PopoverPlacement | undefined): void {
   if (!isDevEnv() || !placement) return;
 
@@ -36,7 +59,19 @@ export function validatePlacement(placement: PopoverPlacement | undefined): void
   }
 }
 
-/** PT-103 & PT-104: Validates hover delays. */
+/**
+ * Validates hover open and close delay durations in milliseconds.
+ * Emits dev warnings `PT-103` (open delay) and `PT-104` (close delay) if non-finite or exceeding 30,000ms.
+ *
+ * @param openDelay - Delay in ms before opening on hover.
+ * @param closeDelay - Delay in ms before closing on hover leave.
+ *
+ * @example
+ * ```typescript
+ * validateHoverDelays(200, 300); // Valid
+ * validateHoverDelays(-10, 50000); // Emits PT-103 and PT-104 warnings in development
+ * ```
+ */
 export function validateHoverDelays(openDelay?: number, closeDelay?: number): void {
   if (!isDevEnv()) return;
 
@@ -55,7 +90,19 @@ export function validateHoverDelays(openDelay?: number, closeDelay?: number): vo
   }
 }
 
-/** PT-105: Validates parent-child cascade loops. */
+/**
+ * Validates that a popover does not declare itself as its own parent, avoiding circular cascade recursion.
+ * Emits dev warning `PT-105` if `popoverKey` matches `parentKey`.
+ *
+ * @param popoverKey - Current popover identifier.
+ * @param parentKey - Parent popover identifier, or null if root.
+ *
+ * @example
+ * ```typescript
+ * validateCascadeAncestry('child-popover', 'root-popover'); // Valid
+ * validateCascadeAncestry('popover-1', 'popover-1'); // Emits PT-105 warning in development
+ * ```
+ */
 export function validateCascadeAncestry(popoverKey: string, parentKey: string | null): void {
   if (!isDevEnv() || !parentKey) return;
 
@@ -67,7 +114,17 @@ export function validateCascadeAncestry(popoverKey: string, parentKey: string | 
   }
 }
 
-/** PT-118: Validates trigger action event handlers. */
+/**
+ * Validates that a popover trigger action handler was dispatched with a valid DOM event.
+ * Emits dev warning `PT-118` if trigger event is missing.
+ *
+ * @param hasEvent - Whether a trigger event was supplied.
+ *
+ * @example
+ * ```typescript
+ * validateTriggerEvent(Boolean(event));
+ * ```
+ */
 export function validateTriggerEvent(hasEvent: boolean): void {
   if (!isDevEnv()) return;
 
