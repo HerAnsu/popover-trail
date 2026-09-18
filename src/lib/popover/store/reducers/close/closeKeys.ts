@@ -13,7 +13,23 @@ import { prop } from '../../../utils/functional';
 import { isDisjoint } from '../../../utils/setOperations';
 
 /**
- * Resolves all direct and transitive descendant keys to remove for a close operation.
+ * Resolves the complete set of direct target keys and transitive descendant keys to remove for a close operation.
+ * Utilizes the Directed Acyclic Graph (DAG) when available to guarantee that no orphan child nodes remain.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param floating - Active floating cards.
+ * @param trail - Active cascading trail cards.
+ * @param directClosedKeys - Direct keys being closed.
+ * @param closePinnedDescendants - Whether pinned cards should be included in closure.
+ * @param pinnedStates - Current pinned state map.
+ * @param dag - Optional DAG graph instance.
+ * @returns Set of all popover keys to remove.
+ *
+ * @example
+ * ```typescript
+ * const keysToRemove = resolveAllRemovedKeys(floating, trail, ['root'], false, pinnedStates, dag);
+ * ```
  */
 export function resolveAllRemovedKeys<TData = unknown, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],

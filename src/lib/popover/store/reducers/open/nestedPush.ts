@@ -37,6 +37,20 @@ function computeTrailNestedPush<TData, TPopoverKey extends string = string>(
 
 /**
  * Computes the updated trail array for nested child push operations.
+ * Handles both floating parent docking and cascading trail hierarchy truncation.
+ *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global application context.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param state - Current store state snapshot.
+ * @param index - Index of parent card in unified stack.
+ * @param finalEntry - Normalized child TrailEntry to append.
+ * @returns Updated array of TrailEntries or `null` if invalid operation.
+ *
+ * @example
+ * ```typescript
+ * const nextTrail = computeNextTrailForNestedPush(state, 0, childEntry);
+ * ```
  */
 export function computeNextTrailForNestedPush<
   TData = unknown,

@@ -19,10 +19,19 @@ import { findFloatingElevationPatch } from './openElevation';
  * If opened by the same owner, appends to or replaces in the active trail.
  * If opened by a new owner, begins a new active trail branch anchored by this entry.
  *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global application context.
+ * @template TPopoverKey - Registered string key identifiers.
  * @param state - Current store state snapshot.
  * @param ownerId - Identifier of the trail owner / root trigger.
  * @param entry - TrailEntry describing the popover to open.
  * @returns State patch containing updated trail, active status, and z-index order.
+ *
+ * @example
+ * ```typescript
+ * const patch = openRootState(store.getState(), 'menu-btn', rootEntry);
+ * store.setState(patch);
+ * ```
  */
 export function openRootState<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
@@ -37,7 +46,7 @@ export function openRootState<TData, TContext, TPopoverKey extends string = stri
   const nextTrail =
     state.ownerId === ownerId
       ? [...filterOutEntry(state.trail, entry.key), nextEntry]
-    : [nextEntry];
+      : [nextEntry];
 
   return buildActiveTrailPatch(state, nextTrail, entry.key, { ownerId });
 }
@@ -49,10 +58,19 @@ export function openRootState<TData, TContext, TPopoverKey extends string = stri
  * If the card is already pinned in floating mode, elevates it to the front.
  * Truncates any deeper sibling entries beyond `index` and appends the new child entry.
  *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global application context.
+ * @template TPopoverKey - Registered string key identifiers.
  * @param state - Current store state snapshot.
  * @param index - Unified cascade depth index of the parent card.
  * @param entry - TrailEntry describing the child popover to push.
  * @returns State patch with updated trail branch, or empty object if invalid index.
+ *
+ * @example
+ * ```typescript
+ * const patch = pushNestedState(store.getState(), 0, childEntry);
+ * store.setState(patch);
+ * ```
  */
 export function pushNestedState<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
@@ -81,10 +99,19 @@ export function pushNestedState<TData, TContext, TPopoverKey extends string = st
  * Looks up the parent key across both floating and trail cards. If found, pushes the child
  * under that parent; otherwise falls back to opening as a root card.
  *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global application context.
+ * @template TPopoverKey - Registered string key identifiers.
  * @param state - Current store state snapshot.
  * @param parentKey - Identifier of the parent popover.
  * @param entry - TrailEntry describing the child popover.
  * @returns State patch for the opened popover.
+ *
+ * @example
+ * ```typescript
+ * const patch = pushNestedByKeyState(store.getState(), 'parent-card', childEntry);
+ * store.setState(patch);
+ * ```
  */
 export function pushNestedByKeyState<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,

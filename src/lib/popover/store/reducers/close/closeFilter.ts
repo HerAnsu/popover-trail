@@ -11,7 +11,18 @@ import { omitKeys } from '../../../utils/cleanObject';
 import { emptyRecord } from '../../storeDefaults';
 
 /**
- * Filters out removed keys preserving array reference when no entries are affected.
+ * Filters out removed keys from an entry list, preserving the existing array reference when no entries are affected.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param list - Array of trail entries to filter.
+ * @param removedKeys - Set of keys being removed.
+ * @returns Filtered array, or original array reference if untouched.
+ *
+ * @example
+ * ```typescript
+ * const retained = filterRetainedEntries(trail, new Set(['card-2']));
+ * ```
  */
 export function filterRetainedEntries<TData, TPopoverKey extends string = string>(
   list: readonly TrailEntry<TData, TPopoverKey>[],
@@ -23,7 +34,18 @@ export function filterRetainedEntries<TData, TPopoverKey extends string = string
 }
 
 /**
- * Omits removed keys from state records during teardown and close operations.
+ * Omits removed keys from state dictionary records (offsets, pinnedStates, counters) during teardown.
+ *
+ * @template V - Value type in record.
+ * @template K - Key type in record.
+ * @param record - Source record to prune.
+ * @param removedKeys - Set of keys to omit.
+ * @returns Pruned record without the removed keys.
+ *
+ * @example
+ * ```typescript
+ * const nextOffsets = omitRemovedRecordKeys(state.offsets, removedKeys);
+ * ```
  */
 export function omitRemovedRecordKeys<V, K extends string = string>(
   record: Readonly<Partial<Record<K, V>>> | undefined,

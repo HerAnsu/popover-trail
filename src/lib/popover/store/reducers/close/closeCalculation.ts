@@ -16,6 +16,22 @@ export interface RemovedKeysCloseResult<TPopoverKey extends string = string> {
 
 /**
  * Computes the set of popover keys to remove when closing from a target index.
+ * Resolves both direct targets and transitive descendants via the DAG.
+ *
+ * @template TData - Popover payload data type.
+ * @template TPopoverKey - Registered string key identifiers.
+ * @param floating - Active floating entries.
+ * @param trail - Active cascading trail entries.
+ * @param index - Target index to close from.
+ * @param closePinnedDescendants - Whether to prune pinned children when their cascade parent closes.
+ * @param pinnedStates - Current pinned state map.
+ * @param dag - Optional DAG graph instance.
+ * @returns Object with `isFloating` flag and `removedKeys` Set, or `null` if invalid index.
+ *
+ * @example
+ * ```typescript
+ * const result = getRemovedKeysForClose(floating, trail, 1, false, pinnedStates, dag);
+ * ```
  */
 export function getRemovedKeysForClose<TData = unknown, TPopoverKey extends string = string>(
   floating: readonly TrailEntry<TData, TPopoverKey>[],

@@ -21,10 +21,19 @@ export { getRemovedKeysForClose } from './closeCalculation';
  * filters retained floating and trail entries, and cleans up associated offsets,
  * pinned states, hydration counters, and z-index ordering.
  *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global application context.
+ * @template TPopoverKey - Registered string key identifiers.
  * @param state - Current store state snapshot.
  * @param index - Unified index of the card to close.
  * @param dag - Optional DAG instance to identify hierarchical descendants.
  * @returns State patch with pruned entries and cleaned-up metadata.
+ *
+ * @example
+ * ```typescript
+ * const patch = closeFromState(store.getState(), 1, dag);
+ * store.setState(patch);
+ * ```
  */
 export function closeFromState<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
@@ -69,10 +78,19 @@ export function closeFromState<TData, TContext, TPopoverKey extends string = str
  * Finds the unified index of `targetKey` across floating and trail entries,
  * then delegates to {@link closeFromState} to remove the card and its cascade descendants.
  *
+ * @template TData - Popover payload data type.
+ * @template TContext - Global application context.
+ * @template TPopoverKey - Registered string key identifiers.
  * @param state - Current store state snapshot.
  * @param targetKey - Identifier of the popover card to close.
  * @param dag - Optional DAG instance to identify hierarchical descendants.
  * @returns State patch for the closure, or empty object if key was not found.
+ *
+ * @example
+ * ```typescript
+ * const patch = closeByTargetKeyState(store.getState(), 'menu-1', dag);
+ * store.setState(patch);
+ * ```
  */
 export function closeByTargetKeyState<TData, TContext, TPopoverKey extends string = string>(
   state: PopoverStateData<TData, TContext, TPopoverKey>,
