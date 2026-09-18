@@ -25,13 +25,14 @@ import { isPlainObject } from '../utils/guards/objectGuards';
  */
 export function isPositionCoordinates(val: unknown): val is PositionCoordinates {
   if (!isPlainObject(val)) return false;
+  const { x, y, placement } = val as Partial<PositionCoordinates>;
 
   return (
-    typeof val.x === 'number' &&
-    Number.isFinite(val.x) &&
-    typeof val.y === 'number' &&
-    Number.isFinite(val.y) &&
-    isPopoverPlacement(val.placement)
+    typeof x === 'number' &&
+    Number.isFinite(x) &&
+    typeof y === 'number' &&
+    Number.isFinite(y) &&
+    isPopoverPlacement(placement)
   );
 }
 
@@ -50,17 +51,18 @@ export function isPositionCoordinates(val: unknown): val is PositionCoordinates 
  */
 export function isPositionComputeOptions(val: unknown): val is PositionComputeOptions {
   if (!isPlainObject(val)) return false;
+  const { placement, offset, flip, shift, autoPlacement } = val as Partial<PositionComputeOptions>;
 
-  if (val.placement !== undefined && !isPopoverPlacement(val.placement)) return false;
+  if (placement !== undefined && !isPopoverPlacement(placement)) return false;
   if (
-    val.offset !== undefined &&
-    (typeof val.offset !== 'number' || !Number.isFinite(val.offset))
+    offset !== undefined &&
+    (typeof offset !== 'number' || !Number.isFinite(offset))
   ) {
     return false;
   }
-  if (val.flip !== undefined && typeof val.flip !== 'boolean') return false;
-  if (val.shift !== undefined && typeof val.shift !== 'boolean') return false;
-  if (val.autoPlacement !== undefined && typeof val.autoPlacement !== 'boolean') return false;
+  if (flip !== undefined && typeof flip !== 'boolean') return false;
+  if (shift !== undefined && typeof shift !== 'boolean') return false;
+  if (autoPlacement !== undefined && typeof autoPlacement !== 'boolean') return false;
 
   return true;
 }

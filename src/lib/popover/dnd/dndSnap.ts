@@ -40,10 +40,12 @@ export function createMagneticSnapModifier(
 
     const currentBounds = sharedBoxPool.acquire();
     try {
-      currentBounds.x = activeNodeRect.left + transform.x;
-      currentBounds.y = activeNodeRect.top + transform.y;
-      currentBounds.width = activeNodeRect.width;
-      currentBounds.height = activeNodeRect.height;
+      const { left, top, width, height } = activeNodeRect;
+      const { x: tx, y: ty } = transform;
+      currentBounds.x = left + tx;
+      currentBounds.y = top + ty;
+      currentBounds.width = width;
+      currentBounds.height = height;
 
       const activeId = String(active.id);
       const allTargets = getObstacles();
@@ -57,11 +59,12 @@ export function createMagneticSnapModifier(
       if (obstacles.length === 0) return transform;
 
       const snap = findMagneticSnap(currentBounds, obstacles, threshold);
+      const { snapX, snapY } = snap;
 
       return {
         ...transform,
-        x: snap.snapX !== undefined ? snap.snapX - activeNodeRect.left : transform.x,
-        y: snap.snapY !== undefined ? snap.snapY - activeNodeRect.top : transform.y,
+        x: snapX !== undefined ? snapX - left : tx,
+        y: snapY !== undefined ? snapY - top : ty,
       };
     } finally {
       sharedBoxPool.release(currentBounds);

@@ -40,61 +40,77 @@ function PopoverCardInner<TData = unknown>(props: Readonly<PopoverCardProps<TDat
     enableTilt: tiltEnabled,
   });
 
+  const {
+    actions,
+    isTop,
+    isDragging,
+    transitionClassName,
+    style: cardStyle,
+    isDragAllowed,
+    dragHandleProps,
+    ref: cardRef,
+    onMouseEnter,
+    onMouseLeave,
+    onKeyDown,
+  } = card;
+  const { bringToFront } = actions;
+  const { key, exitTransitionDuration, ariaDescribedby } = entry;
+
   const handleMouseDown = useCallback(
-    () => card.actions.bringToFront(entry.key),
-    [card.actions, entry.key],
+    () => bringToFront(key),
+    [bringToFront, key],
   );
 
   const combinedClassName = useMemo(
     () =>
       clsx(
         className,
-        { topmost: card.isTop, pinned: isPinned, dragging: card.isDragging },
-        card.transitionClassName,
+        { topmost: isTop, pinned: isPinned, dragging: isDragging },
+        transitionClassName,
       ),
-    [className, card.isTop, isPinned, card.isDragging, card.transitionClassName],
+    [className, isTop, isPinned, isDragging, transitionClassName],
   );
 
   const combinedStyle = useMemo(
     () => ({
-      ...card.style,
-      ...(entry.exitTransitionDuration !== undefined
-        ? { transitionDuration: `${entry.exitTransitionDuration}ms` }
+      ...cardStyle,
+      ...(exitTransitionDuration !== undefined
+        ? { transitionDuration: `${exitTransitionDuration}ms` }
         : {}),
       ...customStyle,
     }),
-    [card.style, entry.exitTransitionDuration, customStyle],
+    [cardStyle, exitTransitionDuration, customStyle],
   );
 
-  const dragProps = card.isDragAllowed ? card.dragHandleProps : {};
+  const dragProps = isDragAllowed ? dragHandleProps : {};
 
   return (
     <dialog
       open
       tabIndex={-1}
-      id={`popover-card-${entry.key}`}
-      ref={card.ref}
+      id={`popover-card-${key}`}
+      ref={cardRef}
       style={combinedStyle}
       aria-label={
-        props['aria-label'] ?? (props['aria-labelledby'] ? undefined : `Popover ${entry.key}`)
+        props['aria-label'] ?? (props['aria-labelledby'] ? undefined : `Popover ${key}`)
       }
       aria-labelledby={props['aria-labelledby']}
-      aria-describedby={entry.ariaDescribedby ? `desc-${entry.key}` : undefined}
+      aria-describedby={ariaDescribedby ? `desc-${key}` : undefined}
       className={combinedClassName}>
       <FocusTrap
-        disabled={!focusLockEnabled || !card.isTop || isPinned}
+        disabled={!focusLockEnabled || !isTop || isPinned}
         returnFocus={RETURN_FOCUS_CONFIG.returnFocus}>
         <div
           role="presentation"
           style={FULL_FLEX_CONTAINER_STYLE}
           onMouseDown={handleMouseDown}
-          onMouseEnter={card.onMouseEnter}
-          onMouseLeave={card.onMouseLeave}
-          onKeyDown={card.onKeyDown}>
-          <PopoverCardContext value={entry.key}>
-            {entry.ariaDescribedby && (
-              <div id={`desc-${entry.key}`} style={DISPLAY_NONE_STYLE}>
-                {entry.ariaDescribedby}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          onKeyDown={onKeyDown}>
+          <PopoverCardContext value={key}>
+            {ariaDescribedby && (
+              <div id={`desc-${key}`} style={DISPLAY_NONE_STYLE}>
+                {ariaDescribedby}
               </div>
             )}
             {dragHandle ? (

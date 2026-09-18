@@ -61,10 +61,12 @@ export function usePopoverDraggableCard(
     tiltSensitivity = 8,
   } = options;
   const card = usePopoverCard({ entry, index, isPinned, placement });
+  const { buttonControls, style: cardStyle, ref: cardRef, actions: cardActions } = card;
+  const { enableDrag: buttonEnableDrag } = buttonControls;
   const isDragAllowed = isDragPermitted(
     entry,
     enableDrag,
-    card.buttonControls.enableDrag,
+    buttonEnableDrag,
     isPinned,
   );
 
@@ -74,38 +76,47 @@ export function usePopoverDraggableCard(
   });
 
   const domRef = useRef<HTMLDivElement | null>(null);
-  const tilt = resolveTiltConfig(entry, enableTilt, maxTiltAngle, tiltSensitivity);
+  const {
+    tiltEnabled,
+    maxTilt,
+    sensitivity,
+    axis,
+    friction,
+    decay,
+  } = resolveTiltConfig(entry, enableTilt, maxTiltAngle, tiltSensitivity);
 
   const physics = usePopoverDragAndDrop({
     isDragging: isDragAllowed ? isDragging : false,
     transform: isDragAllowed ? transform : null,
-    enableTilt: tilt.tiltEnabled,
-    maxTiltAngle: tilt.maxTilt,
-    tiltSensitivity: tilt.sensitivity,
-    dragAxis: tilt.axis,
-    tiltFriction: tilt.friction,
-    tiltDecay: tilt.decay,
+    enableTilt: tiltEnabled,
+    maxTiltAngle: maxTilt,
+    tiltSensitivity: sensitivity,
+    dragAxis: axis,
+    tiltFriction: friction,
+    tiltDecay: decay,
     cardRef: domRef,
   });
 
   const offset = usePopoverOffset(entry.key);
   const dragTransforms = resolveDragTransform(isDragAllowed, offset, physics);
 
+  const { top: cardTop, left: cardLeft, zIndex: cardZIndex } = cardStyle;
   const style = getPopoverStyles({
     finalLayoutPos: {
-      top: extractNumericStyle(card.style.top),
-      left: extractNumericStyle(card.style.left),
+      top: extractNumericStyle(cardTop),
+      left: extractNumericStyle(cardLeft),
     },
     ...dragTransforms,
-    zIndex: extractNumericStyle(card.style.zIndex),
+    zIndex: extractNumericStyle(cardZIndex),
   });
 
-  const setCombinedRef = useMergedRef(card.ref, domRef, isDragAllowed ? setNodeRef : undefined);
+  const setCombinedRef = useMergedRef(cardRef, domRef, isDragAllowed ? setNodeRef : undefined);
 
+  const { togglePin } = cardActions;
   const handlePinToggle = useCallback(() => {
     const currentRect = domRef.current ? domRef.current.getBoundingClientRect() : undefined;
-    card.actions.togglePin(entry.key, currentRect);
-  }, [card.actions, entry.key]);
+    togglePin(entry.key, currentRect);
+  }, [togglePin, entry.key]);
 
   return {
     ...card,

@@ -61,13 +61,15 @@ export function useCanvasModifiers({
   const getObstacles = useCallback((): SnapTargetRect[] => {
     if (typeof document === 'undefined') return [];
     const list: SnapTargetRect[] = [];
-    for (const item of activeEntries) {
-      const el = document.getElementById(`popover-card-${item.entry.key}`);
+    for (const { entry } of activeEntries) {
+      const { key } = entry;
+      const el = document.getElementById(`popover-card-${key}`);
       const r = el?.getBoundingClientRect();
       if (r) {
+        const { left, top, width, height } = r;
         list.push({
-          id: item.entry.key,
-          rect: { x: r.left, y: r.top, width: r.width, height: r.height },
+          id: key,
+          rect: { x: left, y: top, width, height },
         });
       }
     }

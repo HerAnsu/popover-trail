@@ -10,50 +10,53 @@ import { isPlainObject } from '../utils/guards/objectGuards';
 
 /** Validates whether an unknown value conforms to Transform2D with finite numbers. */
 export function isTransform2D(val: unknown): val is Transform2D {
+  if (!isPlainObject(val)) return false;
+  const { x, y, scaleX, scaleY } = val as Partial<Transform2D>;
   return (
-    isPlainObject(val) &&
-    typeof val.x === 'number' &&
-    Number.isFinite(val.x) &&
-    typeof val.y === 'number' &&
-    Number.isFinite(val.y) &&
-    typeof val.scaleX === 'number' &&
-    Number.isFinite(val.scaleX) &&
-    typeof val.scaleY === 'number' &&
-    Number.isFinite(val.scaleY)
+    typeof x === 'number' &&
+    Number.isFinite(x) &&
+    typeof y === 'number' &&
+    Number.isFinite(y) &&
+    typeof scaleX === 'number' &&
+    Number.isFinite(scaleX) &&
+    typeof scaleY === 'number' &&
+    Number.isFinite(scaleY)
   );
 }
 
 /** Validates whether an unknown value conforms to NodeRect with non-negative dimensions. */
 export function isNodeRect(val: unknown): val is NodeRect {
+  if (!isPlainObject(val)) return false;
+  const { left, top, width, height } = val as Partial<NodeRect>;
   return (
-    isPlainObject(val) &&
-    typeof val.left === 'number' &&
-    Number.isFinite(val.left) &&
-    typeof val.top === 'number' &&
-    Number.isFinite(val.top) &&
-    typeof val.width === 'number' &&
-    Number.isFinite(val.width) &&
-    val.width >= 0 &&
-    typeof val.height === 'number' &&
-    Number.isFinite(val.height) &&
-    val.height >= 0
+    typeof left === 'number' &&
+    Number.isFinite(left) &&
+    typeof top === 'number' &&
+    Number.isFinite(top) &&
+    typeof width === 'number' &&
+    Number.isFinite(width) &&
+    width >= 0 &&
+    typeof height === 'number' &&
+    Number.isFinite(height) &&
+    height >= 0
   );
 }
 
 /** Validates whether an unknown value conforms to BoundsRect with right >= left and bottom >= top. */
 export function isBoundsRect(val: unknown): val is BoundsRect {
+  if (!isPlainObject(val)) return false;
+  const { left, top, right, bottom } = val as Partial<BoundsRect>;
   return (
-    isPlainObject(val) &&
-    typeof val.left === 'number' &&
-    Number.isFinite(val.left) &&
-    typeof val.top === 'number' &&
-    Number.isFinite(val.top) &&
-    typeof val.right === 'number' &&
-    Number.isFinite(val.right) &&
-    val.right >= val.left &&
-    typeof val.bottom === 'number' &&
-    Number.isFinite(val.bottom) &&
-    val.bottom >= val.top
+    typeof left === 'number' &&
+    Number.isFinite(left) &&
+    typeof top === 'number' &&
+    Number.isFinite(top) &&
+    typeof right === 'number' &&
+    Number.isFinite(right) &&
+    right >= left &&
+    typeof bottom === 'number' &&
+    Number.isFinite(bottom) &&
+    bottom >= top
   );
 }
 

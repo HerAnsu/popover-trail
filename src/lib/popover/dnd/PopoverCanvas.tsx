@@ -90,13 +90,16 @@ export function PopoverCanvas<TData = unknown>({
   );
   const handleDragEnd = useCallback(
     (e: DragEndEvent) => {
-      const key = String(e.active.id);
-      const cur = store.getState().offsets[key] ?? ZERO_OFFSET;
+      const { active, delta } = e;
+      const key = String(active.id);
+      const { offsets } = store.getState();
+      const cur = offsets[key] ?? ZERO_OFFSET;
+      const { x: curX, y: curY } = cur;
+      const { x: deltaX, y: deltaY } = delta ?? {};
       updateOffset(
-
         key,
-        cur.x + toFiniteNumber(e.delta?.x),
-        cur.y + toFiniteNumber(e.delta?.y),
+        curX + toFiniteNumber(deltaX),
+        curY + toFiniteNumber(deltaY),
       );
     },
     [store, updateOffset],
