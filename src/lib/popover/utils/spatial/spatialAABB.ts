@@ -21,10 +21,13 @@ import type { BoundingBox } from '../guards/spatialGuards';
  * ```
  */
 export function intersectionBox(a: BoundingBox, b: BoundingBox): BoundingBox | null {
-  const minX = Math.max(a.x, b.x);
-  const maxX = Math.min(a.x + a.width, b.x + b.width);
-  const minY = Math.max(a.y, b.y);
-  const maxY = Math.min(a.y + a.height, b.y + b.height);
+  const { x: ax, y: ay, width: aw, height: ah } = a;
+  const { x: bx, y: by, width: bw, height: bh } = b;
+
+  const minX = Math.max(ax, bx);
+  const maxX = Math.min(ax + aw, bx + bw);
+  const minY = Math.max(ay, by);
+  const maxY = Math.min(ay + ah, by + bh);
 
   if (maxX <= minX || maxY <= minY) return null;
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
@@ -43,12 +46,15 @@ export function intersectionBox(a: BoundingBox, b: BoundingBox): BoundingBox | n
  * ```
  */
 export function intersectionArea(a: BoundingBox, b: BoundingBox): number {
-  const minX = Math.max(a.x, b.x);
-  const maxX = Math.min(a.x + a.width, b.x + b.width);
+  const { x: ax, y: ay, width: aw, height: ah } = a;
+  const { x: bx, y: by, width: bw, height: bh } = b;
+
+  const minX = Math.max(ax, bx);
+  const maxX = Math.min(ax + aw, bx + bw);
   if (maxX <= minX) return 0;
 
-  const minY = Math.max(a.y, b.y);
-  const maxY = Math.min(a.y + a.height, b.y + b.height);
+  const minY = Math.max(ay, by);
+  const maxY = Math.min(ay + ah, by + bh);
   if (maxY <= minY) return 0;
 
   return (maxX - minX) * (maxY - minY);
@@ -67,10 +73,13 @@ export function intersectionArea(a: BoundingBox, b: BoundingBox): number {
  * ```
  */
 export function boundingUnion(a: BoundingBox, b: BoundingBox): BoundingBox {
-  const minX = Math.min(a.x, b.x);
-  const maxX = Math.max(a.x + a.width, b.x + b.width);
-  const minY = Math.min(a.y, b.y);
-  const maxY = Math.max(a.y + a.height, b.y + b.height);
+  const { x: ax, y: ay, width: aw, height: ah } = a;
+  const { x: bx, y: by, width: bw, height: bh } = b;
+
+  const minX = Math.min(ax, bx);
+  const maxX = Math.max(ax + aw, bx + bw);
+  const minY = Math.min(ay, by);
+  const maxY = Math.max(ay + ah, by + bh);
 
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
@@ -93,7 +102,9 @@ export function boundingUnion(a: BoundingBox, b: BoundingBox): BoundingBox {
 export function overlapRatio(a: BoundingBox, b: BoundingBox): number {
   const inter = intersectionArea(a, b);
   if (inter <= 0) return 0;
-  const union = a.width * a.height + b.width * b.height - inter;
+  const { width: aw, height: ah } = a;
+  const { width: bw, height: bh } = b;
+  const union = aw * ah + bw * bh - inter;
   return union > 0 ? inter / union : 0;
 }
 
@@ -114,7 +125,9 @@ export function distanceToBox(
   point: { readonly x: number; readonly y: number },
   box: BoundingBox,
 ): number {
-  const dx = Math.max(box.x - point.x, 0, point.x - (box.x + box.width));
-  const dy = Math.max(box.y - point.y, 0, point.y - (box.y + box.height));
+  const { x: px, y: py } = point;
+  const { x: bx, y: by, width: bw, height: bh } = box;
+  const dx = Math.max(bx - px, 0, px - (bx + bw));
+  const dy = Math.max(by - py, 0, py - (by + bh));
   return Math.hypot(dx, dy);
 }

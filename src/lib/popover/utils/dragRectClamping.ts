@@ -32,17 +32,21 @@ export function clampCoordinateToBounds(
   activeNodeRect: DragNodeRect,
   bounds: DragBoundsRect,
 ): DragTransform2D {
-  const minX = bounds.left - activeNodeRect.left;
-  const maxX = bounds.right - activeNodeRect.left - activeNodeRect.width;
-  const minY = bounds.top - activeNodeRect.top;
-  const maxY = bounds.bottom - activeNodeRect.top - activeNodeRect.height;
+  const { x, y, scaleX, scaleY } = transform;
+  const { left: nodeLeft, top: nodeTop, width: nodeWidth, height: nodeHeight } = activeNodeRect;
+  const { left: boundsLeft, right: boundsRight, top: boundsTop, bottom: boundsBottom } = bounds;
+
+  const minX = boundsLeft - nodeLeft;
+  const maxX = boundsRight - nodeLeft - nodeWidth;
+  const minY = boundsTop - nodeTop;
+  const maxY = boundsBottom - nodeTop - nodeHeight;
 
   return {
     ...transform,
-    x: clamp(transform.x, minX, maxX),
-    y: clamp(transform.y, minY, maxY),
-    scaleX: transform.scaleX,
-    scaleY: transform.scaleY,
+    x: clamp(x, minX, maxX),
+    y: clamp(y, minY, maxY),
+    scaleX,
+    scaleY,
   };
 }
 

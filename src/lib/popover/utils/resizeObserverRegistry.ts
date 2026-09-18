@@ -50,6 +50,23 @@ class ResizeObserverRegistryImpl {
     });
   }
 
+  /**
+   * Registers a resize listener callback for the specified DOM Element.
+   * Automatically initializes the shared ResizeObserver instance if not already running.
+   *
+   * @param element - The target DOM Element to observe.
+   * @param callback - Function invoked on debounced animation frame when dimensions change.
+   * @returns Cleanup function that unobserves the element and detaches the callback.
+   *
+   * @example
+   * ```typescript
+   * const cleanup = ResizeObserverRegistry.observe(element, (entry) => {
+   *   console.log('New content rect:', entry.contentRect);
+   * });
+   * // Later:
+   * cleanup();
+   * ```
+   */
   observe(element: Element | null | undefined, callback: ResizeCallback): () => void {
     if (!element || !isBrowser()) return noop;
     this.initObserver();
@@ -73,6 +90,15 @@ class ResizeObserverRegistryImpl {
     };
   }
 
+  /**
+   * Clears all registered elements, cancels any pending animation frame callbacks,
+   * and disconnects the underlying ResizeObserver.
+   *
+   * @example
+   * ```typescript
+   * ResizeObserverRegistry.clear();
+   * ```
+   */
   clear(): void {
     if (this.frameId !== null && typeof cancelAnimationFrame !== 'undefined') {
       cancelAnimationFrame(this.frameId);
@@ -84,6 +110,14 @@ class ResizeObserverRegistryImpl {
     this.listeners.clear();
   }
 
+  /**
+   * Disposes the registry and frees all observed elements.
+   *
+   * @example
+   * ```typescript
+   * ResizeObserverRegistry.dispose();
+   * ```
+   */
   dispose(): void {
     this.clear();
   }

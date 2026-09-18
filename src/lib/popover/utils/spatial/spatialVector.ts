@@ -41,8 +41,10 @@ export function createPoint2D(x = 0, y = 0): Point2D {
  * ```
  */
 export function distanceSquared2D(a: Point2D, b: Point2D): number {
-  const dx = toFiniteNumber(a.x) - toFiniteNumber(b.x);
-  const dy = toFiniteNumber(a.y) - toFiniteNumber(b.y);
+  const { x: ax, y: ay } = a;
+  const { x: bx, y: by } = b;
+  const dx = toFiniteNumber(ax) - toFiniteNumber(bx);
+  const dy = toFiniteNumber(ay) - toFiniteNumber(by);
   return dx * dx + dy * dy;
 }
 
@@ -75,9 +77,11 @@ export function distance2D(a: Point2D, b: Point2D): number {
  * ```
  */
 export function manhattanDistance2D(a: Point2D, b: Point2D): number {
+  const { x: ax, y: ay } = a;
+  const { x: bx, y: by } = b;
   return (
-    Math.abs(toFiniteNumber(a.x) - toFiniteNumber(b.x)) +
-    Math.abs(toFiniteNumber(a.y) - toFiniteNumber(b.y))
+    Math.abs(toFiniteNumber(ax) - toFiniteNumber(bx)) +
+    Math.abs(toFiniteNumber(ay) - toFiniteNumber(by))
   );
 }
 
@@ -93,9 +97,10 @@ export function manhattanDistance2D(a: Point2D, b: Point2D): number {
  * ```
  */
 export function vectorLength2D(v: Point2D): number {
-  const x = toFiniteNumber(v.x);
-  const y = toFiniteNumber(v.y);
-  return Math.sqrt(x * x + y * y);
+  const { x, y } = v;
+  const safeX = toFiniteNumber(x);
+  const safeY = toFiniteNumber(y);
+  return Math.sqrt(safeX * safeX + safeY * safeY);
 }
 
 /**
@@ -111,7 +116,9 @@ export function vectorLength2D(v: Point2D): number {
  * ```
  */
 export function dotProduct2D(a: Point2D, b: Point2D): number {
-  return toFiniteNumber(a.x) * toFiniteNumber(b.x) + toFiniteNumber(a.y) * toFiniteNumber(b.y);
+  const { x: ax, y: ay } = a;
+  const { x: bx, y: by } = b;
+  return toFiniteNumber(ax) * toFiniteNumber(bx) + toFiniteNumber(ay) * toFiniteNumber(by);
 }
 
 /**
@@ -127,8 +134,10 @@ export function dotProduct2D(a: Point2D, b: Point2D): number {
  * ```
  */
 export function addPoints2DInto(a: Point2D, b: Point2D, out: { x: number; y: number }): void {
-  out.x = toFiniteNumber(a.x) + toFiniteNumber(b.x);
-  out.y = toFiniteNumber(a.y) + toFiniteNumber(b.y);
+  const { x: ax, y: ay } = a;
+  const { x: bx, y: by } = b;
+  out.x = toFiniteNumber(ax) + toFiniteNumber(bx);
+  out.y = toFiniteNumber(ay) + toFiniteNumber(by);
 }
 
 /**
@@ -162,8 +171,10 @@ export function addPoints2D(a: Point2D, b: Point2D): Point2D {
  * ```
  */
 export function subtractPoints2DInto(a: Point2D, b: Point2D, out: { x: number; y: number }): void {
-  out.x = toFiniteNumber(a.x) - toFiniteNumber(b.x);
-  out.y = toFiniteNumber(a.y) - toFiniteNumber(b.y);
+  const { x: ax, y: ay } = a;
+  const { x: bx, y: by } = b;
+  out.x = toFiniteNumber(ax) - toFiniteNumber(bx);
+  out.y = toFiniteNumber(ay) - toFiniteNumber(by);
 }
 
 /**
@@ -197,9 +208,10 @@ export function subtractPoints2D(a: Point2D, b: Point2D): Point2D {
  * ```
  */
 export function scalePoint2DInto(p: Point2D, factor: number, out: { x: number; y: number }): void {
+  const { x, y } = p;
   const f = toFiniteNumber(factor, 1);
-  out.x = toFiniteNumber(p.x) * f;
-  out.y = toFiniteNumber(p.y) * f;
+  out.x = toFiniteNumber(x) * f;
+  out.y = toFiniteNumber(y) * f;
 }
 
 /**
@@ -239,9 +251,13 @@ export function lerpPoint2DInto(
   t: number,
   out: { x: number; y: number },
 ): void {
+  const { x: ax, y: ay } = a;
+  const { x: bx, y: by } = b;
   const safeT = clamp(toFiniteNumber(t, 0), 0, 1);
-  out.x = toFiniteNumber(a.x) + (toFiniteNumber(b.x) - toFiniteNumber(a.x)) * safeT;
-  out.y = toFiniteNumber(a.y) + (toFiniteNumber(b.y) - toFiniteNumber(a.y)) * safeT;
+  const safeAx = toFiniteNumber(ax);
+  const safeAy = toFiniteNumber(ay);
+  out.x = safeAx + (toFiniteNumber(bx) - safeAx) * safeT;
+  out.y = safeAy + (toFiniteNumber(by) - safeAy) * safeT;
 }
 
 /**

@@ -97,14 +97,18 @@ export function isErrorEntry<TData = unknown, TPopoverKey extends string = strin
 export function getEntryState<TData = unknown, TPopoverKey extends string = string>(
   entry: TrailEntry<TData, TPopoverKey> | undefined | null,
 ): PopoverEntryDiscriminatedState<TData> {
-  if (!entry || entry.status === 'idle') {
+  if (!entry) {
     return { status: 'idle', isLoading: false, data: undefined, error: null };
   }
-  if (entry.isLoading) {
+  const { status, isLoading, error } = entry;
+  if (status === 'idle') {
+    return { status: 'idle', isLoading: false, data: undefined, error: null };
+  }
+  if (isLoading) {
     return { status: 'loading', isLoading: true, data: undefined, error: null };
   }
-  if (entry.error) {
-    return { status: 'error', isLoading: false, data: undefined, error: entry.error };
+  if (error) {
+    return { status: 'error', isLoading: false, data: undefined, error };
   }
   if (isResolvedEntry<TData, TPopoverKey>(entry)) {
     return { status: 'success', isLoading: false, data: entry.data, error: null };

@@ -53,14 +53,17 @@ export function isValidQuadItem<TId extends string = string>(item: unknown): ite
 export function boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
   if (!a || !b) return false;
 
-  const isPointOrEdgeA = a.width === 0 || a.height === 0;
-  const isPointOrEdgeB = b.width === 0 || b.height === 0;
+  const { x: ax, y: ay, width: aw, height: ah } = a;
+  const { x: bx, y: by, width: bw, height: bh } = b;
+
+  const isPointOrEdgeA = aw === 0 || ah === 0;
+  const isPointOrEdgeB = bw === 0 || bh === 0;
 
   if (isPointOrEdgeA || isPointOrEdgeB) {
     return (
-      a.x <= b.x + b.width && a.x + a.width >= b.x && a.y <= b.y + b.height && a.y + a.height >= b.y
+      ax <= bx + bw && ax + aw >= bx && ay <= by + bh && ay + ah >= by
     );
   }
 
-  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }

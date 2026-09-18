@@ -87,12 +87,14 @@ export function cascadePlacementEnergy(
   preferredPosition: Point2D,
   lambda = 0.5,
 ): number {
+  const { x, y } = position;
+  const { width, height } = size;
   const cardBox = sharedBoxPool.acquire();
   try {
-    cardBox.x = position.x;
-    cardBox.y = position.y;
-    cardBox.width = size.width;
-    cardBox.height = size.height;
+    cardBox.x = x;
+    cardBox.y = y;
+    cardBox.width = width;
+    cardBox.height = height;
     const distSq = distanceSquared2D(position, preferredPosition);
     return totalOverlapArea(cardBox, obstacles) + lambda * distSq;
   } finally {
@@ -134,10 +136,11 @@ export function selectLowestEnergyPlacement(
   let bestPos = first(candidates);
   let minEnergy = Infinity;
 
+  const { width, height } = size;
   const cardBox = sharedBoxPool.acquire();
   try {
-    cardBox.width = size.width;
-    cardBox.height = size.height;
+    cardBox.width = width;
+    cardBox.height = height;
     for (const pos of candidates) {
       cardBox.x = pos.x;
       cardBox.y = pos.y;

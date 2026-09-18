@@ -98,16 +98,16 @@ export function getPopoverStyles({
     zIndex: safeZ,
     '--popover-translate-x': `${translateX}px`,
     '--popover-translate-y': `${translateY}px`,
-    '--popover-rotate-x': `${rotationX}deg`,
-    '--popover-rotate-y': `${rotationY}deg`,
-    '--popover-rotate-z': `${rotation}deg`,
+    '--popover-rotate-x': `${safeRotX}deg`,
+    '--popover-rotate-y': `${safeRotY}deg`,
+    '--popover-rotate-z': `${safeRot}deg`,
     '--popover-z-index': `${safeZ}`,
     '--pt-top': `${top}px`,
     '--pt-left': `${left}px`,
     '--pt-z-index': `${safeZ}`,
     '--pt-drag-x': `${translateX}px`,
     '--pt-drag-y': `${translateY}px`,
-    '--pt-tilt-deg': `${rotation}deg`,
+    '--pt-tilt-deg': `${safeRot}deg`,
   };
 
   if (!isDynamic) styleCache.set(cacheKey, computedStyle);

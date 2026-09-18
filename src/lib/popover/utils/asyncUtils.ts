@@ -341,11 +341,13 @@ export interface RetryOptions {
  * ```
  */
 export async function retryAsync<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T> {
-  const retries = options?.retries ?? 3;
-  const delayMs = options?.delayMs ?? 100;
-  const backoffMultiplier = options?.backoffMultiplier ?? 2;
-  const maxDelayMs = options?.maxDelayMs ?? 5000;
-  const shouldRetry = options?.shouldRetry ?? constant(true);
+  const {
+    retries = 3,
+    delayMs = 100,
+    backoffMultiplier = 2,
+    maxDelayMs = 5000,
+    shouldRetry = constant(true),
+  } = options ?? {};
 
   const attempt = async (remainingRetries: number, currentDelay: number): Promise<T> => {
     try {

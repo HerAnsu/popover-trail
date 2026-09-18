@@ -72,13 +72,16 @@ export function identityMatrix(): Matrix2D {
  * ```
  */
 export function multiplyMatrix2D(m1: Matrix2D, m2: Matrix2D): Matrix2D {
+  const [a1, b1, c1, d1, e1, f1] = m1;
+  const [a2, b2, c2, d2, e2, f2] = m2;
+
   return [
-    m1[0] * m2[0] + m1[2] * m2[1],
-    m1[1] * m2[0] + m1[3] * m2[1],
-    m1[0] * m2[2] + m1[2] * m2[3],
-    m1[1] * m2[2] + m1[3] * m2[3],
-    m1[0] * m2[4] + m1[2] * m2[5] + m1[4],
-    m1[1] * m2[4] + m1[3] * m2[5] + m1[5],
+    a1 * a2 + c1 * b2,
+    b1 * a2 + d1 * b2,
+    a1 * c2 + c1 * d2,
+    b1 * c2 + d1 * d2,
+    a1 * e2 + c1 * f2 + e1,
+    b1 * e2 + d1 * f2 + f1,
   ];
 }
 
@@ -100,16 +103,17 @@ export function multiplyMatrix2D(m1: Matrix2D, m2: Matrix2D): Matrix2D {
  * ```
  */
 export function invertMatrix2D(m: Matrix2D): Matrix2D | null {
-  const det = m[0] * m[3] - m[1] * m[2];
+  const [a, b, c, d, e, f] = m;
+  const det = a * d - b * c;
   if (!Number.isFinite(det) || approxEqual(det, 0, 1e-12)) return null;
   const invDet = 1 / det;
   return [
-    m[3] * invDet,
-    -m[1] * invDet,
-    -m[2] * invDet,
-    m[0] * invDet,
-    (m[2] * m[5] - m[3] * m[4]) * invDet,
-    (m[1] * m[4] - m[0] * m[5]) * invDet,
+    d * invDet,
+    -b * invDet,
+    -c * invDet,
+    a * invDet,
+    (c * f - d * e) * invDet,
+    (b * e - a * f) * invDet,
   ];
 }
 
@@ -133,8 +137,8 @@ export function invertMatrix2D(m: Matrix2D): Matrix2D | null {
  * @returns `Result` with inverted matrix or singular error.
  */
 export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatrixError> {
-  // Determinant: ad - bc
-  const det = m[0] * m[3] - m[1] * m[2];
+  const [a, b, c, d, e, f] = m;
+  const det = a * d - b * c;
   if (!Number.isFinite(det) || approxEqual(det, 0, 1e-12)) {
     return Err({
       type: 'singular_matrix',
@@ -144,12 +148,12 @@ export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatr
   }
   const invDet = 1 / det;
   return Ok([
-    m[3] * invDet,
-    -m[1] * invDet,
-    -m[2] * invDet,
-    m[0] * invDet,
-    (m[2] * m[5] - m[3] * m[4]) * invDet,
-    (m[1] * m[4] - m[0] * m[5]) * invDet,
+    d * invDet,
+    -b * invDet,
+    -c * invDet,
+    a * invDet,
+    (c * f - d * e) * invDet,
+    (b * e - a * f) * invDet,
   ]);
 }
 
@@ -170,8 +174,10 @@ export function invertMatrix2DResult(m: Matrix2D): Result<Matrix2D, SingularMatr
  * ```
  */
 export function transformPoint2DInto(p: Point2D, m: Matrix2D, out: { x: number; y: number }): void {
-  const x = m[0] * p.x + m[2] * p.y + m[4];
-  const y = m[1] * p.x + m[3] * p.y + m[5];
+  const [a, b, c, d, e, f] = m;
+  const { x: px, y: py } = p;
+  const x = a * px + c * py + e;
+  const y = b * px + d * py + f;
   out.x = Number.isFinite(x) ? x : 0;
   out.y = Number.isFinite(y) ? y : 0;
 }
@@ -231,15 +237,20 @@ export function transformAABBInto(
   m: Matrix2D,
   out: { x: number; y: number; width: number; height: number },
 ): void {
+  const [a, b, c, d, e, f] = m;
+  const { x: bx, y: by, width: bw, height: bh } = box;
+  const right = bx + bw;
+  const bottom = by + bh;
+
   // Transform all four orthogonal corners of the bounding rectangle
-  const x1 = m[0] * box.x + m[2] * box.y + m[4];
-  const y1 = m[1] * box.x + m[3] * box.y + m[5];
-  const x2 = m[0] * (box.x + box.width) + m[2] * box.y + m[4];
-  const y2 = m[1] * (box.x + box.width) + m[3] * box.y + m[5];
-  const x3 = m[0] * box.x + m[2] * (box.y + box.height) + m[4];
-  const y3 = m[1] * box.x + m[3] * (box.y + box.height) + m[5];
-  const x4 = m[0] * (box.x + box.width) + m[2] * (box.y + box.height) + m[4];
-  const y4 = m[1] * (box.x + box.width) + m[3] * (box.y + box.height) + m[5];
+  const x1 = a * bx + c * by + e;
+  const y1 = b * bx + d * by + f;
+  const x2 = a * right + c * by + e;
+  const y2 = b * right + d * by + f;
+  const x3 = a * bx + c * bottom + e;
+  const y3 = b * bx + d * bottom + f;
+  const x4 = a * right + c * bottom + e;
+  const y4 = b * right + d * bottom + f;
 
   // Compute minimum enclosing axis-aligned rectangle (AABB)
   const minX = Math.min(x1, x2, x3, x4);

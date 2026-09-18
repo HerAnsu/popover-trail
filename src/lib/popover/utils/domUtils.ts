@@ -23,10 +23,11 @@ export function sanitizeRect(
   rawRect: { x?: number; y?: number; width?: number; height?: number } | null | undefined,
 ): DOMRect | null {
   if (!rawRect) return null;
+  const { x, y, width, height } = rawRect;
   return new DOMRect(
-    toFiniteNumber(rawRect.x),
-    toFiniteNumber(rawRect.y),
-    toFiniteNumber(rawRect.width),
-    toFiniteNumber(rawRect.height),
+    toFiniteNumber(x),
+    toFiniteNumber(y),
+    toFiniteNumber(width),
+    toFiniteNumber(height),
   );
 }
